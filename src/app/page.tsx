@@ -9,6 +9,7 @@ import { getLoans } from '@/lib/actions/loans';
 import { getNetWorth } from '@/lib/actions/networth';
 import { ArrowRight, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
+import { InsightsFeed } from '@/components/dashboard/InsightsFeed';
 
 
 
@@ -29,13 +30,14 @@ export default async function Dashboard({
   const period = rawPeriod ?? 'this-month';
 
   // Parallel fetches for production speed (Neon connection poolers support this well).
-  const [summary, budgets, loans, netWorth, chartData, donutData] = await Promise.all([
+  const [summary, budgets, loans, netWorth, chartData, donutData, insights] = await Promise.all([
     getTransactionSummary(period),
     getBudgetsWithSpend(period),
     getLoans(),
     getNetWorth(),
     getMonthlyChartData(),
     getCategoryBreakdown(period),
+    import('@/lib/intelligence').then(m => m.generateInsights(user.id)),
   ]);
 
   const overdueLoanCount = loans.filter(l => l.daysOverdue > 0).length;
@@ -54,6 +56,9 @@ export default async function Dashboard({
           {period === 'this-week' ? 'This week' : period === 'this-year' ? 'This year' : 'This month'}
         </span>
       </div>
+
+      {/* Intelligence Engine Insights */}
+      <InsightsFeed initialInsights={insights} />
 
       {/* KPI Hero Banner — Goals-style gradient strip */}
       <div className="animate-in mb-5" style={{
