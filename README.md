@@ -1,36 +1,65 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Ledger 360 — Personal Finance OS
 
-## Getting Started
+Ledger 360 is a modern, full-stack financial operating system designed to go beyond basic expense tracking. It provides a comprehensive suite of tools for managing transactions, budgets, long-term goals, loans, and overall net worth, all wrapped in a premium, responsive "Fintech OS" visual identity.
 
-First, run the development server:
+## 🚀 Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+*   **Smart Upload & AI Parsing:** Drag and drop your bank statements (CSV, Excel, PDF). The system auto-categorizes transactions using intelligent keyword mapping and optional OpenAI GPT-4o Vision integration.
+*   **Comprehensive Dashboards:** Live tracking of Cashflow, Savings Rate, and spending velocity. 
+*   **Intelligent Budgeting:** Set weekly, monthly, or yearly limits per category with real-time progress bars (Success, Warning, Danger states).
+*   **Goal Tracking & Forecasting:** Track savings goals with visual progress rings.
+*   **Loan Management:** Track personal loans, interest rates, and monthly payments.
+*   **Net Worth Engine:** Real-time aggregation of liquid assets, illiquid assets, and liabilities.
+*   **Production-Ready Security:** Full server-side input validation using Zod, scoped database queries via NextAuth, and secure parameterized Prisma operations.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🛠️ Tech Stack
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+*   **Framework:** [Next.js 16](https://nextjs.org/) (App Router)
+*   **Database:** PostgreSQL (hosted on [Neon](https://neon.tech/))
+*   **ORM:** [Prisma](https://www.prisma.io/)
+*   **Authentication:** [NextAuth.js](https://next-auth.js.org/)
+*   **Styling:** Vanilla CSS (CSS Modules) + Custom Design System
+*   **Validation:** [Zod](https://zod.dev/)
+*   **Charts:** [Recharts](https://recharts.org/)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 📂 Architecture Overview
 
-## Learn More
+The codebase is structured for scalability and separation of concerns:
 
-To learn more about Next.js, take a look at the following resources:
+*   `/src/app`: Next.js App Router pages and Server Components (data fetching).
+*   `/src/components`: Reusable client-side UI components and layouts.
+*   `/src/lib/actions`: Server Actions for database mutations (all protected by `requireAuth` and `Zod`).
+*   `/src/lib/validation.ts`: Centralized single source of truth for all form and API validation schemas.
+*   `/prisma`: Database schemas and migrations.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 💻 Local Setup
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1.  **Clone the repository**
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
+3.  **Set up Environment Variables:**
+    Copy `.env.production.example` to `.env` and fill in your Neon database URLs and NextAuth secret.
+    ```bash
+    cp .env.production.example .env
+    ```
+4.  **Initialize the Database:**
+    ```bash
+    npx prisma db push
+    npx prisma generate
+    ```
+5.  **Run the development server:**
+    ```bash
+    npm run dev
+    ```
+    Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-## Deploy on Vercel
+## 🗺️ Roadmap & Future Enhancements
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+*   [ ] **Background Job Queues:** Move AI parsing to an asynchronous queue (e.g., Upstash/Redis) for extreme stability with massive PDF files.
+*   [ ] **Financial Intelligence:** Implement anomaly detection for unusual spending spikes and recurring bill predictions.
+*   [ ] **Rate Limiting:** Protect authentication and upload endpoints against brute-force attacks.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+*Built with product-minded engineering for the modern web.*
