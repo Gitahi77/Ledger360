@@ -147,18 +147,33 @@ export async function addTransaction(raw: {
 /* ── Bulk import (Smart Upload) ───────────────────────────── */
 export async function importTransactions(rows: {
   name: string; amount: number; type: string;
-  categoryId: string; date: string; note?: string;
+  categoryName: string; date: string; note?: string;
 }[]) {
   const user = await requireAuth();
   if (!Array.isArray(rows) || rows.length === 0) throw new Error('No rows to import');
   if (rows.length > 500) throw new Error('Max 500 rows per import');
+
+  // Resolve or create categories dynamically based on the string provided by the user
+  const categoryNames = [...new Set(rows.map(r => String(r.categoryName)))];
+  const existingCats  = await prisma.category.findMany({ where: { userId: user.id, name: { in: categoryNames } } });
+  const catMap: Record<string, string> = Object.fromEntries(existingCats.map(c => [c.name, c.id]));
+
+  for (const name of categoryNames) {
+    if (!catMap[name]) {
+      const typeHint = rows.find(r => r.categoryName === name)?.type === 'income' ? 'income' : 'expense';
+      const cat = await prisma.category.create({
+        data: { name, type: typeHint, userId: user.id },
+      });
+      catMap[name] = cat.id;
+    }
+  }
 
   await prisma.transaction.createMany({
     data: rows.map(r => ({
       name:       String(r.name).slice(0, 120),
       amount:     Math.abs(Number(r.amount)),
       type:       r.type === 'income' ? 'income' : 'expense',
-      categoryId: r.categoryId,
+      categoryId: catMap[String(r.categoryName)],
       date:       new Date(r.date),
       note:       r.note ? String(r.note).slice(0, 500) : undefined,
       userId:     user.id,

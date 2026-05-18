@@ -62,7 +62,7 @@ export function SmartUpload({ onDone }: { onDone?: () => void }) {
     try {
       await importTransactions(toImport.map(r => ({
         name: r.name, amount: r.amount, type: r.type,
-        categoryId: r.categoryId, date: r.date, note: r.note,
+        categoryName: r.category, date: r.date, note: r.note,
       })));
       setState('done');
       setTimeout(() => { onDone?.(); }, 1500);
@@ -169,7 +169,21 @@ export function SmartUpload({ onDone }: { onDone?: () => void }) {
                 <td><input type="checkbox" checked={selected.has(i)} onChange={() => toggleRow(i)} onClick={e => e.stopPropagation()} /></td>
                 <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</td>
                 <td>{r.date}</td>
-                <td><span className={`badge ${r.type === 'income' ? 'badge-success' : 'badge-blue'}`}>{r.category}</span></td>
+                <td>
+                  <input
+                    type="text"
+                    value={r.category}
+                    onChange={(e) => {
+                      const newRows = [...rows];
+                      newRows[i].category = e.target.value;
+                      setRows(newRows);
+                    }}
+                    style={{
+                      background: 'transparent', border: '1px solid var(--border)', borderRadius: 4,
+                      padding: '2px 6px', fontSize: '0.72rem', width: 110, color: 'var(--text-primary)'
+                    }}
+                  />
+                </td>
                 <td style={{ textAlign: 'right', fontFamily: 'Space Grotesk,sans-serif', fontWeight: 700, color: r.type === 'income' ? 'var(--success)' : 'var(--text-primary)' }}>
                   {r.type === 'income' ? '+' : '−'}KES {r.amount.toLocaleString()}
                 </td>

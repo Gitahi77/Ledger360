@@ -42,7 +42,7 @@ function autoCategory(description: string, amount: number): { category: string; 
       return { category: rule.category, type: rule.type };
     }
   }
-  return { category: amount > 0 ? 'Salary' : 'Food & Grocery', type: amount > 0 ? 'income' : 'expense' };
+  return { category: amount > 0 ? 'Income' : 'General', type: amount > 0 ? 'income' : 'expense' };
 }
 
 /* ── Normalise a raw row from any parser ─────────────────── */
