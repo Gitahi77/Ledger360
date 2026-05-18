@@ -27,6 +27,7 @@ model User {
   goals         Goal[]
   loans         Loan[]
   assets        Asset[]
+  auditLogs     AuditLog[]
 }
 
 model Account {
@@ -157,4 +158,19 @@ model Asset {
   createdAt DateTime @default(now())
 
   @@index([userId])
+}
+
+// ── Security / Activity Logging ──────────────────────────────
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String   // e.g., "LOGIN", "IMPORT_TRANSACTIONS", "DELETE_BUDGET"
+  resource  String   // e.g., "Auth", "Transaction", "Budget"
+  metadata  String?  // JSON stringified details
+  ipAddress String?
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt(sort: Desc)])
 }
