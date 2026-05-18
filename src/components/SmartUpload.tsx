@@ -106,7 +106,20 @@ export function SmartUpload({ onDone }: { onDone?: () => void }) {
           Drop your bank statement here — PDF, CSV, Excel or screenshot.<br />
           AI will auto-detect and categorise every transaction.
         </p>
-        <button className="btn btn-primary" style={{ pointerEvents: 'none' }}>Browse Files</button>
+        <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+          <button className="btn btn-outline" onClick={(e) => {
+            e.stopPropagation();
+            const csv = "Date,Description,Amount\n2026-05-20,Example Salary,5000\n2026-05-21,Example Grocery,-1500";
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "Ledger360_Template.csv";
+            a.click();
+            window.URL.revokeObjectURL(url);
+          }}>Download Template</button>
+          <button className="btn btn-primary" style={{ pointerEvents: 'none' }}>Browse Files</button>
+        </div>
       </div>
     </div>
   );
