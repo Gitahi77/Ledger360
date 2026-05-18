@@ -28,14 +28,15 @@ export default async function Dashboard({
   const { period: rawPeriod } = await searchParams;
   const period = rawPeriod ?? 'this-month';
 
-  // Sequential fetches — avoids connection pool exhaustion on local Prisma dev server.
-  // In production (Neon), switch back to Promise.all for speed.
-  const summary   = await getTransactionSummary(period);
-  const budgets   = await getBudgetsWithSpend(period);
-  const loans     = await getLoans();
-  const netWorth  = await getNetWorth();
-  const chartData = await getMonthlyChartData();
-  const donutData = await getCategoryBreakdown(period);
+  // Parallel fetches for production speed (Neon connection poolers support this well).
+  const [summary, budgets, loans, netWorth, chartData, donutData] = await Promise.all([
+    getTransactionSummary(period),
+    getBudgetsWithSpend(period),
+    getLoans(),
+    getNetWorth(),
+    getMonthlyChartData(),
+    getCategoryBreakdown(period),
+  ]);
 
   const overdueLoanCount = loans.filter(l => l.daysOverdue > 0).length;
   const monthsLeft       = 12 - new Date().getMonth();
