@@ -1,0 +1,28 @@
+// src/app/reports/page.tsx — Live Server Component
+import { AppLayout } from '@/components/layout/AppLayout';
+import { getMonthlyTrend, getReportSummary, getReportCategories } from '@/lib/actions/reports';
+import { ReportsClient } from './ReportsClient';
+
+export default async function Reports({
+  searchParams,
+}: {
+  searchParams: Promise<{ period?: string }>;
+}) {
+  const { period: rawPeriod } = await searchParams;
+  const period = rawPeriod ?? 'this-month';
+
+  const trend      = await getMonthlyTrend();
+  const summary    = await getReportSummary(period);
+  const categories = await getReportCategories(period);
+
+  return (
+    <AppLayout>
+      <ReportsClient
+        period={period}
+        trend={trend}
+        summary={summary}
+        categories={categories}
+      />
+    </AppLayout>
+  );
+}

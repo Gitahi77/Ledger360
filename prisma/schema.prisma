@@ -1,0 +1,160 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ── Auth ────────────────────────────────────────────────────
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  accountType   String    @default("individual") // "individual" | "corporate"
+  currency      String    @default("KES")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  categories    Category[]
+  transactions  Transaction[]
+  budgets       Budget[]
+  goals         Goal[]
+  loans         Loan[]
+  assets        Asset[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ── Finance ──────────────────────────────────────────────────
+model Category {
+  id           String        @id @default(cuid())
+  name         String
+  type         String        // "income" | "expense" | "savings"
+  icon         String?
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+  budgets      Budget[]
+
+  @@unique([name, userId])
+}
+
+model Transaction {
+  id          String   @id @default(cuid())
+  date        DateTime
+  amount      Float
+  type        String   // "income" | "expense"
+  name        String
+  note        String?
+  categoryId  String
+  userId      String
+  importedAt  DateTime? // non-null if imported via Smart Upload
+
+  category Category @relation(fields: [categoryId], references: [id])
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, date(sort: Desc)])
+}
+
+model Budget {
+  id         String   @id @default(cuid())
+  name       String
+  period     String   @default("monthly") // "weekly" | "monthly" | "yearly"
+  limitAmt   Float
+  categoryId String
+  userId     String
+
+  category Category @relation(fields: [categoryId], references: [id])
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([categoryId, period, userId])
+}
+
+model Goal {
+  id            String    @id @default(cuid())
+  name          String
+  category      String
+  targetAmount  Float
+  currentAmount Float     @default(0)
+  deadline      DateTime?
+  userId        String
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model Loan {
+  id          String   @id @default(cuid())
+  name        String
+  lender      String
+  type        String   // "Personal" | "Student" | "Mortgage" | "Credit Card" | "Informal"
+  originalAmt Float
+  balance     Float
+  annualRate  Float    @default(0)
+  monthlyPmt  Float
+  nextDue     DateTime
+  daysOverdue Int      @default(0)
+  userId      String
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Asset {
+  id        String   @id @default(cuid())
+  name      String
+  category  String   // "Liquid" | "Investment" | "Property"
+  value     Float
+  userId    String
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
