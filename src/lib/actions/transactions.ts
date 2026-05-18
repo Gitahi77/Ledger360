@@ -137,8 +137,17 @@ export async function addTransaction(raw: {
   });
   if (!cat) throw new Error('Invalid category');
 
-  await prisma.transaction.create({
+  const newTx = await prisma.transaction.create({
     data: { ...data, date: new Date(data.date), userId: user.id },
+  });
+
+  // Security Audit
+  const { logActivity } = await import('@/lib/audit');
+  await logActivity({
+    userId: user.id,
+    action: 'CREATE',
+    resource: 'Transaction',
+    metadata: { txId: newTx.id, amount: data.amount, name: data.name },
   });
   revalidatePath('/transactions');
   revalidatePath('/');
@@ -181,6 +190,16 @@ export async function importTransactions(rows: {
     })),
     skipDuplicates: true,
   });
+
+  // Security Audit
+  const { logActivity } = await import('@/lib/audit');
+  await logActivity({
+    userId: user.id,
+    action: 'IMPORT',
+    resource: 'Transactions',
+    metadata: { rowCount: rows.length },
+  });
+
   revalidatePath('/transactions');
   revalidatePath('/');
 }
@@ -189,7 +208,21 @@ export async function importTransactions(rows: {
 export async function deleteTransaction(id: string) {
   const user = await requireAuth();
   if (!id) throw new Error('Missing id');
-  await prisma.transaction.deleteMany({ where: { id, userId: user.id } });
+  
+  const tx = await prisma.transaction.findFirst({ where: { id, userId: user.id } });
+  if (!tx) throw new Error('Transaction not found');
+
+  await prisma.transaction.delete({ where: { id } });
+
+  // Security Audit
+  const { logActivity } = await import('@/lib/audit');
+  await logActivity({
+    userId: user.id,
+    action: 'DELETE',
+    resource: 'Transaction',
+    metadata: { txId: id, amount: tx.amount, name: tx.name },
+  });
+
   revalidatePath('/transactions');
   revalidatePath('/');
 }
