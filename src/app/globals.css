@@ -632,3 +632,8 @@ select, input { font-family: inherit; }
 [data-theme="dark"] .kpi-card.k-amber:hover  { box-shadow: 0 8px 28px rgba(251,191,36,0.22), 0 2px 8px rgba(251,191,36,0.15);  }
 [data-theme="dark"] .kpi-card.k-purple:hover { box-shadow: 0 8px 28px rgba(196,181,253,0.22),0 2px 8px rgba(196,181,253,0.15); }
 
+/* ── Animations ──────────────────────────────────────────── */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
