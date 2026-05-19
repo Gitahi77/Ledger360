@@ -1,4 +1,4 @@
-import { requireAuth } from '@/lib/auth';
+import { requireAuth } from '@/lib/actions/_auth';
 import { prisma } from '@/lib/prisma';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { ShieldCheck, History, ArrowRight } from 'lucide-react';
