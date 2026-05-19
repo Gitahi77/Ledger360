@@ -9,6 +9,7 @@ import { getLoans } from '@/lib/actions/loans';
 import { getNetWorth } from '@/lib/actions/networth';
 import { ArrowRight, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
+import { requireAuth } from '@/lib/actions/_auth';
 import { InsightsFeed } from '@/components/dashboard/InsightsFeed';
 
 
@@ -28,6 +29,7 @@ export default async function Dashboard({
 }) {
   const { period: rawPeriod } = await searchParams;
   const period = rawPeriod ?? 'this-month';
+  const user = await requireAuth();
 
   // Parallel fetches for production speed (Neon connection poolers support this well).
   const [summary, budgets, loans, netWorth, chartData, donutData, insights] = await Promise.all([
