@@ -170,7 +170,7 @@ async function parseExcel(buffer: ArrayBuffer): Promise<RawRow[]> {
 async function parsePDF(buffer: ArrayBuffer): Promise<RawRow[]> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const pdfParse = require('pdf-parse/lib/pdf-parse');
+    const pdfParse = require('pdf-parse');
     const { text } = await pdfParse(Buffer.from(buffer));
     if (!text || text.trim().length < 20) return [];
 

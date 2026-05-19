@@ -3,7 +3,7 @@ import { startOfMonth, subMonths, endOfMonth, differenceInDays, getDate, getDays
 
 export type Insight = {
   id: string;
-  type: 'anomaly' | 'recurring' | 'forecast' | 'achievement';
+  type: 'anomaly' | 'recurring' | 'forecast' | 'achievement' | 'info';
   title: string;
   description: string;
   severity: 'info' | 'warning' | 'success' | 'danger';
