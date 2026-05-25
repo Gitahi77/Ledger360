@@ -2,6 +2,10 @@
 
 Ledger 360 is a modern, full-stack financial operating system designed to go beyond basic expense tracking. It provides a comprehensive suite of tools for managing transactions, budgets, long-term goals, loans, and overall net worth, all wrapped in a premium, responsive "Fintech OS" visual identity.
 
+## The Problem
+
+Most financial tools are built for businesses. Individuals are left with spreadsheets or basic expense apps that track spending but do not build financial clarity. Ledger 360 exists to close that gap, giving individuals the same financial operating visibility that businesses take for granted, built on the same institutional-grade engineering principles.
+
 ## 🚀 Features
 
 *   **Smart Upload & AI Parsing:** Drag and drop your bank statements (CSV, Excel, PDF). The system auto-categorizes transactions using intelligent keyword mapping and optional OpenAI GPT-4o Vision integration.
