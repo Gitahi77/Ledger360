@@ -1,9 +1,11 @@
 'use client';
-// src/app/goals/GoalsClient.tsx — Live Goals UI with Add/Update/Delete modals
+// src/app/goals/GoalsClient.tsx — Live Goals UI
+// Copyright (c) 2024–present Eric Gitahi. All rights reserved.
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { addGoal, updateGoalAmount, deleteGoal } from '@/lib/actions/goals';
 import { CategoryIcon } from '@/components/CategoryIcon';
+import { fmtAdaptive, fmtFull, fmtPct } from '@/lib/format';
 import { Plus, CheckCircle2, TrendingUp, Trash2, Loader2, X, PiggyBank } from 'lucide-react';
 
 type Goal = {
@@ -12,12 +14,44 @@ type Goal = {
   deadline: Date | null;
 };
 
-/* ── Status style (identical to original mock version) ───── */
+/* ── Status: fully token-based, no hardcoded hex ──────────── */
 function goalStyle(pct: number) {
-  if (pct >= 100) return { label:'Achieved',     badge:'badge-success', barGrad:'linear-gradient(90deg,#16A34A,#4ADE80)', borderColor:'#16A34A', numColor:'#16A34A', glow:'rgba(22,163,74,0.5)',    iconBg:'var(--success-light)' };
-  if (pct >= 70)  return { label:'Almost There', badge:'badge-blue',    barGrad:'linear-gradient(90deg,#0070F3,#0F766E)', borderColor:'#0F766E', numColor:'#0F766E', glow:'rgba(15,118,110,0.45)',  iconBg:'var(--teal-light)'    };
-  if (pct >= 35)  return { label:'Building',     badge:'badge-blue',    barGrad:'linear-gradient(90deg,#38BDF8,#0070F3)', borderColor:'#0070F3', numColor:'#0070F3', glow:'rgba(0,112,243,0.45)',   iconBg:'var(--primary-light)' };
-  return               { label:'Early Stage',  badge:'badge-sky',     barGrad:'linear-gradient(90deg,#BAE6FD,#38BDF8)', borderColor:'#0284C7', numColor:'#0284C7', glow:'rgba(2,132,199,0.4)',    iconBg:'var(--sky-light)'     };
+  if (pct >= 100) return {
+    label: 'Achieved',
+    badge: 'badge-success',
+    barGrad: 'linear-gradient(90deg, var(--success), hsl(152,65%,62%))',
+    borderColor: 'var(--success)',
+    numColor: 'var(--success)',
+    glow: 'rgba(34,197,94,0.35)',
+    iconBg: 'var(--success-light)',
+  };
+  if (pct >= 70) return {
+    label: 'Almost There',
+    badge: 'badge-blue',
+    barGrad: 'linear-gradient(90deg, var(--primary), var(--teal))',
+    borderColor: 'var(--teal)',
+    numColor: 'var(--teal)',
+    glow: 'rgba(20,184,166,0.3)',
+    iconBg: 'var(--teal-light)',
+  };
+  if (pct >= 35) return {
+    label: 'Building',
+    badge: 'badge-blue',
+    barGrad: 'linear-gradient(90deg, var(--sky), var(--primary))',
+    borderColor: 'var(--primary)',
+    numColor: 'var(--primary)',
+    glow: 'rgba(59,130,246,0.35)',
+    iconBg: 'var(--primary-light)',
+  };
+  return {
+    label: 'Early Stage',
+    badge: 'badge-sky',
+    barGrad: 'linear-gradient(90deg, var(--sky-light), var(--sky))',
+    borderColor: 'var(--sky)',
+    numColor: 'var(--sky)',
+    glow: 'rgba(14,165,233,0.3)',
+    iconBg: 'var(--sky-light)',
+  };
 }
 
 /* ── Add Goal Modal ───────────────────────────────────────── */
@@ -52,7 +86,7 @@ function AddGoalModal({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div style={{ position:'fixed', inset:0, zIndex:1000, background:'rgba(0,0,0,0.45)', backdropFilter:'blur(4px)', display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem' }} onClick={onClose}>
+    <div style={{ position:'fixed', inset:0, zIndex:1000, background:'rgba(0,0,0,0.5)', backdropFilter:'blur(6px)', display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem' }} onClick={onClose}>
       <div className="card animate-in" style={{ width:'100%', maxWidth:460, padding:'1.75rem' }} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <h2 className="card-title" style={{ marginBottom:0 }}>New Goal</h2>
@@ -69,7 +103,7 @@ function AddGoalModal({ onClose }: { onClose: () => void }) {
             <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Category</label>
             <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
               value={category} onChange={e => setCategory(e.target.value)}>
-              {GOAL_CATS.map(c => <option key={c} value={c} style={{ textTransform:'capitalize' }}>{c.charAt(0).toUpperCase()+c.slice(1)}</option>)}
+              {GOAL_CATS.map(c => <option key={c} value={c}>{c.charAt(0).toUpperCase()+c.slice(1)}</option>)}
             </select>
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.75rem' }}>
@@ -107,24 +141,27 @@ function AddFundsModal({ goal, onClose }: { goal: Goal; onClose: () => void }) {
   const [loading, setLoading] = useState(false);
   const [amount,  setAmount]  = useState('');
 
+  const addAmt   = parseFloat(amount || '0');
+  const newTotal = goal.currentAmount + addAmt;
+  const newPct   = goal.targetAmount > 0 ? Math.min(100, Math.round((newTotal / goal.targetAmount) * 100)) : 0;
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    const newTotal = goal.currentAmount + parseFloat(amount);
     await updateGoalAmount(goal.id, newTotal);
     startT(() => router.refresh());
     onClose();
   }
 
   return (
-    <div style={{ position:'fixed', inset:0, zIndex:1000, background:'rgba(0,0,0,0.45)', backdropFilter:'blur(4px)', display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem' }} onClick={onClose}>
-      <div className="card animate-in" style={{ width:'100%', maxWidth:380, padding:'1.75rem' }} onClick={e => e.stopPropagation()}>
+    <div style={{ position:'fixed', inset:0, zIndex:1000, background:'rgba(0,0,0,0.5)', backdropFilter:'blur(6px)', display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem' }} onClick={onClose}>
+      <div className="card animate-in" style={{ width:'100%', maxWidth:400, padding:'1.75rem' }} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="card-title" style={{ marginBottom:0 }}>Add Funds</h2>
           <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', display:'flex' }}><X size={18}/></button>
         </div>
         <p style={{ fontSize:'0.8rem', color:'var(--text-secondary)', marginBottom:'1rem' }}>
-          Adding to <strong>{goal.name}</strong> · current: KES {goal.currentAmount.toLocaleString()}
+          Adding to <strong>{goal.name}</strong> · current: {fmtAdaptive(goal.currentAmount)}
         </p>
         <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:'0.875rem' }}>
           <div>
@@ -132,6 +169,18 @@ function AddFundsModal({ goal, onClose }: { goal: Goal; onClose: () => void }) {
             <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
               type="number" min="1" step="1" value={amount} onChange={e => setAmount(e.target.value)} required placeholder="5000" autoFocus />
           </div>
+          {addAmt > 0 && (
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.5rem' }}>
+              <div style={{ padding:'0.6rem 0.75rem', borderRadius:8, background:'var(--primary-light)', fontSize:'0.75rem' }}>
+                <div style={{ color:'var(--text-muted)', fontWeight:600, marginBottom:'0.1rem', textTransform:'uppercase', fontSize:'0.6rem', letterSpacing:'0.06em' }}>New total</div>
+                <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, color:'var(--primary)' }}>{fmtAdaptive(newTotal)}</div>
+              </div>
+              <div style={{ padding:'0.6rem 0.75rem', borderRadius:8, background:'var(--success-light)', fontSize:'0.75rem' }}>
+                <div style={{ color:'var(--text-muted)', fontWeight:600, marginBottom:'0.1rem', textTransform:'uppercase', fontSize:'0.6rem', letterSpacing:'0.06em' }}>Progress</div>
+                <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, color:'var(--success)' }}>{newPct}%</div>
+              </div>
+            </div>
+          )}
           <button type="submit" disabled={loading} className="btn btn-primary" style={{ width:'100%', justifyContent:'center', padding:'0.7rem' }}>
             {loading ? <><Loader2 size={14} style={{ animation:'spin 1s linear infinite' }}/> Saving…</> : 'Add Funds'}
           </button>
@@ -150,14 +199,14 @@ export function GoalsClient({ goals }: { goals: Goal[] }) {
   const [celebrating,  setCelebrate]    = useState<string | null>(null);
   const [deletingId,   setDeletingId]   = useState<string | null>(null);
 
-  const totalSaved   = goals.reduce((s, g) => s + g.currentAmount, 0);
-  const totalTarget  = goals.reduce((s, g) => s + g.targetAmount, 0);
-  const achieved     = goals.filter(g => g.currentAmount >= g.targetAmount).length;
-  const almostThere  = goals.filter(g => { const p = (g.currentAmount/g.targetAmount)*100; return p >= 70 && p < 100; }).length;
-  const overallPct   = totalTarget > 0 ? Math.round((totalSaved/totalTarget)*100) : 0;
+  const totalSaved  = goals.reduce((s, g) => s + g.currentAmount, 0);
+  const totalTarget = goals.reduce((s, g) => s + g.targetAmount,  0);
+  const achieved    = goals.filter(g => g.currentAmount >= g.targetAmount).length;
+  const almostThere = goals.filter(g => { const p = (g.currentAmount/g.targetAmount)*100; return p >= 70 && p < 100; }).length;
+  const overallPct  = totalTarget > 0 ? Math.min(100, Math.round((totalSaved/totalTarget)*100)) : 0;
 
   async function handleDelete(id: string) {
-    if (!confirm('Delete this goal?')) return;
+    if (!confirm('Remove this goal?')) return;
     setDeletingId(id);
     await deleteGoal(id);
     startT(() => router.refresh());
@@ -175,22 +224,32 @@ export function GoalsClient({ goals }: { goals: Goal[] }) {
         <button className="btn btn-primary" onClick={() => setShowAdd(true)}><Plus size={13}/> New Goal</button>
       </div>
 
-      {/* Hero Banner — identical gradient to original mock */}
+      {/* Hero Banner */}
       <div style={{ marginBottom:'1.5rem' }}>
         <div className="hero-card animate-in" style={{
-          background:'linear-gradient(135deg, #16A34A 0%, #0F766E 50%, #0070F3 100%)',
+          background:'linear-gradient(135deg, hsl(152,55%,38%) 0%, hsl(172,58%,36%) 50%, hsl(213,94%,48%) 100%)',
           boxShadow:'0 10px 28px rgba(22,163,74,0.28)',
         }}>
           <div style={{ display:'grid', gridTemplateColumns:'1.2fr 1fr 1fr 1fr', gap:'1rem', alignItems:'center' }}>
-            <div>
+            <div style={{ minWidth:0 }}>
               <p style={{ fontSize:'0.6rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', color:'rgba(255,255,255,0.55)', marginBottom:'0.35rem' }}>Total Saved</p>
-              <p style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'1.75rem', fontWeight:800, letterSpacing:'-0.04em', color:'white', lineHeight:1 }}>KES {totalSaved.toLocaleString()}</p>
-              <p style={{ fontSize:'0.65rem', color:'rgba(255,255,255,0.5)', marginTop:'0.25rem' }}>of KES {totalTarget.toLocaleString()}</p>
+              {/* Adaptive number: compact at large values, prevents overflow */}
+              <p style={{
+                fontFamily:'Space Grotesk,sans-serif',
+                fontSize: totalSaved > 9_999_999 ? '1.25rem' : totalSaved > 999_999 ? '1.5rem' : '1.75rem',
+                fontWeight:800, letterSpacing:'-0.04em', color:'white', lineHeight:1,
+                whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
+              }}>
+                {fmtAdaptive(totalSaved)}
+              </p>
+              <p style={{ fontSize:'0.65rem', color:'rgba(255,255,255,0.5)', marginTop:'0.25rem', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                of {fmtAdaptive(totalTarget)}
+              </p>
             </div>
             {[
-              { label:'Goals',       value:`${goals.length}`, sub:'total'     },
-              { label:'Achieved',    value:`${achieved}`,      sub:'complete'  },
-              { label:'Almost There',value:`${almostThere}`,   sub:'70%+ done' },
+              { label:'Goals',        value:`${goals.length}`,  sub:'total'     },
+              { label:'Achieved',     value:`${achieved}`,       sub:'complete'  },
+              { label:'Almost There', value:`${almostThere}`,    sub:'70%+ done' },
             ].map(k => (
               <div key={k.label} style={{ background:'rgba(255,255,255,0.12)', borderRadius:8, padding:'0.625rem 0.875rem', border:'1px solid rgba(255,255,255,0.1)' }}>
                 <p style={{ fontSize:'0.6rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'rgba(255,255,255,0.55)', marginBottom:'0.2rem' }}>{k.label}</p>
@@ -231,24 +290,26 @@ export function GoalsClient({ goals }: { goals: Goal[] }) {
 
             return (
               <div key={g.id} className={`card animate-in delay-${(i%4)+1}`}
-                style={{ cursor:'pointer', borderTop:`3px solid ${st.borderColor}`,
-                  transition:'transform 0.2s,box-shadow 0.2s',
-                  boxShadow: celebrating===g.id ? `0 8px 28px ${st.glow}` : undefined,
-                  transform:  celebrating===g.id ? 'scale(1.025)' : undefined,
+                style={{
+                  cursor:'pointer',
+                  borderTop:`3px solid ${st.borderColor}`,
+                  transition:'transform 0.2s, box-shadow 0.2s',
+                  boxShadow: celebrating === g.id ? `0 8px 28px ${st.glow}` : undefined,
+                  transform:  celebrating === g.id ? 'scale(1.025)' : undefined,
                 }}
-                onClick={() => { if (pct>=100) { setCelebrate(g.id); setTimeout(()=>setCelebrate(null),800); } }}
+                onClick={() => { if (pct >= 100) { setCelebrate(g.id); setTimeout(() => setCelebrate(null), 800); } }}
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <div style={{ width:32, height:32, borderRadius:7, background:st.iconBg, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
                       <CategoryIcon category={g.category} name={g.name} size={15} />
                     </div>
-                    <div>
-                      <div style={{ fontWeight:700, fontSize:'0.875rem', color:'var(--text-primary)' }}>{g.name}</div>
+                    <div style={{ minWidth:0 }}>
+                      <div style={{ fontWeight:700, fontSize:'0.875rem', color:'var(--text-primary)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'9rem' }}>{g.name}</div>
                       <div style={{ fontSize:'0.7rem', color:'var(--text-muted)', marginTop:'0.1rem' }}>Target by {deadlineLabel}</div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2" style={{ flexShrink:0 }}>
                     <span className={`badge ${st.badge}`}>{st.label}</span>
                     <button onClick={e => { e.stopPropagation(); handleDelete(g.id); }} disabled={deletingId===g.id}
                       style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', display:'flex', padding:'0.2rem' }}>
@@ -257,14 +318,23 @@ export function GoalsClient({ goals }: { goals: Goal[] }) {
                   </div>
                 </div>
 
+                {/* Amount display: adaptive — never breaks */}
                 <div className="flex items-end justify-between mb-3">
-                  <div>
-                    <div style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'1.5rem', fontWeight:800, color:st.numColor, letterSpacing:'-0.04em', lineHeight:1.1 }}>
-                      KES {g.currentAmount.toLocaleString()}
+                  <div style={{ minWidth:0, flex:1, marginRight:'0.5rem' }}>
+                    <div style={{
+                      fontFamily:'Space Grotesk,sans-serif',
+                      fontSize: g.currentAmount > 9_999_999 ? '1.1rem' : g.currentAmount > 999_999 ? '1.25rem' : '1.5rem',
+                      fontWeight:800, color:st.numColor,
+                      letterSpacing:'-0.04em', lineHeight:1.1,
+                      whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
+                    }}>
+                      {fmtAdaptive(g.currentAmount)}
                     </div>
-                    <div style={{ fontSize:'0.7rem', color:'var(--text-secondary)', marginTop:'0.2rem' }}>of KES {g.targetAmount.toLocaleString()}</div>
+                    <div style={{ fontSize:'0.7rem', color:'var(--text-secondary)', marginTop:'0.2rem', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                      of {fmtAdaptive(g.targetAmount)}
+                    </div>
                   </div>
-                  <div style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'2rem', fontWeight:800, color:st.numColor, letterSpacing:'-0.05em', lineHeight:1, opacity:0.88 }}>{pct}%</div>
+                  <div style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'2rem', fontWeight:800, color:st.numColor, letterSpacing:'-0.05em', lineHeight:1, opacity:0.88, flexShrink:0 }}>{pct}%</div>
                 </div>
 
                 <div className="progress-track mb-3" style={{ height:8 }}>
@@ -277,8 +347,10 @@ export function GoalsClient({ goals }: { goals: Goal[] }) {
                   </div>
                 ) : (
                   <div className="flex items-center justify-between">
-                    <span style={{ fontSize:'0.72rem', color:'var(--text-secondary)', fontWeight:500 }}>KES {left.toLocaleString()} to go</span>
-                    <div className="flex items-center gap-2">
+                    <span style={{ fontSize:'0.72rem', color:'var(--text-secondary)', fontWeight:500, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', flex:1, marginRight:'0.5rem' }}>
+                      {fmtAdaptive(left)} to go
+                    </span>
+                    <div className="flex items-center gap-2" style={{ flexShrink:0 }}>
                       <button
                         onClick={e => { e.stopPropagation(); setAddFundsGoal(g); }}
                         className="btn btn-outline"

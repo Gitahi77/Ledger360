@@ -12,6 +12,7 @@ import Link from 'next/link';
 import { requireAuth } from '@/lib/actions/_auth';
 import { InsightsFeed } from '@/components/dashboard/InsightsFeed';
 import { BalanceText } from '@/components/typography/BalanceText';
+import { fmtAdaptive, fmtFull } from '@/lib/format';
 
 
 
@@ -69,22 +70,22 @@ export default async function Dashboard({
           {/* Primary stat — Net Worth */}
           <div>
             <p className="hero-label">Net Worth</p>
-            <BalanceText value={`KES ${netWorth.netWorth.toLocaleString()}`} />
-            <p className="hero-sub">
-              Assets KES {netWorth.totalAssets.toLocaleString()} · Debt KES {netWorth.totalLiabilities.toLocaleString()}
+            <BalanceText value={fmtAdaptive(netWorth.netWorth)} />
+            <p className="hero-sub" style={{ whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+              Assets {fmtAdaptive(netWorth.totalAssets)} · Debt {fmtAdaptive(netWorth.totalLiabilities)}
             </p>
           </div>
 
           {/* Operational stat boxes */}
           <div className="hero-stats-grid">
             {[
-              { label: `${periodLabel} Income`,  value: `KES ${summary.income.toLocaleString()}`,   sub: summary.income > 0 ? '↑ Coming in' : 'No income yet',       color: 'hsl(var(--color-success-hsl))' },
-              { label: `${periodLabel} Spent`,   value: `KES ${summary.expenses.toLocaleString()}`, sub: summary.expenses > 0 ? '↓ Going out' : 'No expenses yet',   color: 'hsl(var(--text-primary-hsl))' },
-              { label: 'Saving Rate',            value: `${summary.savingRate}%`,                   sub: summary.savingRate >= 20 ? '🎯 On track' : 'Needs attention', color: 'hsl(var(--color-warning-hsl))' },
+              { label: `${periodLabel} Income`,  value: fmtAdaptive(summary.income),   sub: summary.income > 0 ? '↑ Coming in' : 'No income yet',       color: 'var(--success)' },
+              { label: `${periodLabel} Spent`,   value: fmtAdaptive(summary.expenses), sub: summary.expenses > 0 ? '↓ Going out' : 'No expenses yet',   color: 'var(--text-primary)' },
+              { label: 'Saving Rate',            value: `${summary.savingRate}%`,        sub: summary.savingRate >= 20 ? '🎯 On track' : 'Needs attention', color: 'var(--warning)' },
             ].map(s => (
               <div key={s.label} className="hero-stat-card">
                 <p className="hero-label">{s.label}</p>
-                <p className="hero-stat-value tabular" style={{ color: s.color }}>{s.value}</p>
+                <p className="hero-stat-value tabular" style={{ color: s.color, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{s.value}</p>
                 <p className="hero-sub">{s.sub}</p>
               </div>
             ))}
@@ -147,18 +148,18 @@ export default async function Dashboard({
                 return (
                   <div key={b.id}>
                     <div className="flex items-center justify-between mb-1">
-                      <span style={{ fontSize: '0.8125rem', fontWeight: 600 }}>{b.name}</span>
+                      <span style={{ fontSize:'0.8125rem', fontWeight:600 }}>{b.name}</span>
                       <div className="flex items-center gap-2">
-                        {over > 0 && <span style={{ fontSize: '0.68rem', color: 'var(--danger)', fontWeight: 700 }}>+KES {over.toLocaleString()}</span>}
+                        {over > 0 && <span style={{ fontSize:'0.68rem', color:'var(--danger)', fontWeight:700 }}>+{fmtAdaptive(over)}</span>}
                         <span className={`badge ${st.badge}`}>{st.label}</span>
                       </div>
                     </div>
                     <div className="progress-track">
-                      <div className="progress-fill" style={{ width: `${st.pct}%`, background: st.bar }} />
+                      <div className="progress-fill" style={{ width:`${st.pct}%`, background:st.bar }} />
                     </div>
                     <div className="flex items-center justify-between mt-1">
-                      <span className="text-xs text-muted">KES {b.spent.toLocaleString()}</span>
-                      <span className="text-xs text-muted">Limit: KES {b.limit.toLocaleString()}</span>
+                      <span className="text-xs text-muted">{fmtAdaptive(b.spent)}</span>
+                      <span className="text-xs text-muted">Limit: {fmtAdaptive(b.limit)}</span>
                     </div>
                   </div>
                 );
@@ -182,10 +183,10 @@ export default async function Dashboard({
                 </div>
               )}
               {loans.slice(0, 3).map(l => (
-                <div key={l.id} className="flex items-center justify-between" style={{ fontSize: '0.78rem', marginBottom: '0.375rem' }}>
-                  <span style={{ color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '55%' }}>{l.name}</span>
-                  <span style={{ fontFamily: 'Space Grotesk,sans-serif', fontWeight: 700, color: l.daysOverdue > 0 ? 'var(--danger)' : 'var(--text-primary)' }}>
-                    KES {l.balance.toLocaleString()}
+                <div key={l.id} className="flex items-center justify-between" style={{ fontSize:'0.78rem', marginBottom:'0.375rem' }}>
+                  <span style={{ color:'var(--text-secondary)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'55%' }}>{l.name}</span>
+                  <span style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, color: l.daysOverdue > 0 ? 'var(--danger)' : 'var(--text-primary)', whiteSpace:'nowrap' }}>
+                    {fmtAdaptive(l.balance)}
                   </span>
                 </div>
               ))}
@@ -197,8 +198,11 @@ export default async function Dashboard({
             <div>
               <p style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.6)', marginBottom: '0.5rem' }}>Year-End Forecast</p>
               <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.75)', marginBottom: '0.625rem' }}>At your current pace you will save:</p>
-              <p style={{ fontFamily: 'Space Grotesk,sans-serif', fontSize: '1.8rem', fontWeight: 700, letterSpacing: '-0.04em', color: 'white', lineHeight: 1 }}>
-                KES {projected.toLocaleString()}
+              <p style={{ fontFamily:'Space Grotesk,sans-serif',
+                fontSize: projected > 99_999_999 ? '1.4rem' : projected > 9_999_999 ? '1.6rem' : '1.8rem',
+                fontWeight:700, letterSpacing:'-0.04em', color:'white', lineHeight:1,
+                whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                {fmtAdaptive(projected)}
               </p>
               <p style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.25rem' }}>by December {new Date().getFullYear()}</p>
             </div>
