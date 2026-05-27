@@ -88,71 +88,87 @@
   --row-padding: 4px;
 }
 
-/* ── Legacy Light Mode ──────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════
+   LEDGER360 UNIFIED COLOR SYSTEM
+   Copyright (c) 2024–present Eric Gitahi. All rights reserved.
+
+   Single source of truth. All legacy variable names now resolve
+   through the HSL token layer above. No more dual systems.
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Default (Dark) Mode — Mercury-inspired deep palette ─── */
 :root {
-  --bg-app:     #F4F6FB;
-  --bg-card:    #FFFFFF;
-  --bg-sidebar: #FFFFFF;
-  --bg-hover:   #EAEFF7;
+  /* Surfaces — deep blue-grey, calm and professional */
+  --bg-app:     hsl(222, 47%, 8%);
+  --bg-card:    hsl(222, 38%, 12%);
+  --bg-sidebar: hsl(222, 42%, 10%);
+  --bg-hover:   hsl(215, 30%, 16%);
 
-  --text-primary:   #09090B;
-  --text-secondary: #3F4A5A;
-  --text-muted:     #64748B;
+  /* Text hierarchy — high contrast, not blinding */
+  --text-primary:   hsl(210, 40%, 96%);
+  --text-secondary: hsl(215, 20%, 68%);
+  --text-muted:     hsl(215, 16%, 50%);
 
-  /* Stripe-quality brand blue */
-  --primary:       #0070F3;
-  --primary-grad:  linear-gradient(160deg, #0099FF 0%, #0070F3 50%, #005CC5 100%);
-  --primary-light: #E6F4FF;
-  --primary-dark:  #005CC5;
+  /* Brand blue — slightly warmer than pure Stripe, calm */
+  --primary:       hsl(213, 94%, 60%);
+  --primary-grad:  linear-gradient(160deg, hsl(213,100%,72%) 0%, hsl(213,94%,60%) 50%, hsl(213,90%,48%) 100%);
+  --primary-light: hsl(213, 60%, 16%);
+  --primary-dark:  hsl(213, 90%, 44%);
 
-  --success:       #16A34A;
-  --success-grad:  linear-gradient(160deg, #22C55E 0%, #16A34A 100%);
-  --success-light: #DCFCE7;
-  --success-text:  #14532D;
+  /* Success — Monzo-teal inspired, warmer than pure green */
+  --success:       hsl(152, 60%, 45%);
+  --success-grad:  linear-gradient(160deg, hsl(152,65%,58%) 0%, hsl(152,60%,45%) 100%);
+  --success-light: hsl(152, 40%, 10%);
+  --success-text:  hsl(152, 65%, 72%);
 
-  --danger:        #DC2626;
-  --danger-grad:   linear-gradient(160deg, #EF4444 0%, #DC2626 100%);
-  --danger-light:  #FEE2E2;
-  --danger-text:   #7F1D1D;
+  /* Danger — Copilot red, readable on dark */
+  --danger:        hsl(0, 78%, 62%);
+  --danger-grad:   linear-gradient(160deg, hsl(0,82%,72%) 0%, hsl(0,78%,62%) 100%);
+  --danger-light:  hsl(0, 50%, 12%);
+  --danger-text:   hsl(0, 82%, 80%);
 
-  --warning:       #D97706;
-  --warning-grad:  linear-gradient(160deg, #F59E0B 0%, #D97706 100%);
-  --warning-light: #FEF3C7;
-  --warning-text:  #78350F;
+  /* Warning — warm amber, never anxiety-inducing */
+  --warning:       hsl(38, 88%, 56%);
+  --warning-grad:  linear-gradient(160deg, hsl(38,92%,68%) 0%, hsl(38,88%,56%) 100%);
+  --warning-light: hsl(38, 60%, 10%);
+  --warning-text:  hsl(38, 90%, 78%);
 
-  --purple:        #7C3AED;
-  --purple-light:  #EDE9FE;
-  --teal:          #0F766E;
-  --teal-light:    #CCFBF1;
-  --sky:           #0284C7;
-  --sky-light:     #E0F2FE;
+  /* Accent palette — Mercury purple + teal */
+  --purple:        hsl(258, 70%, 72%);
+  --purple-light:  hsl(258, 45%, 14%);
+  --teal:          hsl(172, 66%, 50%);
+  --teal-light:    hsl(172, 40%, 10%);
+  --sky:           hsl(199, 89%, 58%);
+  --sky-light:     hsl(199, 55%, 12%);
 
-  /* Premium chart palette: Stripe/Linear inspired */
-  --chart-income:  #16A34A;
-  --chart-expense: #DC2626;
-  --chart-savings: #0070F3;
-  --chart-1: #0070F3;
-  --chart-2: #16A34A;
-  --chart-3: #D97706;
-  --chart-4: #7C3AED;
-  --chart-5: #0F766E;
-  --chart-6: #DC2626;
+  /* Chart palette — vibrant but harmonious on dark */
+  --chart-income:  hsl(152, 60%, 52%);
+  --chart-expense: hsl(0, 78%, 62%);
+  --chart-savings: hsl(213, 94%, 60%);
+  --chart-1: hsl(213, 94%, 60%);
+  --chart-2: hsl(152, 60%, 52%);
+  --chart-3: hsl(38, 88%, 56%);
+  --chart-4: hsl(258, 70%, 72%);
+  --chart-5: hsl(172, 66%, 50%);
+  --chart-6: hsl(0, 78%, 62%);
 
-  --border:       #CBD5E1;
-  --border-light: #E2E8F0;
+  /* Borders */
+  --border:       hsl(215, 27%, 22%);
+  --border-light: hsl(215, 27%, 18%);
 
-  /* Multi-layer shadows for depth */
-  --shadow-sm:  0 1px 2px rgba(15,23,42,0.06), 0 1px 1px rgba(15,23,42,0.04);
-  --shadow-md:  0 4px 6px rgba(15,23,42,0.07), 0 2px 4px rgba(15,23,42,0.05), 0 0 0 1px rgba(15,23,42,0.03);
-  --shadow-lg:  0 10px 20px rgba(15,23,42,0.10), 0 4px 8px rgba(15,23,42,0.06);
-  /* 3D raised button */
-  --btn-shadow: 0 1px 0 rgba(255,255,255,0.2) inset, 0 -2px 0 rgba(0,0,0,0.15) inset, 0 4px 8px rgba(0,112,243,0.3);
+  /* Shadows — tuned for dark surfaces */
+  --shadow-sm:  0 1px 3px rgba(0,0,0,0.5), 0 1px 1px rgba(0,0,0,0.4);
+  --shadow-md:  0 4px 12px rgba(0,0,0,0.55), 0 2px 4px rgba(0,0,0,0.35);
+  --shadow-lg:  0 12px 32px rgba(0,0,0,0.65);
+  --btn-shadow: 0 1px 0 rgba(255,255,255,0.12) inset, 0 -2px 0 rgba(0,0,0,0.3) inset, 0 4px 12px rgba(59,130,246,0.35);
 
+  /* Layout */
   --sidebar-width: 232px;
   --header-height: 52px;
   --radius:    8px;
   --radius-sm: 6px;
 
+  /* Semantic aliases */
   --background: var(--bg-app);
   --foreground: var(--text-primary);
   --secondary:  var(--bg-card);
@@ -160,69 +176,80 @@
   --success-light-bg: var(--success-light);
 }
 
-/* ── Dark Mode (shadcn/ui zinc palette + Vercel-dark) ────── */
-[data-theme="dark"] {
-  --bg-app:     #09090B;
-  --bg-card:    #18181B;
-  --bg-sidebar: #09090B;
-  --bg-hover:   #27272A;
+/* ── Light Mode — clean, professional, airy ──────────────── */
+[data-theme="light"] {
+  /* Surfaces — near-white with subtle blue tint */
+  --bg-app:     hsl(220, 33%, 97%);
+  --bg-card:    hsl(0, 0%, 100%);
+  --bg-sidebar: hsl(0, 0%, 100%);
+  --bg-hover:   hsl(220, 20%, 94%);
 
-  /* HIGH-CONTRAST text — no more faded text */
-  --text-primary:   #FAFAFA;
-  --text-secondary: #A8B3C1;
-  --text-muted:     #7A8899;
+  /* Text */
+  --text-primary:   hsl(222, 47%, 11%);
+  --text-secondary: hsl(215, 25%, 35%);
+  --text-muted:     hsl(215, 16%, 52%);
 
-  --primary:       #60A5FA;
-  --primary-grad:  linear-gradient(160deg, #93C5FD 0%, #60A5FA 50%, #3B82F6 100%);
-  --primary-light: #1E3A5F;
-  --primary-dark:  #3B82F6;
+  /* Brand */
+  --primary:       hsl(213, 94%, 48%);
+  --primary-grad:  linear-gradient(160deg, hsl(213,100%,60%) 0%, hsl(213,94%,48%) 50%, hsl(213,90%,38%) 100%);
+  --primary-light: hsl(213, 90%, 94%);
+  --primary-dark:  hsl(213, 90%, 36%);
 
-  --success:       #4ADE80;
-  --success-grad:  linear-gradient(160deg, #86EFAC 0%, #4ADE80 100%);
-  --success-light: #052E16;
-  --success-text:  #86EFAC;
+  /* Success */
+  --success:       hsl(152, 55%, 38%);
+  --success-grad:  linear-gradient(160deg, hsl(152,60%,48%) 0%, hsl(152,55%,38%) 100%);
+  --success-light: hsl(152, 60%, 94%);
+  --success-text:  hsl(152, 55%, 22%);
 
-  --danger:        #F87171;
-  --danger-grad:   linear-gradient(160deg, #FCA5A5 0%, #F87171 100%);
-  --danger-light:  #2D0A0A;
-  --danger-text:   #FCA5A5;
+  /* Danger */
+  --danger:        hsl(0, 72%, 50%);
+  --danger-grad:   linear-gradient(160deg, hsl(0,78%,60%) 0%, hsl(0,72%,50%) 100%);
+  --danger-light:  hsl(0, 86%, 96%);
+  --danger-text:   hsl(0, 72%, 30%);
 
-  --warning:       #FBBF24;
-  --warning-grad:  linear-gradient(160deg, #FDE68A 0%, #FBBF24 100%);
-  --warning-light: #1C0F00;
-  --warning-text:  #FDE68A;
+  /* Warning */
+  --warning:       hsl(38, 92%, 44%);
+  --warning-grad:  linear-gradient(160deg, hsl(38,95%,56%) 0%, hsl(38,92%,44%) 100%);
+  --warning-light: hsl(38, 95%, 94%);
+  --warning-text:  hsl(38, 85%, 28%);
 
-  --purple:        #C4B5FD;
-  --purple-light:  #2E1065;
-  --teal:          #2DD4BF;
-  --teal-light:    #042F2E;
-  --sky:           #38BDF8;
-  --sky-light:     #082F49;
+  /* Accents */
+  --purple:        hsl(258, 60%, 55%);
+  --purple-light:  hsl(258, 70%, 95%);
+  --teal:          hsl(172, 58%, 40%);
+  --teal-light:    hsl(172, 60%, 94%);
+  --sky:           hsl(199, 85%, 44%);
+  --sky-light:     hsl(199, 80%, 94%);
 
-  /* Vivid chart colors — bright on dark BG */
-  --chart-income:  #4ADE80;
-  --chart-expense: #F87171;
-  --chart-savings: #60A5FA;
-  --chart-1: #60A5FA;
-  --chart-2: #4ADE80;
-  --chart-3: #FBBF24;
-  --chart-4: #C4B5FD;
-  --chart-5: #2DD4BF;
-  --chart-6: #F87171;
+  /* Charts */
+  --chart-income:  hsl(152, 55%, 38%);
+  --chart-expense: hsl(0, 72%, 50%);
+  --chart-savings: hsl(213, 94%, 48%);
+  --chart-1: hsl(213, 94%, 48%);
+  --chart-2: hsl(152, 55%, 38%);
+  --chart-3: hsl(38, 92%, 44%);
+  --chart-4: hsl(258, 60%, 55%);
+  --chart-5: hsl(172, 58%, 40%);
+  --chart-6: hsl(0, 72%, 50%);
 
-  --border:       #3F3F46;
-  --border-light: #27272A;
+  /* Borders */
+  --border:       hsl(215, 20%, 84%);
+  --border-light: hsl(215, 20%, 90%);
 
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.5), 0 1px 1px rgba(0,0,0,0.4);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.6), 0 2px 4px rgba(0,0,0,0.4);
-  --shadow-lg: 0 12px 32px rgba(0,0,0,0.7);
-  --btn-shadow: 0 1px 0 rgba(255,255,255,0.1) inset, 0 -2px 0 rgba(0,0,0,0.3) inset, 0 4px 10px rgba(0,0,0,0.5);
+  /* Shadows — subtle on light */
+  --shadow-sm: 0 1px 2px rgba(15,23,42,0.06), 0 1px 1px rgba(15,23,42,0.04);
+  --shadow-md: 0 4px 6px rgba(15,23,42,0.07), 0 2px 4px rgba(15,23,42,0.05), 0 0 0 1px rgba(15,23,42,0.03);
+  --shadow-lg: 0 10px 20px rgba(15,23,42,0.10), 0 4px 8px rgba(15,23,42,0.06);
+  --btn-shadow: 0 1px 0 rgba(255,255,255,0.2) inset, 0 -2px 0 rgba(0,0,0,0.15) inset, 0 4px 8px rgba(0,112,243,0.3);
 
+  /* Semantic aliases */
   --background: var(--bg-app);
   --foreground: var(--text-primary);
   --secondary:  var(--bg-card);
   --secondary-foreground: var(--text-secondary);
+  --success-light-bg: var(--success-light);
 }
+
 
 /* ── Reset & Base ────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1131,4 +1158,136 @@ select, input { font-family: inherit; }
 }
 .skeleton-row {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* ── AppFooter Copyright Watermark ───────────────────────── */
+.app-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border-top: 1px solid var(--border-light);
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+  user-select: none;
+}
+.app-footer-copy { font-weight: 600; }
+.app-footer-sep  { opacity: 0.4; }
+.app-footer-rights { opacity: 0.6; }
+
+/* ── FinancialHealthBadge ─────────────────────────────────── */
+.health-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  font-size: var(--font-caption);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition: background-color 0.2s;
+}
+.health-badge-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background-color: currentColor;
+  flex-shrink: 0;
+}
+.health-badge.on-track {
+  background-color: var(--success-light);
+  color: var(--success-text);
+  border: 1px solid var(--success);
+}
+.health-badge.needs-attention {
+  background-color: var(--warning-light);
+  color: var(--warning-text);
+  border: 1px solid var(--warning);
+}
+.health-badge.recovering {
+  background-color: var(--primary-light);
+  color: var(--primary);
+  border: 1px solid var(--primary-dark);
+}
+
+/* ── SafeToSpend Card ─────────────────────────────────────── */
+.safe-to-spend {
+  border-radius: 0.875rem;
+  border: 1px solid var(--border);
+  background-color: var(--bg-card);
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.safe-to-spend-label {
+  font-size: var(--font-caption);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
+}
+.safe-to-spend-value {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 750;
+  font-size: 1.5rem;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: var(--success);
+}
+.safe-to-spend-sub {
+  font-size: var(--font-caption);
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+}
+.safe-to-spend-icon {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  background-color: var(--success-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--success);
+  flex-shrink: 0;
+}
+
+/* ── Insight Card (non-punitive tone) ─────────────────────── */
+.insight-card {
+  border-radius: 0.875rem;
+  border: 1px solid var(--border);
+  background-color: var(--bg-card);
+  padding: 0.875rem 1rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+.insight-card-icon {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 1rem;
+}
+.insight-card.info    .insight-card-icon { background: var(--primary-light); color: var(--primary); }
+.insight-card.success .insight-card-icon { background: var(--success-light); color: var(--success); }
+.insight-card.warning .insight-card-icon { background: var(--warning-light); color: var(--warning); }
+.insight-card.danger  .insight-card-icon { background: var(--danger-light);  color: var(--danger); }
+.insight-card-title {
+  font-weight: 600;
+  font-size: 0.82rem;
+  color: var(--text-primary);
+  margin-bottom: 0.2rem;
+}
+.insight-card-desc {
+  font-size: var(--font-caption);
+  color: var(--text-secondary);
+  line-height: 1.5;
 }

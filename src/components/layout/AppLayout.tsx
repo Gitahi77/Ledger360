@@ -6,6 +6,7 @@ import { Sidebar } from './Sidebar';
 import { ThemeToggle } from '../ThemeToggle';
 import { TemporalEngine } from '../TemporalEngine';
 import { MobileNav } from '../navigation/MobileNav';
+import { AppFooter } from './AppFooter';
 
 const PAGE_TITLES: Record<string, string> = {
   '/':             'Dashboard',
@@ -40,6 +41,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
           </div>
         </header>
         <main className="page-content">{children}</main>
+        <AppFooter />
       </div>
 
       <MobileNav />

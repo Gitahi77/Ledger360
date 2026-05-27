@@ -127,6 +127,82 @@ function AddLoanModal({ onClose }: { onClose: () => void }) {
   );
 }
 
+/* ── Expanded Forecast Panel (Interactive Extra Payment Simulator) ── */
+function ExpandedForecast({ loan, monthsLeft, totalInterest }: { loan: Loan; monthsLeft: number; totalInterest: number }) {
+  const [extraPayment, setExtraPayment] = useState(0);
+
+  const monthlyRate = loan.annualRate / 100 / 12;
+  const totalPmt    = loan.monthlyPmt + extraPayment;
+  const minPmt      = monthlyRate > 0 ? loan.balance * monthlyRate : 0;
+  const newMonths   = totalPmt <= minPmt
+    ? Infinity
+    : monthlyRate > 0
+      ? Math.ceil(Math.log(totalPmt / (totalPmt - loan.balance * monthlyRate)) / Math.log(1 + monthlyRate))
+      : Math.ceil(loan.balance / totalPmt);
+  const newInterest = isFinite(newMonths) ? Math.round(Math.max(0, (totalPmt * newMonths) - loan.balance)) : 0;
+  const monthsSaved = isFinite(monthsLeft) && isFinite(newMonths) ? Math.max(0, monthsLeft - newMonths) : 0;
+  const interestSaved = totalInterest - newInterest;
+
+  const payoffDate = (months: number) => {
+    if (!isFinite(months)) return 'N/A';
+    const d = new Date();
+    d.setMonth(d.getMonth() + months);
+    return d.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+  };
+
+  return (
+    <div className="animate-in" style={{ marginTop:'1rem', borderTop:'1px solid var(--border)', paddingTop:'1rem' }}>
+      <div style={{ fontSize:'0.72rem', fontWeight:700, color:'var(--text-secondary)', marginBottom:'0.75rem', textTransform:'uppercase', letterSpacing:'0.06em' }}>Repayment Forecast</div>
+
+      {/* Base forecast */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'0.75rem', marginBottom:'1rem' }}>
+        {[
+          { label:'Months Left',    value: isFinite(monthsLeft) ? `~${monthsLeft}` : '⚠ Check payment', sub:'at current pace' },
+          { label:'Total Interest', value:`KES ${totalInterest.toLocaleString()}`, sub:'estimated remaining' },
+          { label:'Payoff Date',    value: payoffDate(monthsLeft), sub:'projected' },
+        ].map(f => (
+          <div key={f.label} style={{ background:'var(--bg-app)', borderRadius:8, padding:'0.625rem 0.875rem', border:'1px solid var(--border)' }}>
+            <div style={{ fontSize:'0.6rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'var(--text-muted)', marginBottom:'0.2rem' }}>{f.label}</div>
+            <div style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'1rem', fontWeight:800, color:'var(--text-primary)' }}>{f.value}</div>
+            <div style={{ fontSize:'0.6rem', color:'var(--text-muted)', marginTop:'0.1rem' }}>{f.sub}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Interactive extra payment simulator */}
+      <div style={{ background:'var(--primary-light)', borderRadius:10, padding:'0.875rem 1rem', border:'1px solid var(--primary-dark)' }}>
+        <div style={{ fontSize:'0.7rem', fontWeight:700, color:'var(--primary)', marginBottom:'0.5rem', textTransform:'uppercase', letterSpacing:'0.06em' }}>Extra Payment Simulator</div>
+        <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', marginBottom: extraPayment > 0 ? '0.75rem' : 0 }}>
+          <span style={{ fontSize:'0.8rem', color:'var(--text-secondary)', whiteSpace:'nowrap' }}>Pay extra KES</span>
+          <input
+            type="number" min="0" step="500"
+            value={extraPayment || ''}
+            onChange={e => setExtraPayment(Math.max(0, parseInt(e.target.value) || 0))}
+            placeholder="e.g. 5000"
+            className="input-field"
+            style={{ width:'100%', padding:'0.4rem 0.65rem', fontSize:'0.82rem' }}
+          />
+          <span style={{ fontSize:'0.8rem', color:'var(--text-secondary)', whiteSpace:'nowrap' }}>per month</span>
+        </div>
+        {extraPayment > 0 && isFinite(newMonths) && (
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'0.5rem' }}>
+            {[
+              { label:'New payoff', value: payoffDate(newMonths), color:'var(--success)' },
+              { label:'Months saved', value:`${monthsSaved} mo`, color:'var(--success)' },
+              { label:'Interest saved', value:`KES ${interestSaved.toLocaleString()}`, color:'var(--success)' },
+            ].map(r => (
+              <div key={r.label} style={{ background:'var(--success-light)', borderRadius:7, padding:'0.5rem 0.625rem', border:'1px solid var(--success)' }}>
+                <div style={{ fontSize:'0.58rem', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', color:'var(--text-muted)', marginBottom:'0.15rem' }}>{r.label}</div>
+                <div style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'0.9rem', fontWeight:800, color: r.color }}>{r.value}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ── Record Payment Modal ─────────────────────────────────── */
 function RecordPaymentModal({ loan, onClose }: { loan: Loan; onClose: () => void }) {
   const router     = useRouter();
@@ -135,7 +211,12 @@ function RecordPaymentModal({ loan, onClose }: { loan: Loan; onClose: () => void
   const [payment,  setPayment]  = useState(String(loan.monthlyPmt));
   const [nextDue,  setNextDue]  = useState('');
 
-  const newBalance = Math.max(0, loan.balance - parseFloat(payment || '0'));
+  const paymentAmt = parseFloat(payment || '0');
+  // Correctly split payment into interest + principal (reducing-balance method)
+  const monthlyRate       = loan.annualRate / 100 / 12;
+  const interestCharge    = Math.round(loan.balance * monthlyRate);
+  const principalReduction = Math.max(0, paymentAmt - interestCharge);
+  const newBalance         = Math.max(0, loan.balance - principalReduction);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -147,13 +228,13 @@ function RecordPaymentModal({ loan, onClose }: { loan: Loan; onClose: () => void
 
   return (
     <div style={{ position:'fixed', inset:0, zIndex:1000, background:'rgba(0,0,0,0.45)', backdropFilter:'blur(4px)', display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem' }} onClick={onClose}>
-      <div className="card animate-in" style={{ width:'100%', maxWidth:400, padding:'1.75rem' }} onClick={e => e.stopPropagation()}>
+      <div className="card animate-in" style={{ width:'100%', maxWidth:420, padding:'1.75rem' }} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="card-title" style={{ marginBottom:0 }}>Record Payment</h2>
           <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', display:'flex' }}><X size={18}/></button>
         </div>
         <p style={{ fontSize:'0.8rem', color:'var(--text-secondary)', marginBottom:'1rem' }}>
-          Payment for <strong>{loan.name}</strong> · current balance: KES {loan.balance.toLocaleString()}
+          Payment for <strong>{loan.name}</strong> · balance: KES {loan.balance.toLocaleString()}
         </p>
         <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:'0.875rem' }}>
           <div>
@@ -161,6 +242,19 @@ function RecordPaymentModal({ loan, onClose }: { loan: Loan; onClose: () => void
             <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
               type="number" min="1" step="1" value={payment} onChange={e => setPayment(e.target.value)} required autoFocus />
           </div>
+          {/* Payment breakdown — interest vs principal */}
+          {paymentAmt > 0 && (
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.5rem' }}>
+              <div style={{ padding:'0.6rem 0.75rem', borderRadius:8, background:'var(--warning-light)', fontSize:'0.75rem' }}>
+                <div style={{ color:'var(--text-muted)', fontWeight:600, marginBottom:'0.1rem', textTransform:'uppercase', fontSize:'0.6rem', letterSpacing:'0.06em' }}>Interest this month</div>
+                <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, color:'var(--warning)' }}>KES {interestCharge.toLocaleString()}</div>
+              </div>
+              <div style={{ padding:'0.6rem 0.75rem', borderRadius:8, background:'var(--success-light)', fontSize:'0.75rem' }}>
+                <div style={{ color:'var(--text-muted)', fontWeight:600, marginBottom:'0.1rem', textTransform:'uppercase', fontSize:'0.6rem', letterSpacing:'0.06em' }}>Principal reduced</div>
+                <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, color:'var(--success)' }}>KES {principalReduction.toLocaleString()}</div>
+              </div>
+            </div>
+          )}
           <div>
             <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>
               Next Due Date <span style={{ fontWeight:400, color:'var(--text-muted)' }}>(optional)</span>
@@ -168,17 +262,18 @@ function RecordPaymentModal({ loan, onClose }: { loan: Loan; onClose: () => void
             <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
               type="date" value={nextDue} onChange={e => setNextDue(e.target.value)} />
           </div>
-          <div style={{ padding:'0.75rem', borderRadius:8, background:'var(--success-light)', fontSize:'0.8rem', color:'var(--success)', fontWeight:600 }}>
-            New balance after payment: KES {newBalance.toLocaleString()}
+          <div style={{ padding:'0.75rem', borderRadius:8, background:'var(--primary-light)', fontSize:'0.8rem', color:'var(--primary)', fontWeight:600 }}>
+            New balance: KES {newBalance.toLocaleString()}
           </div>
           <button type="submit" disabled={loading} className="btn btn-primary" style={{ width:'100%', justifyContent:'center', padding:'0.7rem' }}>
-            {loading ? <><Loader2 size={14} style={{ animation:'spin 1s linear infinite' }}/> Saving…</> : 'Record Payment'}
+            {loading ? <><Loader2 size={14} style={{ animation:'spin 1s linear infinite'}}/> Saving…</> : 'Record Payment'}
           </button>
         </form>
       </div>
     </div>
   );
 }
+
 
 /* ── Main Client Component ────────────────────────────────── */
 export function LoansClient({ loans }: { loans: Loan[] }) {
@@ -267,12 +362,18 @@ export function LoansClient({ loans }: { loans: Loan[] }) {
             const st  = loanStyle(l);
             const isExpanded = expanded === l.id;
 
-            // Extra payment calculator
-            const monthlyRate = l.annualRate / 100 / 12;
-            const monthsLeft = monthlyRate > 0
-              ? Math.ceil(Math.log(1 + (l.balance * monthlyRate) / l.monthlyPmt) / Math.log(1 + monthlyRate))
-              : Math.ceil(l.balance / l.monthlyPmt);
-            const totalInterest = Math.round(Math.max(0, (l.monthlyPmt * monthsLeft) - l.balance));
+            // Amortization calculator with safety guards
+            const monthlyRate   = l.annualRate / 100 / 12;
+            const minPayment    = monthlyRate > 0 ? l.balance * monthlyRate : 0; // payment must exceed this
+            const paymentValid  = l.monthlyPmt > minPayment;
+            const monthsLeft    = !paymentValid
+              ? Infinity
+              : monthlyRate > 0
+                ? Math.ceil(Math.log(l.monthlyPmt / (l.monthlyPmt - l.balance * monthlyRate)) / Math.log(1 + monthlyRate))
+                : Math.ceil(l.balance / l.monthlyPmt);
+            const totalInterest = isFinite(monthsLeft)
+              ? Math.round(Math.max(0, (l.monthlyPmt * monthsLeft) - l.balance))
+              : 0;
 
             return (
               <div key={l.id} className={`card animate-in delay-${(i%4)+1}`}
@@ -347,24 +448,9 @@ export function LoansClient({ loans }: { loans: Loan[] }) {
                   </div>
                 </div>
 
-                {/* Expanded interest forecast */}
+                {/* Expanded interest forecast + interactive extra payment simulator */}
                 {isExpanded && (
-                  <div className="animate-in" style={{ marginTop:'1rem', borderTop:'1px solid var(--border)', paddingTop:'1rem' }}>
-                    <div style={{ fontSize:'0.72rem', fontWeight:700, color:'var(--text-secondary)', marginBottom:'0.625rem', textTransform:'uppercase', letterSpacing:'0.06em' }}>Repayment Forecast</div>
-                    <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'0.75rem' }}>
-                      {[
-                        { label:'Months Remaining', value:`~${monthsLeft}`, sub:'at current pace' },
-                        { label:'Total Interest',   value:`KES ${totalInterest.toLocaleString()}`, sub:'estimated remaining' },
-                        { label:'Payoff Date',      value: (() => { const d = new Date(); d.setMonth(d.getMonth()+monthsLeft); return d.toLocaleDateString('en-GB',{month:'short',year:'numeric'}); })(), sub:'projected' },
-                      ].map(f => (
-                        <div key={f.label} style={{ background:'var(--bg-app)', borderRadius:8, padding:'0.625rem 0.875rem', border:'1px solid var(--border)' }}>
-                          <div style={{ fontSize:'0.6rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'var(--text-muted)', marginBottom:'0.2rem' }}>{f.label}</div>
-                          <div style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'1rem', fontWeight:800, color:'var(--text-primary)' }}>{f.value}</div>
-                          <div style={{ fontSize:'0.6rem', color:'var(--text-muted)', marginTop:'0.1rem' }}>{f.sub}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  <ExpandedForecast loan={l} monthsLeft={monthsLeft} totalInterest={totalInterest} />
                 )}
               </div>
             );

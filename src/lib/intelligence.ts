@@ -26,8 +26,8 @@ export async function generateInsights(userId: string): Promise<Insight[]> {
     return [{
       id: 'not-enough-data',
       type: 'info',
-      title: 'Ledger Brain is learning...',
-      description: 'Add more transactions to unlock AI anomaly detection and cashflow forecasting.',
+      title: 'Still learning your patterns…',
+      description: 'Add a few more transactions and your AI insights will start appearing here.',
       severity: 'info',
     }];
   }
@@ -62,8 +62,8 @@ export async function generateInsights(userId: string): Promise<Insight[]> {
         insights.push({
           id: `anomaly-${cat}`,
           type: 'anomaly',
-          title: 'Unusual Spending Spike',
-          description: `You've spent ${percent}% more on ${cat} this month than your historical average.`,
+          title: 'Higher than usual',
+          description: `Your ${cat} spending looks ${percent}% above your typical pattern this month.`,
           severity: 'warning',
         });
       }
@@ -88,8 +88,8 @@ export async function generateInsights(userId: string): Promise<Insight[]> {
           insights.push({
             id: `recurring-${name}`,
             type: 'recurring',
-            title: 'Upcoming Recurring Bill',
-            description: `${name} is usually paid around the ${avgDate}th (~KES ${Math.round(avgAmount).toLocaleString()}).`,
+            title: 'Upcoming recurring payment',
+            description: `${name} usually comes around the ${avgDate}th (~KES ${Math.round(avgAmount).toLocaleString()}).`,
             severity: 'info',
           });
         }
@@ -113,17 +113,17 @@ export async function generateInsights(userId: string): Promise<Insight[]> {
       insights.push({
         id: 'forecast-positive',
         type: 'forecast',
-        title: 'On Track to Save',
-        description: `Based on your daily spend of KES ${Math.round(dailyBurnRate).toLocaleString()}, you will save ~KES ${Math.round(projectedSavings).toLocaleString()} by month-end.`,
+        title: 'On pace to save this month',
+        description: `At your daily spend of KES ${Math.round(dailyBurnRate).toLocaleString()}, you could save ~KES ${Math.round(projectedSavings).toLocaleString()} by month-end.`,
         severity: 'success',
       });
     } else {
       insights.push({
         id: 'forecast-negative',
         type: 'forecast',
-        title: 'Cashflow Warning',
-        description: `Your spending velocity is high. You are projected to exceed your income by KES ${Math.round(Math.abs(projectedSavings)).toLocaleString()} this month.`,
-        severity: 'danger',
+        title: 'Worth keeping an eye on',
+        description: `Your spending this month is running a little ahead of income. About KES ${Math.round(Math.abs(projectedSavings)).toLocaleString()} to close the gap.`,
+        severity: 'warning',
       });
     }
   }
