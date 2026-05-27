@@ -1,8 +1,10 @@
 'use client';
 // src/app/loans/LoansClient.tsx
+// Copyright (c) 2024-present Eric Gitahi. All rights reserved.
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { addLoan, updateLoanBalance, deleteLoan } from '@/lib/actions/loans';
+import { fmtAdaptive } from '@/lib/format';
 import { Plus, Trash2, Loader2, X, CreditCard, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
 
 type Loan = {
@@ -11,13 +13,25 @@ type Loan = {
   monthlyPmt: number; nextDue: Date; daysOverdue: number;
 };
 
-/* ── Status style ─────────────────────────────────────────── */
+// All colours via CSS token vars — adapts to light and dark automatically
 function loanStyle(l: Loan) {
   const paidPct = Math.min(100, Math.round(((l.originalAmt - l.balance) / l.originalAmt) * 100));
-  if (l.daysOverdue > 0) return { badge: 'badge-danger',  label: 'Overdue',    color: '#DC2626', barGrad: 'linear-gradient(90deg,#DC2626,#EF4444)', glow: 'rgba(220,38,38,0.5)', paidPct };
+  if (l.daysOverdue > 0) return {
+    badge: 'badge-danger',  label: 'Overdue',
+    color: 'var(--danger)',  barGrad: 'linear-gradient(90deg,var(--danger),hsl(0,78%,72%))',
+    glow: 'rgba(220,38,38,0.5)', paidPct,
+  };
   if (l.daysOverdue === 0 && new Date(l.nextDue) < new Date(Date.now() + 7*86400000))
-    return { badge: 'badge-warning', label: 'Due Soon', color: '#D97706', barGrad: 'linear-gradient(90deg,#D97706,#F59E0B)', glow: 'rgba(217,119,6,0.4)', paidPct };
-  return { badge: 'badge-success', label: 'On Track', color: '#16A34A', barGrad: 'linear-gradient(90deg,#16A34A,#4ADE80)', glow: 'rgba(22,163,74,0.4)', paidPct };
+    return {
+      badge: 'badge-warning', label: 'Due Soon',
+      color: 'var(--warning)', barGrad: 'linear-gradient(90deg,var(--warning),hsl(38,92%,68%))',
+      glow: 'rgba(217,119,6,0.4)', paidPct,
+    };
+  return {
+    badge: 'badge-success', label: 'On Track',
+    color: 'var(--success)', barGrad: 'linear-gradient(90deg,var(--success),hsl(152,65%,62%))',
+    glow: 'rgba(22,163,74,0.4)', paidPct,
+  };
 }
 
 /* ── Add Loan Modal ───────────────────────────────────────── */
@@ -309,30 +323,35 @@ export function LoansClient({ loans }: { loans: Loan[] }) {
         <button className="btn btn-primary" onClick={() => setShowAdd(true)}><Plus size={13}/> Add Loan</button>
       </div>
 
-      {/* Hero Banner */}
+      {/* Hero Banner — token-based gradient, no hardcoded hex */}
       <div className="animate-in mb-5" style={{
         borderRadius:12,
         background: overdue > 0
-          ? 'linear-gradient(135deg, #DC2626 0%, #7C3AED 55%, #0F766E 100%)'
-          : 'linear-gradient(135deg, #0F766E 0%, #0070F3 55%, #7C3AED 100%)',
+          ? 'linear-gradient(135deg, var(--danger) 0%, var(--purple) 55%, var(--teal) 100%)'
+          : 'linear-gradient(135deg, var(--teal) 0%, var(--primary) 55%, var(--purple) 100%)',
         boxShadow: overdue > 0 ? '0 10px 32px rgba(220,38,38,0.28)' : '0 10px 32px rgba(15,118,110,0.28)',
         padding:'1.375rem 1.5rem', position:'relative', overflow:'hidden',
       }}>
-        <div style={{ position:'absolute', top:-40, right:-40, width:160, height:160, borderRadius:'50%', background:'rgba(255,255,255,0.06)', pointerEvents:'none' }} />
+        <div style={{ position:'absolute', top:-40, right:-40, width:160, height:160, borderRadius:'50%', background:'rgba(255,255,255,0.06)', pointerEvents:'none' }}/>
         <div style={{ display:'grid', gridTemplateColumns:'1.4fr 1fr 1fr 1fr', gap:'1rem', alignItems:'center', position:'relative' }}>
-          <div>
+          <div style={{ minWidth:0 }}>
             <p style={{ fontSize:'0.6rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', color:'rgba(255,255,255,0.55)', marginBottom:'0.3rem' }}>Total Debt</p>
-            <p style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'2rem', fontWeight:800, letterSpacing:'-0.04em', color:'white', lineHeight:1 }}>KES {totalDebt.toLocaleString()}</p>
-            <p style={{ fontSize:'0.65rem', color:'rgba(255,255,255,0.5)', marginTop:'0.25rem' }}>of KES {totalOriginal.toLocaleString()} original · {paidPct}% paid</p>
+            <p style={{
+              fontFamily:'Space Grotesk,sans-serif',
+              fontSize: totalDebt > 9_999_999 ? '1.4rem' : totalDebt > 999_999 ? '1.6rem' : '2rem',
+              fontWeight:800, letterSpacing:'-0.04em', color:'white', lineHeight:1,
+              whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
+            }}>{fmtAdaptive(totalDebt)}</p>
+            <p style={{ fontSize:'0.65rem', color:'rgba(255,255,255,0.5)', marginTop:'0.25rem', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>of {fmtAdaptive(totalOriginal)} original · {paidPct}% paid</p>
           </div>
           {[
             { label:'Loans',         value:`${loans.length}`, sub:'total'          },
-            { label:'Monthly Pmts',  value:`KES ${totalMonthly.toLocaleString()}`,  sub:'per month'       },
+            { label:'Monthly Pmts',  value: fmtAdaptive(totalMonthly), sub:'per month'       },
             { label:'Overdue',       value:`${overdue}`,       sub: overdue > 0 ? '⚠ needs attention' : '✓ all current' },
           ].map(k => (
-            <div key={k.label} style={{ background:'rgba(255,255,255,0.12)', backdropFilter:'blur(8px)', border:'1px solid rgba(255,255,255,0.18)', borderRadius:10, padding:'0.75rem 1rem' }}>
+            <div key={k.label} style={{ background:'rgba(255,255,255,0.12)', backdropFilter:'blur(8px)', border:'1px solid rgba(255,255,255,0.18)', borderRadius:10, padding:'0.75rem 1rem', minWidth:0 }}>
               <p style={{ fontSize:'0.6rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'rgba(255,255,255,0.55)', marginBottom:'0.2rem' }}>{k.label}</p>
-              <p style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'1.1rem', fontWeight:800, color:'white', lineHeight:1.2 }}>{k.value}</p>
+              <p style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'1.1rem', fontWeight:800, color:'white', lineHeight:1.2, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{k.value}</p>
               <p style={{ fontSize:'0.6rem', color:'rgba(255,255,255,0.5)', marginTop:'0.1rem' }}>{k.sub}</p>
             </div>
           ))}
@@ -343,7 +362,7 @@ export function LoansClient({ loans }: { loans: Loan[] }) {
             <span style={{ fontSize:'0.68rem', color:'white', fontWeight:700, fontFamily:'Space Grotesk,sans-serif' }}>{paidPct}% paid off</span>
           </div>
           <div style={{ height:5, background:'rgba(255,255,255,0.18)', borderRadius:999, overflow:'hidden' }}>
-            <div style={{ height:'100%', width:`${paidPct}%`, background:'rgba(255,255,255,0.85)', borderRadius:999, transition:'width 0.8s cubic-bezier(0.16,1,0.3,1)' }} />
+            <div style={{ height:'100%', width:`${paidPct}%`, background:'rgba(255,255,255,0.85)', borderRadius:999, transition:'width 0.8s cubic-bezier(0.16,1,0.3,1)' }}/>
           </div>
         </div>
       </div>
@@ -402,13 +421,18 @@ export function LoansClient({ loans }: { loans: Loan[] }) {
 
                 {/* Balance + progress */}
                 <div className="flex items-end justify-between mb-3">
-                  <div>
-                    <div style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'1.5rem', fontWeight:800, color:st.color, letterSpacing:'-0.04em', lineHeight:1.1 }}>
-                      KES {l.balance.toLocaleString()}
+                  <div style={{ minWidth:0, flex:1, marginRight:'0.5rem' }}>
+                    <div style={{
+                      fontFamily:'Space Grotesk,sans-serif',
+                      fontSize: l.balance > 9_999_999 ? '1.1rem' : l.balance > 999_999 ? '1.25rem' : '1.5rem',
+                      fontWeight:800, color:st.color, letterSpacing:'-0.04em', lineHeight:1.1,
+                      whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
+                    }}>
+                      {fmtAdaptive(l.balance)}
                     </div>
-                    <div style={{ fontSize:'0.7rem', color:'var(--text-secondary)', marginTop:'0.2rem' }}>of KES {l.originalAmt.toLocaleString()} original</div>
+                    <div style={{ fontSize:'0.7rem', color:'var(--text-secondary)', marginTop:'0.2rem', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>of {fmtAdaptive(l.originalAmt)} original</div>
                   </div>
-                  <div style={{ textAlign:'right' }}>
+                  <div style={{ textAlign:'right', flexShrink:0 }}>
                     <div style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'1.5rem', fontWeight:800, color:st.color, lineHeight:1, opacity:0.88 }}>{st.paidPct}%</div>
                     <div style={{ fontSize:'0.65rem', color:'var(--text-muted)' }}>paid off</div>
                   </div>
@@ -423,7 +447,7 @@ export function LoansClient({ loans }: { loans: Loan[] }) {
                   <div style={{ display:'flex', gap:'1rem' }}>
                     <div>
                       <div style={{ fontSize:'0.65rem', color:'var(--text-muted)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em' }}>Monthly</div>
-                      <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, fontSize:'0.85rem', color:'var(--text-primary)' }}>KES {l.monthlyPmt.toLocaleString()}</div>
+                      <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, fontSize:'0.85rem', color:'var(--text-primary)', whiteSpace:'nowrap' }}>{fmtAdaptive(l.monthlyPmt)}</div>
                     </div>
                     <div>
                       <div style={{ fontSize:'0.65rem', color:'var(--text-muted)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em' }}>Next Due</div>
