@@ -1,28 +1,28 @@
-fix: replace all gradient hero banners with unified dashboard-hero style
+fix: replace dark-only HSL tokens with theme-aware CSS vars in globals.css
 
-The root problem was finally identified and correctly fixed:
+Root cause identified: globals.css had two :root blocks. The first
+defined --surface-elevated, --surface-secondary, --text-primary-hsl,
+--text-muted-hsl etc as always-dark navy values (designed for dark
+mode only). The dashboard hero CSS classes used these dark-only tokens,
+causing dark backgrounds in light mode with inherited black page text
+sitting on top — invisible text across all sections.
 
-Every section (Transactions, Budgets, Net Worth, Loans, Goals, Reports)
-was using raw gradient divs with hardcoded white text:
-  background: 'linear-gradient(135deg, #16A34A 0%, #0070F3 55%...)'
-  color: 'rgba(255,255,255,0.55)'  <-- invisible on light backgrounds
+Classes fixed (all now use theme-aware tokens):
+- .dashboard-hero:      --bg-card instead of hsl(--surface-elevated)
+- .hero-stat-card:      --bg-hover instead of hsl(--surface-secondary)
+- .hero-stat-value:     explicit color: var(--text-primary)
+- .hero-label:          --text-muted instead of hsl(--text-muted-hsl)
+- .hero-sub:            --text-muted instead of hsl(--text-muted-hsl)
+- .hero-progress-label: --text-muted instead of hsl(--text-muted-hsl)
+- .hero-progress-val:   --text-primary instead of hsl(--text-primary-hsl)
+- .hero-progress-track: --bg-hover instead of hsl(--surface-secondary)
+- .hero-progress-bar:   --text-primary instead of hsl(--text-primary-hsl)
+- .transaction-row:     --bg-hover instead of hsl(--surface-secondary)
+- .skeleton-row/lines:  --bg-hover instead of rgba(255,255,255,0.05)
+- .balance-text:        --text-primary instead of hsl(--text-primary-hsl)
+- .mobile-nav-item:     --text-muted/primary instead of HSL tokens
+- .mobile-nav:          --border and color-mix bg instead of HSL tokens
 
-The dashboard uses .dashboard-hero CSS class which resolves to
-hsl(var(--surface-elevated)) -- a dark card in dark mode, a light
-card in light mode, with text always on var(--text-primary).
-
-This commit replaces ALL hero banners across all 6 sections with the
-exact same .dashboard-hero + .hero-stat-card pattern used by the
-dashboard. Every section now looks and behaves identically to the
-dashboard hero area:
-
-- Transactions: Net Balance + Income/Expense/Count stat cards
-- Budgets:      Total Budgeted + Budgets/OnTrack/OverBudget cards
-- Net Worth:    Net Worth + Assets/Liabilities/DebtRatio cards
-- Loans:        Total Debt + Loans/MonthlyPmts/Overdue cards
-- Goals:        Total Saved + Goals/Achieved/AlmostThere cards
-- Reports:      Net Savings + Income/Expenses/SavingRate cards
-
-All amounts use fmtAdaptive(). All status colors use CSS token vars
-(var(--success), var(--danger), var(--warning), var(--text-primary)).
-No hardcoded hex colors remain in any hero banner across the entire app.
+Result: all hero panels, transaction rows, skeleton loaders, and the
+balance text now correctly adapt between light and dark themes. Text
+is always readable regardless of the active theme.
