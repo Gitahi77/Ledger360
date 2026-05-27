@@ -88,97 +88,17 @@
   --row-padding: 4px;
 }
 
-/* ═══════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════
    LEDGER360 UNIFIED COLOR SYSTEM
    Copyright (c) 2024–present Eric Gitahi. All rights reserved.
 
-   Single source of truth. All legacy variable names now resolve
-   through the HSL token layer above. No more dual systems.
-   ═══════════════════════════════════════════════════════════ */
+   Industry-standard pattern: :root = light (accessible default),
+   [data-theme="dark"] = dark override. Matches layout.tsx init script.
+   ═══════════════════════════════════════════════════════ */
 
-/* ── Default (Dark) Mode — Mercury-inspired deep palette ─── */
+/* ── Light Mode (default) ───────────────────────────────── */
 :root {
-  /* Surfaces — deep blue-grey, calm and professional */
-  --bg-app:     hsl(222, 47%, 8%);
-  --bg-card:    hsl(222, 38%, 12%);
-  --bg-sidebar: hsl(222, 42%, 10%);
-  --bg-hover:   hsl(215, 30%, 16%);
-
-  /* Text hierarchy — high contrast, not blinding */
-  --text-primary:   hsl(210, 40%, 96%);
-  --text-secondary: hsl(215, 20%, 68%);
-  --text-muted:     hsl(215, 16%, 50%);
-
-  /* Brand blue — slightly warmer than pure Stripe, calm */
-  --primary:       hsl(213, 94%, 60%);
-  --primary-grad:  linear-gradient(160deg, hsl(213,100%,72%) 0%, hsl(213,94%,60%) 50%, hsl(213,90%,48%) 100%);
-  --primary-light: hsl(213, 60%, 16%);
-  --primary-dark:  hsl(213, 90%, 44%);
-
-  /* Success — Monzo-teal inspired, warmer than pure green */
-  --success:       hsl(152, 60%, 45%);
-  --success-grad:  linear-gradient(160deg, hsl(152,65%,58%) 0%, hsl(152,60%,45%) 100%);
-  --success-light: hsl(152, 40%, 10%);
-  --success-text:  hsl(152, 65%, 72%);
-
-  /* Danger — Copilot red, readable on dark */
-  --danger:        hsl(0, 78%, 62%);
-  --danger-grad:   linear-gradient(160deg, hsl(0,82%,72%) 0%, hsl(0,78%,62%) 100%);
-  --danger-light:  hsl(0, 50%, 12%);
-  --danger-text:   hsl(0, 82%, 80%);
-
-  /* Warning — warm amber, never anxiety-inducing */
-  --warning:       hsl(38, 88%, 56%);
-  --warning-grad:  linear-gradient(160deg, hsl(38,92%,68%) 0%, hsl(38,88%,56%) 100%);
-  --warning-light: hsl(38, 60%, 10%);
-  --warning-text:  hsl(38, 90%, 78%);
-
-  /* Accent palette — Mercury purple + teal */
-  --purple:        hsl(258, 70%, 72%);
-  --purple-light:  hsl(258, 45%, 14%);
-  --teal:          hsl(172, 66%, 50%);
-  --teal-light:    hsl(172, 40%, 10%);
-  --sky:           hsl(199, 89%, 58%);
-  --sky-light:     hsl(199, 55%, 12%);
-
-  /* Chart palette — vibrant but harmonious on dark */
-  --chart-income:  hsl(152, 60%, 52%);
-  --chart-expense: hsl(0, 78%, 62%);
-  --chart-savings: hsl(213, 94%, 60%);
-  --chart-1: hsl(213, 94%, 60%);
-  --chart-2: hsl(152, 60%, 52%);
-  --chart-3: hsl(38, 88%, 56%);
-  --chart-4: hsl(258, 70%, 72%);
-  --chart-5: hsl(172, 66%, 50%);
-  --chart-6: hsl(0, 78%, 62%);
-
-  /* Borders */
-  --border:       hsl(215, 27%, 22%);
-  --border-light: hsl(215, 27%, 18%);
-
-  /* Shadows — tuned for dark surfaces */
-  --shadow-sm:  0 1px 3px rgba(0,0,0,0.5), 0 1px 1px rgba(0,0,0,0.4);
-  --shadow-md:  0 4px 12px rgba(0,0,0,0.55), 0 2px 4px rgba(0,0,0,0.35);
-  --shadow-lg:  0 12px 32px rgba(0,0,0,0.65);
-  --btn-shadow: 0 1px 0 rgba(255,255,255,0.12) inset, 0 -2px 0 rgba(0,0,0,0.3) inset, 0 4px 12px rgba(59,130,246,0.35);
-
-  /* Layout */
-  --sidebar-width: 232px;
-  --header-height: 52px;
-  --radius:    8px;
-  --radius-sm: 6px;
-
-  /* Semantic aliases */
-  --background: var(--bg-app);
-  --foreground: var(--text-primary);
-  --secondary:  var(--bg-card);
-  --secondary-foreground: var(--text-secondary);
-  --success-light-bg: var(--success-light);
-}
-
-/* ── Light Mode — clean, professional, airy ──────────────── */
-[data-theme="light"] {
-  /* Surfaces — near-white with subtle blue tint */
+  /* Surfaces — near-white with subtle blue tint, airy and clean */
   --bg-app:     hsl(220, 33%, 97%);
   --bg-card:    hsl(0, 0%, 100%);
   --bg-sidebar: hsl(0, 0%, 100%);
@@ -189,31 +109,31 @@
   --text-secondary: hsl(215, 25%, 35%);
   --text-muted:     hsl(215, 16%, 52%);
 
-  /* Brand */
+  /* Brand blue */
   --primary:       hsl(213, 94%, 48%);
   --primary-grad:  linear-gradient(160deg, hsl(213,100%,60%) 0%, hsl(213,94%,48%) 50%, hsl(213,90%,38%) 100%);
   --primary-light: hsl(213, 90%, 94%);
   --primary-dark:  hsl(213, 90%, 36%);
 
-  /* Success */
+  /* Success — Monzo-teal warmth */
   --success:       hsl(152, 55%, 38%);
   --success-grad:  linear-gradient(160deg, hsl(152,60%,48%) 0%, hsl(152,55%,38%) 100%);
   --success-light: hsl(152, 60%, 94%);
   --success-text:  hsl(152, 55%, 22%);
 
-  /* Danger */
+  /* Danger — Copilot red */
   --danger:        hsl(0, 72%, 50%);
   --danger-grad:   linear-gradient(160deg, hsl(0,78%,60%) 0%, hsl(0,72%,50%) 100%);
   --danger-light:  hsl(0, 86%, 96%);
   --danger-text:   hsl(0, 72%, 30%);
 
-  /* Warning */
+  /* Warning — calm amber */
   --warning:       hsl(38, 92%, 44%);
   --warning-grad:  linear-gradient(160deg, hsl(38,95%,56%) 0%, hsl(38,92%,44%) 100%);
   --warning-light: hsl(38, 95%, 94%);
   --warning-text:  hsl(38, 85%, 28%);
 
-  /* Accents */
+  /* Accent palette */
   --purple:        hsl(258, 60%, 55%);
   --purple-light:  hsl(258, 70%, 95%);
   --teal:          hsl(172, 58%, 40%);
@@ -242,7 +162,92 @@
   --shadow-lg: 0 10px 20px rgba(15,23,42,0.10), 0 4px 8px rgba(15,23,42,0.06);
   --btn-shadow: 0 1px 0 rgba(255,255,255,0.2) inset, 0 -2px 0 rgba(0,0,0,0.15) inset, 0 4px 8px rgba(0,112,243,0.3);
 
+  /* Layout */
+  --sidebar-width: 232px;
+  --header-height: 52px;
+  --radius:    8px;
+  --radius-sm: 6px;
+
+  /* Card surface tokens */
+  --card-bg:      hsl(0, 0%, 100%);
+  --card-bg-grad: linear-gradient(160deg, hsl(0,0%,100%) 0%, hsl(220,33%,98%) 100%);
+  --kpi-bg:       hsl(0, 0%, 100%);
+  --kpi-bg-grad:  linear-gradient(160deg, hsl(0,0%,100%) 0%, hsl(213,50%,99%) 100%);
+
   /* Semantic aliases */
+  --background: var(--bg-app);
+  --foreground: var(--text-primary);
+  --secondary:  var(--bg-card);
+  --secondary-foreground: var(--text-secondary);
+  --success-light-bg: var(--success-light);
+}
+
+/* ── Dark Mode — Mercury-inspired deep blue-grey palette ─── */
+[data-theme="dark"] {
+  /* Surfaces — deep blue-grey, calm and professional */
+  --bg-app:     hsl(222, 47%, 8%);
+  --bg-card:    hsl(222, 38%, 12%);
+  --bg-sidebar: hsl(222, 42%, 10%);
+  --bg-hover:   hsl(215, 30%, 16%);
+
+  /* Text hierarchy — high contrast, not blinding */
+  --text-primary:   hsl(210, 40%, 96%);
+  --text-secondary: hsl(215, 20%, 68%);
+  --text-muted:     hsl(215, 16%, 50%);
+
+  /* Brand blue — lighter on dark for readability */
+  --primary:       hsl(213, 94%, 60%);
+  --primary-grad:  linear-gradient(160deg, hsl(213,100%,72%) 0%, hsl(213,94%,60%) 50%, hsl(213,90%,48%) 100%);
+  --primary-light: hsl(213, 60%, 16%);
+  --primary-dark:  hsl(213, 90%, 44%);
+
+  /* Success — Monzo-teal, vibrant on dark */
+  --success:       hsl(152, 60%, 45%);
+  --success-grad:  linear-gradient(160deg, hsl(152,65%,58%) 0%, hsl(152,60%,45%) 100%);
+  --success-light: hsl(152, 40%, 10%);
+  --success-text:  hsl(152, 65%, 72%);
+
+  /* Danger — readable on dark backgrounds */
+  --danger:        hsl(0, 78%, 62%);
+  --danger-grad:   linear-gradient(160deg, hsl(0,82%,72%) 0%, hsl(0,78%,62%) 100%);
+  --danger-light:  hsl(0, 50%, 12%);
+  --danger-text:   hsl(0, 82%, 80%);
+
+  /* Warning — warm amber, never anxiety-inducing */
+  --warning:       hsl(38, 88%, 56%);
+  --warning-grad:  linear-gradient(160deg, hsl(38,92%,68%) 0%, hsl(38,88%,56%) 100%);
+  --warning-light: hsl(38, 60%, 10%);
+  --warning-text:  hsl(38, 90%, 78%);
+
+  /* Accent palette */
+  --purple:        hsl(258, 70%, 72%);
+  --purple-light:  hsl(258, 45%, 14%);
+  --teal:          hsl(172, 66%, 50%);
+  --teal-light:    hsl(172, 40%, 10%);
+  --sky:           hsl(199, 89%, 58%);
+  --sky-light:     hsl(199, 55%, 12%);
+
+  /* Chart palette */
+  --chart-income:  hsl(152, 60%, 52%);
+  --chart-expense: hsl(0, 78%, 62%);
+  --chart-savings: hsl(213, 94%, 60%);
+  --chart-1: hsl(213, 94%, 60%);
+  --chart-2: hsl(152, 60%, 52%);
+  --chart-3: hsl(38, 88%, 56%);
+  --chart-4: hsl(258, 70%, 72%);
+  --chart-5: hsl(172, 66%, 50%);
+  --chart-6: hsl(0, 78%, 62%);
+
+  /* Borders */
+  --border:       hsl(215, 27%, 22%);
+  --border-light: hsl(215, 27%, 18%);
+
+  /* Shadows — tuned for dark surfaces */
+  --shadow-sm:  0 1px 3px rgba(0,0,0,0.5), 0 1px 1px rgba(0,0,0,0.4);
+  --shadow-md:  0 4px 12px rgba(0,0,0,0.55), 0 2px 4px rgba(0,0,0,0.35);
+  --shadow-lg:  0 12px 32px rgba(0,0,0,0.65);
+  --btn-shadow: 0 1px 0 rgba(255,255,255,0.12) inset, 0 -2px 0 rgba(0,0,0,0.3) inset, 0 4px 12px rgba(59,130,246,0.35);
+
   --background: var(--bg-app);
   --foreground: var(--text-primary);
   --secondary:  var(--bg-card);
@@ -391,20 +396,16 @@ select, input { font-family: inherit; }
 
 /* ── Cards ───────────────────────────────────────────── */
 .card {
-  background: linear-gradient(160deg, #FFFFFF 0%, #FAFBFF 100%);
+  background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 1.25rem 1.375rem;
   box-shadow: var(--shadow-sm);
   transition: box-shadow 0.2s, transform 0.2s;
-  min-width: 0;   /* prevents grid children from blowing out */
-  /* NOTE: do NOT add overflow:hidden here — it clips drop-shadow on donut charts */
+  min-width: 0;
 }
 .card:hover { box-shadow: var(--shadow-md); }
 
-[data-theme="dark"] .card {
-  background: linear-gradient(160deg, #1F1F23 0%, #18181B 100%);
-}
 
 .card-title {
   font-family: 'Space Grotesk', sans-serif;
@@ -415,18 +416,18 @@ select, input { font-family: inherit; }
 
 /* ── KPI Cards ───────────────────────────────────────────── */
 .kpi-card {
-  background: linear-gradient(160deg, #FFFFFF 0%, #F8FAFF 100%);
+  background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 1rem 1.125rem;
   display: flex; align-items: flex-start; gap: 0.75rem;
-  box-shadow: 0 1px 3px rgba(15,23,42,0.06), 0 1px 1px rgba(15,23,42,0.04);
+  box-shadow: var(--shadow-sm);
   transition: all 0.2s;
   position: relative; overflow: hidden;
-  min-width: 0; /* prevent overflow in grid */
+  min-width: 0;
 }
 .kpi-card:hover {
-  box-shadow: 0 8px 20px rgba(15,23,42,0.10), 0 2px 6px rgba(15,23,42,0.06);
+  box-shadow: var(--shadow-md);
   transform: translateY(-2px);
 }
 .kpi-card::after {
@@ -438,15 +439,7 @@ select, input { font-family: inherit; }
 .kpi-card.k-green::after  { background: var(--success-grad); box-shadow: 0 2px 8px rgba(22,163,74,0.4); }
 .kpi-card.k-red::after    { background: var(--danger-grad);  box-shadow: 0 2px 8px rgba(220,38,38,0.4); }
 .kpi-card.k-amber::after  { background: var(--warning-grad); box-shadow: 0 2px 8px rgba(217,119,6,0.4); }
-.kpi-card.k-purple::after { background: linear-gradient(160deg, #A78BFA, #7C3AED); box-shadow: 0 2px 8px rgba(124,58,237,0.4); }
-
-[data-theme="dark"] .kpi-card {
-  background: linear-gradient(160deg, #222226 0%, #18181B 100%);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.5), 0 1px 1px rgba(0,0,0,0.4);
-}
-[data-theme="dark"] .kpi-card:hover {
-  box-shadow: 0 8px 24px rgba(0,0,0,0.6), 0 2px 8px rgba(0,0,0,0.4);
-}
+.kpi-card.k-purple::after { background: linear-gradient(160deg, var(--purple), var(--purple-light)); box-shadow: 0 2px 8px rgba(124,58,237,0.4); }
 
 .kpi-icon {
   width: 36px; height: 36px; border-radius: var(--radius-sm);
@@ -529,8 +522,8 @@ select, input { font-family: inherit; }
 }
 
 [data-theme="dark"] .segmented-control {
-  background: linear-gradient(180deg, #3F3F46 0%, #27272A 100%);
-  border-color: #52525B;
+  background: var(--bg-hover);
+  border-color: var(--border);
   box-shadow: inset 0 2px 5px rgba(0,0,0,0.5), inset 0 1px 2px rgba(0,0,0,0.4);
 }
 
