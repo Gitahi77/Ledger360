@@ -8,33 +8,14 @@ import { SmartUpload } from '@/components/SmartUpload';
 import { fmtAdaptive } from '@/lib/format';
 import { Plus, Trash2, Loader2, X, FileDown, LayoutGrid } from 'lucide-react';
 
-type Budget = {
-  id: string; name: string; category: string; icon: string;
-  limit: number; spent: number; period: string;
-};
+type Budget = { id: string; name: string; category: string; icon: string; limit: number; spent: number; period: string };
 type Category = { id: string; name: string; type: string };
 
-// All colours via CSS token vars — adapts to both light and dark automatically
 function budgetStyle(limit: number, spent: number) {
   const pct = Math.min(100, limit > 0 ? (spent / limit) * 100 : 0);
-  if (pct >= 100) return {
-    barGrad: 'linear-gradient(90deg, var(--danger), hsl(0,78%,72%))',
-    badge: 'badge-danger', label: 'Over Budget',
-    numColor: 'var(--danger)', glow: 'rgba(220,38,38,0.4)',
-    borderColor: 'var(--danger)', pct: 100,
-  };
-  if (pct >= 80) return {
-    barGrad: 'linear-gradient(90deg, var(--warning), hsl(38,92%,68%))',
-    badge: 'badge-warning', label: 'Warning',
-    numColor: 'var(--warning)', glow: 'rgba(217,119,6,0.35)',
-    borderColor: 'var(--warning)', pct,
-  };
-  return {
-    barGrad: 'linear-gradient(90deg, var(--success), hsl(152,65%,62%))',
-    badge: 'badge-success', label: 'On Track',
-    numColor: 'var(--success)', glow: 'rgba(22,163,74,0.35)',
-    borderColor: 'var(--success)', pct,
-  };
+  if (pct >= 100) return { barColor:'var(--danger)',  badge:'badge-danger',  label:'Over Budget', numColor:'var(--danger)',  borderColor:'var(--danger)',  glow:'rgba(220,38,38,0.35)',  pct:100 };
+  if (pct >= 80)  return { barColor:'var(--warning)', badge:'badge-warning', label:'Warning',     numColor:'var(--warning)', borderColor:'var(--warning)', glow:'rgba(217,119,6,0.3)',   pct };
+  return               { barColor:'var(--success)', badge:'badge-success', label:'On Track',    numColor:'var(--success)', borderColor:'var(--success)', glow:'rgba(22,163,74,0.3)',   pct };
 }
 
 function AddBudgetModal({ categories, onClose }: { categories: Category[]; onClose: () => void }) {
@@ -42,11 +23,10 @@ function AddBudgetModal({ categories, onClose }: { categories: Category[]; onClo
   const [, startT] = useTransition();
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
-  const [name,       setName]       = useState('');
+  const [name, setName]             = useState('');
   const [categoryId, setCategoryId] = useState('');
-  const [limitAmt,   setLimitAmt]   = useState('');
-  const [period,     setPeriod]     = useState('monthly');
-
+  const [limitAmt, setLimitAmt]     = useState('');
+  const [period, setPeriod]         = useState('monthly');
   const expenseCats = categories.filter(c => c.type === 'expense');
 
   async function handleSubmit(e: React.FormEvent) {
@@ -55,11 +35,9 @@ function AddBudgetModal({ categories, onClose }: { categories: Category[]; onClo
     setLoading(true); setError('');
     try {
       await addBudget({ name, categoryId, limitAmt: parseFloat(limitAmt), period });
-      startT(() => router.refresh());
-      onClose();
-    } catch (err: any) {
-      setError(err.message ?? 'Something went wrong.');
-    } finally { setLoading(false); }
+      startT(() => router.refresh()); onClose();
+    } catch (err: any) { setError(err.message ?? 'Something went wrong.'); }
+    finally { setLoading(false); }
   }
 
   return (
@@ -73,22 +51,19 @@ function AddBudgetModal({ categories, onClose }: { categories: Category[]; onClo
         <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:'0.875rem' }}>
           <div>
             <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Budget Name</label>
-            <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
-              value={name} onChange={e => setName(e.target.value)} required placeholder="e.g. Monthly Groceries" />
+            <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }} value={name} onChange={e => setName(e.target.value)} required placeholder="e.g. Monthly Groceries" />
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.75rem' }}>
             <div>
               <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Category</label>
-              <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
-                value={categoryId} onChange={e => setCategoryId(e.target.value)} required>
+              <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }} value={categoryId} onChange={e => setCategoryId(e.target.value)} required>
                 <option value="">Select…</option>
                 {expenseCats.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
             <div>
               <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Period</label>
-              <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
-                value={period} onChange={e => setPeriod(e.target.value)}>
+              <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }} value={period} onChange={e => setPeriod(e.target.value)}>
                 <option value="weekly">Weekly</option>
                 <option value="monthly">Monthly</option>
                 <option value="yearly">Yearly</option>
@@ -97,8 +72,7 @@ function AddBudgetModal({ categories, onClose }: { categories: Category[]; onClo
           </div>
           <div>
             <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Spending Limit (KES)</label>
-            <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
-              type="number" min="1" step="1" value={limitAmt} onChange={e => setLimitAmt(e.target.value)} required placeholder="0" />
+            <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }} type="number" min="1" step="1" value={limitAmt} onChange={e => setLimitAmt(e.target.value)} required placeholder="0" />
           </div>
           <button type="submit" disabled={loading} className="btn btn-primary" style={{ width:'100%', justifyContent:'center', padding:'0.7rem', marginTop:'0.25rem' }}>
             {loading ? <><Loader2 size={14} style={{ animation:'spin 1s linear infinite' }}/> Saving…</> : 'Create Budget'}
@@ -122,6 +96,7 @@ export function BudgetsClient({ budgets, categories, totalBudgeted, totalSpent, 
   const overBudget = budgets.filter(b => b.spent >= b.limit).length;
   const onTrack    = budgets.filter(b => (b.spent / b.limit) < 0.8).length;
   const overallPct = totalBudgeted > 0 ? Math.min(100, Math.round((totalSpent / totalBudgeted) * 100)) : 0;
+  const overallStatus = overallPct >= 100 ? { color:'var(--danger)', bar:'var(--danger)' } : overallPct >= 80 ? { color:'var(--warning)', bar:'var(--warning)' } : { color:'var(--success)', bar:'var(--success)' };
 
   async function handleDelete(id: string) {
     if (!confirm('Delete this budget?')) return;
@@ -139,63 +114,59 @@ export function BudgetsClient({ budgets, categories, totalBudgeted, totalSpent, 
       <div className="flex items-center justify-between mb-5 animate-in flex-wrap gap-3">
         <div/>
         <div className="flex items-center gap-2">
-          <button className="btn btn-outline" onClick={() => setShowUpload(v => !v)} title="Import">
-            <FileDown size={13}/> Import
-          </button>
+          <button className="btn btn-outline" onClick={() => setShowUpload(v => !v)}><FileDown size={13}/> Import</button>
           <button className="btn btn-primary" onClick={() => setShowAdd(true)}><Plus size={13}/> Add Budget</button>
         </div>
       </div>
 
       {showUpload && (
         <div className="card mb-5 animate-in">
-          <div style={{ fontSize:'0.75rem', color:'var(--text-muted)', marginBottom:'0.75rem', lineHeight:1.5 }}>
-            <strong style={{ color:'var(--text-primary)' }}>Import bank statement</strong> — AI parses your PDF, CSV or screenshot and creates transactions.
+          <div style={{ fontSize:'0.75rem', color:'var(--text-muted)', marginBottom:'0.75rem' }}>
+            <strong style={{ color:'var(--text-primary)' }}>Import bank statement</strong> — AI parses your PDF, CSV or screenshot.
           </div>
           <SmartUpload onDone={() => setShowUpload(false)} />
         </div>
       )}
 
-      {/* Hero Banner — token-based gradient, no hardcoded hex */}
-      <div className="animate-in mb-5" style={{
-        borderRadius:12,
-        background:'linear-gradient(135deg, var(--warning) 0%, var(--purple) 55%, var(--primary) 100%)',
-        boxShadow:'0 10px 32px rgba(217,119,6,0.22)',
-        padding:'1.375rem 1.5rem',
-        position:'relative', overflow:'hidden',
-      }}>
-        <div style={{ position:'absolute', top:-40, right:-40, width:160, height:160, borderRadius:'50%', background:'rgba(255,255,255,0.06)', pointerEvents:'none' }}/>
-        <div style={{ display:'grid', gridTemplateColumns:'1.4fr 1fr 1fr 1fr', gap:'1rem', alignItems:'center', position:'relative' }}>
-          <div style={{ minWidth:0 }}>
-            <p style={{ fontSize:'0.6rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', color:'rgba(255,255,255,0.55)', marginBottom:'0.3rem' }}>Total Budgeted</p>
+      {/* Hero — matches dashboard exactly */}
+      <div className="dashboard-hero animate-in mb-5">
+        <div className="dashboard-hero-grid">
+          <div>
+            <p className="hero-label">Total Budgeted</p>
             <p style={{
               fontFamily:'Space Grotesk,sans-serif',
-              fontSize: totalBudgeted > 9_999_999 ? '1.4rem' : totalBudgeted > 999_999 ? '1.6rem' : '2rem',
-              fontWeight:800, letterSpacing:'-0.04em', color:'white', lineHeight:1,
-              whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
+              fontSize: totalBudgeted > 9_999_999 ? '1.6rem' : totalBudgeted > 999_999 ? '1.9rem' : '2.25rem',
+              fontWeight:800, letterSpacing:'-0.04em', lineHeight:1,
+              color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
             }}>{fmtAdaptive(totalBudgeted)}</p>
-            <p style={{ fontSize:'0.65rem', color:'rgba(255,255,255,0.5)', marginTop:'0.25rem', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-              {fmtAdaptive(totalSpent)} spent · {overallPct}% used
-            </p>
-          </div>
-          {[
-            { label:'Budgets',     value:`${budgets.length}`, sub:'total'         },
-            { label:'On Track',    value:`${onTrack}`,         sub:'under 80%'    },
-            { label:'Over Budget', value:`${overBudget}`,      sub:'needs action'  },
-          ].map(k => (
-            <div key={k.label} style={{ background:'rgba(255,255,255,0.12)', backdropFilter:'blur(8px)', border:'1px solid rgba(255,255,255,0.18)', borderRadius:10, padding:'0.75rem 1rem' }}>
-              <p style={{ fontSize:'0.6rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'rgba(255,255,255,0.55)', marginBottom:'0.2rem' }}>{k.label}</p>
-              <p style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'1.5rem', fontWeight:800, color:'white', lineHeight:1 }}>{k.value}</p>
-              <p style={{ fontSize:'0.6rem', color:'rgba(255,255,255,0.5)', marginTop:'0.1rem' }}>{k.sub}</p>
+            <p className="hero-sub">{fmtAdaptive(totalSpent)} spent · {overallPct}% used</p>
+            {/* Overall progress bar */}
+            <div className="hero-progress-wrap" style={{ marginTop:'0.75rem', paddingTop:'0.75rem' }}>
+              <div className="hero-progress-labels">
+                <span className="hero-progress-label">Overall spend</span>
+                <span className="hero-progress-val tabular" style={{ color: overallStatus.color }}>{overallPct}%</span>
+              </div>
+              <div className="hero-progress-track">
+                <div className="hero-progress-bar" style={{ width:`${overallPct}%`, backgroundColor: overallStatus.bar }}/>
+              </div>
             </div>
-          ))}
-        </div>
-        <div style={{ marginTop:'1rem' }}>
-          <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'0.35rem' }}>
-            <span style={{ fontSize:'0.68rem', color:'rgba(255,255,255,0.65)', fontWeight:600 }}>Overall spend</span>
-            <span style={{ fontSize:'0.68rem', color:'white', fontWeight:700, fontFamily:'Space Grotesk,sans-serif' }}>{overallPct}% of budget used</span>
           </div>
-          <div style={{ height:5, background:'rgba(255,255,255,0.18)', borderRadius:999, overflow:'hidden' }}>
-            <div style={{ height:'100%', width:`${overallPct}%`, background:'rgba(255,255,255,0.85)', borderRadius:999, transition:'width 0.8s cubic-bezier(0.16,1,0.3,1)' }}/>
+          <div className="hero-stats-grid">
+            <div className="hero-stat-card">
+              <p className="hero-label">Budgets</p>
+              <p className="hero-stat-value tabular" style={{ color:'var(--text-primary)' }}>{budgets.length}</p>
+              <p className="hero-sub">total</p>
+            </div>
+            <div className="hero-stat-card">
+              <p className="hero-label">On Track</p>
+              <p className="hero-stat-value tabular" style={{ color:'var(--success)' }}>{onTrack}</p>
+              <p className="hero-sub">under 80%</p>
+            </div>
+            <div className="hero-stat-card">
+              <p className="hero-label">Over Budget</p>
+              <p className="hero-stat-value tabular" style={{ color: overBudget > 0 ? 'var(--danger)' : 'var(--text-primary)' }}>{overBudget}</p>
+              <p className="hero-sub">{overBudget > 0 ? 'needs action' : 'all clear'}</p>
+            </div>
           </div>
         </div>
       </div>
@@ -229,7 +200,6 @@ export function BudgetsClient({ budgets, categories, totalBudgeted, totalSpent, 
                     </button>
                   </div>
                 </div>
-
                 <div className="flex items-end justify-between mb-3">
                   <div style={{ minWidth:0, flex:1, marginRight:'0.5rem' }}>
                     <div style={{
@@ -238,19 +208,17 @@ export function BudgetsClient({ budgets, categories, totalBudgeted, totalSpent, 
                       fontWeight:800, color:st.numColor, letterSpacing:'-0.04em', lineHeight:1.1,
                       whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
                     }}>{fmtAdaptive(b.spent)}</div>
-                    <div style={{ fontSize:'0.7rem', color:'var(--text-secondary)', marginTop:'0.2rem', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>of {fmtAdaptive(b.limit)}</div>
+                    <div style={{ fontSize:'0.7rem', color:'var(--text-secondary)', marginTop:'0.2rem' }}>of {fmtAdaptive(b.limit)}</div>
                   </div>
-                  <div style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'2rem', fontWeight:800, color:st.numColor, letterSpacing:'-0.05em', lineHeight:1, opacity:0.88, flexShrink:0 }}>
+                  <div style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'2rem', fontWeight:800, color:st.numColor, letterSpacing:'-0.05em', lineHeight:1, opacity:0.8, flexShrink:0 }}>
                     {Math.round(st.pct)}%
                   </div>
                 </div>
-
                 <div className="progress-track mb-3" style={{ height:8 }}>
-                  <div className="progress-fill" style={{ width:`${st.pct}%`, background:st.barGrad, boxShadow:`0 0 10px ${st.glow}` }}/>
+                  <div className="progress-fill" style={{ width:`${st.pct}%`, background:st.barColor, boxShadow:`0 0 8px ${st.glow}` }}/>
                 </div>
-
                 <div className="flex items-center justify-between">
-                  <span style={{ fontSize:'0.72rem', color:'var(--text-secondary)', fontWeight:500, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', flex:1, marginRight:'0.5rem' }}>
+                  <span style={{ fontSize:'0.72rem', color:'var(--text-secondary)', fontWeight:500, overflow:'hidden', textOverflow:'ellipsis', flex:1, marginRight:'0.5rem' }}>
                     {rem > 0 ? `${fmtAdaptive(rem)} left` : `${fmtAdaptive(b.spent - b.limit)} over`}
                   </span>
                   <span style={{ fontSize:'0.72rem', fontWeight:700, color:st.numColor, flexShrink:0 }}>{st.label}</span>

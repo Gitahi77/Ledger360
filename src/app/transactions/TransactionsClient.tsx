@@ -15,7 +15,6 @@ type Tx = {
   date: Date; note: string | null;
   category: { id: string; name: string; icon: string | null };
 };
-
 type Category = { id: string; name: string; type: string; icon: string | null };
 
 interface Props {
@@ -72,8 +71,7 @@ function AddTransactionModal({ categories, onClose }: { categories: Category[]; 
           <div className="segmented-control" style={{ width:'100%' }}>
             {(['expense', 'income'] as const).map(t => (
               <button key={t} type="button" onClick={() => { setType(t); setCategoryId(''); }}
-                className={`segmented-btn ${type === t ? 'active' : ''}`}
-                style={{ flex:1, justifyContent:'center' }}>
+                className={`segmented-btn ${type === t ? 'active' : ''}`} style={{ flex:1, justifyContent:'center' }}>
                 {t === 'income' ? '+ Income' : '− Expense'}
               </button>
             ))}
@@ -124,6 +122,7 @@ export function TransactionsClient({ transactions, categories, totalIncome, tota
   const params     = useSearchParams();
   const [, startT] = useTransition();
   const net        = totalIncome - totalExpense;
+  const netPositive = net >= 0;
 
   const [showAdd,    setShowAdd]    = useState(false);
   const [showUpload, setShowUpload] = useState(false);
@@ -146,7 +145,6 @@ export function TransactionsClient({ transactions, categories, totalIncome, tota
   }
 
   const periodLabel = PERIOD_LABELS[period] ?? 'This Period';
-  const netPositive = net >= 0;
 
   return (
     <>
@@ -157,80 +155,62 @@ export function TransactionsClient({ transactions, categories, totalIncome, tota
         <div className="flex items-center gap-3 flex-wrap">
           <div className="segmented-control">
             {(['all', 'income', 'expense'] as const).map(v => (
-              <button key={v} onClick={() => setParam('type', v)}
-                className={`segmented-btn ${typeFilter === v ? 'active' : ''}`}>
+              <button key={v} onClick={() => setParam('type', v)} className={`segmented-btn ${typeFilter === v ? 'active' : ''}`}>
                 {v === 'all' ? 'All' : v === 'income' ? 'Income' : 'Expenses'}
               </button>
             ))}
           </div>
           <div className="segmented-control">
             {(['this-week', 'this-month', 'this-year'] as const).map(v => (
-              <button key={v} onClick={() => setParam('period', v)}
-                className={`segmented-btn ${period === v ? 'active' : ''}`}>
+              <button key={v} onClick={() => setParam('period', v)} className={`segmented-btn ${period === v ? 'active' : ''}`}>
                 {v === 'this-week' ? 'Week' : v === 'this-month' ? 'Month' : 'Year'}
               </button>
             ))}
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button className="btn btn-outline" onClick={() => setShowUpload(v => !v)} title="Import from bank statement">
-            <FileDown size={13}/> Import
-          </button>
-          <button className="btn btn-primary" onClick={() => setShowAdd(true)}>
-            <Plus size={13}/> Add Entry
-          </button>
+          <button className="btn btn-outline" onClick={() => setShowUpload(v => !v)}><FileDown size={13}/> Import</button>
+          <button className="btn btn-primary" onClick={() => setShowAdd(true)}><Plus size={13}/> Add Entry</button>
         </div>
       </div>
 
       {showUpload && <div className="card mb-5 animate-in"><SmartUpload /></div>}
 
-      {/* Hero Banner — all colours via CSS tokens, no hardcoded hex */}
-      <div className="animate-in delay-1 mb-5" style={{
-        borderRadius:12,
-        background: netPositive
-          ? 'linear-gradient(135deg, var(--success) 0%, var(--primary) 60%, var(--teal) 100%)'
-          : 'linear-gradient(135deg, var(--danger) 0%, var(--purple) 55%, var(--teal) 100%)',
-        boxShadow: netPositive
-          ? '0 10px 32px rgba(22,163,74,0.28)'
-          : '0 10px 32px rgba(220,38,38,0.28)',
-        padding:'1.375rem 1.5rem',
-        position:'relative', overflow:'hidden',
-      }}>
-        <div style={{ position:'absolute', top:-40, right:-40, width:160, height:160, borderRadius:'50%', background:'rgba(255,255,255,0.06)', pointerEvents:'none' }}/>
-        <div style={{ display:'grid', gridTemplateColumns:'1.4fr 1fr 1fr', gap:'1rem', alignItems:'center', position:'relative' }}>
-          {/* Primary — Net Balance */}
-          <div style={{ minWidth:0 }}>
-            <p style={{ fontSize:'0.6rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', color:'rgba(255,255,255,0.55)', marginBottom:'0.3rem' }}>
-              Net Balance · {periodLabel}
-            </p>
+      {/* Summary Hero — matches dashboard style exactly */}
+      <div className="dashboard-hero animate-in delay-1 mb-5">
+        <div className="dashboard-hero-grid">
+          {/* Primary: Net Balance */}
+          <div>
+            <p className="hero-label">Net Balance · {periodLabel}</p>
             <p style={{
               fontFamily:'Space Grotesk,sans-serif',
-              fontSize: Math.abs(net) > 9_999_999 ? '1.4rem' : Math.abs(net) > 999_999 ? '1.6rem' : '2rem',
-              fontWeight:800, letterSpacing:'-0.04em',
-              color:'rgba(255,255,255,0.95)',
-              lineHeight:1, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
+              fontSize: Math.abs(net) > 9_999_999 ? '1.6rem' : Math.abs(net) > 999_999 ? '1.9rem' : '2.25rem',
+              fontWeight:800, letterSpacing:'-0.04em', lineHeight:1,
+              color: netPositive ? 'var(--success)' : 'var(--danger)',
+              whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
             }}>
               {netPositive ? '+' : '−'}{fmtAdaptive(Math.abs(net))}
             </p>
-            <p style={{ fontSize:'0.65rem', color:'rgba(255,255,255,0.5)', marginTop:'0.25rem' }}>
-              {transactions.length} transaction{transactions.length !== 1 ? 's' : ''} in period
-            </p>
+            <p className="hero-sub">{transactions.length} transaction{transactions.length !== 1 ? 's' : ''} in period</p>
           </div>
-          {/* Income stat */}
-          <div style={{ background:'rgba(255,255,255,0.12)', backdropFilter:'blur(8px)', border:'1px solid rgba(255,255,255,0.18)', borderRadius:10, padding:'0.75rem 1rem', minWidth:0 }}>
-            <p style={{ fontSize:'0.6rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'rgba(255,255,255,0.55)', marginBottom:'0.2rem' }}>{periodLabel} Income</p>
-            <p style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'1.2rem', fontWeight:800, color:'rgba(255,255,255,0.95)', lineHeight:1, letterSpacing:'-0.03em', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-              +{fmtAdaptive(totalIncome)}
-            </p>
-            <p style={{ fontSize:'0.6rem', color:'rgba(255,255,255,0.5)', marginTop:'0.15rem' }}>↑ coming in</p>
-          </div>
-          {/* Expense stat */}
-          <div style={{ background:'rgba(255,255,255,0.12)', backdropFilter:'blur(8px)', border:'1px solid rgba(255,255,255,0.18)', borderRadius:10, padding:'0.75rem 1rem', minWidth:0 }}>
-            <p style={{ fontSize:'0.6rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'rgba(255,255,255,0.55)', marginBottom:'0.2rem' }}>{periodLabel} Expenses</p>
-            <p style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'1.2rem', fontWeight:800, color:'rgba(255,255,255,0.85)', lineHeight:1, letterSpacing:'-0.03em', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-              −{fmtAdaptive(totalExpense)}
-            </p>
-            <p style={{ fontSize:'0.6rem', color:'rgba(255,255,255,0.5)', marginTop:'0.15rem' }}>↓ going out</p>
+
+          {/* Stat cards */}
+          <div className="hero-stats-grid">
+            <div className="hero-stat-card">
+              <p className="hero-label">{periodLabel} Income</p>
+              <p className="hero-stat-value tabular" style={{ color:'var(--success)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>+{fmtAdaptive(totalIncome)}</p>
+              <p className="hero-sub">↑ coming in</p>
+            </div>
+            <div className="hero-stat-card">
+              <p className="hero-label">{periodLabel} Expenses</p>
+              <p className="hero-stat-value tabular" style={{ color:'var(--danger)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>−{fmtAdaptive(totalExpense)}</p>
+              <p className="hero-sub">↓ going out</p>
+            </div>
+            <div className="hero-stat-card">
+              <p className="hero-label">Transactions</p>
+              <p className="hero-stat-value tabular" style={{ color:'var(--text-primary)' }}>{transactions.length}</p>
+              <p className="hero-sub">in period</p>
+            </div>
           </div>
         </div>
       </div>

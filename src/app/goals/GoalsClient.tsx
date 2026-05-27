@@ -224,47 +224,43 @@ export function GoalsClient({ goals }: { goals: Goal[] }) {
         <button className="btn btn-primary" onClick={() => setShowAdd(true)}><Plus size={13}/> New Goal</button>
       </div>
 
-      {/* Hero Banner */}
-      <div style={{ marginBottom:'1.5rem' }}>
-        <div className="hero-card animate-in" style={{
-          background:'linear-gradient(135deg, hsl(152,55%,38%) 0%, hsl(172,58%,36%) 50%, hsl(213,94%,48%) 100%)',
-          boxShadow:'0 10px 28px rgba(22,163,74,0.28)',
-        }}>
-          <div style={{ display:'grid', gridTemplateColumns:'1.2fr 1fr 1fr 1fr', gap:'1rem', alignItems:'center' }}>
-            <div style={{ minWidth:0 }}>
-              <p style={{ fontSize:'0.6rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', color:'rgba(255,255,255,0.55)', marginBottom:'0.35rem' }}>Total Saved</p>
-              {/* Adaptive number: compact at large values, prevents overflow */}
-              <p style={{
-                fontFamily:'Space Grotesk,sans-serif',
-                fontSize: totalSaved > 9_999_999 ? '1.25rem' : totalSaved > 999_999 ? '1.5rem' : '1.75rem',
-                fontWeight:800, letterSpacing:'-0.04em', color:'white', lineHeight:1,
-                whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
-              }}>
-                {fmtAdaptive(totalSaved)}
-              </p>
-              <p style={{ fontSize:'0.65rem', color:'rgba(255,255,255,0.5)', marginTop:'0.25rem', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                of {fmtAdaptive(totalTarget)}
-              </p>
-            </div>
-            {[
-              { label:'Goals',        value:`${goals.length}`,  sub:'total'     },
-              { label:'Achieved',     value:`${achieved}`,       sub:'complete'  },
-              { label:'Almost There', value:`${almostThere}`,    sub:'70%+ done' },
-            ].map(k => (
-              <div key={k.label} style={{ background:'rgba(255,255,255,0.12)', borderRadius:8, padding:'0.625rem 0.875rem', border:'1px solid rgba(255,255,255,0.1)' }}>
-                <p style={{ fontSize:'0.6rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'rgba(255,255,255,0.55)', marginBottom:'0.2rem' }}>{k.label}</p>
-                <p style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'1.5rem', fontWeight:800, color:'white', lineHeight:1 }}>{k.value}</p>
-                <p style={{ fontSize:'0.6rem', color:'rgba(255,255,255,0.5)', marginTop:'0.1rem' }}>{k.sub}</p>
+      {/* Hero — matches dashboard style exactly: dark surface, clear readable text */}
+      <div className="dashboard-hero animate-in mb-5">
+        <div className="dashboard-hero-grid">
+          <div>
+            <p className="hero-label">Total Saved</p>
+            <p style={{
+              fontFamily:'Space Grotesk,sans-serif',
+              fontSize: totalSaved > 9_999_999 ? '1.6rem' : totalSaved > 999_999 ? '1.9rem' : '2.25rem',
+              fontWeight:800, letterSpacing:'-0.04em', lineHeight:1,
+              color:'var(--success)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
+            }}>{fmtAdaptive(totalSaved)}</p>
+            <p className="hero-sub">of {fmtAdaptive(totalTarget)} target</p>
+            <div className="hero-progress-wrap" style={{ marginTop:'0.75rem', paddingTop:'0.75rem' }}>
+              <div className="hero-progress-labels">
+                <span className="hero-progress-label">Overall progress</span>
+                <span className="hero-progress-val tabular">{overallPct}%</span>
               </div>
-            ))}
-          </div>
-          <div style={{ marginTop:'1.125rem' }}>
-            <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'0.4rem' }}>
-              <span style={{ fontSize:'0.7rem', color:'rgba(255,255,255,0.65)', fontWeight:600 }}>Overall progress</span>
-              <span style={{ fontSize:'0.7rem', color:'white', fontWeight:700, fontFamily:'Space Grotesk,sans-serif' }}>{overallPct}%</span>
+              <div className="hero-progress-track">
+                <div className="hero-progress-bar" style={{ width:`${overallPct}%`, backgroundColor:'var(--success)' }}/>
+              </div>
             </div>
-            <div style={{ height:5, background:'rgba(255,255,255,0.2)', borderRadius:999, overflow:'hidden' }}>
-              <div style={{ height:'100%', width:`${overallPct}%`, background:'rgba(255,255,255,0.85)', borderRadius:999, boxShadow:'0 0 8px rgba(255,255,255,0.5)', transition:'width 0.8s cubic-bezier(0.16,1,0.3,1)' }} />
+          </div>
+          <div className="hero-stats-grid">
+            <div className="hero-stat-card">
+              <p className="hero-label">Goals</p>
+              <p className="hero-stat-value tabular" style={{ color:'var(--text-primary)' }}>{goals.length}</p>
+              <p className="hero-sub">total</p>
+            </div>
+            <div className="hero-stat-card">
+              <p className="hero-label">Achieved</p>
+              <p className="hero-stat-value tabular" style={{ color: achieved > 0 ? 'var(--success)' : 'var(--text-primary)' }}>{achieved}</p>
+              <p className="hero-sub">complete</p>
+            </div>
+            <div className="hero-stat-card">
+              <p className="hero-label">Almost There</p>
+              <p className="hero-stat-value tabular" style={{ color: almostThere > 0 ? 'var(--warning)' : 'var(--text-primary)' }}>{almostThere}</p>
+              <p className="hero-sub">70%+ done</p>
             </div>
           </div>
         </div>

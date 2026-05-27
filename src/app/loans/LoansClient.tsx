@@ -323,46 +323,44 @@ export function LoansClient({ loans }: { loans: Loan[] }) {
         <button className="btn btn-primary" onClick={() => setShowAdd(true)}><Plus size={13}/> Add Loan</button>
       </div>
 
-      {/* Hero Banner — token-based gradient, no hardcoded hex */}
-      <div className="animate-in mb-5" style={{
-        borderRadius:12,
-        background: overdue > 0
-          ? 'linear-gradient(135deg, var(--danger) 0%, var(--purple) 55%, var(--teal) 100%)'
-          : 'linear-gradient(135deg, var(--teal) 0%, var(--primary) 55%, var(--purple) 100%)',
-        boxShadow: overdue > 0 ? '0 10px 32px rgba(220,38,38,0.28)' : '0 10px 32px rgba(15,118,110,0.28)',
-        padding:'1.375rem 1.5rem', position:'relative', overflow:'hidden',
-      }}>
-        <div style={{ position:'absolute', top:-40, right:-40, width:160, height:160, borderRadius:'50%', background:'rgba(255,255,255,0.06)', pointerEvents:'none' }}/>
-        <div style={{ display:'grid', gridTemplateColumns:'1.4fr 1fr 1fr 1fr', gap:'1rem', alignItems:'center', position:'relative' }}>
-          <div style={{ minWidth:0 }}>
-            <p style={{ fontSize:'0.6rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', color:'rgba(255,255,255,0.55)', marginBottom:'0.3rem' }}>Total Debt</p>
+      {/* Hero — matches dashboard style exactly: dark surface, clear text */}
+      <div className="dashboard-hero animate-in mb-5">
+        <div className="dashboard-hero-grid">
+          <div>
+            <p className="hero-label">Total Debt</p>
             <p style={{
               fontFamily:'Space Grotesk,sans-serif',
-              fontSize: totalDebt > 9_999_999 ? '1.4rem' : totalDebt > 999_999 ? '1.6rem' : '2rem',
-              fontWeight:800, letterSpacing:'-0.04em', color:'white', lineHeight:1,
-              whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
+              fontSize: totalDebt > 9_999_999 ? '1.6rem' : totalDebt > 999_999 ? '1.9rem' : '2.25rem',
+              fontWeight:800, letterSpacing:'-0.04em', lineHeight:1,
+              color:'var(--danger)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
             }}>{fmtAdaptive(totalDebt)}</p>
-            <p style={{ fontSize:'0.65rem', color:'rgba(255,255,255,0.5)', marginTop:'0.25rem', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>of {fmtAdaptive(totalOriginal)} original · {paidPct}% paid</p>
-          </div>
-          {[
-            { label:'Loans',         value:`${loans.length}`, sub:'total'          },
-            { label:'Monthly Pmts',  value: fmtAdaptive(totalMonthly), sub:'per month'       },
-            { label:'Overdue',       value:`${overdue}`,       sub: overdue > 0 ? '⚠ needs attention' : '✓ all current' },
-          ].map(k => (
-            <div key={k.label} style={{ background:'rgba(255,255,255,0.12)', backdropFilter:'blur(8px)', border:'1px solid rgba(255,255,255,0.18)', borderRadius:10, padding:'0.75rem 1rem', minWidth:0 }}>
-              <p style={{ fontSize:'0.6rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'rgba(255,255,255,0.55)', marginBottom:'0.2rem' }}>{k.label}</p>
-              <p style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'1.1rem', fontWeight:800, color:'white', lineHeight:1.2, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{k.value}</p>
-              <p style={{ fontSize:'0.6rem', color:'rgba(255,255,255,0.5)', marginTop:'0.1rem' }}>{k.sub}</p>
+            <p className="hero-sub">of {fmtAdaptive(totalOriginal)} original · {paidPct}% paid</p>
+            <div className="hero-progress-wrap" style={{ marginTop:'0.75rem', paddingTop:'0.75rem' }}>
+              <div className="hero-progress-labels">
+                <span className="hero-progress-label">Repayment progress</span>
+                <span className="hero-progress-val tabular">{paidPct}% paid off</span>
+              </div>
+              <div className="hero-progress-track">
+                <div className="hero-progress-bar" style={{ width:`${paidPct}%`, backgroundColor:'var(--success)' }}/>
+              </div>
             </div>
-          ))}
-        </div>
-        <div style={{ marginTop:'1rem' }}>
-          <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'0.35rem' }}>
-            <span style={{ fontSize:'0.68rem', color:'rgba(255,255,255,0.65)', fontWeight:600 }}>Repayment progress</span>
-            <span style={{ fontSize:'0.68rem', color:'white', fontWeight:700, fontFamily:'Space Grotesk,sans-serif' }}>{paidPct}% paid off</span>
           </div>
-          <div style={{ height:5, background:'rgba(255,255,255,0.18)', borderRadius:999, overflow:'hidden' }}>
-            <div style={{ height:'100%', width:`${paidPct}%`, background:'rgba(255,255,255,0.85)', borderRadius:999, transition:'width 0.8s cubic-bezier(0.16,1,0.3,1)' }}/>
+          <div className="hero-stats-grid">
+            <div className="hero-stat-card">
+              <p className="hero-label">Loans</p>
+              <p className="hero-stat-value tabular" style={{ color:'var(--text-primary)' }}>{loans.length}</p>
+              <p className="hero-sub">total</p>
+            </div>
+            <div className="hero-stat-card">
+              <p className="hero-label">Monthly Pmts</p>
+              <p className="hero-stat-value tabular" style={{ color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{fmtAdaptive(totalMonthly)}</p>
+              <p className="hero-sub">per month</p>
+            </div>
+            <div className="hero-stat-card">
+              <p className="hero-label">Overdue</p>
+              <p className="hero-stat-value tabular" style={{ color: overdue > 0 ? 'var(--danger)' : 'var(--success)' }}>{overdue}</p>
+              <p className="hero-sub">{overdue > 0 ? '⚠ needs attention' : '✓ all current'}</p>
+            </div>
           </div>
         </div>
       </div>
