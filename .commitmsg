@@ -1,21 +1,10 @@
-fix: mobile UX overhaul - settings accordion + responsive grid collapse
+feat: integrate Gemini AI + Frankfurter FX + NSE + KNBS inflation APIs
 
-Settings page (SettingsClient.tsx):
-- Replaced the broken 2-panel desktop layout (210px sidebar + content panel)
-  with a full-width accordion. Each section (Profile, Appearance,
-  Preferences, Notifications, Data & Privacy, Help & About) now has a
-  tap-to-expand header showing icon + label + description + chevron.
-- Multiple sections can be open simultaneously.
-- Active section has primary-colored header with filled icon background.
-- Works identically on mobile and desktop - no clutter, no misalignment.
-
-Mobile CSS (globals.css):
-- Collapsed all inline-grid layouts (div[style*="gridTemplateColumns"])
-  to single column on screens <= 768px.
-- Dashboard hero stats grid stays 3-across on mobile (compact enough).
-- Hero stat values get smaller font size on mobile to prevent overflow.
-- Cards get overflow:hidden and word-break:break-word.
-- Added bottom padding to main-content equal to mobile nav bar height
-  so the nav bar never covers page content.
-- Toolbar flex rows wrap gracefully instead of overflowing.
-- Tables get horizontal scroll within their container.
+- Replace OpenAI with Gemini 1.5 Flash (1M tokens/day FREE)
+- Add M-Pesa SMS paste tab to SmartUpload (parses all SMS formats)
+- New /api/sms-parse endpoint for SMS to structured transactions
+- Live KES exchange rate ticker on dashboard (Frankfurter/ECB)
+- NSE stock price feed with fallback to known prices
+- Inflation-adjusted target shown on goal cards (KNBS 6.8% CPI)
+- New: src/lib/api/frankfurter.ts, gemini.ts, nse.ts, inflation.ts
+- New routes: /api/fx-rates, /api/nse, /api/sms-parse

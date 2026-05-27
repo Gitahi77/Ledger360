@@ -12,6 +12,7 @@ import Link from 'next/link';
 import { requireAuth } from '@/lib/actions/_auth';
 import { InsightsFeed } from '@/components/dashboard/InsightsFeed';
 import { BalanceText } from '@/components/typography/BalanceText';
+import { FxTicker } from '@/components/FxTicker';
 import { fmtAdaptive, fmtFull } from '@/lib/format';
 
 
@@ -124,6 +125,9 @@ export default async function Dashboard({
           <SpendingDonutChart data={donutData} />
         </div>
       </div>
+
+      {/* Live KES Exchange Rates */}
+      <FxTicker />
 
       {/* Bottom row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,3fr) minmax(0,2fr)', gap: '1rem' }}>

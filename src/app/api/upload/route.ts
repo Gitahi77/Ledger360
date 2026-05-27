@@ -230,58 +230,16 @@ function parseMpesaStyle(text: string): RawRow[] {
   return rows;
 }
 
-/* ── GPT-4o Vision parser (requires OPENAI_API_KEY) ────────── */
+/* ── Gemini Vision parser (uses GOOGLE_GENERATIVE_AI_API_KEY) ───── */
 async function parseWithAI(fileBuffer: ArrayBuffer, mimeType: string): Promise<any[] | null> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) return null;
-
-  const base64 = Buffer.from(fileBuffer).toString('base64');
-  const prompt = `You are a financial statement parser for Ledger360, a personal finance app used primarily in Kenya.
-
-Extract ALL transactions from this bank statement/document.
-Return a JSON array (no markdown, no explanation) with this exact structure:
-[
-  {
-    "date": "YYYY-MM-DD",
-    "name": "short merchant/description (max 60 chars)",
-    "amount": 1234.56,
-    "type": "income" or "expense",
-    "category": one of: "Salary","Freelance","Business","Food & Grocery","Transport","Utilities","Entertainment","Health","Rent","Clothing","Savings",
-    "note": "original description from statement"
-  }
-]
-
-Rules:
-- amount is always POSITIVE. type determines direction.
-- Income: salary, deposits, refunds, credits, "received from".
-- Expense: purchases, withdrawals, debits, fees, "paid to".
-- Use context clues for category (e.g. "UBER" = Transport, "NAIVAS" = Food & Grocery).
-- Skip balance rows, header rows, running totals.
-- Date format MUST be YYYY-MM-DD.`;
-
-  const isImage = mimeType.startsWith('image/');
-  const messageContent = isImage ? [
-    { type: 'text', text: prompt },
-    { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64}`, detail: 'high' } },
-  ] : [
-    { type: 'text', text: `${prompt}\n\nDocument content:\n${Buffer.from(fileBuffer).toString('utf-8').substring(0, 8000)}` },
-  ];
-
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model: 'gpt-4o', messages: [{ role: 'user', content: messageContent }], max_tokens: 4000, temperature: 0 }),
-  });
-
-  if (!response.ok) { console.error('[SmartUpload AI]', await response.text()); return null; }
-
-  const { choices } = await response.json();
-  const raw = choices?.[0]?.message?.content ?? '';
+  if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) return null;
   try {
-    const cleaned = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    return JSON.parse(cleaned);
-  } catch {
-    console.error('[SmartUpload] Failed to parse AI response:', raw.substring(0, 500));
+    const { parseDocumentWithGemini } = await import('@/lib/api/gemini');
+    const base64 = Buffer.from(fileBuffer).toString('base64');
+    const results = await parseDocumentWithGemini(base64, mimeType);
+    return results.length ? results : null;
+  } catch (err) {
+    console.error('[SmartUpload Gemini]', err);
     return null;
   }
 }
@@ -316,22 +274,20 @@ export async function POST(request: Request) {
       method = 'xlsx';
     }
 
-    // 2. PDF → pdf-parse then M-Pesa pattern matching; optionally AI if key present
+    // 2. PDF → Gemini AI then M-Pesa pattern fallback
     if (transactions.length === 0 && isPDF) {
-      // Try AI first if available
-      const aiResult = process.env.OPENAI_API_KEY ? await parseWithAI(fileBuffer, mimeType) : null;
+      const aiResult = await parseWithAI(fileBuffer, mimeType);
       if (aiResult?.length) {
         transactions = aiResult;
         method = 'ai';
       } else {
-        // Fall back to pdf-parse text extraction
         transactions = (await parsePDF(fileBuffer)).map(rowToTransaction);
         method = 'pdf';
       }
     }
 
-    // 3. Image → AI (if key present)
-    if (transactions.length === 0 && isImage && process.env.OPENAI_API_KEY) {
+    // 3. Image → Gemini Vision
+    if (transactions.length === 0 && isImage) {
       const aiResult = await parseWithAI(fileBuffer, mimeType);
       if (aiResult?.length) { transactions = aiResult; method = 'ai'; }
     }
@@ -345,7 +301,7 @@ export async function POST(request: Request) {
 
     if (transactions.length === 0) {
       return NextResponse.json({
-        error: 'Could not extract transactions. Please check:\n• CSV: must have Date, Description, Amount columns\n• Excel: first sheet with headers\n• PDF: if it\'s a scanned image, add OPENAI_API_KEY to enable AI parsing\n• M-Pesa statement: download as CSV from MySafaricom app',
+        error: 'Could not extract transactions. Supported formats:\n• CSV: must have Date, Description, Amount columns\n• Excel: first sheet with those headers\n• PDF / Image: AI-powered (Gemini) — works with bank statements & receipts\n• M-Pesa SMS: use the “Paste M-Pesa SMS” tab instead',
       }, { status: 422 });
     }
 
