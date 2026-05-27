@@ -35,7 +35,7 @@ const navItems = [
   },
 ];
 
-export function Sidebar({ isOpen, onClose }: { isOpen?: boolean, onClose?: () => void }) {
+export function Sidebar() {
   const pathname          = usePathname() ?? '/';
   const { data: session } = useSession();
   const user              = session?.user as any;
@@ -46,7 +46,7 @@ export function Sidebar({ isOpen, onClose }: { isOpen?: boolean, onClose?: () =>
     : 'U';
 
   return (
-    <aside className={`sidebar ${isOpen ? 'mobile-open' : ''}`}>
+    <aside className="sidebar">
       <div className="sidebar-logo">
         <div className="sidebar-logo-icon">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
