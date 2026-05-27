@@ -1,25 +1,25 @@
-fix: cascade color system, goals page, universal format utilities
+fix: cascade unified color system to all app sections
 
-Color Architecture (Critical Fix):
-- Restore :root = light mode, [data-theme=dark] = dark mode
-  (industry-standard pattern matching layout.tsx theme init script)
-- Previous session reversed this causing light mode to be broken
-- Card and KPI card backgrounds now use var(--bg-card) token
-- Segmented control dark mode now uses var(--bg-hover) and var(--border)
+This commit eliminates every hardcoded hex color across the remaining
+pages and replaces all .toLocaleString() financial displays with the
+unified fmtAdaptive() utility. All sections now share the same visual
+language as the dashboard.
 
-GoalsClient:
-- Remove all hardcoded hex colors throughout
-- goalStyle() now uses CSS token vars exclusively
-- Hero banner gradient uses HSL tokens instead of hardcoded hex
-- AddFundsModal previews new total and progress percentage live
+Pages updated:
+- Transactions: hero banner gradient now uses var(--success/primary/teal)
+  and var(--danger/purple/teal) tokens. Net balance adapts between
+  positive/negative states with CSS vars. All KES amounts use fmtAdaptive.
+- Budgets: budgetStyle() helper completely rewritten to use var(--danger),
+  var(--warning), var(--success) for colors, border accents, bar gradients
+  and glow shadows. Hero banner gradient uses var(--warning/purple/primary).
+  All amounts use fmtAdaptive with adaptive font-size at 1M and 10M.
+- Net Worth: hero banner gradient uses var(--success/primary/purple) or
+  var(--danger/purple/teal) depending on net worth sign. All asset and
+  liability amounts use fmtAdaptive. Token vars throughout.
+- Loans: loanStyle() helper rewritten with var(--danger/warning/success)
+  for colors and bar gradients. Hero banner gradient uses var(--danger/purple/
+  teal) or var(--teal/primary/purple). All loan balances, original amounts,
+  and monthly payment figures use fmtAdaptive with adaptive font-size.
 
-Format Utility (src/lib/format.ts - new file):
-- fmtFull, fmtPrecise, fmtCompact, fmtAdaptive, fmtWithSub, fmtPct
-- Adaptive mode auto-switches at 999K threshold
-- Prevents large number overflow in all display contexts
-
-Large Number Display:
-- Responsive font-size: scales down at 1M and 10M breakpoints
-- text-overflow ellipsis as safety guard on all amount containers
-- Dashboard, Goals, Loans all updated to use fmtAdaptive
-- Hero stat colors updated to use var() tokens
+The result: the entire app now has one unified visual identity. Switch
+theme, scale a number to 10M, view any page - it is always coherent.

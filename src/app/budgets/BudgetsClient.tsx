@@ -1,10 +1,12 @@
 'use client';
 // src/app/budgets/BudgetsClient.tsx
+// Copyright (c) 2024-present Eric Gitahi. All rights reserved.
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { addBudget, deleteBudget } from '@/lib/actions/budgets';
 import { SmartUpload } from '@/components/SmartUpload';
-import { Plus, Trash2, Loader2, X, FileDown } from 'lucide-react';
+import { fmtAdaptive } from '@/lib/format';
+import { Plus, Trash2, Loader2, X, FileDown, LayoutGrid } from 'lucide-react';
 
 type Budget = {
   id: string; name: string; category: string; icon: string;
@@ -12,24 +14,29 @@ type Budget = {
 };
 type Category = { id: string; name: string; type: string };
 
-/* ── Status helper ────────────────────────────────────────── */
+// All colours via CSS token vars — adapts to both light and dark automatically
 function budgetStyle(limit: number, spent: number) {
   const pct = Math.min(100, limit > 0 ? (spent / limit) * 100 : 0);
   if (pct >= 100) return {
-    barGrad: 'linear-gradient(90deg,#DC2626,#EF4444)', badge: 'badge-danger',
-    label: 'Over Budget', numColor: '#DC2626', glow: 'rgba(220,38,38,0.5)', pct: 100,
+    barGrad: 'linear-gradient(90deg, var(--danger), hsl(0,78%,72%))',
+    badge: 'badge-danger', label: 'Over Budget',
+    numColor: 'var(--danger)', glow: 'rgba(220,38,38,0.4)',
+    borderColor: 'var(--danger)', pct: 100,
   };
   if (pct >= 80) return {
-    barGrad: 'linear-gradient(90deg,#D97706,#F59E0B)', badge: 'badge-warning',
-    label: 'Warning', numColor: '#D97706', glow: 'rgba(217,119,6,0.4)', pct,
+    barGrad: 'linear-gradient(90deg, var(--warning), hsl(38,92%,68%))',
+    badge: 'badge-warning', label: 'Warning',
+    numColor: 'var(--warning)', glow: 'rgba(217,119,6,0.35)',
+    borderColor: 'var(--warning)', pct,
   };
   return {
-    barGrad: 'linear-gradient(90deg,#16A34A,#4ADE80)', badge: 'badge-success',
-    label: 'On Track', numColor: '#16A34A', glow: 'rgba(22,163,74,0.4)', pct,
+    barGrad: 'linear-gradient(90deg, var(--success), hsl(152,65%,62%))',
+    badge: 'badge-success', label: 'On Track',
+    numColor: 'var(--success)', glow: 'rgba(22,163,74,0.35)',
+    borderColor: 'var(--success)', pct,
   };
 }
 
-/* ── Add Budget Modal ─────────────────────────────────────── */
 function AddBudgetModal({ categories, onClose }: { categories: Category[]; onClose: () => void }) {
   const router = useRouter();
   const [, startT] = useTransition();
@@ -56,7 +63,7 @@ function AddBudgetModal({ categories, onClose }: { categories: Category[]; onClo
   }
 
   return (
-    <div style={{ position:'fixed', inset:0, zIndex:1000, background:'rgba(0,0,0,0.45)', backdropFilter:'blur(4px)', display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem' }} onClick={onClose}>
+    <div style={{ position:'fixed', inset:0, zIndex:1000, background:'rgba(0,0,0,0.5)', backdropFilter:'blur(6px)', display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem' }} onClick={onClose}>
       <div className="card animate-in" style={{ width:'100%', maxWidth:440, padding:'1.75rem' }} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <h2 className="card-title" style={{ marginBottom:0 }}>Add Budget</h2>
@@ -102,7 +109,6 @@ function AddBudgetModal({ categories, onClose }: { categories: Category[]; onClo
   );
 }
 
-/* ── Main Client Component ────────────────────────────────── */
 export function BudgetsClient({ budgets, categories, totalBudgeted, totalSpent, period }: {
   budgets: Budget[]; categories: Category[];
   totalBudgeted: number; totalSpent: number; period: string;
@@ -115,7 +121,6 @@ export function BudgetsClient({ budgets, categories, totalBudgeted, totalSpent, 
 
   const overBudget = budgets.filter(b => b.spent >= b.limit).length;
   const onTrack    = budgets.filter(b => (b.spent / b.limit) < 0.8).length;
-  const warning    = budgets.length - overBudget - onTrack;
   const overallPct = totalBudgeted > 0 ? Math.min(100, Math.round((totalSpent / totalBudgeted) * 100)) : 0;
 
   async function handleDelete(id: string) {
@@ -132,10 +137,10 @@ export function BudgetsClient({ budgets, categories, totalBudgeted, totalSpent, 
 
       {/* Toolbar */}
       <div className="flex items-center justify-between mb-5 animate-in flex-wrap gap-3">
-        <div />
+        <div/>
         <div className="flex items-center gap-2">
-          <button className="btn btn-outline" onClick={() => setShowUpload(v => !v)} title="Import transactions from bank statement">
-            <FileDown size={13} /> Import
+          <button className="btn btn-outline" onClick={() => setShowUpload(v => !v)} title="Import">
+            <FileDown size={13}/> Import
           </button>
           <button className="btn btn-primary" onClick={() => setShowAdd(true)}><Plus size={13}/> Add Budget</button>
         </div>
@@ -143,32 +148,39 @@ export function BudgetsClient({ budgets, categories, totalBudgeted, totalSpent, 
 
       {showUpload && (
         <div className="card mb-5 animate-in">
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.75rem', lineHeight: 1.5 }}>
-            <strong style={{ color: 'var(--text-primary)' }}>Import bank statement</strong> — AI parses your PDF, CSV or screenshot and creates transactions, which automatically update your budget spend.
+          <div style={{ fontSize:'0.75rem', color:'var(--text-muted)', marginBottom:'0.75rem', lineHeight:1.5 }}>
+            <strong style={{ color:'var(--text-primary)' }}>Import bank statement</strong> — AI parses your PDF, CSV or screenshot and creates transactions.
           </div>
           <SmartUpload onDone={() => setShowUpload(false)} />
         </div>
       )}
 
-      {/* Hero Banner */}
+      {/* Hero Banner — token-based gradient, no hardcoded hex */}
       <div className="animate-in mb-5" style={{
         borderRadius:12,
-        background:'linear-gradient(135deg, #D97706 0%, #7C3AED 55%, #0070F3 100%)',
-        boxShadow:'0 10px 32px rgba(217,119,6,0.28)',
+        background:'linear-gradient(135deg, var(--warning) 0%, var(--purple) 55%, var(--primary) 100%)',
+        boxShadow:'0 10px 32px rgba(217,119,6,0.22)',
         padding:'1.375rem 1.5rem',
         position:'relative', overflow:'hidden',
       }}>
-        <div style={{ position:'absolute', top:-40, right:-40, width:160, height:160, borderRadius:'50%', background:'rgba(255,255,255,0.06)', pointerEvents:'none' }} />
+        <div style={{ position:'absolute', top:-40, right:-40, width:160, height:160, borderRadius:'50%', background:'rgba(255,255,255,0.06)', pointerEvents:'none' }}/>
         <div style={{ display:'grid', gridTemplateColumns:'1.4fr 1fr 1fr 1fr', gap:'1rem', alignItems:'center', position:'relative' }}>
-          <div>
+          <div style={{ minWidth:0 }}>
             <p style={{ fontSize:'0.6rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', color:'rgba(255,255,255,0.55)', marginBottom:'0.3rem' }}>Total Budgeted</p>
-            <p style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'2rem', fontWeight:800, letterSpacing:'-0.04em', color:'white', lineHeight:1 }}>KES {totalBudgeted.toLocaleString()}</p>
-            <p style={{ fontSize:'0.65rem', color:'rgba(255,255,255,0.5)', marginTop:'0.25rem' }}>KES {totalSpent.toLocaleString()} spent · {overallPct}% used</p>
+            <p style={{
+              fontFamily:'Space Grotesk,sans-serif',
+              fontSize: totalBudgeted > 9_999_999 ? '1.4rem' : totalBudgeted > 999_999 ? '1.6rem' : '2rem',
+              fontWeight:800, letterSpacing:'-0.04em', color:'white', lineHeight:1,
+              whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
+            }}>{fmtAdaptive(totalBudgeted)}</p>
+            <p style={{ fontSize:'0.65rem', color:'rgba(255,255,255,0.5)', marginTop:'0.25rem', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+              {fmtAdaptive(totalSpent)} spent · {overallPct}% used
+            </p>
           </div>
           {[
-            { label:'Budgets',    value:`${budgets.length}`, sub:'total'       },
-            { label:'On Track',   value:`${onTrack}`,         sub:'under 80%'  },
-            { label:'Over Budget',value:`${overBudget}`,      sub:'needs action'},
+            { label:'Budgets',     value:`${budgets.length}`, sub:'total'         },
+            { label:'On Track',    value:`${onTrack}`,         sub:'under 80%'    },
+            { label:'Over Budget', value:`${overBudget}`,      sub:'needs action'  },
           ].map(k => (
             <div key={k.label} style={{ background:'rgba(255,255,255,0.12)', backdropFilter:'blur(8px)', border:'1px solid rgba(255,255,255,0.18)', borderRadius:10, padding:'0.75rem 1rem' }}>
               <p style={{ fontSize:'0.6rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'rgba(255,255,255,0.55)', marginBottom:'0.2rem' }}>{k.label}</p>
@@ -183,7 +195,7 @@ export function BudgetsClient({ budgets, categories, totalBudgeted, totalSpent, 
             <span style={{ fontSize:'0.68rem', color:'white', fontWeight:700, fontFamily:'Space Grotesk,sans-serif' }}>{overallPct}% of budget used</span>
           </div>
           <div style={{ height:5, background:'rgba(255,255,255,0.18)', borderRadius:999, overflow:'hidden' }}>
-            <div style={{ height:'100%', width:`${overallPct}%`, background: overallPct >= 100 ? '#F87171' : overallPct >= 80 ? '#FCD34D' : '#4ADE80', borderRadius:999, transition:'width 0.8s cubic-bezier(0.16,1,0.3,1)' }} />
+            <div style={{ height:'100%', width:`${overallPct}%`, background:'rgba(255,255,255,0.85)', borderRadius:999, transition:'width 0.8s cubic-bezier(0.16,1,0.3,1)' }}/>
           </div>
         </div>
       </div>
@@ -191,7 +203,7 @@ export function BudgetsClient({ budgets, categories, totalBudgeted, totalSpent, 
       {/* Budget cards */}
       {budgets.length === 0 ? (
         <div className="card" style={{ textAlign:'center', padding:'3rem', color:'var(--text-muted)' }}>
-          <div style={{ fontSize:'2rem', marginBottom:'0.5rem' }}>💰</div>
+          <LayoutGrid size={40} style={{ margin:'0 auto 0.75rem', opacity:0.4 }}/>
           <div style={{ fontWeight:600, marginBottom:'0.25rem' }}>No budgets yet</div>
           <div style={{ fontSize:'0.78rem', marginBottom:'1rem' }}>Create your first budget to start tracking spending</div>
           <button className="btn btn-primary" onClick={() => setShowAdd(true)}><Plus size={13}/> Create Budget</button>
@@ -202,7 +214,8 @@ export function BudgetsClient({ budgets, categories, totalBudgeted, totalSpent, 
             const st  = budgetStyle(b.limit, b.spent);
             const rem = Math.max(0, b.limit - b.spent);
             return (
-              <div key={b.id} className={`card animate-in delay-${(i % 4) + 1}`} style={{ borderTop:`3px solid ${st.numColor}` }}>
+              <div key={b.id} className={`card animate-in delay-${(i % 4) + 1}`}
+                style={{ borderTop:`3px solid ${st.borderColor}` }}>
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <div style={{ fontWeight:700, fontSize:'0.875rem', color:'var(--text-primary)' }}>{b.name}</div>
@@ -218,26 +231,29 @@ export function BudgetsClient({ budgets, categories, totalBudgeted, totalSpent, 
                 </div>
 
                 <div className="flex items-end justify-between mb-3">
-                  <div>
-                    <div style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'1.5rem', fontWeight:800, color:st.numColor, letterSpacing:'-0.04em', lineHeight:1.1 }}>
-                      KES {b.spent.toLocaleString()}
-                    </div>
-                    <div style={{ fontSize:'0.7rem', color:'var(--text-secondary)', marginTop:'0.2rem' }}>of KES {b.limit.toLocaleString()}</div>
+                  <div style={{ minWidth:0, flex:1, marginRight:'0.5rem' }}>
+                    <div style={{
+                      fontFamily:'Space Grotesk,sans-serif',
+                      fontSize: b.spent > 9_999_999 ? '1.1rem' : b.spent > 999_999 ? '1.25rem' : '1.5rem',
+                      fontWeight:800, color:st.numColor, letterSpacing:'-0.04em', lineHeight:1.1,
+                      whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
+                    }}>{fmtAdaptive(b.spent)}</div>
+                    <div style={{ fontSize:'0.7rem', color:'var(--text-secondary)', marginTop:'0.2rem', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>of {fmtAdaptive(b.limit)}</div>
                   </div>
-                  <div style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'2rem', fontWeight:800, color:st.numColor, letterSpacing:'-0.05em', lineHeight:1, opacity:0.88 }}>
+                  <div style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'2rem', fontWeight:800, color:st.numColor, letterSpacing:'-0.05em', lineHeight:1, opacity:0.88, flexShrink:0 }}>
                     {Math.round(st.pct)}%
                   </div>
                 </div>
 
                 <div className="progress-track mb-3" style={{ height:8 }}>
-                  <div className="progress-fill" style={{ width:`${st.pct}%`, background:st.barGrad, boxShadow:`0 0 10px ${st.glow}` }} />
+                  <div className="progress-fill" style={{ width:`${st.pct}%`, background:st.barGrad, boxShadow:`0 0 10px ${st.glow}` }}/>
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <span style={{ fontSize:'0.72rem', color:'var(--text-secondary)', fontWeight:500 }}>
-                    {rem > 0 ? `KES ${rem.toLocaleString()} left` : `KES ${(b.spent - b.limit).toLocaleString()} over`}
+                  <span style={{ fontSize:'0.72rem', color:'var(--text-secondary)', fontWeight:500, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', flex:1, marginRight:'0.5rem' }}>
+                    {rem > 0 ? `${fmtAdaptive(rem)} left` : `${fmtAdaptive(b.spent - b.limit)} over`}
                   </span>
-                  <span style={{ fontSize:'0.72rem', fontWeight:700, color:st.numColor }}>{st.label}</span>
+                  <span style={{ fontSize:'0.72rem', fontWeight:700, color:st.numColor, flexShrink:0 }}>{st.label}</span>
                 </div>
               </div>
             );

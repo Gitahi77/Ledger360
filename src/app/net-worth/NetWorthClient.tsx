@@ -1,36 +1,35 @@
 'use client';
 // src/app/net-worth/NetWorthClient.tsx
+// Copyright (c) 2024-present Eric Gitahi. All rights reserved.
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { addAsset, updateAsset, deleteAsset } from '@/lib/actions/networth';
+import { fmtAdaptive } from '@/lib/format';
 import { Plus, Trash2, Loader2, X, Home, Car, Briefcase, PiggyBank, Gem, BarChart3, Edit2 } from 'lucide-react';
 
-type Asset  = { id: string; name: string; category: string; value: number };
-type Loan   = { id: string; name: string; balance: number; type: string };
+type Asset = { id: string; name: string; category: string; value: number };
+type Loan  = { id: string; name: string; balance: number; type: string };
 
 const ASSET_ICONS: Record<string, React.ReactNode> = {
-  property:    <Home size={16} />,
-  vehicle:     <Car size={16} />,
-  business:    <Briefcase size={16} />,
-  savings:     <PiggyBank size={16} />,
-  investments: <BarChart3 size={16} />,
-  jewelry:     <Gem size={16} />,
-  other:       <Gem size={16} />,
+  property:    <Home size={16}/>,
+  vehicle:     <Car size={16}/>,
+  business:    <Briefcase size={16}/>,
+  savings:     <PiggyBank size={16}/>,
+  investments: <BarChart3 size={16}/>,
+  jewelry:     <Gem size={16}/>,
+  other:       <Gem size={16}/>,
 };
 
 const ASSET_CATS = ['savings','property','vehicle','investments','business','jewelry','other'];
 
-/* ── Add / Edit Asset Modal ───────────────────────────────── */
 function AssetModal({ asset, onClose }: { asset?: Asset; onClose: () => void }) {
   const router     = useRouter();
   const [, startT] = useTransition();
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
-
   const [name,     setName]     = useState(asset?.name     ?? '');
   const [category, setCategory] = useState(asset?.category ?? 'savings');
   const [value,    setValue]    = useState(asset ? String(asset.value) : '');
-
   const isEdit = Boolean(asset);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -50,7 +49,7 @@ function AssetModal({ asset, onClose }: { asset?: Asset; onClose: () => void }) 
   }
 
   return (
-    <div style={{ position:'fixed', inset:0, zIndex:1000, background:'rgba(0,0,0,0.45)', backdropFilter:'blur(4px)', display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem' }} onClick={onClose}>
+    <div style={{ position:'fixed', inset:0, zIndex:1000, background:'rgba(0,0,0,0.5)', backdropFilter:'blur(6px)', display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem' }} onClick={onClose}>
       <div className="card animate-in" style={{ width:'100%', maxWidth:420, padding:'1.75rem' }} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <h2 className="card-title" style={{ marginBottom:0 }}>{isEdit ? 'Update Value' : 'Add Asset'}</h2>
@@ -90,7 +89,6 @@ function AssetModal({ asset, onClose }: { asset?: Asset; onClose: () => void }) 
   );
 }
 
-/* ── Main Client Component ────────────────────────────────── */
 export function NetWorthClient({ assets, liabilities, totalAssets, totalLiabilities, netWorth, debtRatio }: {
   assets: Asset[]; liabilities: Loan[];
   totalAssets: number; totalLiabilities: number;
@@ -119,36 +117,42 @@ export function NetWorthClient({ assets, liabilities, totalAssets, totalLiabilit
 
       {/* Toolbar */}
       <div className="flex items-center justify-between mb-5 animate-in flex-wrap gap-3">
-        <div />
+        <div/>
         <button className="btn btn-primary" onClick={() => setShowAdd(true)}><Plus size={13}/> Add Asset</button>
       </div>
 
-      {/* Hero Banner */}
+      {/* Hero Banner — token-based colours, adaptive number formatting */}
       <div className="animate-in mb-5" style={{
         borderRadius:12,
         background: positive
-          ? 'linear-gradient(135deg, #16A34A 0%, #0070F3 55%, #7C3AED 100%)'
-          : 'linear-gradient(135deg, #DC2626 0%, #7C3AED 55%, #0F766E 100%)',
+          ? 'linear-gradient(135deg, var(--success) 0%, var(--primary) 55%, var(--purple) 100%)'
+          : 'linear-gradient(135deg, var(--danger) 0%, var(--purple) 55%, var(--teal) 100%)',
         boxShadow: positive ? '0 10px 32px rgba(22,163,74,0.28)' : '0 10px 32px rgba(220,38,38,0.28)',
         padding:'1.375rem 1.5rem', position:'relative', overflow:'hidden',
       }}>
-        <div style={{ position:'absolute', top:-40, right:-40, width:160, height:160, borderRadius:'50%', background:'rgba(255,255,255,0.06)', pointerEvents:'none' }} />
+        <div style={{ position:'absolute', top:-40, right:-40, width:160, height:160, borderRadius:'50%', background:'rgba(255,255,255,0.06)', pointerEvents:'none' }}/>
         <div style={{ display:'grid', gridTemplateColumns:'1.4fr 1fr 1fr 1fr', gap:'1rem', alignItems:'center', position:'relative' }}>
-          <div>
+          <div style={{ minWidth:0 }}>
             <p style={{ fontSize:'0.6rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', color:'rgba(255,255,255,0.55)', marginBottom:'0.3rem' }}>Net Worth</p>
-            <p style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'2rem', fontWeight:800, letterSpacing:'-0.04em', color: positive ? '#4ADE80' : '#FCA5A5', lineHeight:1 }}>
-              {positive ? '+' : '−'}KES {Math.abs(netWorth).toLocaleString()}
+            <p style={{
+              fontFamily:'Space Grotesk,sans-serif',
+              fontSize: Math.abs(netWorth) > 9_999_999 ? '1.4rem' : Math.abs(netWorth) > 999_999 ? '1.6rem' : '2rem',
+              fontWeight:800, letterSpacing:'-0.04em',
+              color:'rgba(255,255,255,0.95)',
+              lineHeight:1, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
+            }}>
+              {positive ? '+' : '−'}{fmtAdaptive(Math.abs(netWorth))}
             </p>
             <p style={{ fontSize:'0.65rem', color:'rgba(255,255,255,0.5)', marginTop:'0.25rem' }}>Assets minus liabilities</p>
           </div>
           {[
-            { label:'Total Assets',      value:`KES ${totalAssets.toLocaleString()}`,      sub:`${assets.length} items`       },
-            { label:'Total Liabilities', value:`KES ${totalLiabilities.toLocaleString()}`, sub:`${liabilities.length} loans`  },
-            { label:'Debt Ratio',        value:`${debtRatio}%`,                            sub: debtRatio < 40 ? '✓ Healthy' : debtRatio < 70 ? '⚠ Watch this' : '⛔ High' },
+            { label:'Total Assets',      value: fmtAdaptive(totalAssets),      sub:`${assets.length} items`       },
+            { label:'Total Liabilities', value: fmtAdaptive(totalLiabilities), sub:`${liabilities.length} loans`  },
+            { label:'Debt Ratio',        value:`${debtRatio}%`,                sub: debtRatio < 40 ? '✓ Healthy' : debtRatio < 70 ? '⚠ Watch this' : '⛔ High' },
           ].map(k => (
-            <div key={k.label} style={{ background:'rgba(255,255,255,0.12)', backdropFilter:'blur(8px)', border:'1px solid rgba(255,255,255,0.18)', borderRadius:10, padding:'0.75rem 1rem' }}>
+            <div key={k.label} style={{ background:'rgba(255,255,255,0.12)', backdropFilter:'blur(8px)', border:'1px solid rgba(255,255,255,0.18)', borderRadius:10, padding:'0.75rem 1rem', minWidth:0 }}>
               <p style={{ fontSize:'0.6rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'rgba(255,255,255,0.55)', marginBottom:'0.2rem' }}>{k.label}</p>
-              <p style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'1rem', fontWeight:800, color:'white', lineHeight:1.2 }}>{k.value}</p>
+              <p style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'1rem', fontWeight:800, color:'white', lineHeight:1.2, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{k.value}</p>
               <p style={{ fontSize:'0.6rem', color:'rgba(255,255,255,0.5)', marginTop:'0.1rem' }}>{k.sub}</p>
             </div>
           ))}
@@ -184,7 +188,7 @@ export function NetWorthClient({ assets, liabilities, totalAssets, totalLiabilit
                     <div style={{ fontSize:'0.65rem', color:'var(--text-muted)', textTransform:'capitalize' }}>{a.category}</div>
                   </div>
                   <div style={{ textAlign:'right', flexShrink:0 }}>
-                    <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:800, fontSize:'0.9rem', color:'var(--success)' }}>KES {a.value.toLocaleString()}</div>
+                    <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:800, fontSize:'0.9rem', color:'var(--success)', whiteSpace:'nowrap' }}>{fmtAdaptive(a.value)}</div>
                     <div style={{ display:'flex', gap:'0.3rem', justifyContent:'flex-end', marginTop:'0.2rem' }}>
                       <button onClick={() => setEditAsset(a)} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', display:'flex', padding:'0.15rem' }}>
                         <Edit2 size={12}/>
@@ -198,7 +202,7 @@ export function NetWorthClient({ assets, liabilities, totalAssets, totalLiabilit
               ))}
               <div style={{ padding:'0.625rem 1rem', borderRadius:8, background:'var(--success-light)', display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:'0.25rem' }}>
                 <span style={{ fontSize:'0.75rem', fontWeight:700, color:'var(--success)' }}>Total Assets</span>
-                <span style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'1rem', fontWeight:800, color:'var(--success)' }}>KES {totalAssets.toLocaleString()}</span>
+                <span style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'1rem', fontWeight:800, color:'var(--success)', whiteSpace:'nowrap' }}>{fmtAdaptive(totalAssets)}</span>
               </div>
             </div>
           )}
@@ -225,14 +229,14 @@ export function NetWorthClient({ assets, liabilities, totalAssets, totalLiabilit
                     <div style={{ fontWeight:600, fontSize:'0.8125rem', color:'var(--text-primary)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{l.name}</div>
                     <div style={{ fontSize:'0.65rem', color:'var(--text-muted)', textTransform:'capitalize' }}>{l.type}</div>
                   </div>
-                  <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:800, fontSize:'0.9rem', color:'var(--danger)' }}>
-                    KES {l.balance.toLocaleString()}
+                  <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:800, fontSize:'0.9rem', color:'var(--danger)', whiteSpace:'nowrap', flexShrink:0 }}>
+                    {fmtAdaptive(l.balance)}
                   </div>
                 </div>
               ))}
               <div style={{ padding:'0.625rem 1rem', borderRadius:8, background:'var(--danger-light)', display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:'0.25rem' }}>
                 <span style={{ fontSize:'0.75rem', fontWeight:700, color:'var(--danger)' }}>Total Liabilities</span>
-                <span style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'1rem', fontWeight:800, color:'var(--danger)' }}>KES {totalLiabilities.toLocaleString()}</span>
+                <span style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'1rem', fontWeight:800, color:'var(--danger)', whiteSpace:'nowrap' }}>{fmtAdaptive(totalLiabilities)}</span>
               </div>
             </div>
           )}
