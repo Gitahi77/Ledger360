@@ -972,7 +972,7 @@ select, input { font-family: inherit; }
 }
 @media (min-width: 768px) {
   .mobile-nav {
-    display: none;
+    display: none !important;
   }
 }
 .mobile-nav-item {
