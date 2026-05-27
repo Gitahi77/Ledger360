@@ -7,6 +7,7 @@ import { CategoryIcon } from '@/components/CategoryIcon';
 import { SmartUpload } from '@/components/SmartUpload';
 import { addTransaction, deleteTransaction } from '@/lib/actions/transactions';
 import { Plus, FileDown, Trash2, X, Loader2 } from 'lucide-react';
+import { TransactionRow } from '@/components/finance/TransactionRow';
 
 type Tx = {
   id: string; name: string; amount: number; type: string;
@@ -286,55 +287,20 @@ export function TransactionsClient({ transactions, categories, totalIncome, tota
             </button>
           </div>
         ) : (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Description</th>
-                <th>Category</th>
-                <th>Date</th>
-                <th style={{ textAlign: 'right' }}>Amount</th>
-                <th style={{ width: 36 }}></th>
-              </tr>
-            </thead>
-            <tbody>
-              {transactions.map(tx => (
-                <tr key={tx.id} className="cursor-pointer">
-                  <td>
-                    <div className="flex items-center gap-3">
-                      <CategoryIcon category={tx.category.icon ?? tx.category.name.toLowerCase()} name={tx.name} size={14} />
-                      <div className="min-w-0">
-                        <div style={{ fontWeight: 600, fontSize: '0.8125rem', color: 'var(--text-primary)' }}>{tx.name}</div>
-                        {tx.note && <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{tx.note}</div>}
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    <span className={`badge ${tx.type === 'income' ? 'badge-success' : 'badge-blue'}`}>
-                      {tx.category.name}
-                    </span>
-                  </td>
-                  <td style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                    {new Date(tx.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                  </td>
-                  <td style={{ textAlign: 'right', fontFamily: 'Space Grotesk,sans-serif', fontWeight: 700, fontSize: '0.875rem', color: tx.type === 'income' ? 'var(--success)' : 'var(--text-primary)' }}>
-                    {tx.type === 'income' ? '+' : '−'}KES {tx.amount.toLocaleString()}
-                  </td>
-                  <td>
-                    <button
-                      onClick={() => handleDelete(tx.id)}
-                      disabled={deletingId === tx.id}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', padding: '0.25rem' }}
-                      title="Delete transaction"
-                    >
-                      {deletingId === tx.id
-                        ? <Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} />
-                        : <Trash2 size={13} />}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="flex flex-col gap-2 w-full">
+            {transactions.map(tx => (
+              <TransactionRow
+                key={tx.id}
+                title={tx.name}
+                subtitle={tx.note ? `${tx.category.name} • ${tx.note}` : tx.category.name}
+                amount={tx.amount}
+                icon={<CategoryIcon category={tx.category.icon ?? tx.category.name.toLowerCase()} name={tx.name} size={18} />}
+                state={tx.type === 'pending' ? 'pending' : undefined}
+                onDelete={() => handleDelete(tx.id)}
+                isDeleting={deletingId === tx.id}
+              />
+            ))}
+          </div>
         )}
       </div>
     </>

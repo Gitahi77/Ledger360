@@ -11,6 +11,7 @@ import { ArrowRight, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { requireAuth } from '@/lib/actions/_auth';
 import { InsightsFeed } from '@/components/dashboard/InsightsFeed';
+import { BalanceText } from '@/components/typography/BalanceText';
 
 
 
@@ -62,61 +63,45 @@ export default async function Dashboard({
       {/* Intelligence Engine Insights */}
       <InsightsFeed initialInsights={insights} />
 
-      {/* KPI Hero Banner — Goals-style gradient strip */}
-      <div className="animate-in mb-5" style={{
-        borderRadius: 12,
-        background: 'linear-gradient(135deg, #0070F3 0%, #7C3AED 55%, #0F766E 100%)',
-        boxShadow: '0 10px 32px rgba(0,112,243,0.28), 0 2px 8px rgba(124,58,237,0.2)',
-        padding: '1.375rem 1.5rem',
-        position: 'relative',
-        overflow: 'hidden',
-      }}>
-        {/* Decorative orbs */}
-        <div style={{ position:'absolute', top:-40, right:-40, width:160, height:160, borderRadius:'50%', background:'rgba(255,255,255,0.06)', pointerEvents:'none' }} />
-        <div style={{ position:'absolute', bottom:-30, left:60, width:100, height:100, borderRadius:'50%', background:'rgba(255,255,255,0.04)', pointerEvents:'none' }} />
-
-        <div style={{ display:'grid', gridTemplateColumns:'1.4fr 1fr 1fr 1fr', gap:'1rem', alignItems:'center', position:'relative' }}>
+      {/* Protective Dashboard Hero — Grounded and Stable */}
+      <div className="dashboard-hero animate-in">
+        <div className="dashboard-hero-grid">
           {/* Primary stat — Net Worth */}
           <div>
-            <p style={{ fontSize:'0.6rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', color:'rgba(255,255,255,0.55)', marginBottom:'0.3rem' }}>
-              Net Worth
-            </p>
-            <p style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'2rem', fontWeight:800, letterSpacing:'-0.04em', color:'white', lineHeight:1 }}>
-              KES {netWorth.netWorth.toLocaleString()}
-            </p>
-            <p style={{ fontSize:'0.65rem', color:'rgba(255,255,255,0.5)', marginTop:'0.25rem' }}>
+            <p className="hero-label">Net Worth</p>
+            <BalanceText value={`KES ${netWorth.netWorth.toLocaleString()}`} />
+            <p className="hero-sub">
               Assets KES {netWorth.totalAssets.toLocaleString()} · Debt KES {netWorth.totalLiabilities.toLocaleString()}
             </p>
           </div>
 
-          {/* Frosted glass stat boxes */}
-          {[
-            { label: `${periodLabel} Income`,  value: `KES ${summary.income.toLocaleString()}`,   sub: summary.income > 0 ? '↑ coming in' : 'No income yet',      color: '#4ADE80' },
-            { label: `${periodLabel} Spent`,   value: `KES ${summary.expenses.toLocaleString()}`, sub: summary.expenses > 0 ? '↓ going out' : 'No expenses yet',  color: '#F87171' },
-            { label: 'Saving Rate',            value: `${summary.savingRate}%`,                   sub: summary.savingRate >= 20 ? '🎯 On track' : 'Save more',      color: '#FCD34D' },
-          ].map(s => (
-            <div key={s.label} style={{
-              background: 'rgba(255,255,255,0.12)',
-              backdropFilter: 'blur(8px)',
-              border: '1px solid rgba(255,255,255,0.18)',
-              borderRadius: 10,
-              padding: '0.75rem 1rem',
-            }}>
-              <p style={{ fontSize:'0.6rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'rgba(255,255,255,0.55)', marginBottom:'0.2rem' }}>{s.label}</p>
-              <p style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'1.3rem', fontWeight:800, color: s.color, lineHeight:1, letterSpacing:'-0.03em' }}>{s.value}</p>
-              <p style={{ fontSize:'0.6rem', color:'rgba(255,255,255,0.5)', marginTop:'0.15rem' }}>{s.sub}</p>
-            </div>
-          ))}
+          {/* Operational stat boxes */}
+          <div className="hero-stats-grid">
+            {[
+              { label: `${periodLabel} Income`,  value: `KES ${summary.income.toLocaleString()}`,   sub: summary.income > 0 ? '↑ Coming in' : 'No income yet',       color: 'hsl(var(--color-success-hsl))' },
+              { label: `${periodLabel} Spent`,   value: `KES ${summary.expenses.toLocaleString()}`, sub: summary.expenses > 0 ? '↓ Going out' : 'No expenses yet',   color: 'hsl(var(--text-primary-hsl))' },
+              { label: 'Saving Rate',            value: `${summary.savingRate}%`,                   sub: summary.savingRate >= 20 ? '🎯 On track' : 'Needs attention', color: 'hsl(var(--color-warning-hsl))' },
+            ].map(s => (
+              <div key={s.label} className="hero-stat-card">
+                <p className="hero-label">{s.label}</p>
+                <p className="hero-stat-value tabular" style={{ color: s.color }}>{s.value}</p>
+                <p className="hero-sub">{s.sub}</p>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Saving rate progress bar */}
-        <div style={{ marginTop:'1rem', position:'relative' }}>
-          <div style={{ display:'flex', justifyContent:'space-between', marginBottom:'0.35rem' }}>
-            <span style={{ fontSize:'0.68rem', color:'rgba(255,255,255,0.65)', fontWeight:600 }}>Saving rate progress</span>
-            <span style={{ fontSize:'0.68rem', color:'white', fontWeight:700, fontFamily:'Space Grotesk,sans-serif' }}>{summary.savingRate}% of income saved</span>
+        <div className="hero-progress-wrap">
+          <div className="hero-progress-labels">
+            <span className="hero-progress-label">Saving rate progress</span>
+            <span className="hero-progress-val tabular">{summary.savingRate}% of income saved</span>
           </div>
-          <div style={{ height:5, background:'rgba(255,255,255,0.18)', borderRadius:999, overflow:'hidden' }}>
-            <div style={{ height:'100%', width:`${Math.min(100, summary.savingRate)}%`, background:'rgba(255,255,255,0.85)', borderRadius:999, boxShadow:'0 0 8px rgba(255,255,255,0.5)', transition:'width 0.8s cubic-bezier(0.16,1,0.3,1)' }} />
+          <div className="hero-progress-track">
+            <div
+              className="hero-progress-bar"
+              style={{ width: `${Math.min(100, summary.savingRate)}%` }}
+            />
           </div>
         </div>
       </div>
