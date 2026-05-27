@@ -1,11 +1,13 @@
 'use client';
 // src/app/reports/ReportsClient.tsx
+// Copyright (c) 2024-present Eric Gitahi. All rights reserved.
 import { useRouter } from 'next/navigation';
 import {
   BarChart, Bar, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
 import { Download, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { fmtAdaptive } from '@/lib/format';
 
 type TrendRow     = { label: string; Income: number; Expenses: number; Savings: number };
 type Summary      = { income: number; expenses: number; savings: number; savingRate: number };
@@ -46,12 +48,12 @@ export function ReportsClient({
 
   const isEmpty = summary.income === 0 && summary.expenses === 0;
 
-  /* ── KPI hero stats ─────────────────────────────────────── */
+  // KPI color mapping via CSS tokens only — no hardcoded hex
   const kpis = [
-    { label: `${periodLabel} Income`,   value: summary.income,   color: '#4ADE80', sign: '+' },
-    { label: `${periodLabel} Expenses`, value: summary.expenses, color: '#F87171', sign: '−' },
-    { label: 'Net Savings',             value: summary.savings,  color: summary.savings >= 0 ? '#4ADE80' : '#F87171', sign: summary.savings >= 0 ? '+' : '−' },
-    { label: 'Saving Rate',             value: null,             color: '#FCD34D', sign: '' },
+    { label: `${periodLabel} Income`,   value: summary.income,   color: 'var(--success)', sign: '+' },
+    { label: `${periodLabel} Expenses`, value: summary.expenses, color: 'var(--danger)',  sign: '−' },
+    { label: 'Net Savings',             value: summary.savings,  color: summary.savings >= 0 ? 'var(--success)' : 'var(--danger)', sign: summary.savings >= 0 ? '+' : '−' },
+    { label: 'Saving Rate',             value: null,             color: 'var(--warning)', sign: '' },
   ];
 
   return (
@@ -70,39 +72,39 @@ export function ReportsClient({
         <button className="btn btn-outline"><Download size={13}/> Export CSV</button>
       </div>
 
-      {/* Hero Banner */}
-      <div className="animate-in mb-5" style={{
-        borderRadius:12,
-        background: summary.savings >= 0
-          ? 'linear-gradient(135deg, #16A34A 0%, #0070F3 55%, #7C3AED 100%)'
-          : 'linear-gradient(135deg, #DC2626 0%, #7C3AED 55%, #0F766E 100%)',
-        boxShadow: summary.savings >= 0 ? '0 10px 32px rgba(22,163,74,0.28)' : '0 10px 32px rgba(220,38,38,0.28)',
-        padding:'1.375rem 1.5rem', position:'relative', overflow:'hidden',
-      }}>
-        <div style={{ position:'absolute', top:-40, right:-40, width:160, height:160, borderRadius:'50%', background:'rgba(255,255,255,0.06)', pointerEvents:'none' }} />
-        <div style={{ display:'grid', gridTemplateColumns:'1.4fr 1fr 1fr 1fr', gap:'1rem', alignItems:'center', position:'relative' }}>
-          {/* Primary */}
+      {/* Hero — matches dashboard style exactly: dark surface, clear readable text */}
+      <div className="dashboard-hero animate-in mb-5">
+        <div className="dashboard-hero-grid">
           <div>
-            <p style={{ fontSize:'0.6rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', color:'rgba(255,255,255,0.55)', marginBottom:'0.3rem' }}>Net Savings · {periodLabel}</p>
-            <p style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'2rem', fontWeight:800, letterSpacing:'-0.04em', color: summary.savings >= 0 ? '#4ADE80' : '#FCA5A5', lineHeight:1 }}>
-              {summary.savings >= 0 ? '+' : '−'}KES {Math.abs(summary.savings).toLocaleString()}
+            <p className="hero-label">Net Savings · {periodLabel}</p>
+            <p style={{
+              fontFamily:'Space Grotesk,sans-serif',
+              fontSize: Math.abs(summary.savings) > 9_999_999 ? '1.6rem' : Math.abs(summary.savings) > 999_999 ? '1.9rem' : '2.25rem',
+              fontWeight:800, letterSpacing:'-0.04em', lineHeight:1,
+              color: summary.savings >= 0 ? 'var(--success)' : 'var(--danger)',
+              whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
+            }}>
+              {summary.savings >= 0 ? '+' : '−'}{fmtAdaptive(Math.abs(summary.savings))}
             </p>
-            <p style={{ fontSize:'0.65rem', color:'rgba(255,255,255,0.5)', marginTop:'0.25rem' }}>
-              Saving rate: {summary.savingRate}% of income
-            </p>
+            <p className="hero-sub">Saving rate: {summary.savingRate}% of income</p>
           </div>
-          {/* Frosted stats */}
-          {[
-            { label:`${periodLabel} Income`,   val:`KES ${summary.income.toLocaleString()}`,   sub:'↑ coming in'   },
-            { label:`${periodLabel} Expenses`, val:`KES ${summary.expenses.toLocaleString()}`, sub:'↓ going out'   },
-            { label:'Saving Rate',             val:`${summary.savingRate}%`,                    sub: summary.savingRate >= 20 ? '✓ Great' : summary.savingRate >= 10 ? '⚠ Ok' : '⛔ Low' },
-          ].map(k => (
-            <div key={k.label} style={{ background:'rgba(255,255,255,0.12)', backdropFilter:'blur(8px)', border:'1px solid rgba(255,255,255,0.18)', borderRadius:10, padding:'0.75rem 1rem' }}>
-              <p style={{ fontSize:'0.6rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'rgba(255,255,255,0.55)', marginBottom:'0.2rem' }}>{k.label}</p>
-              <p style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'1.15rem', fontWeight:800, color:'white', lineHeight:1.2 }}>{k.val}</p>
-              <p style={{ fontSize:'0.6rem', color:'rgba(255,255,255,0.5)', marginTop:'0.1rem' }}>{k.sub}</p>
+          <div className="hero-stats-grid">
+            <div className="hero-stat-card">
+              <p className="hero-label">{periodLabel} Income</p>
+              <p className="hero-stat-value tabular" style={{ color:'var(--success)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>+{fmtAdaptive(summary.income)}</p>
+              <p className="hero-sub">↑ coming in</p>
             </div>
-          ))}
+            <div className="hero-stat-card">
+              <p className="hero-label">{periodLabel} Expenses</p>
+              <p className="hero-stat-value tabular" style={{ color:'var(--danger)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>−{fmtAdaptive(summary.expenses)}</p>
+              <p className="hero-sub">↓ going out</p>
+            </div>
+            <div className="hero-stat-card">
+              <p className="hero-label">Saving Rate</p>
+              <p className="hero-stat-value tabular" style={{ color: summary.savingRate >= 20 ? 'var(--success)' : summary.savingRate >= 10 ? 'var(--warning)' : 'var(--danger)' }}>{summary.savingRate}%</p>
+              <p className="hero-sub">{summary.savingRate >= 20 ? '✓ Great' : summary.savingRate >= 10 ? '⚠ Ok' : '⛔ Low'}</p>
+            </div>
+          </div>
         </div>
       </div>
 

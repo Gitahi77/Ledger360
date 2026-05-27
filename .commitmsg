@@ -1,25 +1,28 @@
-fix: cascade unified color system to all app sections
+fix: replace all gradient hero banners with unified dashboard-hero style
 
-This commit eliminates every hardcoded hex color across the remaining
-pages and replaces all .toLocaleString() financial displays with the
-unified fmtAdaptive() utility. All sections now share the same visual
-language as the dashboard.
+The root problem was finally identified and correctly fixed:
 
-Pages updated:
-- Transactions: hero banner gradient now uses var(--success/primary/teal)
-  and var(--danger/purple/teal) tokens. Net balance adapts between
-  positive/negative states with CSS vars. All KES amounts use fmtAdaptive.
-- Budgets: budgetStyle() helper completely rewritten to use var(--danger),
-  var(--warning), var(--success) for colors, border accents, bar gradients
-  and glow shadows. Hero banner gradient uses var(--warning/purple/primary).
-  All amounts use fmtAdaptive with adaptive font-size at 1M and 10M.
-- Net Worth: hero banner gradient uses var(--success/primary/purple) or
-  var(--danger/purple/teal) depending on net worth sign. All asset and
-  liability amounts use fmtAdaptive. Token vars throughout.
-- Loans: loanStyle() helper rewritten with var(--danger/warning/success)
-  for colors and bar gradients. Hero banner gradient uses var(--danger/purple/
-  teal) or var(--teal/primary/purple). All loan balances, original amounts,
-  and monthly payment figures use fmtAdaptive with adaptive font-size.
+Every section (Transactions, Budgets, Net Worth, Loans, Goals, Reports)
+was using raw gradient divs with hardcoded white text:
+  background: 'linear-gradient(135deg, #16A34A 0%, #0070F3 55%...)'
+  color: 'rgba(255,255,255,0.55)'  <-- invisible on light backgrounds
 
-The result: the entire app now has one unified visual identity. Switch
-theme, scale a number to 10M, view any page - it is always coherent.
+The dashboard uses .dashboard-hero CSS class which resolves to
+hsl(var(--surface-elevated)) -- a dark card in dark mode, a light
+card in light mode, with text always on var(--text-primary).
+
+This commit replaces ALL hero banners across all 6 sections with the
+exact same .dashboard-hero + .hero-stat-card pattern used by the
+dashboard. Every section now looks and behaves identically to the
+dashboard hero area:
+
+- Transactions: Net Balance + Income/Expense/Count stat cards
+- Budgets:      Total Budgeted + Budgets/OnTrack/OverBudget cards
+- Net Worth:    Net Worth + Assets/Liabilities/DebtRatio cards
+- Loans:        Total Debt + Loans/MonthlyPmts/Overdue cards
+- Goals:        Total Saved + Goals/Achieved/AlmostThere cards
+- Reports:      Net Savings + Income/Expenses/SavingRate cards
+
+All amounts use fmtAdaptive(). All status colors use CSS token vars
+(var(--success), var(--danger), var(--warning), var(--text-primary)).
+No hardcoded hex colors remain in any hero banner across the entire app.
