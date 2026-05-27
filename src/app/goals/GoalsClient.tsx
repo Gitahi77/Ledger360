@@ -6,7 +6,8 @@ import { useRouter } from 'next/navigation';
 import { addGoal, updateGoalAmount, deleteGoal } from '@/lib/actions/goals';
 import { CategoryIcon } from '@/components/CategoryIcon';
 import { fmtAdaptive, fmtFull, fmtPct } from '@/lib/format';
-import { Plus, CheckCircle2, TrendingUp, Trash2, Loader2, X, PiggyBank } from 'lucide-react';
+import { Plus, CheckCircle2, TrendingUp, Trash2, Loader2, X, PiggyBank, Info } from 'lucide-react';
+import { inflationAdjustedTarget, yearsUntil } from '@/lib/api/inflation';
 
 type Goal = {
   id: string; name: string; category: string;
@@ -283,6 +284,10 @@ export function GoalsClient({ goals }: { goals: Goal[] }) {
             const deadlineLabel = g.deadline
               ? new Date(g.deadline).toLocaleDateString('en-GB', { month:'short', year:'numeric' })
               : 'No deadline';
+            const yrsLeft = g.deadline ? yearsUntil(g.deadline) : 0;
+            const inflTarget = (g.deadline && yrsLeft > 0.25)
+              ? inflationAdjustedTarget(g.targetAmount, yrsLeft)
+              : null;
 
             return (
               <div key={g.id} className={`card animate-in delay-${(i%4)+1}`}
@@ -329,6 +334,17 @@ export function GoalsClient({ goals }: { goals: Goal[] }) {
                     <div style={{ fontSize:'0.7rem', color:'var(--text-secondary)', marginTop:'0.2rem', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
                       of {fmtAdaptive(g.targetAmount)}
                     </div>
+                    {inflTarget && inflTarget > g.targetAmount && (
+                      <div
+                        title={`At Kenya's ~6.8% annual inflation (KNBS), you'll need ${fmtAdaptive(inflTarget)} in today's money to match your target by ${deadlineLabel}.`}
+                        style={{ display:'inline-flex', alignItems:'center', gap:'0.25rem', marginTop:'0.3rem',
+                          fontSize:'0.62rem', fontWeight:700, color:'var(--warning)',
+                          background:'rgba(234,179,8,0.12)', borderRadius:4, padding:'0.15rem 0.4rem',
+                          cursor:'help', whiteSpace:'nowrap' }}
+                      >
+                        <Info size={9}/> Inflation-adj: {fmtAdaptive(inflTarget)}
+                      </div>
+                    )}
                   </div>
                   <div style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'2rem', fontWeight:800, color:st.numColor, letterSpacing:'-0.05em', lineHeight:1, opacity:0.88, flexShrink:0 }}>{pct}%</div>
                 </div>

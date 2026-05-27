@@ -1,7 +1,8 @@
 'use client';
 import { useState } from 'react';
-import { UploadCloud, Loader2, CheckCircle2, AlertCircle, ChevronRight, X } from 'lucide-react';
+import { UploadCloud, Loader2, CheckCircle2, AlertCircle, ChevronRight, X, Smartphone, FileText } from 'lucide-react';
 import { importTransactions } from '@/lib/actions/transactions';
+import { MpesaSmsInput } from '@/components/MpesaSmsInput';
 
 type ParsedRow = {
   date: string; name: string; amount: number; type: string;
@@ -9,9 +10,11 @@ type ParsedRow = {
 };
 
 type UploadState = 'idle' | 'uploading' | 'reviewing' | 'importing' | 'done' | 'error';
+type Tab = 'file' | 'sms';
 
 export function SmartUpload({ onDone }: { onDone?: () => void }) {
   const [state,     setState]    = useState<UploadState>('idle');
+  const [tab,       setTab]      = useState<Tab>('file');
   const [progress,  setProgress] = useState(0);
   const [rows,      setRows]     = useState<ParsedRow[]>([]);
   const [selected,  setSelected] = useState<Set<number>>(new Set());
@@ -76,51 +79,105 @@ export function SmartUpload({ onDone }: { onDone?: () => void }) {
     setSelected(s => { const n = new Set(s); n.has(i) ? n.delete(i) : n.add(i); return n; });
   }
 
+  /* ── SMS import handler ──────────────────────────────────── */
+  async function handleSmsImport(txs: Array<{ name: string; date: string; amount: number; type: 'income' | 'expense'; category: string; fee?: number }>) {
+    setState('importing');
+    try {
+      const toImport = txs.map(t => ({
+        name: t.name, date: t.date, amount: t.amount,
+        type: t.type as 'income' | 'expense',
+        category: t.category, categoryId: '', note: '',
+        categoryName: t.category,
+      }));
+      await importTransactions(toImport.map(r => ({
+        name: r.name, amount: r.amount, type: r.type,
+        date: r.date, categoryName: r.categoryName, note: r.note,
+      })));
+      setState('done');
+      setTimeout(() => { onDone?.(); }, 1500);
+    } catch (e: any) {
+      setErrMsg(e.message ?? 'Import failed.');
+      setState('error');
+    }
+  }
+
   /* ── Idle / drop zone ─────────────────────────────────────── */
   if (state === 'idle' || state === 'error') return (
     <div>
+      {/* Tab bar */}
+      <div style={{ display: 'flex', gap: '0', marginBottom: '1rem', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden', background: 'var(--bg-app)' }}>
+        {([
+          { key: 'file', label: 'File Upload',     icon: <FileText size={13} /> },
+          { key: 'sms',  label: 'M-Pesa SMS',      icon: <Smartphone size={13} /> },
+        ] as const).map(t => (
+          <button
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            style={{
+              flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.375rem',
+              padding: '0.6rem 0.5rem', border: 'none', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600,
+              background: tab === t.key ? 'var(--primary)' : 'transparent',
+              color:      tab === t.key ? 'white' : 'var(--text-secondary)',
+              transition: 'all 0.15s',
+            }}
+          >
+            {t.icon}{t.label}
+          </button>
+        ))}
+      </div>
+
       {state === 'error' && (
         <div style={{ marginBottom: '0.875rem', padding: '0.75rem 1rem', borderRadius: 8, background: 'var(--danger-light)', border: '1px solid rgba(220,38,38,0.2)', fontSize: '0.8rem', color: 'var(--danger)', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           <AlertCircle size={14} /> {errMsg}
           <button onClick={() => setState('idle')} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)' }}><X size={14} /></button>
         </div>
       )}
-      <div
-        onDragEnter={e => { e.preventDefault(); setDragging(true); }}
-        onDragLeave={e => { e.preventDefault(); setDragging(false); }}
-        onDragOver={e => e.preventDefault()}
-        onDrop={e => { e.preventDefault(); setDragging(false); const f = e.dataTransfer.files[0]; if (f) processFile(f); }}
-        onClick={() => document.getElementById('smart-upload-input')?.click()}
-        style={{
-          border: `2px dashed ${isDragging ? 'var(--primary)' : 'var(--border)'}`,
-          borderRadius: 12, padding: '2.5rem 2rem', textAlign: 'center', cursor: 'pointer',
-          background: isDragging ? 'var(--primary-light)' : 'var(--bg-app)',
-          transition: 'all 0.15s',
-        }}
-      >
-        <input id="smart-upload-input" type="file" accept=".pdf,.csv,.xlsx,.xls,.png,.jpg,.jpeg" style={{ display: 'none' }}
-          onChange={e => { const f = e.target.files?.[0]; if (f) processFile(f); }} />
-        <UploadCloud size={40} color="var(--primary)" style={{ margin: '0 auto 0.875rem' }} />
-        <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)', marginBottom: '0.3rem' }}>AI Smart Upload</div>
-        <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
-          Drop your bank statement here — PDF, CSV, Excel or screenshot.<br />
-          AI will auto-detect and categorise every transaction.
-        </p>
-        <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
-          <a 
-            href="/Ledger360_Template.xlsx" 
-            download 
-            className="btn btn-outline" 
-            style={{ textDecoration: 'none' }}
-            onClick={e => e.stopPropagation()}
-          >
-            Download Template
-          </a>
-          <button className="btn btn-primary" style={{ pointerEvents: 'none' }}>Browse Files</button>
+
+      {/* File upload tab */}
+      {tab === 'file' && (
+        <div
+          onDragEnter={e => { e.preventDefault(); setDragging(true); }}
+          onDragLeave={e => { e.preventDefault(); setDragging(false); }}
+          onDragOver={e => e.preventDefault()}
+          onDrop={e => { e.preventDefault(); setDragging(false); const f = e.dataTransfer.files[0]; if (f) processFile(f); }}
+          onClick={() => document.getElementById('smart-upload-input')?.click()}
+          style={{
+            border: `2px dashed ${isDragging ? 'var(--primary)' : 'var(--border)'}`,
+            borderRadius: 12, padding: '2.5rem 2rem', textAlign: 'center', cursor: 'pointer',
+            background: isDragging ? 'var(--primary-light)' : 'var(--bg-app)',
+            transition: 'all 0.15s',
+          }}
+        >
+          <input id="smart-upload-input" type="file" accept=".pdf,.csv,.xlsx,.xls,.png,.jpg,.jpeg" style={{ display: 'none' }}
+            onChange={e => { const f = e.target.files?.[0]; if (f) processFile(f); }} />
+          <UploadCloud size={40} color="var(--primary)" style={{ margin: '0 auto 0.875rem' }} />
+          <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)', marginBottom: '0.3rem' }}>AI Smart Upload</div>
+          <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+            Drop your bank statement here — PDF, CSV, Excel or screenshot.<br />
+            Gemini AI will auto-detect and categorise every transaction.
+          </p>
+          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+            <a
+              href="/Ledger360_Template.xlsx"
+              download
+              className="btn btn-outline"
+              style={{ textDecoration: 'none' }}
+              onClick={e => e.stopPropagation()}
+            >
+              Download Template
+            </a>
+            <button className="btn btn-primary" style={{ pointerEvents: 'none' }}>Browse Files</button>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* M-Pesa SMS tab */}
+      {tab === 'sms' && (
+        <MpesaSmsInput onImport={handleSmsImport} />
+      )}
     </div>
   );
+
 
   /* ── Uploading ───────────────────────────────────────────── */
   if (state === 'uploading') return (
