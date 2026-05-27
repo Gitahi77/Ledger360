@@ -101,7 +101,7 @@ export function MobileNav() {
         className="mobile-nav"
         style={{
           position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 999,
-          display: 'flex', alignItems: 'center', justifyContent: 'space-around',
+          alignItems: 'center', justifyContent: 'space-around',
           background: 'var(--bg-card)',
           borderTop: '1px solid var(--border)',
           backdropFilter: 'blur(16px)',

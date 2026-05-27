@@ -1,10 +1,13 @@
-feat: integrate Gemini AI + Frankfurter FX + NSE + KNBS inflation APIs
+fix: mobile nav hidden on desktop - remove inline display:flex override
 
-- Replace OpenAI with Gemini 1.5 Flash (1M tokens/day FREE)
-- Add M-Pesa SMS paste tab to SmartUpload (parses all SMS formats)
-- New /api/sms-parse endpoint for SMS to structured transactions
-- Live KES exchange rate ticker on dashboard (Frankfurter/ECB)
-- NSE stock price feed with fallback to known prices
-- Inflation-adjusted target shown on goal cards (KNBS 6.8% CPI)
-- New: src/lib/api/frankfurter.ts, gemini.ts, nse.ts, inflation.ts
-- New routes: /api/fx-rates, /api/nse, /api/sms-parse
+Root cause: the nav element in MobileNav.tsx had an inline style
+  { display: 'flex' }
+which always overrides CSS class rules, including media queries.
+The CSS class had display:none for screens >= 768px but the inline
+style was winning, so the mobile nav bar appeared on desktop too.
+
+Fix:
+- Removed display:'flex' from the inline style in MobileNav.tsx
+  so the .mobile-nav CSS class fully controls visibility
+- Added display:none !important in globals.css for screens >= 768px
+  as a safety guard against future inline style conflicts
