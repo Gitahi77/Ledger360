@@ -1,28 +1,25 @@
-fix: replace dark-only HSL tokens with theme-aware CSS vars in globals.css
+fix: rewrite MobileNav to match desktop sidebar exactly
 
-Root cause identified: globals.css had two :root blocks. The first
-defined --surface-elevated, --surface-secondary, --text-primary-hsl,
---text-muted-hsl etc as always-dark navy values (designed for dark
-mode only). The dashboard hero CSS classes used these dark-only tokens,
-causing dark backgrounds in light mode with inherited black page text
-sitting on top — invisible text across all sections.
+Before: 5 mismatched items with wrong labels (Overview, Ledger, Import,
+Insights, Profile), wrong icons, a broken /upload route that does not
+exist, and entire pages unreachable on mobile (Net Worth, Budgets,
+Goals, Loans, Security).
 
-Classes fixed (all now use theme-aware tokens):
-- .dashboard-hero:      --bg-card instead of hsl(--surface-elevated)
-- .hero-stat-card:      --bg-hover instead of hsl(--surface-secondary)
-- .hero-stat-value:     explicit color: var(--text-primary)
-- .hero-label:          --text-muted instead of hsl(--text-muted-hsl)
-- .hero-sub:            --text-muted instead of hsl(--text-muted-hsl)
-- .hero-progress-label: --text-muted instead of hsl(--text-muted-hsl)
-- .hero-progress-val:   --text-primary instead of hsl(--text-primary-hsl)
-- .hero-progress-track: --bg-hover instead of hsl(--surface-secondary)
-- .hero-progress-bar:   --text-primary instead of hsl(--text-primary-hsl)
-- .transaction-row:     --bg-hover instead of hsl(--surface-secondary)
-- .skeleton-row/lines:  --bg-hover instead of rgba(255,255,255,0.05)
-- .balance-text:        --text-primary instead of hsl(--text-primary-hsl)
-- .mobile-nav-item:     --text-muted/primary instead of HSL tokens
-- .mobile-nav:          --border and color-mix bg instead of HSL tokens
+After: a proper bottom tab bar that mirrors the desktop sidebar:
 
-Result: all hero panels, transaction rows, skeleton loaders, and the
-balance text now correctly adapt between light and dark themes. Text
-is always readable regardless of the active theme.
+Primary 5 tabs (always visible):
+  Dashboard    -- LayoutDashboard icon
+  Transactions -- ArrowLeftRight icon
+  Budgets      -- PieChart icon
+  Goals        -- Target icon
+  Loans        -- CreditCard icon
+
+More drawer (tap the ... button to reveal):
+  Net Worth | Reports
+  Security  | Settings
+
+Active state: var(--primary) text color + var(--primary-light)
+background pill, identical to the desktop sidebar-link.active style.
+
+If the current page is one of the More items, the More button itself
+lights up in primary color so the user always knows where they are.
