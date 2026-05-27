@@ -1,0 +1,34 @@
+feat: Sprint 2 — IP protection, color system, loans backend, confidence cues
+
+IP Protection:
+- Add proprietary LICENSE (All Rights Reserved, Eric Gitahi)
+- Add NOTICE.md with third-party attributions
+- Add SECURITY.md with responsible disclosure policy
+- Rewrite README.md with premium project branding and copyright
+- Add AppFooter watermark component with copyright notice
+
+Color System Consolidation:
+- Replace dual legacy hex/HSL color systems with single unified token architecture
+- Default (dark) mode: Mercury-inspired deep blue-grey palette
+- Light mode: clean, airy near-white with subtle blue tint
+- All variables now resolve through HSL — eliminates inconsistency
+- Success: Monzo-teal warmth; Danger: Copilot red; Warning: calm amber
+
+Loans Backend Fixes:
+- RecordPaymentModal: correctly split payment into interest + principal
+  (reducing-balance method) instead of naive balance subtraction
+- Add live payment breakdown UI (interest vs principal chips)
+- Amortization formula: use correct log formula with NaN/Infinity guard
+  when payment <= monthly interest charge
+- Add ExpandedForecast with interactive Extra Payment Simulator
+  showing new payoff date, months saved, and interest saved in real time
+
+Confidence Cues & Recovery UX:
+- Build FinancialHealthBadge primitive (on-track/needs-attention/recovering)
+- Build SafeToSpend primitive with Intl.NumberFormat and calm framing
+- Add all CSS classes: .health-badge, .safe-to-spend, .insight-card
+- Non-punitive language audit in intelligence.ts:
+  "Cashflow Warning" → "Worth keeping an eye on"
+  "Unusual Spending Spike" → "Higher than usual"
+  "Upcoming Recurring Bill" → "Upcoming recurring payment"
+  forecast-negative severity: danger → warning

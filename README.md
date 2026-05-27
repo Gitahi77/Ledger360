@@ -1,69 +1,77 @@
-# Ledger 360 — Personal Finance OS
+<div align="center">
 
-Ledger 360 is a modern, full-stack financial operating system designed to go beyond basic expense tracking. It provides a comprehensive suite of tools for managing transactions, budgets, long-term goals, loans, and overall net worth, all wrapped in a premium, responsive "Fintech OS" visual identity.
+<img src="public/favicon.ico" width="48" alt="Ledger360 Logo" />
 
-## The Problem
+# Ledger360
 
-Most financial tools are built for businesses. Individuals are left with spreadsheets or basic expense apps that track spending but do not build financial clarity. Ledger 360 exists to close that gap, giving individuals the same financial operating visibility that businesses take for granted, built on the same institutional-grade engineering principles.
+**Personal Financial Operating System**
 
-## 🚀 Features
+*Institutional-grade financial intelligence, built for real people.*
 
-*   **Smart Upload & AI Parsing:** Drag and drop your bank statements (CSV, Excel, PDF). The system auto-categorizes transactions using intelligent keyword mapping and optional OpenAI GPT-4o Vision integration.
-*   **Comprehensive Dashboards:** Live tracking of Cashflow, Savings Rate, and spending velocity. 
-*   **Intelligent Budgeting:** Set weekly, monthly, or yearly limits per category with real-time progress bars (Success, Warning, Danger states).
-*   **Goal Tracking & Forecasting:** Track savings goals with visual progress rings.
-*   **Loan Management:** Track personal loans, interest rates, and monthly payments.
-*   **Net Worth Engine:** Real-time aggregation of liquid assets, illiquid assets, and liabilities.
-*   **Production-Ready Security:** Full server-side input validation using Zod, scoped database queries via NextAuth, and secure parameterized Prisma operations.
+[![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red.svg)](./LICENSE)
+[![Built with Next.js](https://img.shields.io/badge/Built%20with-Next.js%2016-black?logo=nextdotjs)](https://nextjs.org)
+[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?logo=vercel)](https://vercel.com)
 
-## 🛠️ Tech Stack
-
-*   **Framework:** [Next.js 16](https://nextjs.org/) (App Router)
-*   **Database:** PostgreSQL (hosted on [Neon](https://neon.tech/))
-*   **ORM:** [Prisma](https://www.prisma.io/)
-*   **Authentication:** [NextAuth.js](https://next-auth.js.org/)
-*   **Styling:** Vanilla CSS (CSS Modules) + Custom Design System
-*   **Validation:** [Zod](https://zod.dev/)
-*   **Charts:** [Recharts](https://recharts.org/)
-
-## 📂 Architecture Overview
-
-The codebase is structured for scalability and separation of concerns:
-
-*   `/src/app`: Next.js App Router pages and Server Components (data fetching).
-*   `/src/components`: Reusable client-side UI components and layouts.
-*   `/src/lib/actions`: Server Actions for database mutations (all protected by `requireAuth` and `Zod`).
-*   `/src/lib/validation.ts`: Centralized single source of truth for all form and API validation schemas.
-*   `/prisma`: Database schemas and migrations.
-
-## 💻 Local Setup
-
-1.  **Clone the repository**
-2.  **Install dependencies:**
-    ```bash
-    npm install
-    ```
-3.  **Set up Environment Variables:**
-    Copy `.env.production.example` to `.env` and fill in your Neon database URLs and NextAuth secret.
-    ```bash
-    cp .env.production.example .env
-    ```
-4.  **Initialize the Database:**
-    ```bash
-    npx prisma db push
-    npx prisma generate
-    ```
-5.  **Run the development server:**
-    ```bash
-    npm run dev
-    ```
-    Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-## 🗺️ Roadmap & Future Enhancements
-
-*   [ ] **Background Job Queues:** Move AI parsing to an asynchronous queue (e.g., Upstash/Redis) for extreme stability with massive PDF files.
-*   [ ] **Financial Intelligence:** Implement anomaly detection for unusual spending spikes and recurring bill predictions.
-*   [ ] **Rate Limiting:** Protect authentication and upload endpoints against brute-force attacks.
+</div>
 
 ---
-*Built with product-minded engineering for the modern web.*
+
+## What Is Ledger360?
+
+Ledger360 is a **personal financial command center** — not a spending tracker, not a generic dashboard. It bridges the gap between the operational discipline of institutional finance tools and the emotional clarity that personal finance users need.
+
+Think Mercury × YNAB × Notion — built for individuals who take their financial life seriously.
+
+### Core Capabilities
+
+| Module | Description |
+|--------|-------------|
+| **Dashboard** | Net worth snapshot, cashflow hero, AI-powered insights |
+| **Transactions** | Full ledger with smart categorization and CSV/Excel import |
+| **Budgets** | Real-time budget tracking with visual health indicators |
+| **Goals** | Milestone-based savings goal tracking |
+| **Loans & Debt** | Multi-loan management with amortization forecasting |
+| **Net Worth** | Asset + liability tracker with trend analysis |
+| **Reports** | Period-based financial reporting with export |
+| **AI Intelligence** | Anomaly detection, recurring bill prediction, cashflow forecasting |
+
+---
+
+## Architecture
+
+- **Framework:** Next.js 16 (App Router, Server Actions, React 19)
+- **Database:** PostgreSQL via Neon + Prisma ORM
+- **Auth:** NextAuth.js (credential-based)
+- **Styling:** Institutional Vanilla CSS Design System (custom HSL token architecture)
+- **AI:** Rule-based intelligence engine with statistical anomaly detection
+- **Deployment:** Vercel (Edge Runtime)
+
+---
+
+## Design Philosophy
+
+Ledger360 is built on a strict **7-law interaction doctrine**:
+
+1. Financial values never visually jump *(mandatory tabular alignment)*
+2. Critical balances render before analytics *(data-priority architecture)*
+3. All financial actions provide tactile feedback within 100ms *(haptic governance)*
+4. No loading state may cause layout shift *(absolute skeleton stability)*
+5. Transaction states must be visually distinct AND emotionally readable
+6. Motion must communicate continuity and calm *(no bouncing animations)*
+7. Every density mode preserves ledger readability and whitespace rhythm
+
+---
+
+## Copyright & License
+
+Copyright (c) 2024–present **Eric Gitahi**. All rights reserved.
+
+This is **proprietary software**. Viewing the source code is permitted for
+evaluation and educational purposes. Copying, redistribution, modification,
+or commercial use is strictly prohibited. See [LICENSE](./LICENSE) for full terms.
+
+---
+
+<div align="center">
+  <sub>Built with precision by <a href="https://github.com/Gitahi77">Eric Gitahi</a></sub>
+</div>
