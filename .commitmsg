@@ -1,25 +1,21 @@
-fix: rewrite MobileNav to match desktop sidebar exactly
+fix: mobile UX overhaul - settings accordion + responsive grid collapse
 
-Before: 5 mismatched items with wrong labels (Overview, Ledger, Import,
-Insights, Profile), wrong icons, a broken /upload route that does not
-exist, and entire pages unreachable on mobile (Net Worth, Budgets,
-Goals, Loans, Security).
+Settings page (SettingsClient.tsx):
+- Replaced the broken 2-panel desktop layout (210px sidebar + content panel)
+  with a full-width accordion. Each section (Profile, Appearance,
+  Preferences, Notifications, Data & Privacy, Help & About) now has a
+  tap-to-expand header showing icon + label + description + chevron.
+- Multiple sections can be open simultaneously.
+- Active section has primary-colored header with filled icon background.
+- Works identically on mobile and desktop - no clutter, no misalignment.
 
-After: a proper bottom tab bar that mirrors the desktop sidebar:
-
-Primary 5 tabs (always visible):
-  Dashboard    -- LayoutDashboard icon
-  Transactions -- ArrowLeftRight icon
-  Budgets      -- PieChart icon
-  Goals        -- Target icon
-  Loans        -- CreditCard icon
-
-More drawer (tap the ... button to reveal):
-  Net Worth | Reports
-  Security  | Settings
-
-Active state: var(--primary) text color + var(--primary-light)
-background pill, identical to the desktop sidebar-link.active style.
-
-If the current page is one of the More items, the More button itself
-lights up in primary color so the user always knows where they are.
+Mobile CSS (globals.css):
+- Collapsed all inline-grid layouts (div[style*="gridTemplateColumns"])
+  to single column on screens <= 768px.
+- Dashboard hero stats grid stays 3-across on mobile (compact enough).
+- Hero stat values get smaller font size on mobile to prevent overflow.
+- Cards get overflow:hidden and word-break:break-word.
+- Added bottom padding to main-content equal to mobile nav bar height
+  so the nav bar never covers page content.
+- Toolbar flex rows wrap gracefully instead of overflowing.
+- Tables get horizontal scroll within their container.
