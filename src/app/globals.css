@@ -839,7 +839,7 @@ select, input { font-family: inherit; }
   letter-spacing: -0.045em;
   line-height: 0.95;
   font-size: var(--font-balance);
-  color: hsl(var(--text-primary-hsl));
+  color: var(--text-primary);
 }
 
 /* LedgerAmount */
@@ -864,13 +864,13 @@ select, input { font-family: inherit; }
   border-radius: var(--radius-row);
   padding: var(--row-padding) 1rem;
   min-height: var(--row-height);
-  background-color: hsl(var(--surface-secondary));
+  background-color: var(--bg-hover);
   text-align: left;
   border: none;
   cursor: pointer;
 }
 .transaction-row:hover {
-  background-color: hsl(var(--state-hover));
+  background-color: var(--bg-hover);
 }
 .transaction-row-icon {
   height: 2.5rem;
@@ -881,7 +881,7 @@ select, input { font-family: inherit; }
   display: flex;
   align-items: center;
   justify-content: center;
-  color: hsl(var(--text-secondary-hsl));
+  color: var(--text-secondary);
 }
 .transaction-row-content {
   min-width: 0;
@@ -892,7 +892,7 @@ select, input { font-family: inherit; }
   overflow: hidden;
   text-overflow: ellipsis;
   font-weight: 500;
-  color: hsl(var(--text-primary-hsl));
+  color: var(--text-primary);
   margin: 0;
 }
 .transaction-row-subtitle {
@@ -900,7 +900,7 @@ select, input { font-family: inherit; }
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: var(--font-caption);
-  color: hsl(var(--text-muted-hsl));
+  color: var(--text-muted);
   margin: 0;
   margin-top: 0.125rem;
 }
@@ -911,7 +911,7 @@ select, input { font-family: inherit; }
 }
 .transaction-row-delete {
   padding: 0.375rem;
-  color: hsl(var(--text-muted-hsl));
+  color: var(--text-muted);
   border-radius: 0.375rem;
   background: transparent;
   border: none;
@@ -933,7 +933,7 @@ select, input { font-family: inherit; }
   border-radius: var(--radius-row);
   padding: var(--row-padding) 1rem;
   height: var(--row-height);
-  background-color: hsl(var(--surface-secondary));
+  background-color: var(--bg-hover);
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 .skeleton-circle {
@@ -949,9 +949,9 @@ select, input { font-family: inherit; }
   flex-direction: column;
   gap: 0.5rem;
 }
-.skeleton-line-1 { height: 1rem; width: 33%; border-radius: 0.25rem; background-color: rgba(255, 255, 255, 0.05); }
-.skeleton-line-2 { height: 0.75rem; width: 25%; border-radius: 0.25rem; background-color: rgba(255, 255, 255, 0.05); }
-.skeleton-amount { height: 1rem; width: 4rem; border-radius: 0.25rem; background-color: rgba(255, 255, 255, 0.05); }
+.skeleton-line-1 { height: 1rem; width: 33%; border-radius: 0.25rem; background-color: var(--bg-hover); }
+.skeleton-line-2 { height: 0.75rem; width: 25%; border-radius: 0.25rem; background-color: var(--bg-hover); }
+.skeleton-amount { height: 1rem; width: 4rem; border-radius: 0.25rem; background-color: var(--bg-hover); }
 
 /* MobileNav */
 .mobile-nav {
@@ -963,8 +963,8 @@ select, input { font-family: inherit; }
   display: flex;
   align-items: center;
   justify-content: space-around;
-  border-top: 1px solid hsl(var(--border-subtle-hsl));
-  background-color: hsla(var(--surface-primary), 0.9);
+  border-top: 1px solid var(--border);
+  background-color: color-mix(in srgb, var(--bg-card) 90%, transparent);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   padding-bottom: max(env(safe-area-inset-bottom), 0.5rem);
@@ -983,11 +983,11 @@ select, input { font-family: inherit; }
   padding: 0.5rem;
   border-radius: 0.75rem;
   text-decoration: none;
-  color: hsl(var(--text-muted-hsl));
+  color: var(--text-muted);
   transition: color 0.2s;
 }
 .mobile-nav-item:hover {
-  color: hsl(var(--text-primary-hsl));
+  color: var(--text-primary);
 }
 .mobile-nav-item.active {
   color: hsl(var(--primary-hsl));
@@ -998,11 +998,11 @@ select, input { font-family: inherit; }
   letter-spacing: -0.025em;
 }
 
-/* Dashboard Hero */
+/* Dashboard Hero — uses theme-aware tokens, works in both light and dark */
 .dashboard-hero {
   border-radius: 1rem;
-  border: 1px solid hsl(var(--border-subtle-hsl));
-  background-color: hsl(var(--surface-elevated));
+  border: 1px solid var(--border);
+  background-color: var(--bg-card);
   padding: 1.5rem;
   box-shadow: var(--shadow-sm);
   margin-bottom: 1.25rem;
@@ -1023,12 +1023,12 @@ select, input { font-family: inherit; }
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: hsl(var(--text-muted-hsl));
+  color: var(--text-muted);
   margin-bottom: 0.5rem;
 }
 .hero-sub {
   font-size: var(--font-caption);
-  color: hsl(var(--text-muted-hsl));
+  color: var(--text-muted);
   margin-top: 0.5rem;
 }
 .hero-stats-grid {
@@ -1043,8 +1043,8 @@ select, input { font-family: inherit; }
 }
 .hero-stat-card {
   border-radius: 0.75rem;
-  border: 1px solid hsl(var(--border-subtle-hsl));
-  background-color: hsl(var(--surface-secondary));
+  border: 1px solid var(--border);
+  background-color: var(--bg-hover);
   padding: 1rem;
 }
 .hero-stat-value {
@@ -1052,6 +1052,7 @@ select, input { font-family: inherit; }
   font-size: 1.25rem;
   letter-spacing: -0.025em;
   line-height: 1;
+  color: var(--text-primary);
 }
 .hero-progress-wrap {
   margin-top: 1.25rem;
@@ -1066,23 +1067,23 @@ select, input { font-family: inherit; }
 .hero-progress-label {
   font-size: var(--font-caption);
   font-weight: 500;
-  color: hsl(var(--text-muted-hsl));
+  color: var(--text-muted);
 }
 .hero-progress-val {
   font-size: var(--font-caption);
   font-weight: 700;
-  color: hsl(var(--text-primary-hsl));
+  color: var(--text-primary);
 }
 .hero-progress-track {
   height: 0.375rem;
   border-radius: 999px;
-  background-color: hsl(var(--surface-secondary));
+  background-color: var(--bg-hover);
   overflow: hidden;
 }
 .hero-progress-bar {
   height: 100%;
   border-radius: 999px;
-  background-color: hsl(var(--text-primary-hsl));
+  background-color: var(--text-primary);
   transition: width 0.7s ease-out;
 }
 
