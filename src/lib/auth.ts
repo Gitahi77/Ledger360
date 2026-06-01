@@ -91,8 +91,8 @@ export const authOptions: NextAuthOptions = {
           
           // If user was deleted or sessionVersion changed (e.g. password reset), invalidate token
           if (!fresh || (token.sessionVersion !== undefined && fresh.sessionVersion !== token.sessionVersion)) {
-            // Return empty object or token with no ID so session becomes invalid
-            return { ...token, id: undefined, email: undefined };
+            // Return token with an error flag to invalidate session
+            return { ...token, error: "SessionExpired" } as any;
           }
           
           // Auto-sync currency and profile
@@ -109,6 +109,10 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }) {
+      if ((token as any).error) {
+        // Return an empty session to force logout
+        return {} as any;
+      }
       if (session.user) {
         session.user.id          = token.id as string;
         session.user.accountType = token.accountType as string;
