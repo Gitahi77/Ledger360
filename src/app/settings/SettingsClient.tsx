@@ -276,8 +276,8 @@ export function SettingsClient({
     e.preventDefault();
     await withSave(setPrefsState, async () => {
       await savePreferences({
-        dateFormat,
-        weekStartDay: weekStart,
+        dateFormat:  dateFormat  as 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY-MM-DD',
+        weekStartDay: weekStart  as 'Monday' | 'Sunday',
         savingRate: Math.min(80, Math.max(1, parseInt(savingRate) || 30)),
       });
       startT(() => router.refresh());
