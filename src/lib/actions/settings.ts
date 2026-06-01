@@ -59,10 +59,20 @@ export async function savePreferences(raw: z.infer<typeof PrefsSchema>) {
 export async function saveNotifications(raw: z.infer<typeof NotifSchema>) {
   const data = NotifSchema.parse(raw);
   const user = await requireAuth();
+
+  // Map short Zod keys → Prisma field names (notifOverbudget, notifGoals, etc.)
+  const prismaData = {
+    notifOverbudget: data.overbudget,
+    notifGoals:      data.goals,
+    notifBills:      data.bills,
+    notifInsights:   data.insights,
+    notifLoanDue:    data.loanDue,
+  };
+
   await prisma.userPreferences.upsert({
     where:  { userId: user.id },
-    create: { userId: user.id, ...data },
-    update: data,
+    create: { userId: user.id, ...prismaData },
+    update: prismaData,
   });
   revalidatePath('/settings');
 }
