@@ -66,7 +66,7 @@ export async function resetPassword(token: string, newPassword: string) {
   });
 
   if (!user) {
-    throw new Error('Invalid or expired reset token');
+    return { error: 'Invalid or expired reset token' };
   }
 
   const hashedPassword = await bcrypt.hash(newPassword, 10);

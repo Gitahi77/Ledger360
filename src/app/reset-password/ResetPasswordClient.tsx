@@ -27,7 +27,12 @@ export default function ResetPasswordClient() {
     setError('');
     
     try {
-      await resetPassword(token, password);
+      const result = await resetPassword(token, password);
+      if (result.error) {
+        setError(result.error);
+        setLoading(false);
+        return;
+      }
       setSuccess(true);
       setTimeout(() => {
         router.push('/login');
