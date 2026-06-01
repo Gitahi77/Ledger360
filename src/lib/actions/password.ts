@@ -24,7 +24,7 @@ export async function requestPasswordReset(email: string) {
   });
 
   // Since we don't have an email provider configured, we log the reset link.
-  const resetLink = \`http://localhost:3000/reset-password?token=\${token}\`;
+  const resetLink = `http://localhost:3000/reset-password?token=${token}`;
   console.log('\n\n======================================================');
   console.log('PASSWORD RESET REQUESTED FOR:', email);
   console.log('RESET LINK:', resetLink);
