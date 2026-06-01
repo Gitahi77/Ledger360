@@ -1,6 +1,7 @@
 // src/lib/actions/reports.ts
 'use server';
 import { prisma } from '@/lib/prisma';
+import { revalidatePath } from 'next/cache';
 import { requireAuth } from './_auth';
 
 /* ── 6-month trend (single raw SQL) ──────────────────────── */
@@ -48,13 +49,13 @@ export async function getReportSummary(period: string) {
   if (period === 'this-week') {
     const d = new Date(now); d.setDate(d.getDate() - d.getDay());
     from = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-    to   = new Date();
+    to   = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
   } else if (period === 'this-year') {
     from = new Date(now.getFullYear(), 0, 1);
-    to   = new Date();
+    to   = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
   } else {
     from = new Date(now.getFullYear(), now.getMonth(), 1);
-    to   = new Date();
+    to   = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
   }
 
   const [income, expenses] = await Promise.all([
@@ -82,13 +83,13 @@ export async function getReportCategories(period: string) {
   if (period === 'this-week') {
     const d = new Date(now); d.setDate(d.getDate() - d.getDay());
     from = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-    to   = new Date();
+    to   = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
   } else if (period === 'this-year') {
     from = new Date(now.getFullYear(), 0, 1);
-    to   = new Date();
+    to   = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
   } else {
     from = new Date(now.getFullYear(), now.getMonth(), 1);
-    to   = new Date();
+    to   = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
   }
 
   const rows = await prisma.transaction.groupBy({
@@ -124,10 +125,25 @@ export async function getUserProfile() {
   return dbUser;
 }
 
-/* ── Update profile (Zod-validated) ──────────────────────── */
+/* ── Update profile (Zod-validated) ──────────────────────────
+ *  After saving, we call revalidatePath so the Settings page
+ *  Server Component re-renders with the latest values.
+ *  The JWT trigger='update' in auth.ts then refreshes the token
+ *  so currency/accountType changes propagate to all pages without
+ *  requiring a re-login.
+ */
 export async function updateProfile(raw: { name: string; currency: string; accountType: string }) {
   const { UpdateProfileSchema } = await import('@/lib/validation');
   const data = UpdateProfileSchema.parse(raw);
   const user = await requireAuth();
   await prisma.user.update({ where: { id: user.id }, data });
+  // Revalidate all paths that display user-specific data
+  revalidatePath('/settings');
+  revalidatePath('/');
+  revalidatePath('/transactions');
+  revalidatePath('/budgets');
+  revalidatePath('/goals');
+  revalidatePath('/loans');
+  revalidatePath('/net-worth');
+  revalidatePath('/reports');
 }

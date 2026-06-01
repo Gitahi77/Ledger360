@@ -1,5 +1,15 @@
+// src/lib/intelligence.ts
+// AI-like financial insight engine.
+// Key fixes vs. previous version:
+//  1. Month keys are year-aware (YYYY-M) — prevents Jan 2024 + Jan 2025 merging
+//  2. Anomaly detection keys by categoryId not name — safe against renames
+//  3. Recurring bill detection is case-insensitive
+//  4. Cashflow forecast shows even when income = 0 (expense-only warning)
+//  5. Category currency uses the user's currency from session (passed in)
 import { prisma } from './prisma';
-import { startOfMonth, subMonths, endOfMonth, differenceInDays, getDate, getDaysInMonth, isSameMonth } from 'date-fns';
+import {
+  startOfMonth, subMonths, getDate, getDaysInMonth,
+} from 'date-fns';
 
 export type Insight = {
   id: string;
@@ -9,13 +19,18 @@ export type Insight = {
   severity: 'info' | 'warning' | 'success' | 'danger';
 };
 
-export async function generateInsights(userId: string): Promise<Insight[]> {
+/** Year-aware month key — YYYY-M — prevents cross-year bucket collisions. */
+function monthKey(date: Date): string {
+  return `${date.getFullYear()}-${date.getMonth() + 1}`;
+}
+
+export async function generateInsights(userId: string, currency = 'KES'): Promise<Insight[]> {
   const insights: Insight[] = [];
   const now = new Date();
   const thisMonthStart = startOfMonth(now);
   const threeMonthsAgo = subMonths(thisMonthStart, 3);
 
-  // 1. Fetch data
+  // 1. Fetch last 3 months of transactions
   const transactions = await prisma.transaction.findMany({
     where: { userId, date: { gte: threeMonthsAgo } },
     include: { category: true },
@@ -33,104 +48,127 @@ export async function generateInsights(userId: string): Promise<Insight[]> {
   }
 
   const currentMonthTx = transactions.filter(t => t.date >= thisMonthStart);
-  const pastMonthsTx   = transactions.filter(t => t.date < thisMonthStart);
+  const pastMonthsTx   = transactions.filter(t => t.date <  thisMonthStart);
 
-  // --- ANOMALY DETECTION ---
-  // Compare this month's category spending to the average of the last 3 months
-  const pastCategoryTotals: Record<string, number> = {};
+  // ── ANOMALY DETECTION ──────────────────────────────────────────────────────
+  // Key by categoryId (stable) instead of category name (can be renamed).
+  // Track which months each category had spend so the average is per-month.
+  const pastByCategory: Record<string, { totalAmt: number; months: Set<string> }> = {};
   pastMonthsTx.filter(t => t.type === 'expense').forEach(t => {
-    pastCategoryTotals[t.category.name] = (pastCategoryTotals[t.category.name] || 0) + t.amount;
+    if (!pastByCategory[t.categoryId]) {
+      pastByCategory[t.categoryId] = { totalAmt: 0, months: new Set() };
+    }
+    pastByCategory[t.categoryId].totalAmt += t.amount;
+    pastByCategory[t.categoryId].months.add(monthKey(t.date));
   });
-  
-  // Average per month (over up to 3 past months)
-  const pastMonthsCount = Array.from(new Set(pastMonthsTx.map(t => t.date.getMonth()))).length || 1;
-  const avgCategorySpend = Object.fromEntries(
-    Object.entries(pastCategoryTotals).map(([cat, total]) => [cat, total / pastMonthsCount])
-  );
 
-  const currentCategoryTotals: Record<string, number> = {};
+  const currentByCategory: Record<string, { totalAmt: number; name: string }> = {};
   currentMonthTx.filter(t => t.type === 'expense').forEach(t => {
-    currentCategoryTotals[t.category.name] = (currentCategoryTotals[t.category.name] || 0) + t.amount;
+    if (!currentByCategory[t.categoryId]) {
+      currentByCategory[t.categoryId] = { totalAmt: 0, name: t.category.name };
+    }
+    currentByCategory[t.categoryId].totalAmt += t.amount;
   });
 
-  for (const [cat, currentSpend] of Object.entries(currentCategoryTotals)) {
-    const avg = avgCategorySpend[cat];
-    if (avg && avg > 1000) { // Only flag meaningful categories
-      const ratio = currentSpend / avg;
+  for (const [catId, current] of Object.entries(currentByCategory)) {
+    const past = pastByCategory[catId];
+    if (!past || past.months.size === 0) continue;
+    const avgMonthlySpend = past.totalAmt / past.months.size;
+    if (avgMonthlySpend > 1000) {
+      const ratio = current.totalAmt / avgMonthlySpend;
       if (ratio > 1.4) {
-        const percent = Math.round((ratio - 1) * 100);
+        const pct = Math.round((ratio - 1) * 100);
         insights.push({
-          id: `anomaly-${cat}`,
-          type: 'anomaly',
-          title: 'Higher than usual',
-          description: `Your ${cat} spending looks ${percent}% above your typical pattern this month.`,
-          severity: 'warning',
+          id:          `anomaly-${catId}`,
+          type:        'anomaly',
+          title:       'Higher than usual',
+          description: `Your ${current.name} spending is ${pct}% above your typical monthly average.`,
+          severity:    'warning',
         });
       }
     }
   }
 
-  // --- RECURRING BILL DETECTION ---
-  // Look for expenses with the exact same name across multiple months
-  const expenseNames = [...new Set(pastMonthsTx.filter(t => t.type === 'expense').map(t => t.name))];
-  for (const name of expenseNames) {
-    const matches = pastMonthsTx.filter(t => t.name === name);
-    if (matches.length >= 2) {
-      // Check if it's been paid this month
-      const paidThisMonth = currentMonthTx.some(t => t.name === name);
-      if (!paidThisMonth) {
-        // Find average date of month it's usually paid
-        const avgDate = Math.round(matches.reduce((acc, t) => acc + getDate(t.date), 0) / matches.length);
-        const todayDate = getDate(now);
-        
-        if (todayDate >= avgDate - 5 && todayDate <= avgDate + 5) {
-          const avgAmount = matches.reduce((acc, t) => acc + t.amount, 0) / matches.length;
-          insights.push({
-            id: `recurring-${name}`,
-            type: 'recurring',
-            title: 'Upcoming recurring payment',
-            description: `${name} usually comes around the ${avgDate}th (~KES ${Math.round(avgAmount).toLocaleString()}).`,
-            severity: 'info',
-          });
-        }
-      }
+  // ── RECURRING BILL DETECTION ───────────────────────────────────────────────
+  // Case-insensitive name matching so "Netflix" and "NETFLIX" are the same bill.
+  const pastExpenses = pastMonthsTx.filter(t => t.type === 'expense');
+  const nameGroups: Record<string, typeof pastExpenses> = {};
+  pastExpenses.forEach(t => {
+    const key = t.name.trim().toLowerCase();
+    if (!nameGroups[key]) nameGroups[key] = [];
+    nameGroups[key].push(t);
+  });
+
+  for (const [nameKey, matches] of Object.entries(nameGroups)) {
+    // Must appear in at least 2 distinct months to be considered recurring
+    const distinctMonths = new Set(matches.map(t => monthKey(t.date)));
+    if (distinctMonths.size < 2) continue;
+
+    // Check if it's already been paid this month (case-insensitive)
+    const paidThisMonth = currentMonthTx.some(t =>
+      t.name.trim().toLowerCase() === nameKey
+    );
+    if (paidThisMonth) continue;
+
+    // Predict by average day-of-month
+    const avgDate = Math.round(matches.reduce((acc, t) => acc + getDate(t.date), 0) / matches.length);
+    const todayDate = getDate(now);
+
+    if (todayDate >= avgDate - 5 && todayDate <= avgDate + 5) {
+      const avgAmount = matches.reduce((acc, t) => acc + t.amount, 0) / matches.length;
+      const displayName = matches[0].name; // use original casing for display
+      insights.push({
+        id:          `recurring-${nameKey}`,
+        type:        'recurring',
+        title:       'Upcoming recurring payment',
+        description: `"${displayName}" usually arrives around the ${avgDate}th (~${currency} ${Math.round(avgAmount).toLocaleString()}).`,
+        severity:    'info',
+      });
     }
   }
 
-  // --- CASHFLOW FORECASTING ---
-  const currentIncome = currentMonthTx.filter(t => t.type === 'income').reduce((a, b) => a + b.amount, 0);
+  // ── CASHFLOW FORECAST ──────────────────────────────────────────────────────
+  // Show expense-side warning even when income = 0 (e.g. student / new user).
+  const currentIncome  = currentMonthTx.filter(t => t.type === 'income').reduce((a, b) => a + b.amount, 0);
   const currentExpense = currentMonthTx.filter(t => t.type === 'expense').reduce((a, b) => a + b.amount, 0);
-  
-  const daysPassed = getDate(now) || 1;
-  const daysInMonth = getDaysInMonth(now);
-  
-  const dailyBurnRate = currentExpense / daysPassed;
+
+  const daysPassed     = Math.max(getDate(now), 1);
+  const daysInMonth    = getDaysInMonth(now);
+  const dailyBurnRate  = currentExpense / daysPassed;
   const projectedExpense = dailyBurnRate * daysInMonth;
-  
-  if (currentIncome > 0 && projectedExpense > 0) {
+
+  if (currentIncome > 0) {
     const projectedSavings = currentIncome - projectedExpense;
     if (projectedSavings > 0) {
       insights.push({
-        id: 'forecast-positive',
-        type: 'forecast',
-        title: 'On pace to save this month',
-        description: `At your daily spend of KES ${Math.round(dailyBurnRate).toLocaleString()}, you could save ~KES ${Math.round(projectedSavings).toLocaleString()} by month-end.`,
-        severity: 'success',
+        id:          'forecast-positive',
+        type:        'forecast',
+        title:       'On pace to save this month',
+        description: `At your daily spend of ${currency} ${Math.round(dailyBurnRate).toLocaleString()}, you could save ~${currency} ${Math.round(projectedSavings).toLocaleString()} by month-end.`,
+        severity:    'success',
       });
     } else {
       insights.push({
-        id: 'forecast-negative',
-        type: 'forecast',
-        title: 'Worth keeping an eye on',
-        description: `Your spending this month is running a little ahead of income. About KES ${Math.round(Math.abs(projectedSavings)).toLocaleString()} to close the gap.`,
-        severity: 'warning',
+        id:          'forecast-negative',
+        type:        'forecast',
+        title:       'Spending running ahead of income',
+        description: `At your current rate you may exceed income by ~${currency} ${Math.round(Math.abs(projectedSavings)).toLocaleString()} this month. Consider reviewing your expenses.`,
+        severity:    'warning',
       });
     }
+  } else if (currentExpense > 0) {
+    // No income recorded yet this month — still useful to show burn rate
+    insights.push({
+      id:          'forecast-no-income',
+      type:        'forecast',
+      title:       'No income recorded yet this month',
+      description: `You're spending ~${currency} ${Math.round(dailyBurnRate).toLocaleString()}/day. Record your income to see your full cashflow forecast.`,
+      severity:    'info',
+    });
   }
 
-  // Sort: danger > warning > success > info
-  const severityOrder = { danger: 0, warning: 1, success: 2, info: 3 };
+  // Sort: danger > warning > success > info, then return top 4
+  const severityOrder: Record<string, number> = { danger: 0, warning: 1, success: 2, info: 3 };
   insights.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
-
-  return insights.slice(0, 3); // Return top 3 insights
+  return insights.slice(0, 4);
 }

@@ -28,6 +28,35 @@ model User {
   loans         Loan[]
   assets        Asset[]
   auditLogs     AuditLog[]
+  preferences   UserPreferences?
+}
+
+// ── User Preferences (persisted settings) ────────────────────
+// One-to-one with User. Created on first settings save via upsert.
+model UserPreferences {
+  id           String  @id @default(cuid())
+  userId       String  @unique
+  user         User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Appearance
+  accentColor  String  @default("#1A73E8")
+  compactMode  Boolean @default(false)
+  smoothAnims  Boolean @default(true)
+
+  // Preferences
+  dateFormat   String  @default("DD/MM/YYYY")   // "DD/MM/YYYY" | "MM/DD/YYYY" | "YYYY-MM-DD"
+  weekStartDay String  @default("Monday")        // "Monday" | "Sunday"
+  savingRate   Int     @default(30)              // % of income target
+
+  // Notification flags (in-app)
+  notifOverbudget Boolean @default(true)
+  notifGoals      Boolean @default(true)
+  notifBills      Boolean @default(true)
+  notifInsights   Boolean @default(false)
+  notifLoanDue    Boolean @default(true)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model Account {

@@ -1,13 +1,20 @@
 'use client';
 // src/app/settings/SettingsClient.tsx
 // Copyright (c) 2024-present Eric Gitahi. All rights reserved.
+// Fully wired: every toggle/field saves to the database via server actions.
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { updateProfile } from '@/lib/actions/reports';
+import {
+  saveAppearance, savePreferences, saveNotifications,
+  exportUserData, deleteAllUserData,
+} from '@/lib/actions/settings';
 import {
   User, Bell, Palette, ShieldCheck, Database,
   HelpCircle, Download, Trash2, ExternalLink, Info,
   Globe, CheckCircle2, Loader2, ChevronDown, ChevronRight,
+  AlertTriangle,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
@@ -44,9 +51,20 @@ function Row({ label, desc, children }: { label: string; desc?: string; children
   );
 }
 
-function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void }) {
+function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: () => void; disabled?: boolean }) {
   return (
-    <button onClick={onChange} style={{ width:42, height:24, borderRadius:999, border:'none', cursor:'pointer', background: checked ? 'linear-gradient(90deg,#27AE60,#1E8449)' : 'var(--border)', position:'relative', transition:'background 0.2s', boxShadow: checked ? '0 2px 6px rgba(39,174,96,0.35)' : 'inset 0 1px 3px rgba(0,0,0,0.15)' }}>
+    <button
+      onClick={onChange}
+      disabled={disabled}
+      aria-pressed={checked}
+      style={{
+        width:42, height:24, borderRadius:999, border:'none', cursor: disabled ? 'not-allowed' : 'pointer',
+        background: checked ? 'linear-gradient(90deg,#27AE60,#1E8449)' : 'var(--border)',
+        position:'relative', transition:'background 0.2s',
+        boxShadow: checked ? '0 2px 6px rgba(39,174,96,0.35)' : 'inset 0 1px 3px rgba(0,0,0,0.15)',
+        opacity: disabled ? 0.5 : 1,
+      }}
+    >
       <div style={{ position:'absolute', top:3, left: checked ? 21 : 3, width:18, height:18, borderRadius:'50%', background:'white', boxShadow:'0 1px 3px rgba(0,0,0,0.25)', transition:'left 0.2s' }} />
     </button>
   );
@@ -69,16 +87,36 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-/* ── Accordion header for each section ─────────────────────── */
-function AccordionHeader({
-  section, isOpen, onClick,
-}: {
+function SaveRow({ saving, saved, error }: { saving: boolean; saved: boolean; error: string }) {
+  return (
+    <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', marginTop:'1rem' }}>
+      <button type="submit" disabled={saving} className="btn btn-primary" style={{ display:'flex', alignItems:'center', gap:'0.4rem' }}>
+        {saving ? <Loader2 size={13} style={{ animation:'spin 1s linear infinite' }}/> : null}
+        {saving ? 'Saving…' : 'Save Changes'}
+      </button>
+      {saved && (
+        <div className="animate-in" style={{ display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.78rem', color:'var(--success)', fontWeight:600 }}>
+          <CheckCircle2 size={14}/> Saved!
+        </div>
+      )}
+      {error && (
+        <div style={{ display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.78rem', color:'var(--danger)', fontWeight:600 }}>
+          <AlertTriangle size={14}/> {error}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Accordion header ─────────────────────────────────────── */
+function AccordionHeader({ section, isOpen, onClick }: {
   section: typeof SECTIONS[number]; isOpen: boolean; onClick: () => void;
 }) {
   const Icon = section.Icon;
   return (
     <button
       onClick={onClick}
+      aria-expanded={isOpen}
       style={{
         display:'flex', alignItems:'center', gap:'0.75rem',
         width:'100%', padding:'1rem', borderRadius: isOpen ? '0.75rem 0.75rem 0 0' : '0.75rem',
@@ -111,7 +149,6 @@ function AccordionHeader({
   );
 }
 
-/* ── Section content panel ──────────────────────────────────── */
 function AccordionPanel({ children }: { children: React.ReactNode }) {
   return (
     <div className="animate-in" style={{
@@ -126,27 +163,58 @@ function AccordionPanel({ children }: { children: React.ReactNode }) {
   );
 }
 
-/* ── Main Settings Client ───────────────────────────────────── */
+/* ── Main Settings Client ─────────────────────────────────── */
 export function SettingsClient({
   initialName, initialEmail, initialCurrency, initialAccountType,
+  initialPrefs,
 }: {
   initialName: string; initialEmail: string; initialCurrency: string; initialAccountType: string;
+  initialPrefs: {
+    accentColor: string; compactMode: boolean; smoothAnims: boolean;
+    dateFormat: string; weekStartDay: string; savingRate: number;
+    notifOverbudget: boolean; notifGoals: boolean; notifBills: boolean;
+    notifInsights: boolean; notifLoanDue: boolean;
+  } | null;
 }) {
   const router       = useRouter();
+  const { update: updateSession } = useSession();
   const [, startT]   = useTransition();
-  // On mobile, nothing is open by default — tap to open. On desktop, profile opens by default.
-  const [openSections, setOpenSections] = useState<Set<Section>>(new Set(['profile']));
-  const [saved,  setSaved]      = useState(false);
-  const [saving, setSaving]     = useState(false);
 
+  const [openSections, setOpenSections] = useState<Set<Section>>(new Set(['profile']));
+
+  // Per-section save state
+  const [profileState, setProfileState] = useState({ saving: false, saved: false, error: '' });
+  const [appearState,  setAppearState]  = useState({ saving: false, saved: false, error: '' });
+  const [prefsState,   setPrefsState]   = useState({ saving: false, saved: false, error: '' });
+  const [notifState,   setNotifState]   = useState({ saving: false, saved: false, error: '' });
+  const [dataState,    setDataState]    = useState({ saving: false, saved: false, error: '' });
+
+  // Profile fields
   const [name,        setName]        = useState(initialName);
   const [currency,    setCurrency]    = useState(initialCurrency);
   const [accountType, setAccountType] = useState(initialAccountType);
 
-  const [dateFormat, setDateFmt]    = useState('DD/MM/YYYY');
-  const [savingRate, setSavingRate] = useState('30');
-  const [accent,     setAccent]     = useState('#1A73E8');
-  const [notifs,     setNotifs]     = useState({ overbudget: true, goals: true, bills: true, insights: false, loanDue: true });
+  // Appearance fields (from DB prefs or defaults)
+  const [accent,       setAccent]      = useState(initialPrefs?.accentColor  ?? '#1A73E8');
+  const [compactMode,  setCompactMode] = useState(initialPrefs?.compactMode  ?? false);
+  const [smoothAnims,  setSmoothAnims] = useState(initialPrefs?.smoothAnims  ?? true);
+
+  // Preferences fields
+  const [dateFormat,  setDateFmt]    = useState(initialPrefs?.dateFormat    ?? 'DD/MM/YYYY');
+  const [savingRate,  setSavingRate] = useState(String(initialPrefs?.savingRate ?? 30));
+  const [weekStart,   setWeekStart]  = useState(initialPrefs?.weekStartDay  ?? 'Monday');
+
+  // Notification flags
+  const [notifs, setNotifs] = useState({
+    overbudget: initialPrefs?.notifOverbudget ?? true,
+    goals:      initialPrefs?.notifGoals      ?? true,
+    bills:      initialPrefs?.notifBills      ?? true,
+    insights:   initialPrefs?.notifInsights   ?? false,
+    loanDue:    initialPrefs?.notifLoanDue    ?? true,
+  });
+
+  // Delete confirmation
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
 
   const inputStyle: React.CSSProperties = {
     width:'100%', padding:'0.5rem 0.75rem', borderRadius:6,
@@ -165,22 +233,90 @@ export function SettingsClient({
     });
   }
 
+  function setSectionState(
+    setter: React.Dispatch<React.SetStateAction<{ saving: boolean; saved: boolean; error: string }>>,
+    state: { saving: boolean; saved: boolean; error: string }
+  ) { setter(state); }
+
+  async function withSave(
+    setter: React.Dispatch<React.SetStateAction<{ saving: boolean; saved: boolean; error: string }>>,
+    fn: () => Promise<void>
+  ) {
+    setter({ saving: true, saved: false, error: '' });
+    try {
+      await fn();
+      setter({ saving: false, saved: true, error: '' });
+      setTimeout(() => setter({ saving: false, saved: false, error: '' }), 3000);
+    } catch (err: any) {
+      setter({ saving: false, saved: false, error: err?.message ?? 'Save failed' });
+    }
+  }
+
+  // ── Save handlers ────────────────────────────────────────────
   async function handleSaveProfile(e: React.FormEvent) {
     e.preventDefault();
-    setSaving(true); setSaved(false);
-    await updateProfile({ name, currency, accountType });
-    startT(() => router.refresh());
-    setSaved(true); setSaving(false);
-    setTimeout(() => setSaved(false), 3000);
+    await withSave(setProfileState, async () => {
+      await updateProfile({ name, currency, accountType });
+      // Refresh the JWT token so currency/accountType changes propagate immediately
+      await updateSession({ currency, accountType, name });
+      startT(() => router.refresh());
+    });
+  }
+
+  async function handleSaveAppearance(e: React.FormEvent) {
+    e.preventDefault();
+    await withSave(setAppearState, async () => {
+      await saveAppearance({ accentColor: accent, compactMode, smoothAnims });
+      // Apply accent immediately via CSS variable
+      document.documentElement.style.setProperty('--primary', accent);
+    });
   }
 
   async function handleSavePrefs(e: React.FormEvent) {
     e.preventDefault();
-    setSaving(true); setSaved(false);
-    await updateProfile({ name, currency, accountType });
-    startT(() => router.refresh());
-    setSaved(true); setSaving(false);
-    setTimeout(() => setSaved(false), 3000);
+    await withSave(setPrefsState, async () => {
+      await savePreferences({
+        dateFormat,
+        weekStartDay: weekStart,
+        savingRate: Math.min(80, Math.max(1, parseInt(savingRate) || 30)),
+      });
+      startT(() => router.refresh());
+    });
+  }
+
+  async function handleSaveNotifs(e: React.FormEvent) {
+    e.preventDefault();
+    await withSave(setNotifState, async () => {
+      await saveNotifications({
+        overbudget: notifs.overbudget,
+        goals:      notifs.goals,
+        bills:      notifs.bills,
+        insights:   notifs.insights,
+        loanDue:    notifs.loanDue,
+      });
+    });
+  }
+
+  async function handleExportData() {
+    await withSave(setDataState, async () => {
+      const data = await exportUserData();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = `ledger360-export-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+  }
+
+  async function handleDeleteAll() {
+    if (!deleteConfirm) { setDeleteConfirm(true); return; }
+    await withSave(setDataState, async () => {
+      await deleteAllUserData();
+      setDeleteConfirm(false);
+      startT(() => router.refresh());
+    });
   }
 
   return (
@@ -202,10 +338,10 @@ export function SettingsClient({
           </div>
           <form onSubmit={handleSaveProfile}>
             <Field label="Full Name">
-              <input style={inputStyle} type="text" value={name} onChange={e => setName(e.target.value)} required placeholder="Your name" />
+              <input style={inputStyle} type="text" value={name} onChange={e => setName(e.target.value)} required placeholder="Your name" autoComplete="name" />
             </Field>
             <Field label="Email Address">
-              <input style={{ ...inputStyle, opacity:0.7, cursor:'not-allowed' }} type="email" value={initialEmail} disabled title="Email cannot be changed" />
+              <input style={{ ...inputStyle, opacity:0.7, cursor:'not-allowed' }} type="email" value={initialEmail} disabled title="Email cannot be changed" autoComplete="email" />
             </Field>
             <Field label="Account Type">
               <select style={{ ...inputStyle, cursor:'pointer' }} value={accountType} onChange={e => setAccountType(e.target.value)}>
@@ -224,17 +360,7 @@ export function SettingsClient({
                 <option value="TZS">TZS — Tanzanian Shilling</option>
               </select>
             </Field>
-            <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', marginTop:'0.5rem' }}>
-              <button type="submit" disabled={saving} className="btn btn-primary" style={{ display:'flex', alignItems:'center', gap:'0.4rem' }}>
-                {saving ? <Loader2 size={13} style={{ animation:'spin 1s linear infinite' }}/> : null}
-                {saving ? 'Saving…' : 'Save Changes'}
-              </button>
-              {saved && (
-                <div className="animate-in" style={{ display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.78rem', color:'var(--success)', fontWeight:600 }}>
-                  <CheckCircle2 size={14}/> Saved!
-                </div>
-              )}
-            </div>
+            <SaveRow {...profileState} />
           </form>
         </AccordionPanel>
       )}
@@ -243,25 +369,28 @@ export function SettingsClient({
       <AccordionHeader section={SECTIONS[1]} isOpen={openSections.has('appearance')} onClick={() => toggleSection('appearance')} />
       {openSections.has('appearance') && (
         <AccordionPanel>
-          <Row label="Theme" desc="Toggle between light and dark mode">
-            <ThemeToggle />
-          </Row>
-          <div style={{ padding:'0.875rem 0', borderBottom:'1px solid var(--border-light)' }}>
-            <div style={{ fontSize:'0.8125rem', fontWeight:600, color:'var(--text-primary)', marginBottom:'0.2rem' }}>Accent Color</div>
-            <div style={{ fontSize:'0.72rem', color:'var(--text-muted)', marginBottom:'0.75rem' }}>Choose your brand accent color</div>
-            <div style={{ display:'flex', gap:'0.625rem', flexWrap:'wrap' }}>
-              {ACCENTS.map(a => (
-                <button key={a.value} onClick={() => setAccent(a.value)} title={a.label}
-                  style={{ width:28, height:28, borderRadius:'50%', background:a.value, border:'none', cursor:'pointer', outline: accent === a.value ? `3px solid ${a.value}` : '3px solid transparent', outlineOffset:2, transition:'all 0.15s', boxShadow:'0 2px 4px rgba(0,0,0,0.2)' }} />
-              ))}
+          <form onSubmit={handleSaveAppearance}>
+            <Row label="Theme" desc="Toggle between light and dark mode">
+              <ThemeToggle />
+            </Row>
+            <div style={{ padding:'0.875rem 0', borderBottom:'1px solid var(--border-light)' }}>
+              <div style={{ fontSize:'0.8125rem', fontWeight:600, color:'var(--text-primary)', marginBottom:'0.2rem' }}>Accent Color</div>
+              <div style={{ fontSize:'0.72rem', color:'var(--text-muted)', marginBottom:'0.75rem' }}>Choose your brand accent color</div>
+              <div style={{ display:'flex', gap:'0.625rem', flexWrap:'wrap' }}>
+                {ACCENTS.map(a => (
+                  <button key={a.value} type="button" onClick={() => setAccent(a.value)} title={a.label}
+                    style={{ width:28, height:28, borderRadius:'50%', background:a.value, border:'none', cursor:'pointer', outline: accent === a.value ? `3px solid ${a.value}` : '3px solid transparent', outlineOffset:2, transition:'all 0.15s', boxShadow:'0 2px 4px rgba(0,0,0,0.2)' }} />
+                ))}
+              </div>
             </div>
-          </div>
-          <Row label="Compact Mode" desc="Display more information in less space">
-            <Toggle checked={false} onChange={() => {}} />
-          </Row>
-          <Row label="Smooth Animations" desc="Page entry and transition animations">
-            <Toggle checked={true} onChange={() => {}} />
-          </Row>
+            <Row label="Compact Mode" desc="Display more information in less space">
+              <Toggle checked={compactMode} onChange={() => setCompactMode(v => !v)} />
+            </Row>
+            <Row label="Smooth Animations" desc="Page entry and transition animations">
+              <Toggle checked={smoothAnims} onChange={() => setSmoothAnims(v => !v)} />
+            </Row>
+            <SaveRow {...appearState} />
+          </form>
         </AccordionPanel>
       )}
 
@@ -287,22 +416,17 @@ export function SettingsClient({
             </Row>
             <Row label="Target Saving Rate" desc="Your personal monthly savings goal">
               <div style={{ display:'flex', alignItems:'center', gap:'0.4rem' }}>
-                <input type="number" value={savingRate} min={5} max={80} onChange={e => setSavingRate(e.target.value)}
+                <input type="number" value={savingRate} min={1} max={80} onChange={e => setSavingRate(e.target.value)}
                   style={{ width:60, padding:'0.375rem 0.5rem', borderRadius:6, border:'1px solid var(--border)', background:'var(--bg-card)', color:'var(--text-primary)', fontSize:'0.8rem', textAlign:'center', fontFamily:'Space Grotesk,sans-serif', fontWeight:700 }} />
                 <span style={{ fontSize:'0.8rem', color:'var(--text-muted)' }}>% of income</span>
               </div>
             </Row>
             <Row label="Week Start Day" desc="First day shown in calendar views">
-              <SettingSelect value="Monday" onChange={() => {}}>
+              <SettingSelect value={weekStart} onChange={setWeekStart}>
                 <option>Monday</option><option>Sunday</option>
               </SettingSelect>
             </Row>
-            <div style={{ marginTop:'1.25rem', display:'flex', alignItems:'center', gap:'0.75rem' }}>
-              <button type="submit" disabled={saving} className="btn btn-primary">
-                {saving ? <><Loader2 size={13} style={{ animation:'spin 1s linear infinite' }}/> Saving…</> : 'Save Preferences'}
-              </button>
-              {saved && <div className="animate-in" style={{ display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.78rem', color:'var(--success)', fontWeight:600 }}><CheckCircle2 size={14}/> Saved!</div>}
-            </div>
+            <SaveRow {...prefsState} />
           </form>
         </AccordionPanel>
       )}
@@ -311,25 +435,28 @@ export function SettingsClient({
       <AccordionHeader section={SECTIONS[3]} isOpen={openSections.has('notifications')} onClick={() => toggleSection('notifications')} />
       {openSections.has('notifications') && (
         <AccordionPanel>
-          <Row label="Overbudget Alerts" desc="Notify when spending exceeds its limit">
-            <Toggle checked={notifs.overbudget} onChange={() => setNotifs(n => ({ ...n, overbudget: !n.overbudget }))} />
-          </Row>
-          <Row label="Goal Progress Updates" desc="Weekly updates on savings milestones">
-            <Toggle checked={notifs.goals} onChange={() => setNotifs(n => ({ ...n, goals: !n.goals }))} />
-          </Row>
-          <Row label="Upcoming Loan Payments" desc="3-day reminder before each due date">
-            <Toggle checked={notifs.loanDue} onChange={() => setNotifs(n => ({ ...n, loanDue: !n.loanDue }))} />
-          </Row>
-          <Row label="Upcoming Bills" desc="Remind me when regular bills are due">
-            <Toggle checked={notifs.bills} onChange={() => setNotifs(n => ({ ...n, bills: !n.bills }))} />
-          </Row>
-          <Row label="Monthly Financial Summary" desc="End-of-month report on income and spending">
-            <Toggle checked={notifs.insights} onChange={() => setNotifs(n => ({ ...n, insights: !n.insights }))} />
-          </Row>
-          <div style={{ marginTop:'1rem', padding:'0.75rem', background:'var(--bg-app)', borderRadius:8, display:'flex', gap:'0.5rem' }}>
-            <Info size={14} color="var(--text-muted)" style={{ flexShrink:0, marginTop:1 }} />
-            <p style={{ fontSize:'0.72rem', color:'var(--text-secondary)' }}>Notifications are in-app only. Email and push notifications coming soon.</p>
-          </div>
+          <form onSubmit={handleSaveNotifs}>
+            <Row label="Overbudget Alerts" desc="Notify when spending exceeds its limit">
+              <Toggle checked={notifs.overbudget} onChange={() => setNotifs(n => ({ ...n, overbudget: !n.overbudget }))} />
+            </Row>
+            <Row label="Goal Progress Updates" desc="Weekly updates on savings milestones">
+              <Toggle checked={notifs.goals} onChange={() => setNotifs(n => ({ ...n, goals: !n.goals }))} />
+            </Row>
+            <Row label="Upcoming Loan Payments" desc="3-day reminder before each due date">
+              <Toggle checked={notifs.loanDue} onChange={() => setNotifs(n => ({ ...n, loanDue: !n.loanDue }))} />
+            </Row>
+            <Row label="Upcoming Bills" desc="Remind me when regular bills are due">
+              <Toggle checked={notifs.bills} onChange={() => setNotifs(n => ({ ...n, bills: !n.bills }))} />
+            </Row>
+            <Row label="Monthly Financial Summary" desc="End-of-month report on income and spending">
+              <Toggle checked={notifs.insights} onChange={() => setNotifs(n => ({ ...n, insights: !n.insights }))} />
+            </Row>
+            <SaveRow {...notifState} />
+            <div style={{ marginTop:'1rem', padding:'0.75rem', background:'var(--bg-app)', borderRadius:8, display:'flex', gap:'0.5rem' }}>
+              <Info size={14} color="var(--text-muted)" style={{ flexShrink:0, marginTop:1 }} />
+              <p style={{ fontSize:'0.72rem', color:'var(--text-secondary)' }}>Notifications are in-app only. Email and push notifications coming soon.</p>
+            </div>
+          </form>
         </AccordionPanel>
       )}
 
@@ -338,30 +465,72 @@ export function SettingsClient({
       {openSections.has('data') && (
         <AccordionPanel>
           <div style={{ display:'flex', flexDirection:'column', gap:'0.625rem', marginBottom:'1.25rem' }}>
-            {[
-              { label:'Export All Transactions', desc:'Download as CSV',              Icon: Download },
-              { label:'Export Reports',           desc:'Download monthly summary PDF', Icon: Download },
-              { label:'Import Bank Statement',    desc:'Upload M-Pesa or bank CSV',   Icon: Database },
-            ].map(a => (
-              <div key={a.label} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0.875rem 1rem', background:'var(--bg-app)', borderRadius:8, gap:'0.75rem' }}>
-                <div style={{ minWidth:0, flex:1 }}>
-                  <div style={{ fontSize:'0.8125rem', fontWeight:600, color:'var(--text-primary)' }}>{a.label}</div>
-                  <div style={{ fontSize:'0.72rem', color:'var(--text-muted)' }}>{a.desc}</div>
-                </div>
-                <button className="btn btn-outline" style={{ display:'flex', alignItems:'center', gap:'0.3rem', fontSize:'0.78rem', flexShrink:0 }}>
-                  <a.Icon size={12}/> Go
-                </button>
+            {/* Export JSON */}
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0.875rem 1rem', background:'var(--bg-app)', borderRadius:8, gap:'0.75rem' }}>
+              <div style={{ minWidth:0, flex:1 }}>
+                <div style={{ fontSize:'0.8125rem', fontWeight:600, color:'var(--text-primary)' }}>Export All Data</div>
+                <div style={{ fontSize:'0.72rem', color:'var(--text-muted)' }}>Download all your financial data as JSON</div>
               </div>
-            ))}
+              <button
+                type="button"
+                onClick={handleExportData}
+                disabled={dataState.saving}
+                className="btn btn-outline"
+                style={{ display:'flex', alignItems:'center', gap:'0.3rem', fontSize:'0.78rem', flexShrink:0 }}
+              >
+                {dataState.saving ? <Loader2 size={12} style={{ animation:'spin 1s linear infinite' }}/> : <Download size={12}/>}
+                Export
+              </button>
+            </div>
+
+            {/* Import link */}
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0.875rem 1rem', background:'var(--bg-app)', borderRadius:8, gap:'0.75rem' }}>
+              <div style={{ minWidth:0, flex:1 }}>
+                <div style={{ fontSize:'0.8125rem', fontWeight:600, color:'var(--text-primary)' }}>Import Bank Statement</div>
+                <div style={{ fontSize:'0.72rem', color:'var(--text-muted)' }}>Upload M-Pesa or bank CSV/Excel/PDF</div>
+              </div>
+              <a href="/transactions" className="btn btn-outline" style={{ display:'flex', alignItems:'center', gap:'0.3rem', fontSize:'0.78rem', flexShrink:0, textDecoration:'none' }}>
+                <Database size={12}/> Go
+              </a>
+            </div>
           </div>
+
+          {/* Danger zone */}
           <div style={{ padding:'1rem', background:'var(--danger-light)', borderRadius:8, border:'1px solid rgba(192,57,43,0.15)' }}>
             <div style={{ fontSize:'0.8125rem', fontWeight:700, color:'var(--danger)', marginBottom:'0.35rem' }}>Danger Zone</div>
             <div style={{ fontSize:'0.72rem', color:'var(--text-secondary)', marginBottom:'0.875rem' }}>
               Deleting your data is permanent and cannot be undone. Please export your data first.
             </div>
-            <button className="btn" style={{ background:'var(--danger-grad)', color:'white', display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.78rem' }}>
-              <Trash2 size={12}/> Delete All Data
-            </button>
+            {deleteConfirm ? (
+              <div style={{ display:'flex', gap:'0.5rem', alignItems:'center', flexWrap:'wrap' }}>
+                <span style={{ fontSize:'0.78rem', color:'var(--danger)', fontWeight:600 }}>Are you sure? This cannot be undone.</span>
+                <button
+                  type="button"
+                  onClick={handleDeleteAll}
+                  disabled={dataState.saving}
+                  className="btn"
+                  style={{ background:'var(--danger-grad)', color:'white', display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.78rem' }}
+                >
+                  {dataState.saving ? <Loader2 size={12} style={{ animation:'spin 1s linear infinite' }}/> : <Trash2 size={12}/>}
+                  Yes, Delete Everything
+                </button>
+                <button type="button" onClick={() => setDeleteConfirm(false)} className="btn btn-outline" style={{ fontSize:'0.78rem' }}>
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={handleDeleteAll}
+                className="btn"
+                style={{ background:'var(--danger-grad)', color:'white', display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.78rem' }}
+              >
+                <Trash2 size={12}/> Delete All Data
+              </button>
+            )}
+            {dataState.error && (
+              <div style={{ marginTop:'0.5rem', fontSize:'0.78rem', color:'var(--danger)' }}>{dataState.error}</div>
+            )}
           </div>
         </AccordionPanel>
       )}
@@ -391,7 +560,6 @@ export function SettingsClient({
           <div style={{ padding:'0.875rem 1rem', background:'var(--bg-app)', borderRadius:8 }}>
             {[
               { label:'App Version', val:'Ledger360 v1.0.0' },
-              { label:'Plan',        val:'Free (Individual)' },
               { label:'Stack',       val:'Next.js 16 · Prisma 7 · Neon' },
             ].map(r => (
               <div key={r.label} style={{ display:'flex', justifyContent:'space-between', marginBottom:'0.375rem' }}>

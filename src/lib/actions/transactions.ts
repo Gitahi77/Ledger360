@@ -178,16 +178,26 @@ export async function importTransactions(rows: {
   }
 
   await prisma.transaction.createMany({
-    data: rows.map(r => ({
-      name:       String(r.name).slice(0, 120),
-      amount:     Math.abs(Number(r.amount)),
-      type:       r.type === 'income' ? 'income' : 'expense',
-      categoryId: catMap[String(r.categoryName)],
-      date:       new Date(r.date),
-      note:       r.note ? String(r.note).slice(0, 500) : undefined,
-      userId:     user.id,
-      importedAt: new Date(),
-    })),
+    data: rows
+      .filter(r => {
+        // Validate date before new Date() — NaN dates crash Prisma
+        const d = new Date(r.date);
+        if (isNaN(d.getTime())) {
+          console.warn('[importTransactions] Skipping row with invalid date:', r.date, r.name);
+          return false;
+        }
+        return true;
+      })
+      .map(r => ({
+        name:       String(r.name).slice(0, 120),
+        amount:     Math.abs(Number(r.amount)),
+        type:       r.type === 'income' ? 'income' : 'expense',
+        categoryId: catMap[String(r.categoryName)],
+        date:       new Date(r.date),
+        note:       r.note ? String(r.note).slice(0, 500) : undefined,
+        userId:     user.id,
+        importedAt: new Date(),
+      })),
     skipDuplicates: true,
   });
 
@@ -204,23 +214,25 @@ export async function importTransactions(rows: {
   revalidatePath('/');
 }
 
-/* ── Delete ───────────────────────────────────────────────── */
+/* ── Delete (atomic — no TOCTOU race) ────────────────────── */
 export async function deleteTransaction(id: string) {
   const user = await requireAuth();
   if (!id) throw new Error('Missing id');
-  
-  const tx = await prisma.transaction.findFirst({ where: { id, userId: user.id } });
-  if (!tx) throw new Error('Transaction not found');
 
-  await prisma.transaction.delete({ where: { id } });
+  // findFirst + delete is a TOCTOU race: another request could delete between the two calls.
+  // deleteMany with userId scope is atomic AND enforces ownership in one query.
+  const { count } = await prisma.transaction.deleteMany({
+    where: { id, userId: user.id },
+  });
+  if (count === 0) throw new Error('Transaction not found or already deleted');
 
   // Security Audit
   const { logActivity } = await import('@/lib/audit');
   await logActivity({
-    userId: user.id,
-    action: 'DELETE',
+    userId:   user.id,
+    action:   'DELETE',
     resource: 'Transaction',
-    metadata: { txId: id, amount: tx.amount, name: tx.name },
+    metadata: { txId: id },
   });
 
   revalidatePath('/transactions');
