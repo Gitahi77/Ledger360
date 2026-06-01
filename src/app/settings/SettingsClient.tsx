@@ -178,7 +178,7 @@ export function SettingsClient({
     notifOverbudget: boolean; notifGoals: boolean; notifBills: boolean;
     notifInsights: boolean; notifLoanDue: boolean;
   } | null;
-  logs: { id: string; action: string; resource: string; metadata: string; createdAt: string }[];
+  logs: { id: string; action: string; resource: string; metadata: string | null; createdAt: string }[];
 }) {
   const router       = useRouter();
   const { update: updateSession } = useSession();
