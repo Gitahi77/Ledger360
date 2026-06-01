@@ -234,6 +234,7 @@ export function TransactionsClient({ transactions, categories, totalIncome, tota
                 title={tx.name}
                 subtitle={tx.note ? `${tx.category.name} • ${tx.note}` : tx.category.name}
                 amount={tx.amount}
+                type={tx.type}
                 icon={<CategoryIcon category={tx.category.icon ?? tx.category.name.toLowerCase()} name={tx.name} size={18}/>}
                 state={tx.type === 'pending' ? 'pending' : undefined}
                 onDelete={() => handleDelete(tx.id)}

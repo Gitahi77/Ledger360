@@ -1,9 +1,11 @@
 'use client';
+// src/components/CategoryIcon.tsx
+// Copyright (c) 2024-present Eric Gitahi. All rights reserved.
 
 import {
   ShoppingCart, Car, Zap, Film, Heart, ShoppingBag, BookOpen, Home,
   Briefcase, Repeat, Coffee, Dumbbell, Wifi, Phone, Plane, Gift,
-  TrendingUp, TrendingDown, Building2, CreditCard, Utensils, Bus,
+  TrendingUp, Building2, CreditCard, Utensils, Bus,
   Droplets, Music, Gamepad2, Baby, Scissors, Wrench, Package, DollarSign
 } from 'lucide-react';
 
@@ -85,12 +87,34 @@ const CATEGORY_MAP: Record<string, { icon: React.ElementType; color: string; bg:
   other:        { icon: Package,      color: '#64748B', bg: '#F1F5F9' },
 };
 
+// Pre-computed entries — avoids re-allocating Object.entries array on every call
+const CATEGORY_ENTRIES = Object.entries(CATEGORY_MAP);
+
+/**
+ * Looks up icon/colour for a category string.
+ * Priority: exact category match → category substring → name substring → other.
+ * Fixes TD-3: category is now the primary key, name is only the fallback.
+ */
 export function getCategoryMeta(category: string, name?: string): { icon: React.ElementType; color: string; bg: string } {
-  const key = (name || category || '').toLowerCase();
-  // Try exact match first, then partial match
-  for (const [k, v] of Object.entries(CATEGORY_MAP)) {
-    if (key.includes(k)) return v;
+  const catKey = (category || '').toLowerCase();
+
+  // 1. Exact category match
+  if (catKey && CATEGORY_MAP[catKey]) return CATEGORY_MAP[catKey];
+
+  // 2. Category substring match (e.g. "food & grocery" matches "food")
+  for (const [k, v] of CATEGORY_ENTRIES) {
+    if (catKey && catKey.includes(k)) return v;
   }
+
+  // 3. Fallback: name substring match (only when category gives no result)
+  if (name) {
+    const nameKey = name.toLowerCase();
+    for (const [k, v] of CATEGORY_ENTRIES) {
+      // Use word-boundary style check to avoid false positives (bus/business, car/scarlett)
+      if (k.length >= 4 && nameKey.includes(k)) return v;
+    }
+  }
+
   return CATEGORY_MAP.other;
 }
 
@@ -114,7 +138,7 @@ export function CategoryIcon({ category, name, size = 16 }: CategoryIconProps) {
       justifyContent: 'center',
       flexShrink: 0,
     }}>
-      <Icon size={size} color={meta.color} strokeWidth={2} />
+      <Icon size={size} color={meta.color} strokeWidth={2} aria-hidden="true" />
     </div>
   );
 }

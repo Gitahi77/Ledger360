@@ -1,10 +1,9 @@
 'use client';
 
-import { ReactNode, useState, useEffect } from 'react';
+import { ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import { Sidebar } from './Sidebar';
 import { ThemeToggle } from '../ThemeToggle';
-import { TemporalEngine } from '../TemporalEngine';
 import { MobileNav } from '../navigation/MobileNav';
 import { AppFooter } from './AppFooter';
 
@@ -36,7 +35,6 @@ export function AppLayout({ children }: { children: ReactNode }) {
             <span className="top-header-title">{title}</span>
           </div>
           <div className="top-header-right">
-            <TemporalEngine />
             <ThemeToggle />
           </div>
         </header>

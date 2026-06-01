@@ -813,10 +813,10 @@ select, input { font-family: inherit; }
   .top-header {
     padding: 0 1rem;
   }
-  div[style*="gridTemplateColumns"] {
-    grid-template-columns: 1fr !important;
-  }
-  
+  /* Removed: div[style*="gridTemplateColumns"] was incorrectly collapsing
+     the MobileNav overflow drawer (which uses gridTemplateColumns inline).
+     Each specific grid should handle its own mobile layout via class overrides. */
+
   /* KPI Cards and Hero */
   .kpi-cards, .kpi-grid {
     grid-template-columns: 1fr !important;
@@ -835,7 +835,7 @@ select, input { font-family: inherit; }
 /* BalanceText */
 .balance-text {
   font-family: 'Space Grotesk', sans-serif;
-  font-weight: 750;
+  font-weight: 800;
   letter-spacing: -0.045em;
   line-height: 0.95;
   font-size: var(--font-balance);
@@ -849,10 +849,11 @@ select, input { font-family: inherit; }
   font-family: 'Space Grotesk', sans-serif;
 }
 .ledger-amount.positive {
-  color: hsl(var(--color-success-hsl));
+  /* Use the semantic token — properly overridden in dark mode */
+  color: var(--success);
 }
 .ledger-amount.negative {
-  color: hsl(var(--color-danger-hsl));
+  color: var(--danger);
 }
 
 /* TransactionRow */
@@ -864,7 +865,7 @@ select, input { font-family: inherit; }
   border-radius: var(--radius-row);
   padding: var(--row-padding) 1rem;
   min-height: var(--row-height);
-  background-color: var(--bg-hover);
+  background-color: var(--bg-card);
   text-align: left;
   border: none;
   cursor: pointer;
@@ -990,7 +991,8 @@ select, input { font-family: inherit; }
   color: var(--text-primary);
 }
 .mobile-nav-item.active {
-  color: hsl(var(--primary-hsl));
+  /* Use var(--primary) — correctly themed, --primary-hsl was never defined */
+  color: var(--primary);
 }
 .mobile-nav-label {
   font-size: 0.625rem;

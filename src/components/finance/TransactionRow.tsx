@@ -6,6 +6,8 @@ interface TransactionRowProps {
   title: string;
   subtitle: string;
   amount: number;
+  /** Transaction type — drives colour: 'income'/'savings' = green, 'expense' = red */
+  type?: string;
   state?: "pending" | "reconciled" | "flagged";
   icon?: ReactNode;
   onClick?: () => void;
@@ -17,6 +19,7 @@ export function TransactionRow({
   title,
   subtitle,
   amount,
+  type,
   state,
   icon,
   onClick,
@@ -39,7 +42,7 @@ export function TransactionRow({
       </div>
 
       <div className="transaction-row-actions">
-        <LedgerAmount amount={amount} />
+        <LedgerAmount amount={amount} type={type} />
         {onDelete && (
           <button
             onClick={(e) => { e.stopPropagation(); onDelete(); }}

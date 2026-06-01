@@ -46,6 +46,19 @@ export function ReportsClient({
     router.push(`/reports?period=${p}`);
   }
 
+  function exportCSV() {
+    const rows = [
+      ['Period', 'Income', 'Expenses', 'Savings'],
+      ...trend.map(r => [r.label, String(r.Income), String(r.Expenses), String(r.Savings)]),
+    ];
+    const csv  = rows.map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = `ledger360-report-${period}.csv`;
+    a.click(); URL.revokeObjectURL(url);
+  }
+
   const isEmpty = summary.income === 0 && summary.expenses === 0;
 
   // KPI color mapping via CSS tokens only — no hardcoded hex
@@ -69,7 +82,7 @@ export function ReportsClient({
             </button>
           ))}
         </div>
-        <button className="btn btn-outline"><Download size={13}/> Export CSV</button>
+        <button className="btn btn-outline" onClick={exportCSV}><Download size={13}/> Export CSV</button>
       </div>
 
       {/* Hero — matches dashboard style exactly: dark surface, clear readable text */}
@@ -180,7 +193,7 @@ export function ReportsClient({
                       </div>
                     </div>
                     <div className="progress-track">
-                      <div className="progress-fill" style={{ width:`${Math.min(100, cat.pct * 2.5)}%`, background:`linear-gradient(90deg, ${cat.color}99, ${cat.color})` }} />
+                      <div className="progress-fill" style={{ width:`${Math.min(100, cat.pct)}%`, background:`linear-gradient(90deg, ${cat.color}99, ${cat.color})` }} />
                     </div>
                   </div>
                 ))}

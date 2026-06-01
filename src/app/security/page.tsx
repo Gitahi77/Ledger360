@@ -1,7 +1,7 @@
 import { requireAuth } from '@/lib/actions/_auth';
 import { prisma } from '@/lib/prisma';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { ShieldCheck, History, ArrowRight } from 'lucide-react';
+import { ShieldCheck, History } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default async function SecurityPage() {
@@ -47,7 +47,15 @@ export default async function SecurityPage() {
                         <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.9rem' }}>{log.resource}</span>
                       </div>
                       <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>
-                        {log.metadata ? JSON.stringify(JSON.parse(log.metadata)).slice(0, 80) + '...' : 'System Action'}
+                        {(() => {
+                          if (!log.metadata) return 'System Action';
+                          try {
+                            const str = JSON.stringify(JSON.parse(log.metadata));
+                            return str.length > 80 ? str.slice(0, 80) + '…' : str;
+                          } catch {
+                            return log.metadata.slice(0, 80);
+                          }
+                        })()}
                       </div>
                     </div>
                     <div style={{ textAlign: 'right', fontSize: '0.8rem', color: 'var(--text-muted)' }}>

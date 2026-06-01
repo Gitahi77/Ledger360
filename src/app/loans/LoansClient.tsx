@@ -21,7 +21,10 @@ function loanStyle(l: Loan) {
     color: 'var(--danger)',  barGrad: 'linear-gradient(90deg,var(--danger),hsl(0,78%,72%))',
     glow: 'rgba(220,38,38,0.5)', paidPct,
   };
-  if (l.daysOverdue === 0 && new Date(l.nextDue) < new Date(Date.now() + 7*86400000))
+  // Due Soon only fires for FUTURE dates within 7 days — not past dates
+  const nextDueDate = new Date(l.nextDue);
+  const now = new Date();
+  if (l.daysOverdue === 0 && nextDueDate >= now && nextDueDate < new Date(Date.now() + 7 * 86400000))
     return {
       badge: 'badge-warning', label: 'Due Soon',
       color: 'var(--warning)', barGrad: 'linear-gradient(90deg,var(--warning),hsl(38,92%,68%))',
@@ -222,8 +225,15 @@ function RecordPaymentModal({ loan, onClose }: { loan: Loan; onClose: () => void
   const router     = useRouter();
   const [, startT] = useTransition();
   const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState('');
   const [payment,  setPayment]  = useState(String(loan.monthlyPmt));
-  const [nextDue,  setNextDue]  = useState('');
+  // Default next due date to +1 month from current due date
+  const defaultNextDue = (() => {
+    const d = new Date(loan.nextDue);
+    d.setMonth(d.getMonth() + 1);
+    return d.toISOString().slice(0, 10);
+  })();
+  const [nextDue,  setNextDue]  = useState(defaultNextDue);
 
   const paymentAmt = parseFloat(payment || '0');
   // Correctly split payment into interest + principal (reducing-balance method)
@@ -234,10 +244,14 @@ function RecordPaymentModal({ loan, onClose }: { loan: Loan; onClose: () => void
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
-    await updateLoanBalance(loan.id, newBalance, 0, nextDue || undefined);
-    startT(() => router.refresh());
-    onClose();
+    setLoading(true); setError('');
+    try {
+      await updateLoanBalance(loan.id, newBalance, 0, nextDue || undefined);
+      startT(() => router.refresh());
+      onClose();
+    } catch (err: any) {
+      setError(err.message ?? 'Something went wrong.');
+    } finally { setLoading(false); }
   }
 
   return (
@@ -282,6 +296,7 @@ function RecordPaymentModal({ loan, onClose }: { loan: Loan; onClose: () => void
           <button type="submit" disabled={loading} className="btn btn-primary" style={{ width:'100%', justifyContent:'center', padding:'0.7rem' }}>
             {loading ? <><Loader2 size={14} style={{ animation:'spin 1s linear infinite'}}/> Saving…</> : 'Record Payment'}
           </button>
+          {error && <div style={{ padding:'0.5rem 0.625rem', borderRadius:7, background:'var(--danger-light)', color:'var(--danger)', fontSize:'0.8rem' }}>{error}</div>}
         </form>
       </div>
     </div>
@@ -307,9 +322,12 @@ export function LoansClient({ loans }: { loans: Loan[] }) {
   async function handleDelete(id: string) {
     if (!confirm('Delete this loan?')) return;
     setDeletingId(id);
-    await deleteLoan(id);
-    startT(() => router.refresh());
-    setDeletingId(null);
+    try {
+      await deleteLoan(id);
+      startT(() => router.refresh());
+    } catch {
+      // error is non-critical for UX here; log it silently
+    } finally { setDeletingId(null); }
   }
 
   return (
@@ -456,7 +474,9 @@ export function LoansClient({ loans }: { loans: Loan[] }) {
                     </div>
                     <div>
                       <div style={{ fontSize:'0.65rem', color:'var(--text-muted)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em' }}>Est. Months Left</div>
-                      <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, fontSize:'0.85rem', color:'var(--text-primary)' }}>~{monthsLeft} mo</div>
+                      <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, fontSize:'0.85rem', color: isFinite(monthsLeft) ? 'var(--text-primary)' : 'var(--danger)' }}>
+                        {isFinite(monthsLeft) ? `~${monthsLeft} mo` : '⚠ Raise payment'}
+                      </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">

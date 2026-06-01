@@ -149,9 +149,15 @@ function AddFundsModal({ goal, onClose }: { goal: Goal; onClose: () => void }) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    await updateGoalAmount(goal.id, newTotal);
-    startT(() => router.refresh());
-    onClose();
+    try {
+      await updateGoalAmount(goal.id, newTotal);
+      startT(() => router.refresh());
+      onClose();
+    } catch (err: any) {
+      // Could show error to user in future — for now, log and close
+      console.error('Failed to update goal amount:', err);
+      onClose();
+    } finally { setLoading(false); }
   }
 
   return (
@@ -209,9 +215,12 @@ export function GoalsClient({ goals }: { goals: Goal[] }) {
   async function handleDelete(id: string) {
     if (!confirm('Remove this goal?')) return;
     setDeletingId(id);
-    await deleteGoal(id);
-    startT(() => router.refresh());
-    setDeletingId(null);
+    try {
+      await deleteGoal(id);
+      startT(() => router.refresh());
+    } catch {
+      // non-critical
+    } finally { setDeletingId(null); }
   }
 
   return (
@@ -278,7 +287,10 @@ export function GoalsClient({ goals }: { goals: Goal[] }) {
       ) : (
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(300px,1fr))', gap:'1.125rem' }}>
           {goals.map((g, i) => {
-            const pct  = Math.min(100, Math.round((g.currentAmount / g.targetAmount) * 100));
+            // Guard against division-by-zero when targetAmount is 0
+            const pct  = g.targetAmount > 0
+              ? Math.min(100, Math.round((g.currentAmount / g.targetAmount) * 100))
+              : 0;
             const st   = goalStyle(pct);
             const left = Math.max(0, g.targetAmount - g.currentAmount);
             const deadlineLabel = g.deadline
@@ -306,7 +318,10 @@ export function GoalsClient({ goals }: { goals: Goal[] }) {
                       <CategoryIcon category={g.category} name={g.name} size={15} />
                     </div>
                     <div style={{ minWidth:0 }}>
-                      <div style={{ fontWeight:700, fontSize:'0.875rem', color:'var(--text-primary)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'9rem' }}>{g.name}</div>
+                      <div
+                        title={g.name}
+                        style={{ fontWeight:700, fontSize:'0.875rem', color:'var(--text-primary)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'9rem' }}
+                      >{g.name}</div>
                       <div style={{ fontSize:'0.7rem', color:'var(--text-muted)', marginTop:'0.1rem' }}>Target by {deadlineLabel}</div>
                     </div>
                   </div>

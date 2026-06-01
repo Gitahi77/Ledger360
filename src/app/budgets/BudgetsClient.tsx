@@ -94,16 +94,19 @@ export function BudgetsClient({ budgets, categories, totalBudgeted, totalSpent, 
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const overBudget = budgets.filter(b => b.spent >= b.limit).length;
-  const onTrack    = budgets.filter(b => (b.spent / b.limit) < 0.8).length;
+  const onTrack    = budgets.filter(b => b.limit > 0 && (b.spent / b.limit) < 0.8).length;
   const overallPct = totalBudgeted > 0 ? Math.min(100, Math.round((totalSpent / totalBudgeted) * 100)) : 0;
   const overallStatus = overallPct >= 100 ? { color:'var(--danger)', bar:'var(--danger)' } : overallPct >= 80 ? { color:'var(--warning)', bar:'var(--warning)' } : { color:'var(--success)', bar:'var(--success)' };
 
   async function handleDelete(id: string) {
     if (!confirm('Delete this budget?')) return;
     setDeletingId(id);
-    await deleteBudget(id);
-    startT(() => router.refresh());
-    setDeletingId(null);
+    try {
+      await deleteBudget(id);
+      startT(() => router.refresh());
+    } catch {
+      // non-critical
+    } finally { setDeletingId(null); }
   }
 
   return (

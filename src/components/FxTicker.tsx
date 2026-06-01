@@ -110,7 +110,7 @@ export function FxTicker() {
       )}
 
       <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', marginTop: '0.625rem', textAlign: 'right' }}>
-        1 KES = X {'{currency}'} · Source: European Central Bank via Frankfurter
+        Source: European Central Bank via Frankfurter API
       </div>
     </div>
   );

@@ -94,9 +94,12 @@ export function NetWorthClient({ assets, liabilities, totalAssets, totalLiabilit
   async function handleDelete(id: string) {
     if (!confirm('Remove this asset?')) return;
     setDeletingId(id);
-    await deleteAsset(id);
-    startT(() => router.refresh());
-    setDeletingId(null);
+    try {
+      await deleteAsset(id);
+      startT(() => router.refresh());
+    } catch {
+      // non-critical
+    } finally { setDeletingId(null); }
   }
 
   const positive = netWorth >= 0;
