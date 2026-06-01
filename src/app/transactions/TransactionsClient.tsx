@@ -239,12 +239,12 @@ export function TransactionsClient({ transactions, categories, totalIncome, tota
             <div className="hero-stat-card">
               <p className="hero-label">{periodLabel} Income</p>
               <p className="hero-stat-value tabular" style={{ color:'var(--success)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{fmtAdaptive(totalIncome, currency)}</p>
-              <p className="hero-sub">{totalIncome > 0 ? '↑ Coming in' : 'No income yet'}</p>
+              <p className="hero-sub">{totalIncome > 0 ? '+ Coming in' : 'No income yet'}</p>
             </div>
             <div className="hero-stat-card">
               <p className="hero-label">{PERIOD_LABELS[period] || 'All Time'} Spent</p>
               <p className="hero-stat-value tabular" style={{ color:'var(--danger)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{fmtAdaptive(totalExpense, currency)}</p>
-              <p className="hero-sub">↓ going out</p>
+              <p className="hero-sub">- Going out</p>
             </div>
             <div className="hero-stat-card">
               <p className="hero-label">Transactions</p>

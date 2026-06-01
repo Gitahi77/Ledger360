@@ -77,6 +77,7 @@ export async function resetPassword(token: string, newPassword: string) {
       password: hashedPassword,
       resetToken: null,
       resetTokenExpiry: null,
+      sessionVersion: { increment: 1 },
     }
   });
 

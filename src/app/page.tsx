@@ -97,8 +97,8 @@ export default async function Dashboard({
           {/* Operational stat boxes */}
           <div className="hero-stats-grid">
             {[
-              { label: `${periodLabel} Income`,  value: fmtAdaptive(summary.income, currency),   sub: summary.income > 0 ? '↑ Coming in' : 'No income yet',     color: 'var(--success)'      },
-              { label: `${periodLabel} Spent`,   value: fmtAdaptive(summary.expenses, currency), sub: summary.expenses > 0 ? '↓ Going out' : 'No expenses yet', color: 'var(--text-primary)' },
+              { label: `${periodLabel} Income`,  value: fmtAdaptive(summary.income, currency),   sub: summary.income > 0 ? '+ Coming in' : 'No income yet',     color: 'var(--success)'      },
+              { label: `${periodLabel} Spent`,   value: fmtAdaptive(summary.expenses, currency), sub: summary.expenses > 0 ? '- Going out' : 'No expenses yet', color: 'var(--text-primary)' },
               { label: 'Saving Rate',            value: `${summary.savingRate}%`,       sub: summary.savingRate >= targetRate ? `🎯 Target met (${targetRate}%)` : summary.savingRate >= halfTarget ? '⚠ Getting there' : '⚠ Needs attention', color: srColor },
             ].map(s => (
               <div key={s.label} className="hero-stat-card">
@@ -126,7 +126,7 @@ export default async function Dashboard({
       </div>
 
       {/* Charts row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,3fr) minmax(0,2fr)', gap: '1rem', marginBottom: '1rem' }}>
+      <div className="dashboard-charts-row" style={{ marginBottom: '1rem' }}>
         <div className="card animate-in delay-2" style={{ minWidth: 0 }}>
           <div className="section-header">
             <h2 className="card-title" style={{ marginBottom: 0 }}>Income vs Expenses</h2>
@@ -147,7 +147,7 @@ export default async function Dashboard({
       <FxTicker currency={currency} />
 
       {/* Bottom row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,3fr) minmax(0,2fr)', gap: '1rem' }}>
+      <div className="dashboard-charts-row">
         {/* Budget status */}
         <div className="card animate-in delay-3">
           <div className="section-header">

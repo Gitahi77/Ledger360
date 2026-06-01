@@ -62,11 +62,12 @@ export const authOptions: NextAuthOptions = {
         if (!valid) return null;
 
         return {
-          id:          user.id,
-          email:       user.email,
-          name:        user.name,
-          accountType: user.accountType,
-          currency:    user.currency,
+          id:             user.id,
+          email:          user.email,
+          name:           user.name,
+          accountType:    user.accountType,
+          currency:       user.currency,
+          sessionVersion: user.sessionVersion,
         };
       },
     }),
@@ -74,25 +75,35 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user, trigger }) {
       if (user) {
-        token.id          = (user as any).id;
-        token.accountType = (user as any).accountType;
-        token.currency    = (user as any).currency;
+        token.id             = (user as any).id;
+        token.accountType    = (user as any).accountType;
+        token.currency       = (user as any).currency;
+        token.sessionVersion = (user as any).sessionVersion;
       }
-      // Re-fetch profile on explicit session update (e.g. after Settings save)
-      // This ensures currency/accountType changes are reflected without re-login.
-      if (trigger === 'update' && token.id) {
+      
+      // Fetch fresh data from DB on every request to ensure session validity and sync currency
+      if (token.id) {
         try {
           const fresh = await prisma.user.findUnique({
             where: { id: token.id as string },
-            select: { accountType: true, currency: true, name: true },
+            select: { accountType: true, currency: true, name: true, sessionVersion: true },
           });
+          
+          // If user was deleted or sessionVersion changed (e.g. password reset), invalidate token
+          if (!fresh || (token.sessionVersion !== undefined && fresh.sessionVersion !== token.sessionVersion)) {
+            // Return empty object or token with no ID so session becomes invalid
+            return { ...token, id: undefined, email: undefined };
+          }
+          
+          // Auto-sync currency and profile
           if (fresh) {
-            token.accountType = fresh.accountType;
-            token.currency    = fresh.currency;
-            token.name        = fresh.name;
+            token.accountType    = fresh.accountType;
+            token.currency       = fresh.currency;
+            token.name           = fresh.name;
+            token.sessionVersion = fresh.sessionVersion;
           }
         } catch {
-          // Non-fatal — stale token is acceptable until next login
+          // DB error - keep stale token
         }
       }
       return token;

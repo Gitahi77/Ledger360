@@ -1287,3 +1287,16 @@ select, input { font-family: inherit; }
   color: var(--text-secondary);
   line-height: 1.5;
 }
+
+
+.dashboard-charts-row {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 1rem;
+}
+
+@media (max-width: 900px) {
+  .dashboard-charts-row {
+    grid-template-columns: 1fr;
+  }
+}

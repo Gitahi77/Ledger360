@@ -182,7 +182,7 @@ export function SettingsClient({
   const { update: updateSession } = useSession();
   const [, startT]   = useTransition();
 
-  const [openSections, setOpenSections] = useState<Set<Section>>(new Set(['profile']));
+  const [openSection, setOpenSection] = useState<Section | null>('profile');
 
   // Per-section save state
   const [profileState, setProfileState] = useState({ saving: false, saved: false, error: '' });
@@ -229,11 +229,7 @@ export function SettingsClient({
   const initials = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || '??';
 
   function toggleSection(id: Section) {
-    setOpenSections(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) { next.delete(id); } else { next.add(id); }
-      return next;
-    });
+    setOpenSection(prev => prev === id ? null : id);
   }
 
   async function withSave(
@@ -331,8 +327,8 @@ export function SettingsClient({
     <div style={{ maxWidth:680, margin:'0 auto' }}>
 
       {/* ── Profile ─────────────────────────────────────────── */}
-      <AccordionHeader section={SECTIONS[0]} isOpen={openSections.has('profile')} onClick={() => toggleSection('profile')} />
-      {openSections.has('profile') && (
+      <AccordionHeader section={SECTIONS[0]} isOpen={openSection === 'profile'} onClick={() => toggleSection('profile')} />
+      {openSection === 'profile' && (
         <AccordionPanel>
           {/* Avatar banner */}
           <div style={{ display:'flex', alignItems:'center', gap:'0.875rem', padding:'0.875rem', background:'var(--bg-app)', borderRadius:8, marginBottom:'1.25rem' }}>
@@ -371,8 +367,8 @@ export function SettingsClient({
       )}
 
       {/* ── Appearance ────────────────────────────────────────── */}
-      <AccordionHeader section={SECTIONS[1]} isOpen={openSections.has('appearance')} onClick={() => toggleSection('appearance')} />
-      {openSections.has('appearance') && (
+      <AccordionHeader section={SECTIONS[1]} isOpen={openSection === 'appearance'} onClick={() => toggleSection('appearance')} />
+      {openSection === 'appearance' && (
         <AccordionPanel>
           <form onSubmit={handleSaveAppearance}>
             <Row label="Theme" desc="Toggle between light and dark mode">
@@ -400,8 +396,8 @@ export function SettingsClient({
       )}
 
       {/* ── Preferences ───────────────────────────────────────── */}
-      <AccordionHeader section={SECTIONS[2]} isOpen={openSections.has('preferences')} onClick={() => toggleSection('preferences')} />
-      {openSections.has('preferences') && (
+      <AccordionHeader section={SECTIONS[2]} isOpen={openSection === 'preferences'} onClick={() => toggleSection('preferences')} />
+      {openSection === 'preferences' && (
         <AccordionPanel>
           <form onSubmit={handleSavePrefs}>
             <Row label="Date Format" desc="How dates appear throughout the app">
@@ -427,8 +423,8 @@ export function SettingsClient({
       )}
 
       {/* ── Notifications ──────────────────────────────────────── */}
-      <AccordionHeader section={SECTIONS[3]} isOpen={openSections.has('notifications')} onClick={() => toggleSection('notifications')} />
-      {openSections.has('notifications') && (
+      <AccordionHeader section={SECTIONS[3]} isOpen={openSection === 'notifications'} onClick={() => toggleSection('notifications')} />
+      {openSection === 'notifications' && (
         <AccordionPanel>
           <form onSubmit={handleSaveNotifs}>
             <Row label="Overbudget Alerts" desc="Notify when spending exceeds its limit">
@@ -456,8 +452,8 @@ export function SettingsClient({
       )}
 
       {/* ── Data & Privacy ─────────────────────────────────────── */}
-      <AccordionHeader section={SECTIONS[4]} isOpen={openSections.has('data')} onClick={() => toggleSection('data')} />
-      {openSections.has('data') && (
+      <AccordionHeader section={SECTIONS[4]} isOpen={openSection === 'data'} onClick={() => toggleSection('data')} />
+      {openSection === 'data' && (
         <AccordionPanel>
           <div style={{ display:'flex', flexDirection:'column', gap:'0.625rem', marginBottom:'1.25rem' }}>
             {/* Export JSON */}
@@ -566,8 +562,8 @@ export function SettingsClient({
       )}
 
       {/* ── Help & About ────────────────────────────────────────── */}
-      <AccordionHeader section={SECTIONS[5]} isOpen={openSections.has('help')} onClick={() => toggleSection('help')} />
-      {openSections.has('help') && (
+      <AccordionHeader section={SECTIONS[5]} isOpen={openSection === 'help'} onClick={() => toggleSection('help')} />
+      {openSection === 'help' && (
         <AccordionPanel>
           <div style={{ display:'flex', flexDirection:'column', gap:'0.375rem', marginBottom:'1.25rem' }}>
             {[
