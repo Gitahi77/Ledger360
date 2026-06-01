@@ -3,37 +3,44 @@
 // If OPENAI_API_KEY is set, PDF/image screenshots also go through GPT-4o Vision.
 
 import { NextResponse } from 'next/server';
+import { headers } from 'next/headers';
 import { getServerSession } from 'next-auth';
+import { z } from 'zod';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { uploadLimiter } from '@/lib/rateLimit';
 
 export const maxDuration = 60; // allow up to 60s for AI processing
+
+// 10 MB hard limit — prevents OOM on serverless functions
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 /* ── Category keyword map ────────────────────────────────── */
 const CATEGORY_RULES: { pattern: RegExp; category: string; type: 'income' | 'expense' }[] = [
   // Income
-  { pattern: /salary|payroll|wage|pay slip/i,         category: 'Salary',        type: 'income'  },
-  { pattern: /freelance|consulting|invoice/i,          category: 'Freelance',     type: 'income'  },
-  { pattern: /dividend|interest earned|investment/i,   category: 'Business',      type: 'income'  },
-  { pattern: /refund|cashback|reversal/i,              category: 'Salary',        type: 'income'  },
-  { pattern: /received from|funds received|deposit/i,  category: 'Salary',        type: 'income'  },
+  { pattern: /salary|payroll|wage|pay slip/i,         category: 'Salary',           type: 'income'  },
+  { pattern: /freelance|consulting|invoice/i,          category: 'Freelance',        type: 'income'  },
+  { pattern: /dividend|interest earned|investment/i,   category: 'Investment',       type: 'income'  },
+  { pattern: /refund|cashback|reversal/i,              category: 'Refund',           type: 'income'  },
+  { pattern: /received from|funds received|deposit/i,  category: 'Income',           type: 'income'  },
   // Expenses
   { pattern: /naivas|carrefour|quickmart|grocery|supermarket|food|market|uchumi/i, category: 'Food & Grocery', type: 'expense' },
   { pattern: /uber|bolt|little|matatu|bus|petrol|fuel|parking|ntsa/i, category: 'Transport', type: 'expense' },
   { pattern: /kplc|electricity|water|sewage|internet|zuku|safaricom home|faiba|wifi/i, category: 'Utilities', type: 'expense' },
   { pattern: /netflix|spotify|showmax|dstv|youtube|gaming|cinema|tickets/i, category: 'Entertainment', type: 'expense' },
   { pattern: /hospital|clinic|pharmacy|doctor|dental|chemist|nhif|aar/i, category: 'Health', type: 'expense' },
-  { pattern: /rent|landlord|lease|bnb|airbnb/i,        category: 'Rent',          type: 'expense' },
+  { pattern: /rent|landlord|lease|bnb|airbnb/i,        category: 'Rent',             type: 'expense' },
   { pattern: /java|artcaffe|chicken inn|kfc|pizza|restaurant|cafe|coffee|hotel|steers/i, category: 'Food & Grocery', type: 'expense' },
-  { pattern: /gym|fitness|spa|salon|haircut|barber/i,   category: 'Health',        type: 'expense' },
+  { pattern: /gym|fitness|spa|salon|haircut|barber/i,   category: 'Health',           type: 'expense' },
   { pattern: /airtime|data bundle|safaricom|airtel|telkom|tkash/i, category: 'Utilities', type: 'expense' },
-  { pattern: /school|tuition|university|college|fees|kcse/i, category: 'Health',  type: 'expense' },
-  { pattern: /amazon|jumia|clothing|shoes|fashion|kilimall/i, category: 'Clothing', type: 'expense' },
-  { pattern: /savings|goal|mpesa savings|fixed deposit|mmf|cic/i, category: 'Savings', type: 'expense' },
+  { pattern: /school|tuition|university|college|fees|kcse/i, category: 'Education',  type: 'expense' },
+  { pattern: /amazon|jumia|clothing|shoes|fashion|kilimall/i, category: 'Clothing',   type: 'expense' },
+  // Savings — transfers to savings are INCOME-type (goal funding), not expenses
+  { pattern: /savings|goal|fixed deposit|mmf|cic/i,    category: 'Savings',          type: 'income'  },
   // M-Pesa specific
-  { pattern: /withdraw|agent|atm|cash out/i,           category: 'Food & Grocery', type: 'expense' },
-  { pattern: /paybill|buy goods|till/i,                 category: 'Utilities',      type: 'expense' },
-  { pattern: /send money|transfer to/i,                 category: 'Food & Grocery', type: 'expense' },
+  { pattern: /withdraw|agent|atm|cash out/i,           category: 'Cash Withdrawal',  type: 'expense' },
+  { pattern: /paybill|buy goods|till/i,                 category: 'Utilities',        type: 'expense' },
+  { pattern: /send money|transfer to/i,                 category: 'Transfer',         type: 'expense' },
 ];
 
 function autoCategory(description: string, amount: number): { category: string; type: 'income' | 'expense' } {
@@ -244,6 +251,16 @@ async function parseWithAI(fileBuffer: ArrayBuffer, mimeType: string): Promise<a
   }
 }
 
+/* ── Zod schema to validate each transaction row before DB insert ── */
+const UploadRowSchema = z.object({
+  date:     z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date'),
+  name:     z.string().min(1).max(200),
+  amount:   z.number().min(0),
+  type:     z.enum(['income', 'expense']),
+  category: z.string().min(1).max(80),
+  note:     z.string().optional(),
+});
+
 /* ── Main route handler ──────────────────────────────────── */
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -252,10 +269,27 @@ export async function POST(request: Request) {
   }
   const userId = (session.user as any).id as string;
 
+  // ── Rate limiting ──────────────────────────────────────────
+  const rl = uploadLimiter.check(`upload:${userId}`);
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: `Upload limit reached. Please wait ${rl.retryAfter} seconds.` },
+      { status: 429, headers: { 'Retry-After': String(rl.retryAfter) } }
+    );
+  }
+
   try {
     const formData = await request.formData();
     const file     = formData.get('file') as File | null;
     if (!file) return NextResponse.json({ error: 'No file provided.' }, { status: 400 });
+
+    // ── File size limit ────────────────────────────────────────
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        { error: `File too large. Maximum size is ${MAX_FILE_SIZE / 1024 / 1024} MB.` },
+        { status: 413 }
+      );
+    }
 
     const mimeType   = file.type || 'application/octet-stream';
     const fileName   = file.name?.toLowerCase() ?? '';
@@ -301,26 +335,41 @@ export async function POST(request: Request) {
 
     if (transactions.length === 0) {
       return NextResponse.json({
-        error: 'Could not extract transactions. Supported formats:\n• CSV: must have Date, Description, Amount columns\n• Excel: first sheet with those headers\n• PDF / Image: AI-powered (Gemini) — works with bank statements & receipts\n• M-Pesa SMS: use the “Paste M-Pesa SMS” tab instead',
+        error: 'Could not extract transactions. Supported formats:\n• CSV: must have Date, Description, Amount columns\n• Excel: first sheet with those headers\n• PDF / Image: AI-powered (Gemini) — works with bank statements & receipts\n• M-Pesa SMS: use the "Paste M-Pesa SMS" tab instead',
+      }, { status: 422 });
+    }
+
+    // ── Validate every row with Zod before touching the DB ─────
+    const validRows = transactions.filter((t: any) => {
+      const result = UploadRowSchema.safeParse(t);
+      if (!result.success) {
+        console.warn('[upload] Skipping invalid row:', result.error.flatten(), t);
+      }
+      return result.success;
+    });
+
+    if (validRows.length === 0) {
+      return NextResponse.json({
+        error: 'No valid transactions found after validation. Check that dates are YYYY-MM-DD and amounts are numeric.',
       }, { status: 422 });
     }
 
     // Resolve category IDs for the user
-    const categoryNames = [...new Set(transactions.map((t: any) => String(t.category)))];
+    const categoryNames = [...new Set(validRows.map((t: any) => String(t.category)))];
     const existingCats  = await prisma.category.findMany({ where: { userId, name: { in: categoryNames } } });
     const catMap: Record<string, string> = Object.fromEntries(existingCats.map(c => [c.name, c.id]));
 
     for (const name of categoryNames) {
       if (!catMap[name]) {
         const cat = await prisma.category.create({
-          data: { name, type: transactions.find((t: any) => t.category === name)?.type ?? 'expense', userId },
+          data: { name, type: validRows.find((t: any) => t.category === name)?.type ?? 'expense', userId },
         });
         catMap[name] = cat.id;
       }
     }
 
     const fallbackId = catMap['Food & Grocery'] ?? catMap[categoryNames[0]];
-    const parsed = transactions.map((t: any) => ({
+    const parsed = validRows.map((t: any) => ({
       ...t,
       categoryId: catMap[String(t.category)] ?? fallbackId,
     }));
@@ -328,7 +377,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, transactions: parsed, count: parsed.length, method });
 
   } catch (err: any) {
+    // Log full error server-side; never expose internal details to client
     console.error('[SmartUpload]', err);
-    return NextResponse.json({ error: `Processing failed: ${err.message ?? 'Unknown error'}` }, { status: 500 });
+    return NextResponse.json(
+      { error: 'File processing failed. Please check the file format and try again.' },
+      { status: 500 }
+    );
   }
 }

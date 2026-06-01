@@ -6,12 +6,16 @@ import { PrismaPg } from '@prisma/adapter-pg';
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 
 function createPrismaClient() {
-  // Prisma 7 + local Prisma Postgres: use the direct postgres URL from env
-  // The prisma+postgres:// URL is for the CLI; PrismaClient needs a plain pg URL
-  const connectionString =
-    process.env.DIRECT_DATABASE_URL ??
-    // Fall back: decode the local dev URL from the Prisma Postgres URL
-    'postgres://postgres:postgres@localhost:51214/template1?sslmode=disable';
+  const connectionString = process.env.DIRECT_DATABASE_URL;
+
+  // Fail fast at startup if the DB URL is missing — prevents silent connection
+  // to wrong/default databases in production (CWE-798 mitigation).
+  if (!connectionString) {
+    throw new Error(
+      'DIRECT_DATABASE_URL environment variable is not set. ' +
+      'Add it to your .env.local (development) or Vercel environment variables (production).'
+    );
+  }
 
   const adapter = new PrismaPg({ connectionString });
 

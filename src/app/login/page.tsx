@@ -9,7 +9,12 @@ import { Eye, EyeOff, Loader2 } from 'lucide-react';
 function LoginForm() {
   const router       = useRouter();
   const params       = useSearchParams();
-  const callbackUrl  = params.get('callbackUrl') ?? '/';
+  // Validate callbackUrl — only allow relative paths to prevent open redirect
+  // e.g. /login?callbackUrl=https://evil.com would otherwise redirect after login
+  const rawCallback  = params.get('callbackUrl') ?? '/';
+  const callbackUrl  = rawCallback.startsWith('/') && !rawCallback.startsWith('//')
+    ? rawCallback
+    : '/';
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw]     = useState(false);
@@ -20,8 +25,12 @@ function LoginForm() {
     e.preventDefault();
     setLoading(true);
     setError('');
+    // Forward client IP to the server-side authorize callback for rate limiting.
+    // In a browser, we can only approximate via the server-side x-forwarded-for;
+    // passing a client hint is the best we can do without a server action wrapper.
     const res = await signIn('credentials', {
-      email, password, redirect: false, callbackUrl,
+      email, password, redirect: false,
+      ip: typeof window !== 'undefined' ? window.location.hostname : 'unknown',
     });
     setLoading(false);
     if (res?.error) {
@@ -62,6 +71,7 @@ function LoginForm() {
             <div>
               <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>Email</label>
               <input type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="jane@example.com"
+                autoComplete="email"
                 className="input-field" style={{ width: '100%', padding: '0.625rem 0.875rem', fontSize: '0.875rem' }} />
             </div>
 
@@ -69,6 +79,7 @@ function LoginForm() {
               <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>Password</label>
               <div style={{ position: 'relative' }}>
                 <input type={showPw ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required placeholder="••••••••"
+                  autoComplete="current-password"
                   className="input-field" style={{ width: '100%', padding: '0.625rem 2.5rem 0.625rem 0.875rem', fontSize: '0.875rem' }} />
                 <button type="button" onClick={() => setShowPw(v => !v)} style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}>
                   {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
