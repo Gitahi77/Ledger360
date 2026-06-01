@@ -34,7 +34,14 @@ export function FxTicker() {
     }
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    // Auto-refresh every 5 minutes — ECB rates update once daily but
+    // users leave the dashboard open for hours; this keeps it fresh.
+    const interval = setInterval(load, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="card" style={{ padding: '1rem 1.25rem' }}>

@@ -1,4 +1,9 @@
 // src/app/page.tsx — FULLY LIVE Server Component Dashboard
+export const metadata = {
+  title: 'Dashboard — Ledger360',
+  description: 'Your personal financial overview: net worth, income, spending, budgets and insights.',
+};
+
 import { Suspense } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { CashFlowChart, SpendingDonutChart } from '@/components/DashboardCharts';
@@ -42,13 +47,19 @@ export default async function Dashboard({
     getNetWorth(),
     getMonthlyChartData(),
     getCategoryBreakdown(period),
-    import('@/lib/intelligence').then(m => m.generateInsights(user.id)),
+    // Pass user currency so insights use the right symbol (not hardcoded KES)
+    import('@/lib/intelligence').then(m => m.generateInsights(user.id, user.currency)),
   ]);
 
   const overdueLoanCount = loans.filter(l => l.daysOverdue > 0).length;
-  const monthsLeft       = 12 - new Date().getMonth();
-  const projected        = Math.max(0, summary.savings * monthsLeft + netWorth.netWorth);
-  const periodLabel      = period === 'this-week' ? 'This Week' : period === 'this-year' ? 'This Year' : 'This Month';
+  // monthsLeft: how many full months remain AFTER the current one
+  // e.g. if it's June (month 5, 0-indexed), monthsLeft = 12 - 6 = 6 (Jul–Dec)
+  const now          = new Date();
+  const monthsLeft   = Math.max(0, 11 - now.getMonth()); // 0 in December
+  const projected    = Math.max(0, summary.savings * monthsLeft + netWorth.netWorth);
+  const periodLabel  = period === 'this-week' ? 'This Week' : period === 'this-year' ? 'This Year' : 'This Month';
+  // Saving rate colour: green ≥ target, amber ≥ half target, red below
+  const srColor = summary.savingRate >= 20 ? 'var(--success)' : summary.savingRate >= 10 ? 'var(--warning)' : 'var(--danger)';
 
   return (
     <AppLayout>
@@ -80,9 +91,9 @@ export default async function Dashboard({
           {/* Operational stat boxes */}
           <div className="hero-stats-grid">
             {[
-              { label: `${periodLabel} Income`,  value: fmtAdaptive(summary.income),   sub: summary.income > 0 ? '↑ Coming in' : 'No income yet',       color: 'var(--success)' },
-              { label: `${periodLabel} Spent`,   value: fmtAdaptive(summary.expenses), sub: summary.expenses > 0 ? '↓ Going out' : 'No expenses yet',   color: 'var(--text-primary)' },
-              { label: 'Saving Rate',            value: `${summary.savingRate}%`,        sub: summary.savingRate >= 20 ? '🎯 On track' : 'Needs attention', color: 'var(--warning)' },
+              { label: `${periodLabel} Income`,  value: fmtAdaptive(summary.income),   sub: summary.income > 0 ? '↑ Coming in' : 'No income yet',     color: 'var(--success)'      },
+              { label: `${periodLabel} Spent`,   value: fmtAdaptive(summary.expenses), sub: summary.expenses > 0 ? '↓ Going out' : 'No expenses yet', color: 'var(--text-primary)' },
+              { label: 'Saving Rate',            value: `${summary.savingRate}%`,       sub: summary.savingRate >= 20 ? '🎯 On track' : summary.savingRate >= 10 ? '⚠ Getting there' : '⚠ Needs attention', color: srColor },
             ].map(s => (
               <div key={s.label} className="hero-stat-card">
                 <p className="hero-label">{s.label}</p>
