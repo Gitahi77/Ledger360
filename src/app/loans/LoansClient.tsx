@@ -3,7 +3,8 @@
 // Copyright (c) 2024-present Eric Gitahi. All rights reserved.
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { addLoan, updateLoanBalance, deleteLoan } from '@/lib/actions/loans';
+import { addLoan, editLoan, updateLoanBalance, deleteLoan } from '@/lib/actions/loans';
+import { addTransaction } from '@/lib/actions/transactions';
 import { fmtAdaptive } from '@/lib/format';
 import { Plus, Trash2, Loader2, X, CreditCard, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
 
@@ -38,20 +39,21 @@ function loanStyle(l: Loan) {
 }
 
 /* ── Add Loan Modal ───────────────────────────────────────── */
-function AddLoanModal({ onClose }: { onClose: () => void }) {
+function LoanModal({ loan, onClose, currency }: { loan?: Loan; onClose: () => void; currency: string }) {
   const router     = useRouter();
   const [, startT] = useTransition();
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
 
-  const [name,       setName]       = useState('');
-  const [lender,     setLender]     = useState('');
-  const [type,       setType]       = useState('personal');
-  const [origAmt,    setOrigAmt]    = useState('');
-  const [balance,    setBalance]    = useState('');
-  const [rate,       setRate]       = useState('');
-  const [monthly,    setMonthly]    = useState('');
-  const [nextDue,    setNextDue]    = useState('');
+  const [name,       setName]       = useState(loan?.name ?? '');
+  const [lender,     setLender]     = useState(loan?.lender ?? '');
+  const [type,       setType]       = useState(loan?.type ?? 'personal');
+  const [origAmt,    setOrigAmt]    = useState(loan ? String(loan.originalAmt) : '');
+  const [balance,    setBalance]    = useState(loan ? String(loan.balance) : '');
+  const [rate,       setRate]       = useState(loan ? String(loan.annualRate) : '');
+  const [monthly,    setMonthly]    = useState(loan ? String(loan.monthlyPmt) : '');
+  const [nextDue,    setNextDue]    = useState(loan?.nextDue ? new Date(loan.nextDue).toISOString().slice(0, 10) : '');
+  const isEdit = Boolean(loan);
 
   const LOAN_TYPES = ['personal','mortgage','car','student','business','credit card','other'];
 
@@ -59,14 +61,25 @@ function AddLoanModal({ onClose }: { onClose: () => void }) {
     e.preventDefault();
     setLoading(true); setError('');
     try {
-      await addLoan({
-        name, lender, type,
-        originalAmt: parseFloat(origAmt),
-        balance:     parseFloat(balance || origAmt),
-        annualRate:  parseFloat(rate),
-        monthlyPmt:  parseFloat(monthly),
-        nextDue,
-      });
+      if (isEdit && loan) {
+        await editLoan(loan.id, {
+          name, lender, type,
+          originalAmt: parseFloat(origAmt),
+          balance:     parseFloat(balance || origAmt),
+          annualRate:  parseFloat(rate),
+          monthlyPmt:  parseFloat(monthly),
+          nextDue,
+        });
+      } else {
+        await addLoan({
+          name, lender, type,
+          originalAmt: parseFloat(origAmt),
+          balance:     parseFloat(balance || origAmt),
+          annualRate:  parseFloat(rate),
+          monthlyPmt:  parseFloat(monthly),
+          nextDue,
+        });
+      }
       startT(() => router.refresh());
       onClose();
     } catch (err: any) {
@@ -78,7 +91,7 @@ function AddLoanModal({ onClose }: { onClose: () => void }) {
     <div style={{ position:'fixed', inset:0, zIndex:1000, background:'rgba(0,0,0,0.45)', backdropFilter:'blur(4px)', display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem' }} onClick={onClose}>
       <div className="card animate-in" style={{ width:'100%', maxWidth:500, padding:'1.75rem', maxHeight:'90vh', overflowY:'auto' }} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
-          <h2 className="card-title" style={{ marginBottom:0 }}>Add Loan</h2>
+          <h2 className="card-title" style={{ marginBottom:0 }}>{isEdit ? 'Edit Loan' : 'Add Loan'}</h2>
           <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', display:'flex' }}><X size={18}/></button>
         </div>
         {error && <div style={{ padding:'0.625rem', borderRadius:7, background:'var(--danger-light)', color:'var(--danger)', fontSize:'0.8rem', marginBottom:'1rem' }}>{error}</div>}
@@ -106,12 +119,12 @@ function AddLoanModal({ onClose }: { onClose: () => void }) {
 
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.75rem' }}>
             <div>
-              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Original Amount (KES)</label>
+              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Original Amount ({currency})</label>
               <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                 type="number" min="1" step="1" value={origAmt} onChange={e => setOrigAmt(e.target.value)} required placeholder="500000" />
             </div>
             <div>
-              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Current Balance (KES)</label>
+              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Current Balance ({currency})</label>
               <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                 type="number" min="0" step="1" value={balance} onChange={e => setBalance(e.target.value)} placeholder="Leave blank = same as original" />
             </div>
@@ -136,7 +149,7 @@ function AddLoanModal({ onClose }: { onClose: () => void }) {
           </div>
 
           <button type="submit" disabled={loading} className="btn btn-primary" style={{ width:'100%', justifyContent:'center', padding:'0.7rem', marginTop:'0.25rem' }}>
-            {loading ? <><Loader2 size={14} style={{ animation:'spin 1s linear infinite' }}/> Saving…</> : 'Add Loan'}
+            {loading ? <><Loader2 size={14} style={{ animation:'spin 1s linear infinite' }}/> Saving…</> : (isEdit ? 'Save Changes' : 'Add Loan')}
           </button>
         </form>
       </div>
@@ -145,7 +158,7 @@ function AddLoanModal({ onClose }: { onClose: () => void }) {
 }
 
 /* ── Expanded Forecast Panel (Interactive Extra Payment Simulator) ── */
-function ExpandedForecast({ loan, monthsLeft, totalInterest }: { loan: Loan; monthsLeft: number; totalInterest: number }) {
+function ExpandedForecast({ loan, monthsLeft, totalInterest, currency }: { loan: Loan; monthsLeft: number; totalInterest: number; currency: string }) {
   const [extraPayment, setExtraPayment] = useState(0);
 
   const monthlyRate = loan.annualRate / 100 / 12;
@@ -175,7 +188,7 @@ function ExpandedForecast({ loan, monthsLeft, totalInterest }: { loan: Loan; mon
       <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'0.75rem', marginBottom:'1rem' }}>
         {[
           { label:'Months Left',    value: isFinite(monthsLeft) ? `~${monthsLeft}` : '⚠ Check payment', sub:'at current pace' },
-          { label:'Total Interest', value:`KES ${totalInterest.toLocaleString()}`, sub:'estimated remaining' },
+          { label:'Total Interest', value: fmtAdaptive(totalInterest, currency), sub:'estimated remaining' },
           { label:'Payoff Date',    value: payoffDate(monthsLeft), sub:'projected' },
         ].map(f => (
           <div key={f.label} style={{ background:'var(--bg-app)', borderRadius:8, padding:'0.625rem 0.875rem', border:'1px solid var(--border)' }}>
@@ -190,7 +203,7 @@ function ExpandedForecast({ loan, monthsLeft, totalInterest }: { loan: Loan; mon
       <div style={{ background:'var(--primary-light)', borderRadius:10, padding:'0.875rem 1rem', border:'1px solid var(--primary-dark)' }}>
         <div style={{ fontSize:'0.7rem', fontWeight:700, color:'var(--primary)', marginBottom:'0.5rem', textTransform:'uppercase', letterSpacing:'0.06em' }}>Extra Payment Simulator</div>
         <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', marginBottom: extraPayment > 0 ? '0.75rem' : 0 }}>
-          <span style={{ fontSize:'0.8rem', color:'var(--text-secondary)', whiteSpace:'nowrap' }}>Pay extra KES</span>
+          <span style={{ fontSize:'0.8rem', color:'var(--text-secondary)', whiteSpace:'nowrap' }}>Pay extra {currency}</span>
           <input
             type="number" min="0" step="500"
             value={extraPayment || ''}
@@ -206,7 +219,7 @@ function ExpandedForecast({ loan, monthsLeft, totalInterest }: { loan: Loan; mon
             {[
               { label:'New payoff', value: payoffDate(newMonths), color:'var(--success)' },
               { label:'Months saved', value:`${monthsSaved} mo`, color:'var(--success)' },
-              { label:'Interest saved', value:`KES ${interestSaved.toLocaleString()}`, color:'var(--success)' },
+              { label:'Interest saved', value: fmtAdaptive(interestSaved, currency), color:'var(--success)' },
             ].map(r => (
               <div key={r.label} style={{ background:'var(--success-light)', borderRadius:7, padding:'0.5rem 0.625rem', border:'1px solid var(--success)' }}>
                 <div style={{ fontSize:'0.58rem', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', color:'var(--text-muted)', marginBottom:'0.15rem' }}>{r.label}</div>
@@ -221,7 +234,7 @@ function ExpandedForecast({ loan, monthsLeft, totalInterest }: { loan: Loan; mon
 }
 
 /* ── Record Payment Modal ─────────────────────────────────── */
-function RecordPaymentModal({ loan, onClose }: { loan: Loan; onClose: () => void }) {
+function RecordPaymentModal({ loan, onClose, currency, categories }: { loan: Loan; onClose: () => void; currency: string; categories: { id: string; name: string }[] }) {
   const router     = useRouter();
   const [, startT] = useTransition();
   const [loading, setLoading]   = useState(false);
@@ -234,6 +247,8 @@ function RecordPaymentModal({ loan, onClose }: { loan: Loan; onClose: () => void
     return d.toISOString().slice(0, 10);
   })();
   const [nextDue,  setNextDue]  = useState(defaultNextDue);
+  const [recordTx, setRecordTx] = useState(false);
+  const [categoryId, setCategoryId] = useState(categories.find(c => c.name.toLowerCase() === 'debt' || c.name.toLowerCase() === 'loan')?.id || categories[0]?.id || '');
 
   const paymentAmt = parseFloat(payment || '0');
   // Correctly split payment into interest + principal (reducing-balance method)
@@ -247,6 +262,18 @@ function RecordPaymentModal({ loan, onClose }: { loan: Loan; onClose: () => void
     setLoading(true); setError('');
     try {
       await updateLoanBalance(loan.id, newBalance, 0, nextDue || undefined);
+      
+      if (recordTx && categoryId && paymentAmt > 0) {
+        await addTransaction({
+          amount: paymentAmt,
+          name: `Loan Repayment: ${loan.name}`,
+          type: 'expense',
+          date: new Date().toISOString().slice(0, 10),
+          categoryId,
+          note: `Principal: ${principalReduction} | Interest: ${interestCharge}`,
+        });
+      }
+      
       startT(() => router.refresh());
       onClose();
     } catch (err: any) {
@@ -262,11 +289,11 @@ function RecordPaymentModal({ loan, onClose }: { loan: Loan; onClose: () => void
           <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', display:'flex' }}><X size={18}/></button>
         </div>
         <p style={{ fontSize:'0.8rem', color:'var(--text-secondary)', marginBottom:'1rem' }}>
-          Payment for <strong>{loan.name}</strong> · balance: KES {loan.balance.toLocaleString()}
+          Recording payment for <strong>{loan.name}</strong> · balance: {fmtAdaptive(loan.balance, currency)}
         </p>
         <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:'0.875rem' }}>
           <div>
-            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Payment Amount (KES)</label>
+            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Payment Amount ({currency})</label>
             <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
               type="number" min="1" step="1" value={payment} onChange={e => setPayment(e.target.value)} required autoFocus />
           </div>
@@ -275,12 +302,18 @@ function RecordPaymentModal({ loan, onClose }: { loan: Loan; onClose: () => void
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.5rem' }}>
               <div style={{ padding:'0.6rem 0.75rem', borderRadius:8, background:'var(--warning-light)', fontSize:'0.75rem' }}>
                 <div style={{ color:'var(--text-muted)', fontWeight:600, marginBottom:'0.1rem', textTransform:'uppercase', fontSize:'0.6rem', letterSpacing:'0.06em' }}>Interest this month</div>
-                <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, color:'var(--warning)' }}>KES {interestCharge.toLocaleString()}</div>
+                <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, color:'var(--danger)' }}>{fmtAdaptive(interestCharge, currency)}</div>
               </div>
               <div style={{ padding:'0.6rem 0.75rem', borderRadius:8, background:'var(--success-light)', fontSize:'0.75rem' }}>
-                <div style={{ color:'var(--text-muted)', fontWeight:600, marginBottom:'0.1rem', textTransform:'uppercase', fontSize:'0.6rem', letterSpacing:'0.06em' }}>Principal reduced</div>
-                <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, color:'var(--success)' }}>KES {principalReduction.toLocaleString()}</div>
+                <div style={{ color:'var(--text-muted)', fontWeight:600, marginBottom:'0.1rem', textTransform:'uppercase', fontSize:'0.6rem', letterSpacing:'0.06em' }}>Principal Paid</div>
+                <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, color:'var(--success)' }}>{fmtAdaptive(principalReduction, currency)}</div>
               </div>
+            </div>
+          )}
+          {paymentAmt > 0 && (
+            <div style={{ padding:'0.6rem 0.75rem', borderRadius:8, background:'var(--primary-light)', fontSize:'0.75rem' }}>
+              <div style={{ color:'var(--text-muted)', fontWeight:600, marginBottom:'0.1rem', textTransform:'uppercase', fontSize:'0.6rem', letterSpacing:'0.06em' }}>New balance</div>
+              <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, color:'var(--primary)' }}>{fmtAdaptive(newBalance, currency)}</div>
             </div>
           )}
           <div>
@@ -291,8 +324,24 @@ function RecordPaymentModal({ loan, onClose }: { loan: Loan; onClose: () => void
               type="date" value={nextDue} onChange={e => setNextDue(e.target.value)} />
           </div>
           <div style={{ padding:'0.75rem', borderRadius:8, background:'var(--primary-light)', fontSize:'0.8rem', color:'var(--primary)', fontWeight:600 }}>
-            New balance: KES {newBalance.toLocaleString()}
+            New balance: {currency} {newBalance.toLocaleString()}
           </div>
+          
+          <label style={{ display:'flex', alignItems:'center', gap:'0.5rem', cursor:'pointer', fontSize:'0.8rem', color:'var(--text-primary)' }}>
+            <input type="checkbox" checked={recordTx} onChange={e => setRecordTx(e.target.checked)} style={{ width:'1rem', height:'1rem' }} />
+            Record this payment as an expense transaction
+          </label>
+          
+          {recordTx && (
+            <div className="animate-in" style={{ marginTop: '-0.25rem' }}>
+              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Expense Category</label>
+              <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
+                value={categoryId} onChange={e => setCategoryId(e.target.value)}>
+                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+          )}
+          
           <button type="submit" disabled={loading} className="btn btn-primary" style={{ width:'100%', justifyContent:'center', padding:'0.7rem' }}>
             {loading ? <><Loader2 size={14} style={{ animation:'spin 1s linear infinite'}}/> Saving…</> : 'Record Payment'}
           </button>
@@ -305,10 +354,11 @@ function RecordPaymentModal({ loan, onClose }: { loan: Loan; onClose: () => void
 
 
 /* ── Main Client Component ────────────────────────────────── */
-export function LoansClient({ loans }: { loans: Loan[] }) {
+export function LoansClient({ loans, currency, categories = [] }: { loans: Loan[], currency: string, categories?: { id: string; name: string }[] }) {
   const router     = useRouter();
   const [, startT] = useTransition();
   const [showAdd,     setShowAdd]     = useState(false);
+  const [editLoanObj, setEditLoanObj] = useState<Loan | null>(null);
   const [payingLoan,  setPayingLoan]  = useState<Loan | null>(null);
   const [deletingId,  setDeletingId]  = useState<string | null>(null);
   const [expanded,    setExpanded]    = useState<string | null>(null);
@@ -332,8 +382,9 @@ export function LoansClient({ loans }: { loans: Loan[] }) {
 
   return (
     <>
-      {showAdd    && <AddLoanModal onClose={() => setShowAdd(false)} />}
-      {payingLoan && <RecordPaymentModal loan={payingLoan} onClose={() => setPayingLoan(null)} />}
+      {showAdd    && <LoanModal onClose={() => setShowAdd(false)} currency={currency} />}
+      {editLoanObj && <LoanModal loan={editLoanObj} onClose={() => setEditLoanObj(null)} currency={currency} />}
+      {payingLoan && <RecordPaymentModal loan={payingLoan} onClose={() => setPayingLoan(null)} currency={currency} categories={categories} />}
 
       {/* Toolbar */}
       <div className="flex items-center justify-between mb-5 animate-in flex-wrap gap-3">
@@ -351,8 +402,8 @@ export function LoansClient({ loans }: { loans: Loan[] }) {
               fontSize: totalDebt > 9_999_999 ? '1.6rem' : totalDebt > 999_999 ? '1.9rem' : '2.25rem',
               fontWeight:800, letterSpacing:'-0.04em', lineHeight:1,
               color:'var(--danger)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
-            }}>{fmtAdaptive(totalDebt)}</p>
-            <p className="hero-sub">of {fmtAdaptive(totalOriginal)} original · {paidPct}% paid</p>
+            }}>{fmtAdaptive(totalDebt, currency)}</p>
+            <p className="hero-sub">of {fmtAdaptive(totalOriginal, currency)} original · {paidPct}% paid</p>
             <div className="hero-progress-wrap" style={{ marginTop:'0.75rem', paddingTop:'0.75rem' }}>
               <div className="hero-progress-labels">
                 <span className="hero-progress-label">Repayment progress</span>
@@ -371,7 +422,7 @@ export function LoansClient({ loans }: { loans: Loan[] }) {
             </div>
             <div className="hero-stat-card">
               <p className="hero-label">Monthly Pmts</p>
-              <p className="hero-stat-value tabular" style={{ color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{fmtAdaptive(totalMonthly)}</p>
+              <p className="hero-stat-value tabular" style={{ color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{fmtAdaptive(totalMonthly, currency)}</p>
               <p className="hero-sub">per month</p>
             </div>
             <div className="hero-stat-card">
@@ -428,6 +479,10 @@ export function LoansClient({ loans }: { loans: Loan[] }) {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className={`badge ${st.badge}`}>{st.label}</span>
+                    <button onClick={() => setEditLoanObj(l)} 
+                      style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', display:'flex', padding:'0.2rem' }}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                    </button>
                     <button onClick={() => handleDelete(l.id)} disabled={deletingId===l.id}
                       style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', display:'flex', padding:'0.2rem' }}>
                       {deletingId===l.id ? <Loader2 size={13} style={{ animation:'spin 1s linear infinite' }}/> : <Trash2 size={13}/>}
@@ -444,9 +499,9 @@ export function LoansClient({ loans }: { loans: Loan[] }) {
                       fontWeight:800, color:st.color, letterSpacing:'-0.04em', lineHeight:1.1,
                       whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
                     }}>
-                      {fmtAdaptive(l.balance)}
+                      {fmtAdaptive(l.balance, currency)}
                     </div>
-                    <div style={{ fontSize:'0.7rem', color:'var(--text-secondary)', marginTop:'0.2rem', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>of {fmtAdaptive(l.originalAmt)} original</div>
+                    <div style={{ fontSize:'0.7rem', color:'var(--text-secondary)', marginTop:'0.2rem', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>of {fmtAdaptive(l.originalAmt, currency)} original</div>
                   </div>
                   <div style={{ textAlign:'right', flexShrink:0 }}>
                     <div style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'1.5rem', fontWeight:800, color:st.color, lineHeight:1, opacity:0.88 }}>{st.paidPct}%</div>
@@ -463,7 +518,7 @@ export function LoansClient({ loans }: { loans: Loan[] }) {
                   <div style={{ display:'flex', gap:'1rem' }}>
                     <div>
                       <div style={{ fontSize:'0.65rem', color:'var(--text-muted)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em' }}>Monthly</div>
-                      <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, fontSize:'0.85rem', color:'var(--text-primary)', whiteSpace:'nowrap' }}>{fmtAdaptive(l.monthlyPmt)}</div>
+                      <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, fontSize:'0.85rem', color:'var(--text-primary)', whiteSpace:'nowrap' }}>{fmtAdaptive(l.monthlyPmt, currency)}</div>
                     </div>
                     <div>
                       <div style={{ fontSize:'0.65rem', color:'var(--text-muted)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em' }}>Next Due</div>
@@ -492,7 +547,7 @@ export function LoansClient({ loans }: { loans: Loan[] }) {
 
                 {/* Expanded interest forecast + interactive extra payment simulator */}
                 {isExpanded && (
-                  <ExpandedForecast loan={l} monthsLeft={monthsLeft} totalInterest={totalInterest} />
+                  <ExpandedForecast loan={l} monthsLeft={monthsLeft} totalInterest={totalInterest} currency={currency} />
                 )}
               </div>
             );

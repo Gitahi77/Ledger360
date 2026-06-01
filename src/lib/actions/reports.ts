@@ -45,34 +45,71 @@ export async function getMonthlyTrend() {
 export async function getReportSummary(period: string) {
   const user = await requireAuth();
   const now  = new Date();
+  
   let from: Date, to: Date;
+  let prevFrom: Date, prevTo: Date;
+
   if (period === 'this-week') {
     const d = new Date(now); d.setDate(d.getDate() - d.getDay());
     from = new Date(d.getFullYear(), d.getMonth(), d.getDate());
     to   = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    
+    const prevD = new Date(from); prevD.setDate(prevD.getDate() - 7);
+    prevFrom = prevD;
+    prevTo   = new Date(from.getTime() - 1);
   } else if (period === 'this-year') {
     from = new Date(now.getFullYear(), 0, 1);
     to   = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    
+    prevFrom = new Date(now.getFullYear() - 1, 0, 1);
+    prevTo   = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate(), 23, 59, 59, 999);
   } else {
     from = new Date(now.getFullYear(), now.getMonth(), 1);
     to   = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    
+    prevFrom = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastDayPrevMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+    prevTo = new Date(prevFrom.getFullYear(), prevFrom.getMonth(), Math.min(now.getDate(), lastDayPrevMonth.getDate()), 23, 59, 59, 999);
   }
 
-  const [income, expenses] = await Promise.all([
-    prisma.transaction.aggregate({
-      where: { userId: user.id, type: 'income',  date: { gte: from, lte: to } },
-      _sum: { amount: true },
-    }),
-    prisma.transaction.aggregate({
-      where: { userId: user.id, type: 'expense', date: { gte: from, lte: to } },
-      _sum: { amount: true },
-    }),
+  const [income, expenses, prevIncome, prevExpenses] = await Promise.all([
+    prisma.transaction.aggregate({ where: { userId: user.id, type: 'income',  date: { gte: from, lte: to } }, _sum: { amount: true } }),
+    prisma.transaction.aggregate({ where: { userId: user.id, type: 'expense', date: { gte: from, lte: to } }, _sum: { amount: true } }),
+    prisma.transaction.aggregate({ where: { userId: user.id, type: 'income',  date: { gte: prevFrom, lte: prevTo } }, _sum: { amount: true } }),
+    prisma.transaction.aggregate({ where: { userId: user.id, type: 'expense', date: { gte: prevFrom, lte: prevTo } }, _sum: { amount: true } }),
   ]);
 
   const inc = income._sum.amount   ?? 0;
   const exp = expenses._sum.amount ?? 0;
   const sav = inc - exp;
-  return { income: inc, expenses: exp, savings: sav, savingRate: inc > 0 ? Math.round((sav / inc) * 100) : 0 };
+  const sr  = inc > 0 ? Math.round((sav / inc) * 100) : 0;
+
+  const pInc = prevIncome._sum.amount   ?? 0;
+  const pExp = prevExpenses._sum.amount ?? 0;
+  const pSav = pInc - pExp;
+  const pSr  = pInc > 0 ? Math.round((pSav / pInc) * 100) : 0;
+
+  const calcPct = (curr: number, prev: number) => {
+    if (prev === 0) return curr > 0 ? 100 : 0;
+    return Math.round(((curr - prev) / prev) * 100);
+  };
+
+  return { 
+    income: inc, 
+    expenses: exp, 
+    savings: sav, 
+    savingRate: sr,
+    previous: {
+      income: pInc,
+      expenses: pExp,
+      savings: pSav,
+      savingRate: pSr,
+      incomeChange: calcPct(inc, pInc),
+      expensesChange: calcPct(exp, pExp),
+      savingsChange: calcPct(sav, pSav),
+      savingRateChange: sr - pSr,
+    }
+  };
 }
 
 /* ── Category breakdown ───────────────────────────────────── */

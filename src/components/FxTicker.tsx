@@ -16,7 +16,7 @@ const CURRENCIES = [
   { code: 'JPY', flag: '🇯🇵', name: 'Japanese Yen'       },
 ];
 
-export function FxTicker() {
+export function FxTicker({ currency }: { currency: string }) {
   const [rates, setRates]   = useState<Rates | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]   = useState(false);
@@ -24,7 +24,7 @@ export function FxTicker() {
   async function load() {
     setLoading(true); setError(false);
     try {
-      const res = await fetch('/api/fx-rates');
+      const res = await fetch(`/api/fx-rates?base=${currency}`);
       if (!res.ok) throw new Error();
       setRates(await res.json());
     } catch {
@@ -50,7 +50,7 @@ export function FxTicker() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <TrendingUp size={15} color="var(--primary)" />
           <span style={{ fontWeight: 700, fontSize: '0.8125rem', color: 'var(--text-primary)' }}>
-            KES Exchange Rates
+            {currency} Exchange Rates
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

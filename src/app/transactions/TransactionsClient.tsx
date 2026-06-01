@@ -5,9 +5,9 @@ import { useState, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CategoryIcon } from '@/components/CategoryIcon';
 import { SmartUpload } from '@/components/SmartUpload';
-import { addTransaction, deleteTransaction } from '@/lib/actions/transactions';
+import { addTransaction, editTransaction, deleteTransaction } from '@/lib/actions/transactions';
 import { fmtAdaptive } from '@/lib/format';
-import { Plus, FileDown, X, Loader2 } from 'lucide-react';
+import { Plus, FileDown, X, Loader2, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { TransactionRow } from '@/components/finance/TransactionRow';
 
 type Tx = {
@@ -24,6 +24,7 @@ interface Props {
   totalExpense: number;
   period: string;
   typeFilter: string;
+  currency: string;
 }
 
 const PERIOD_LABELS: Record<string, string> = {
@@ -32,17 +33,18 @@ const PERIOD_LABELS: Record<string, string> = {
   'this-year':  'This Year',
 };
 
-function AddTransactionModal({ categories, onClose }: { categories: Category[]; onClose: () => void }) {
+function TransactionModal({ tx, categories, currency, onClose }: { tx?: Tx; categories: Category[]; currency: string; onClose: () => void }) {
   const router = useRouter();
   const [, startT] = useTransition();
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
-  const [name,       setName]       = useState('');
-  const [amount,     setAmount]     = useState('');
-  const [type,       setType]       = useState<'income' | 'expense'>('expense');
-  const [categoryId, setCategoryId] = useState('');
-  const [date,       setDate]       = useState(new Date().toISOString().slice(0, 10));
-  const [note,       setNote]       = useState('');
+  const [name,       setName]       = useState(tx?.name ?? '');
+  const [amount,     setAmount]     = useState(tx ? String(tx.amount) : '');
+  const [type,       setType]       = useState<'income' | 'expense'>(tx ? (tx.type as any) : 'expense');
+  const [categoryId, setCategoryId] = useState(tx?.category.id ?? '');
+  const [date,       setDate]       = useState(tx ? new Date(tx.date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10));
+  const [note,       setNote]       = useState(tx?.note ?? '');
+  const isEdit = Boolean(tx);
 
   const filteredCats = categories.filter(c => c.type === type || c.type === 'savings');
 
@@ -51,7 +53,11 @@ function AddTransactionModal({ categories, onClose }: { categories: Category[]; 
     if (!categoryId) { setError('Please select a category.'); return; }
     setLoading(true); setError('');
     try {
-      await addTransaction({ name, amount: parseFloat(amount), type, categoryId, date, note });
+      if (isEdit && tx) {
+        await editTransaction(tx.id, { name, amount: parseFloat(amount), type, categoryId, date: new Date(date), note });
+      } else {
+        await addTransaction({ name, amount: parseFloat(amount), type, categoryId, date, note });
+      }
       startT(() => router.refresh());
       onClose();
     } catch (err: any) {
@@ -63,7 +69,7 @@ function AddTransactionModal({ categories, onClose }: { categories: Category[]; 
     <div style={{ position:'fixed', inset:0, zIndex:1000, background:'rgba(0,0,0,0.5)', backdropFilter:'blur(6px)', display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem' }} onClick={onClose}>
       <div className="card animate-in" style={{ width:'100%', maxWidth:460, padding:'1.75rem' }} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
-          <h2 className="card-title" style={{ marginBottom:0 }}>Add Transaction</h2>
+          <h2 className="card-title" style={{ marginBottom:0 }}>{isEdit ? 'Edit Transaction' : 'Add Transaction'}</h2>
           <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', display:'flex' }}><X size={18}/></button>
         </div>
         {error && <div style={{ padding:'0.625rem', borderRadius:7, background:'var(--danger-light)', color:'var(--danger)', fontSize:'0.8rem', marginBottom:'1rem' }}>{error}</div>}
@@ -83,7 +89,7 @@ function AddTransactionModal({ categories, onClose }: { categories: Category[]; 
                 value={name} onChange={e => setName(e.target.value)} required placeholder="e.g. Naivas Grocery" />
             </div>
             <div>
-              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Amount (KES)</label>
+              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Amount ({currency})</label>
               <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                 type="number" min="1" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} required placeholder="0.00" />
             </div>
@@ -109,7 +115,7 @@ function AddTransactionModal({ categories, onClose }: { categories: Category[]; 
               value={note} onChange={e => setNote(e.target.value)} placeholder="e.g. May salary" />
           </div>
           <button type="submit" disabled={loading} className="btn btn-primary" style={{ width:'100%', justifyContent:'center', padding:'0.7rem', marginTop:'0.25rem' }}>
-            {loading ? <><Loader2 size={14} style={{ animation:'spin 1s linear infinite' }}/> Saving…</> : `Save ${type === 'income' ? 'Income' : 'Expense'}`}
+            {loading ? <><Loader2 size={14} style={{ animation:'spin 1s linear infinite' }}/> Saving…</> : (isEdit ? 'Save Changes' : `Save ${type === 'income' ? 'Income' : 'Expense'}`)}
           </button>
         </form>
       </div>
@@ -117,7 +123,7 @@ function AddTransactionModal({ categories, onClose }: { categories: Category[]; 
   );
 }
 
-export function TransactionsClient({ transactions, categories, totalIncome, totalExpense, period, typeFilter }: Props) {
+export function TransactionsClient({ transactions, categories, totalIncome, totalExpense, period, typeFilter, currency }: Props) {
   const router     = useRouter();
   const params     = useSearchParams();
   const [, startT] = useTransition();
@@ -125,10 +131,34 @@ export function TransactionsClient({ transactions, categories, totalIncome, tota
   const netPositive = net >= 0;
 
   const [showAdd,    setShowAdd]    = useState(false);
+  const [editTx,     setEditTx]     = useState<Tx | null>(null);
   const [showUpload, setShowUpload] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 25;
+
+  // Derived state for filtering and pagination
+  const filteredTxs = transactions.filter(tx => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      tx.name.toLowerCase().includes(q) ||
+      tx.category.name.toLowerCase().includes(q) ||
+      (tx.note && tx.note.toLowerCase().includes(q)) ||
+      String(tx.amount).includes(q)
+    );
+  });
+  const totalPages = Math.max(1, Math.ceil(filteredTxs.length / PAGE_SIZE));
+  const paginatedTxs = filteredTxs.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  // Reset page when filter/search changes
+  useTransition();
+  const resetPagination = () => setCurrentPage(1);
+
   function setParam(key: string, value: string) {
+    resetPagination();
     startT(() => {
       const next = new URLSearchParams(params.toString());
       next.set(key, value);
@@ -148,7 +178,9 @@ export function TransactionsClient({ transactions, categories, totalIncome, tota
 
   return (
     <>
-      {showAdd && <AddTransactionModal categories={categories} onClose={() => setShowAdd(false)} />}
+      {showAdd && <TransactionModal categories={categories} currency={currency} onClose={() => setShowAdd(false)} />}
+      {editTx && <TransactionModal tx={editTx} categories={categories} currency={currency} onClose={() => setEditTx(null)} />}
+      {showUpload && <div className="card mb-5 animate-in"><SmartUpload /></div>}
 
       {/* Toolbar */}
       <div className="flex items-center justify-between mb-5 flex-wrap gap-3 animate-in">
@@ -167,14 +199,22 @@ export function TransactionsClient({ transactions, categories, totalIncome, tota
               </button>
             ))}
           </div>
+          <div style={{ position:'relative', minWidth:'200px' }}>
+            <Search size={14} style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', color:'var(--text-muted)' }} />
+            <input 
+              className="input-field" 
+              style={{ width:'100%', padding:'0.45rem 0.75rem 0.45rem 2rem', fontSize:'0.85rem' }}
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={e => { setSearchQuery(e.target.value); resetPagination(); }}
+            />
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <button className="btn btn-outline" onClick={() => setShowUpload(v => !v)}><FileDown size={13}/> Import</button>
           <button className="btn btn-primary" onClick={() => setShowAdd(true)}><Plus size={13}/> Add Entry</button>
         </div>
       </div>
-
-      {showUpload && <div className="card mb-5 animate-in"><SmartUpload /></div>}
 
       {/* Summary Hero — matches dashboard style exactly */}
       <div className="dashboard-hero animate-in delay-1 mb-5">
@@ -189,7 +229,7 @@ export function TransactionsClient({ transactions, categories, totalIncome, tota
               color: netPositive ? 'var(--success)' : 'var(--danger)',
               whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
             }}>
-              {netPositive ? '+' : '−'}{fmtAdaptive(Math.abs(net))}
+                {netPositive ? '+' : '-'}{fmtAdaptive(Math.abs(net), currency)}
             </p>
             <p className="hero-sub">{transactions.length} transaction{transactions.length !== 1 ? 's' : ''} in period</p>
           </div>
@@ -198,12 +238,12 @@ export function TransactionsClient({ transactions, categories, totalIncome, tota
           <div className="hero-stats-grid">
             <div className="hero-stat-card">
               <p className="hero-label">{periodLabel} Income</p>
-              <p className="hero-stat-value tabular" style={{ color:'var(--success)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>+{fmtAdaptive(totalIncome)}</p>
-              <p className="hero-sub">↑ coming in</p>
+              <p className="hero-stat-value tabular" style={{ color:'var(--success)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{fmtAdaptive(totalIncome, currency)}</p>
+              <p className="hero-sub">{totalIncome > 0 ? '↑ Coming in' : 'No income yet'}</p>
             </div>
             <div className="hero-stat-card">
-              <p className="hero-label">{periodLabel} Expenses</p>
-              <p className="hero-stat-value tabular" style={{ color:'var(--danger)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>−{fmtAdaptive(totalExpense)}</p>
+              <p className="hero-label">{PERIOD_LABELS[period] || 'All Time'} Spent</p>
+              <p className="hero-stat-value tabular" style={{ color:'var(--danger)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{fmtAdaptive(totalExpense, currency)}</p>
               <p className="hero-sub">↓ going out</p>
             </div>
             <div className="hero-stat-card">
@@ -221,27 +261,59 @@ export function TransactionsClient({ transactions, categories, totalIncome, tota
           <div style={{ textAlign:'center', padding:'3rem', color:'var(--text-muted)' }}>
             <div style={{ fontSize:'2rem', marginBottom:'0.5rem' }}>📭</div>
             <div style={{ fontWeight:600 }}>No transactions in this period</div>
-            <div style={{ fontSize:'0.78rem', marginTop:'0.25rem' }}>Try a different period or add a new entry</div>
-            <button className="btn btn-primary" style={{ marginTop:'1rem' }} onClick={() => setShowAdd(true)}>
-              <Plus size={13}/> Add Transaction
-            </button>
+          </div>
+        ) : filteredTxs.length === 0 ? (
+          <div style={{ textAlign:'center', padding:'3rem', color:'var(--text-muted)' }}>
+            <div style={{ fontSize:'2rem', marginBottom:'0.5rem' }}>🔍</div>
+            <div style={{ fontWeight:600 }}>No matching transactions found</div>
           </div>
         ) : (
-          <div className="flex flex-col gap-2 w-full">
-            {transactions.map(tx => (
-              <TransactionRow
-                key={tx.id}
-                title={tx.name}
-                subtitle={tx.note ? `${tx.category.name} • ${tx.note}` : tx.category.name}
-                amount={tx.amount}
-                type={tx.type}
-                icon={<CategoryIcon category={tx.category.icon ?? tx.category.name.toLowerCase()} name={tx.name} size={18}/>}
-                state={tx.type === 'pending' ? 'pending' : undefined}
-                onDelete={() => handleDelete(tx.id)}
-                isDeleting={deletingId === tx.id}
-              />
-            ))}
-          </div>
+          <>
+            <div style={{ display:'flex', flexDirection:'column' }}>
+              {paginatedTxs.map(tx => (
+                <TransactionRow
+                  key={tx.id}
+                  title={tx.name}
+                  subtitle={tx.note ? `${tx.category.name} • ${tx.note}` : tx.category.name}
+                  amount={tx.amount}
+                  type={tx.type}
+                  icon={<CategoryIcon category={tx.category.icon ?? tx.category.name.toLowerCase()} name={tx.name} size={18}/>}
+                  state={tx.type === 'pending' ? 'pending' : undefined}
+                  onDelete={() => handleDelete(tx.id)}
+                  onEdit={() => setEditTx(tx)}
+                  isDeleting={deletingId === tx.id}
+                />
+              ))}
+            </div>
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between" style={{ padding: '1rem', borderTop: '1px solid var(--border)' }}>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                  Showing {(currentPage - 1) * PAGE_SIZE + 1} to {Math.min(currentPage * PAGE_SIZE, filteredTxs.length)} of {filteredTxs.length}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button 
+                    className="btn btn-outline" 
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    style={{ padding: '0.4rem', background: 'none' }}
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-primary)' }}>
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <button 
+                    className="btn btn-outline" 
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    style={{ padding: '0.4rem', background: 'none' }}
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </>

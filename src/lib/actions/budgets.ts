@@ -59,3 +59,19 @@ export async function deleteBudget(id: string) {
   revalidatePath('/budgets');
   revalidatePath('/');
 }
+
+export async function editBudget(id: string, data: { name?: string; limitAmt?: number; period?: 'monthly' | 'yearly'; categoryId?: string }) {
+  const user = await requireAuth();
+  if (!id) throw new Error('Missing id');
+  if (data.categoryId) {
+    const cat = await prisma.category.findFirst({ where: { id: data.categoryId, userId: user.id } });
+    if (!cat) throw new Error('Invalid category');
+  }
+  const { count } = await prisma.budget.updateMany({
+    where: { id, userId: user.id },
+    data,
+  });
+  if (count === 0) throw new Error('Budget not found or ownership failed');
+  revalidatePath('/budgets');
+  revalidatePath('/');
+}

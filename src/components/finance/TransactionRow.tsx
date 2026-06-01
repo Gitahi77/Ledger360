@@ -1,5 +1,5 @@
 import { LedgerAmount } from './LedgerAmount';
-import { Trash2, Loader2 } from 'lucide-react';
+import { Trash2, Loader2, Edit2 } from 'lucide-react';
 import { ReactNode } from 'react';
 
 interface TransactionRowProps {
@@ -11,6 +11,7 @@ interface TransactionRowProps {
   state?: "pending" | "reconciled" | "flagged";
   icon?: ReactNode;
   onClick?: () => void;
+  onEdit?: () => void;
   onDelete?: () => void;
   isDeleting?: boolean;
 }
@@ -23,6 +24,7 @@ export function TransactionRow({
   state,
   icon,
   onClick,
+  onEdit,
   onDelete,
   isDeleting,
 }: TransactionRowProps) {
@@ -41,8 +43,17 @@ export function TransactionRow({
         <p className="transaction-row-subtitle">{subtitle}</p>
       </div>
 
-      <div className="transaction-row-actions">
+      <div className="transaction-row-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
         <LedgerAmount amount={amount} type={type} />
+        {onEdit && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onEdit(); }}
+            className="transaction-row-edit"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
+          >
+            <Edit2 size={16} />
+          </button>
+        )}
         {onDelete && (
           <button
             onClick={(e) => { e.stopPropagation(); onDelete(); }}

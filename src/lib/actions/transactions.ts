@@ -238,3 +238,28 @@ export async function deleteTransaction(id: string) {
   revalidatePath('/transactions');
   revalidatePath('/');
 }
+
+/* ── Edit (atomic ownership check) ────────────────────────── */
+export async function editTransaction(id: string, data: {
+  amount?: number; name?: string; type?: 'income' | 'expense'; date?: Date; categoryId?: string; note?: string;
+}) {
+  const user = await requireAuth();
+  if (!id) throw new Error('Missing id');
+
+  const { count } = await prisma.transaction.updateMany({
+    where: { id, userId: user.id },
+    data,
+  });
+  if (count === 0) throw new Error('Transaction not found or ownership failed');
+
+  const { logActivity } = await import('@/lib/audit');
+  await logActivity({
+    userId:   user.id,
+    action:   'UPDATE',
+    resource: 'Transaction',
+    metadata: { txId: id, fields: Object.keys(data) },
+  });
+
+  revalidatePath('/transactions');
+  revalidatePath('/');
+}

@@ -19,6 +19,7 @@ import { InsightsFeed } from '@/components/dashboard/InsightsFeed';
 import { BalanceText } from '@/components/typography/BalanceText';
 import { FxTicker } from '@/components/FxTicker';
 import { fmtAdaptive, fmtFull } from '@/lib/format';
+import { prisma } from '@/lib/prisma';
 
 
 
@@ -38,9 +39,10 @@ export default async function Dashboard({
   const { period: rawPeriod } = await searchParams;
   const period = rawPeriod ?? 'this-month';
   const user = await requireAuth();
+  const currency = user.currency;
 
   // Parallel fetches for production speed (Neon connection poolers support this well).
-  const [summary, budgets, loans, netWorth, chartData, donutData, insights] = await Promise.all([
+  const [summary, budgets, loans, netWorth, chartData, donutData, insights, prefs] = await Promise.all([
     getTransactionSummary(period),
     getBudgetsWithSpend(period),
     getLoans(),
@@ -49,6 +51,7 @@ export default async function Dashboard({
     getCategoryBreakdown(period),
     // Pass user currency so insights use the right symbol (not hardcoded KES)
     import('@/lib/intelligence').then(m => m.generateInsights(user.id, user.currency)),
+    prisma.userPreferences.findUnique({ where: { userId: user.id } }),
   ]);
 
   const overdueLoanCount = loans.filter(l => l.daysOverdue > 0).length;
@@ -58,8 +61,11 @@ export default async function Dashboard({
   const monthsLeft   = Math.max(0, 11 - now.getMonth()); // 0 in December
   const projected    = Math.max(0, summary.savings * monthsLeft + netWorth.netWorth);
   const periodLabel  = period === 'this-week' ? 'This Week' : period === 'this-year' ? 'This Year' : 'This Month';
+  
+  const targetRate = prefs?.savingRate ?? 20;
+  const halfTarget = targetRate / 2;
   // Saving rate colour: green ≥ target, amber ≥ half target, red below
-  const srColor = summary.savingRate >= 20 ? 'var(--success)' : summary.savingRate >= 10 ? 'var(--warning)' : 'var(--danger)';
+  const srColor = summary.savingRate >= targetRate ? 'var(--success)' : summary.savingRate >= halfTarget ? 'var(--warning)' : 'var(--danger)';
 
   return (
     <AppLayout>
@@ -82,18 +88,18 @@ export default async function Dashboard({
           {/* Primary stat — Net Worth */}
           <div>
             <p className="hero-label">Net Worth</p>
-            <BalanceText value={fmtAdaptive(netWorth.netWorth)} />
+            <BalanceText value={fmtAdaptive(netWorth.netWorth, currency)} />
             <p className="hero-sub" style={{ whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-              Assets {fmtAdaptive(netWorth.totalAssets)} · Debt {fmtAdaptive(netWorth.totalLiabilities)}
+              Assets {fmtAdaptive(netWorth.totalAssets, currency)} · Debt {fmtAdaptive(netWorth.totalLiabilities, currency)}
             </p>
           </div>
 
           {/* Operational stat boxes */}
           <div className="hero-stats-grid">
             {[
-              { label: `${periodLabel} Income`,  value: fmtAdaptive(summary.income),   sub: summary.income > 0 ? '↑ Coming in' : 'No income yet',     color: 'var(--success)'      },
-              { label: `${periodLabel} Spent`,   value: fmtAdaptive(summary.expenses), sub: summary.expenses > 0 ? '↓ Going out' : 'No expenses yet', color: 'var(--text-primary)' },
-              { label: 'Saving Rate',            value: `${summary.savingRate}%`,       sub: summary.savingRate >= 20 ? '🎯 On track' : summary.savingRate >= 10 ? '⚠ Getting there' : '⚠ Needs attention', color: srColor },
+              { label: `${periodLabel} Income`,  value: fmtAdaptive(summary.income, currency),   sub: summary.income > 0 ? '↑ Coming in' : 'No income yet',     color: 'var(--success)'      },
+              { label: `${periodLabel} Spent`,   value: fmtAdaptive(summary.expenses, currency), sub: summary.expenses > 0 ? '↓ Going out' : 'No expenses yet', color: 'var(--text-primary)' },
+              { label: 'Saving Rate',            value: `${summary.savingRate}%`,       sub: summary.savingRate >= targetRate ? `🎯 Target met (${targetRate}%)` : summary.savingRate >= halfTarget ? '⚠ Getting there' : '⚠ Needs attention', color: srColor },
             ].map(s => (
               <div key={s.label} className="hero-stat-card">
                 <p className="hero-label">{s.label}</p>
@@ -138,7 +144,7 @@ export default async function Dashboard({
       </div>
 
       {/* Live KES Exchange Rates */}
-      <FxTicker />
+      <FxTicker currency={currency} />
 
       {/* Bottom row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,3fr) minmax(0,2fr)', gap: '1rem' }}>
@@ -165,7 +171,7 @@ export default async function Dashboard({
                     <div className="flex items-center justify-between mb-1">
                       <span style={{ fontSize:'0.8125rem', fontWeight:600 }}>{b.name}</span>
                       <div className="flex items-center gap-2">
-                        {over > 0 && <span style={{ fontSize:'0.68rem', color:'var(--danger)', fontWeight:700 }}>+{fmtAdaptive(over)}</span>}
+                        {over > 0 && <span style={{ fontSize:'0.68rem', color:'var(--danger)', fontWeight:700 }}>+{fmtAdaptive(over, currency)}</span>}
                         <span className={`badge ${st.badge}`}>{st.label}</span>
                       </div>
                     </div>
@@ -173,8 +179,8 @@ export default async function Dashboard({
                       <div className="progress-fill" style={{ width:`${st.pct}%`, background:st.bar }} />
                     </div>
                     <div className="flex items-center justify-between mt-1">
-                      <span className="text-xs text-muted">{fmtAdaptive(b.spent)}</span>
-                      <span className="text-xs text-muted">Limit: {fmtAdaptive(b.limit)}</span>
+                      <span className="text-xs text-muted">{fmtAdaptive(b.spent, currency)}</span>
+                      <span className="text-xs text-muted">Limit: {fmtAdaptive(b.limit, currency)}</span>
                     </div>
                   </div>
                 );
@@ -201,7 +207,7 @@ export default async function Dashboard({
                 <div key={l.id} className="flex items-center justify-between" style={{ fontSize:'0.78rem', marginBottom:'0.375rem' }}>
                   <span style={{ color:'var(--text-secondary)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'55%' }}>{l.name}</span>
                   <span style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, color: l.daysOverdue > 0 ? 'var(--danger)' : 'var(--text-primary)', whiteSpace:'nowrap' }}>
-                    {fmtAdaptive(l.balance)}
+                    {fmtAdaptive(l.balance, currency)}
                   </span>
                 </div>
               ))}
@@ -217,7 +223,7 @@ export default async function Dashboard({
                 fontSize: projected > 99_999_999 ? '1.4rem' : projected > 9_999_999 ? '1.6rem' : '1.8rem',
                 fontWeight:700, letterSpacing:'-0.04em', color:'white', lineHeight:1,
                 whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                {fmtAdaptive(projected)}
+                {fmtAdaptive(projected, currency)}
               </p>
               <p style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.25rem' }}>by December {new Date().getFullYear()}</p>
             </div>

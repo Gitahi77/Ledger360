@@ -3,7 +3,7 @@
 // Copyright (c) 2024-present Eric Gitahi. All rights reserved.
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { addBudget, deleteBudget } from '@/lib/actions/budgets';
+import { addBudget, editBudget, deleteBudget } from '@/lib/actions/budgets';
 import { SmartUpload } from '@/components/SmartUpload';
 import { fmtAdaptive } from '@/lib/format';
 import { Plus, Trash2, Loader2, X, FileDown, LayoutGrid } from 'lucide-react';
@@ -18,23 +18,36 @@ function budgetStyle(limit: number, spent: number) {
   return               { barColor:'var(--success)', badge:'badge-success', label:'On Track',    numColor:'var(--success)', borderColor:'var(--success)', glow:'rgba(22,163,74,0.3)',   pct };
 }
 
-function AddBudgetModal({ categories, onClose }: { categories: Category[]; onClose: () => void }) {
+function BudgetModal({ budget, categories, currency, onClose }: { budget?: Budget; categories: Category[]; currency: string; onClose: () => void }) {
   const router = useRouter();
   const [, startT] = useTransition();
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
-  const [name, setName]             = useState('');
-  const [categoryId, setCategoryId] = useState('');
-  const [limitAmt, setLimitAmt]     = useState('');
-  const [period, setPeriod]         = useState('monthly');
+  const [name, setName]             = useState(budget?.name ?? '');
+  const [categoryId, setCategoryId] = useState(''); // Need to map budget.category to categoryId later if we want proper edit, for now leave as is or find it
+  const [limitAmt, setLimitAmt]     = useState(budget ? String(budget.limit) : '');
+  const [period, setPeriod]         = useState(budget?.period ?? 'monthly');
   const expenseCats = categories.filter(c => c.type === 'expense');
+  const isEdit = Boolean(budget);
+
+  // set initial categoryId if editing
+  useState(() => {
+    if (budget) {
+      const cat = categories.find(c => c.name === budget.category);
+      if (cat) setCategoryId(cat.id);
+    }
+  });
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!categoryId) { setError('Please select a category.'); return; }
     setLoading(true); setError('');
     try {
-      await addBudget({ name, categoryId, limitAmt: parseFloat(limitAmt), period });
+      if (isEdit && budget) {
+        await editBudget(budget.id, { name, categoryId, limitAmt: parseFloat(limitAmt), period: period as 'monthly' | 'yearly' });
+      } else {
+        await addBudget({ name, categoryId, limitAmt: parseFloat(limitAmt), period });
+      }
       startT(() => router.refresh()); onClose();
     } catch (err: any) { setError(err.message ?? 'Something went wrong.'); }
     finally { setLoading(false); }
@@ -44,7 +57,7 @@ function AddBudgetModal({ categories, onClose }: { categories: Category[]; onClo
     <div style={{ position:'fixed', inset:0, zIndex:1000, background:'rgba(0,0,0,0.5)', backdropFilter:'blur(6px)', display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem' }} onClick={onClose}>
       <div className="card animate-in" style={{ width:'100%', maxWidth:440, padding:'1.75rem' }} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
-          <h2 className="card-title" style={{ marginBottom:0 }}>Add Budget</h2>
+          <h2 className="card-title" style={{ marginBottom:0 }}>{isEdit ? 'Edit Budget' : 'Add Budget'}</h2>
           <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', display:'flex' }}><X size={18}/></button>
         </div>
         {error && <div style={{ padding:'0.625rem', borderRadius:7, background:'var(--danger-light)', color:'var(--danger)', fontSize:'0.8rem', marginBottom:'1rem' }}>{error}</div>}
@@ -70,12 +83,12 @@ function AddBudgetModal({ categories, onClose }: { categories: Category[]; onClo
               </select>
             </div>
           </div>
-          <div>
-            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Spending Limit (KES)</label>
-            <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }} type="number" min="1" step="1" value={limitAmt} onChange={e => setLimitAmt(e.target.value)} required placeholder="0" />
-          </div>
+            <div>
+              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Monthly Limit ({currency})</label>
+              <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }} type="number" min="1" step="1" value={limitAmt} onChange={e => setLimitAmt(e.target.value)} required placeholder="5000" />
+            </div>
           <button type="submit" disabled={loading} className="btn btn-primary" style={{ width:'100%', justifyContent:'center', padding:'0.7rem', marginTop:'0.25rem' }}>
-            {loading ? <><Loader2 size={14} style={{ animation:'spin 1s linear infinite' }}/> Saving…</> : 'Create Budget'}
+            {loading ? <><Loader2 size={14} style={{ animation:'spin 1s linear infinite' }}/> Saving…</> : (isEdit ? 'Save Changes' : 'Create Budget')}
           </button>
         </form>
       </div>
@@ -83,15 +96,16 @@ function AddBudgetModal({ categories, onClose }: { categories: Category[]; onClo
   );
 }
 
-export function BudgetsClient({ budgets, categories, totalBudgeted, totalSpent, period }: {
+export function BudgetsClient({ budgets, categories, totalBudgeted, totalSpent, period, currency }: {
   budgets: Budget[]; categories: Category[];
-  totalBudgeted: number; totalSpent: number; period: string;
+  totalBudgeted: number; totalSpent: number; period: string; currency: string;
 }) {
   const router     = useRouter();
   const [, startT] = useTransition();
   const [showAdd,    setShowAdd]    = useState(false);
   const [showUpload, setShowUpload] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [editBudget, setEditBudget] = useState<Budget | null>(null);
 
   const overBudget = budgets.filter(b => b.spent >= b.limit).length;
   const onTrack    = budgets.filter(b => b.limit > 0 && (b.spent / b.limit) < 0.8).length;
@@ -111,7 +125,8 @@ export function BudgetsClient({ budgets, categories, totalBudgeted, totalSpent, 
 
   return (
     <>
-      {showAdd && <AddBudgetModal categories={categories} onClose={() => setShowAdd(false)} />}
+      {showAdd && <BudgetModal categories={categories} currency={currency} onClose={() => setShowAdd(false)} />}
+      {editBudget && <BudgetModal budget={editBudget} categories={categories} currency={currency} onClose={() => setEditBudget(null)} />}
 
       {/* Toolbar */}
       <div className="flex items-center justify-between mb-5 animate-in flex-wrap gap-3">
@@ -141,8 +156,8 @@ export function BudgetsClient({ budgets, categories, totalBudgeted, totalSpent, 
               fontSize: totalBudgeted > 9_999_999 ? '1.6rem' : totalBudgeted > 999_999 ? '1.9rem' : '2.25rem',
               fontWeight:800, letterSpacing:'-0.04em', lineHeight:1,
               color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
-            }}>{fmtAdaptive(totalBudgeted)}</p>
-            <p className="hero-sub">{fmtAdaptive(totalSpent)} spent · {overallPct}% used</p>
+            }}>{fmtAdaptive(totalBudgeted, currency)}</p>
+            <p className="hero-sub">{fmtAdaptive(totalSpent, currency)} spent · {overallPct}% used</p>
             {/* Overall progress bar */}
             <div className="hero-progress-wrap" style={{ marginTop:'0.75rem', paddingTop:'0.75rem' }}>
               <div className="hero-progress-labels">
@@ -197,6 +212,10 @@ export function BudgetsClient({ budgets, categories, totalBudgeted, totalSpent, 
                   </div>
                   <div className="flex items-center gap-2">
                     <span className={`badge ${st.badge}`}>{st.label}</span>
+                    <button onClick={() => setEditBudget(b)} 
+                      style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', display:'flex', padding:'0.2rem' }}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                    </button>
                     <button onClick={() => handleDelete(b.id)} disabled={deletingId === b.id}
                       style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', display:'flex', padding:'0.2rem' }}>
                       {deletingId === b.id ? <Loader2 size={13} style={{ animation:'spin 1s linear infinite' }}/> : <Trash2 size={13}/>}
@@ -210,8 +229,8 @@ export function BudgetsClient({ budgets, categories, totalBudgeted, totalSpent, 
                       fontSize: b.spent > 9_999_999 ? '1.1rem' : b.spent > 999_999 ? '1.25rem' : '1.5rem',
                       fontWeight:800, color:st.numColor, letterSpacing:'-0.04em', lineHeight:1.1,
                       whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
-                    }}>{fmtAdaptive(b.spent)}</div>
-                    <div style={{ fontSize:'0.7rem', color:'var(--text-secondary)', marginTop:'0.2rem' }}>of {fmtAdaptive(b.limit)}</div>
+                    }}>{fmtAdaptive(b.spent, currency)}</div>
+                    <div style={{ fontSize:'0.7rem', color:'var(--text-secondary)', marginTop:'0.2rem' }}>of {fmtAdaptive(b.limit, currency)}</div>
                   </div>
                   <div style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'2rem', fontWeight:800, color:st.numColor, letterSpacing:'-0.05em', lineHeight:1, opacity:0.8, flexShrink:0 }}>
                     {Math.round(st.pct)}%
@@ -222,7 +241,7 @@ export function BudgetsClient({ budgets, categories, totalBudgeted, totalSpent, 
                 </div>
                 <div className="flex items-center justify-between">
                   <span style={{ fontSize:'0.72rem', color:'var(--text-secondary)', fontWeight:500, overflow:'hidden', textOverflow:'ellipsis', flex:1, marginRight:'0.5rem' }}>
-                    {rem > 0 ? `${fmtAdaptive(rem)} left` : `${fmtAdaptive(b.spent - b.limit)} over`}
+                    {rem > 0 ? `${fmtAdaptive(rem, currency)} left` : `${fmtAdaptive(b.spent - b.limit, currency)} over`}
                   </span>
                   <span style={{ fontSize:'0.72rem', fontWeight:700, color:st.numColor, flexShrink:0 }}>{st.label}</span>
                 </div>

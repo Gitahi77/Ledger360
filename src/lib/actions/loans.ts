@@ -65,3 +65,23 @@ export async function deleteLoan(id: string) {
   revalidatePath('/loans');
   revalidatePath('/');
 }
+
+export async function editLoan(id: string, data: {
+  name?: string; lender?: string; type?: string; originalAmt?: number; balance?: number;
+  annualRate?: number; monthlyPmt?: number; nextDue?: string; daysOverdue?: number;
+}) {
+  const user = await requireAuth();
+  if (!id) throw new Error('Missing id');
+
+  const updateData: any = { ...data };
+  if (data.nextDue) updateData.nextDue = new Date(data.nextDue);
+
+  const { count } = await prisma.loan.updateMany({
+    where: { id, userId: user.id },
+    data: updateData,
+  });
+  if (count === 0) throw new Error('Loan not found or ownership failed');
+  
+  revalidatePath('/loans');
+  revalidatePath('/');
+}

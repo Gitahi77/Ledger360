@@ -3,6 +3,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { getBudgetsWithSpend } from '@/lib/actions/budgets';
 import { getCategories } from '@/lib/actions/transactions';
 import { BudgetsClient } from './BudgetsClient';
+import { requireAuth } from '@/lib/actions/_auth';
 
 export default async function Budgets({
   searchParams,
@@ -12,13 +13,14 @@ export default async function Budgets({
   const { period: rawPeriod } = await searchParams;
   const period = rawPeriod ?? 'this-month';
 
-  const [budgets, categories] = await Promise.all([
+  const [user, budgets, categories] = await Promise.all([
+    requireAuth(),
     getBudgetsWithSpend(period),
     getCategories('expense'),
   ]);
 
-  const totalBudgeted = budgets.reduce((s, b) => s + b.limit, 0);
-  const totalSpent    = budgets.reduce((s, b) => s + b.spent, 0);
+  const totalBudgeted = budgets.reduce((s: number, b: any) => s + b.limit, 0);
+  const totalSpent    = budgets.reduce((s: number, b: any) => s + b.spent, 0);
 
   return (
     <AppLayout>
@@ -28,6 +30,7 @@ export default async function Budgets({
         totalBudgeted={totalBudgeted}
         totalSpent={totalSpent}
         period={period}
+        currency={user.currency}
       />
     </AppLayout>
   );

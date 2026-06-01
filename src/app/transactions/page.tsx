@@ -2,6 +2,7 @@
 import { AppLayout } from '@/components/layout/AppLayout';
 import { getTransactions, getCategories } from '@/lib/actions/transactions';
 import { TransactionsClient } from './TransactionsClient';
+import { requireAuth } from '@/lib/actions/_auth';
 
 export default async function Transactions({
   searchParams,
@@ -12,7 +13,8 @@ export default async function Transactions({
   const period     = rawPeriod ?? 'this-month';
   const typeFilter = rawType   ?? 'all';
 
-  const [transactions, categories] = await Promise.all([
+  const [user, transactions, categories] = await Promise.all([
+    requireAuth(),
     getTransactions(period, typeFilter === 'all' ? undefined : typeFilter),
     getCategories(),
   ]);
@@ -34,6 +36,7 @@ export default async function Transactions({
         totalExpense={totalExpense}
         period={period}
         typeFilter={typeFilter}
+        currency={user.currency}
       />
     </AppLayout>
   );

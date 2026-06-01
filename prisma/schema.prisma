@@ -16,6 +16,10 @@ model User {
   password      String?
   accountType   String    @default("individual") // "individual" | "corporate"
   currency      String    @default("KES")
+  
+  resetToken       String?
+  resetTokenExpiry DateTime?
+
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 

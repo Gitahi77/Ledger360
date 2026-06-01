@@ -117,3 +117,12 @@ export async function deleteAllUserData() {
   revalidatePath('/reports');
   revalidatePath('/settings');
 }
+
+/* ── Delete Account (wipes user from DB) ────────────────── */
+export async function deleteAccount() {
+  const user = await requireAuth();
+  // With onDelete: Cascade on the schema, deleting the user deletes all their data.
+  await prisma.user.delete({
+    where: { id: user.id },
+  });
+}

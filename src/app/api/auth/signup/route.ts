@@ -15,8 +15,8 @@ const SignupSchema = z.object({
   password:    z.string().min(8, 'Password must be at least 8 characters').max(128),
   // Only allow known account types — prevents e.g. accountType: "admin" in JWT
   accountType: z.enum(['individual', 'freelancer', 'small_business']).default('individual'),
-  // Only allow supported currencies
-  currency:    z.enum(['KES', 'USD', 'EUR', 'GBP', 'UGX', 'TZS']).default('KES'),
+  // Allow any 3-letter ISO currency code
+  currency:    z.string().length(3).toUpperCase().default('KES'),
 });
 
 export async function POST(req: Request) {

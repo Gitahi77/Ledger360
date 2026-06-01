@@ -33,13 +33,16 @@ export async function addAsset(raw: { name: string; category: string; value: num
   revalidatePath('/');
 }
 
-export async function updateAsset(id: string, value: number) {
+export async function editAsset(id: string, data: { name?: string; category?: string; value?: number }) {
   const user = await requireAuth();
   if (!id) throw new Error('Missing id');
-  await prisma.asset.updateMany({
+  
+  const { count } = await prisma.asset.updateMany({
     where: { id, userId: user.id },
-    data:  { value: Math.max(0, Number(value)) },
+    data,
   });
+  if (count === 0) throw new Error('Asset not found or ownership failed');
+  
   revalidatePath('/net-worth');
   revalidatePath('/');
 }

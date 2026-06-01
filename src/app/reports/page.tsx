@@ -2,6 +2,7 @@
 import { AppLayout } from '@/components/layout/AppLayout';
 import { getMonthlyTrend, getReportSummary, getReportCategories } from '@/lib/actions/reports';
 import { ReportsClient } from './ReportsClient';
+import { requireAuth } from '@/lib/actions/_auth';
 
 export default async function Reports({
   searchParams,
@@ -11,7 +12,8 @@ export default async function Reports({
   const { period: rawPeriod } = await searchParams;
   const period = rawPeriod ?? 'this-month';
 
-  const [trend, summary, categories] = await Promise.all([
+  const [user, trend, summary, categories] = await Promise.all([
+    requireAuth(),
     getMonthlyTrend(),
     getReportSummary(period),
     getReportCategories(period),
@@ -24,6 +26,7 @@ export default async function Reports({
         trend={trend}
         summary={summary}
         categories={categories}
+        currency={user.currency}
       />
     </AppLayout>
   );

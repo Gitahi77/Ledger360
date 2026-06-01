@@ -8,8 +8,9 @@ import { useSession } from 'next-auth/react';
 import { updateProfile } from '@/lib/actions/reports';
 import {
   saveAppearance, savePreferences, saveNotifications,
-  exportUserData, deleteAllUserData,
+  exportUserData, deleteAllUserData, deleteAccount,
 } from '@/lib/actions/settings';
+import { signOut } from 'next-auth/react';
 import {
   User, Bell, Palette, ShieldCheck, Database,
   HelpCircle, Download, Trash2, ExternalLink, Info,
@@ -17,6 +18,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { CURRENCIES } from '@/lib/constants/currencies';
 
 type Section = 'profile' | 'appearance' | 'preferences' | 'notifications' | 'data' | 'help';
 
@@ -215,6 +217,7 @@ export function SettingsClient({
 
   // Delete confirmation
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleteAcctConfirm, setDeleteAcctConfirm] = useState(false);
 
   const inputStyle: React.CSSProperties = {
     width:'100%', padding:'0.5rem 0.75rem', borderRadius:6,
@@ -232,11 +235,6 @@ export function SettingsClient({
       return next;
     });
   }
-
-  function setSectionState(
-    setter: React.Dispatch<React.SetStateAction<{ saving: boolean; saved: boolean; error: string }>>,
-    state: { saving: boolean; saved: boolean; error: string }
-  ) { setter(state); }
 
   async function withSave(
     setter: React.Dispatch<React.SetStateAction<{ saving: boolean; saved: boolean; error: string }>>,
@@ -319,6 +317,16 @@ export function SettingsClient({
     });
   }
 
+  async function handleDeleteAccount() {
+    setDataState({ saving: true, saved: false, error: '' });
+    try {
+      await deleteAccount();
+      signOut({ callbackUrl: '/login' });
+    } catch (e: any) {
+      setDataState({ saving: false, saved: false, error: e.message || 'Failed to delete account.' });
+    }
+  }
+
   return (
     <div style={{ maxWidth:680, margin:'0 auto' }}>
 
@@ -352,12 +360,9 @@ export function SettingsClient({
             </Field>
             <Field label="Currency">
               <select style={{ ...inputStyle, cursor:'pointer' }} value={currency} onChange={e => setCurrency(e.target.value)}>
-                <option value="KES">KES — Kenyan Shilling</option>
-                <option value="USD">USD — US Dollar</option>
-                <option value="EUR">EUR — Euro</option>
-                <option value="GBP">GBP — British Pound</option>
-                <option value="UGX">UGX — Ugandan Shilling</option>
-                <option value="TZS">TZS — Tanzanian Shilling</option>
+                {CURRENCIES.map(c => (
+                  <option key={c.code} value={c.code}>{c.code} — {c.name}</option>
+                ))}
               </select>
             </Field>
             <SaveRow {...profileState} />
@@ -399,16 +404,6 @@ export function SettingsClient({
       {openSections.has('preferences') && (
         <AccordionPanel>
           <form onSubmit={handleSavePrefs}>
-            <Row label="Currency" desc="Primary currency for all calculations">
-              <SettingSelect value={currency} onChange={setCurrency}>
-                <option value="KES">KES — Kenyan Shilling</option>
-                <option value="USD">USD — US Dollar</option>
-                <option value="EUR">EUR — Euro</option>
-                <option value="GBP">GBP — British Pound</option>
-                <option value="UGX">UGX — Ugandan Shilling</option>
-                <option value="TZS">TZS — Tanzanian Shilling</option>
-              </SettingSelect>
-            </Row>
             <Row label="Date Format" desc="How dates appear throughout the app">
               <SettingSelect value={dateFormat} onChange={setDateFmt}>
                 <option>DD/MM/YYYY</option><option>MM/DD/YYYY</option><option>YYYY-MM-DD</option>
@@ -528,6 +523,41 @@ export function SettingsClient({
                 <Trash2 size={12}/> Delete All Data
               </button>
             )}
+
+            <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid rgba(192,57,43,0.15)' }}>
+              <div style={{ fontSize:'0.8125rem', fontWeight:700, color:'var(--danger)', marginBottom:'0.35rem' }}>Delete Account</div>
+              <div style={{ fontSize:'0.72rem', color:'var(--text-secondary)', marginBottom:'0.875rem' }}>
+                Permanently delete your account and all associated data. This action is irreversible.
+              </div>
+              {deleteAcctConfirm ? (
+                <div style={{ display:'flex', gap:'0.5rem', alignItems:'center', flexWrap:'wrap' }}>
+                  <span style={{ fontSize:'0.78rem', color:'var(--danger)', fontWeight:600 }}>Are you absolutely sure?</span>
+                  <button
+                    type="button"
+                    onClick={handleDeleteAccount}
+                    disabled={dataState.saving}
+                    className="btn"
+                    style={{ background:'var(--danger)', color:'white', display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.78rem' }}
+                  >
+                    {dataState.saving ? <Loader2 size={12} style={{ animation:'spin 1s linear infinite' }}/> : <Trash2 size={12}/>}
+                    Yes, Delete My Account
+                  </button>
+                  <button type="button" onClick={() => setDeleteAcctConfirm(false)} className="btn btn-outline" style={{ fontSize:'0.78rem' }}>
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setDeleteAcctConfirm(true)}
+                  className="btn"
+                  style={{ background:'var(--danger)', color:'white', display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.78rem' }}
+                >
+                  <Trash2 size={12}/> Delete Account
+                </button>
+              )}
+            </div>
+
             {dataState.error && (
               <div style={{ marginTop:'0.5rem', fontSize:'0.78rem', color:'var(--danger)' }}>{dataState.error}</div>
             )}

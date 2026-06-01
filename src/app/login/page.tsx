@@ -85,6 +85,11 @@ function LoginForm() {
                   {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
               </div>
+              <div style={{ textAlign: 'right', marginTop: '0.4rem' }}>
+                <Link href="/forgot-password" style={{ fontSize: '0.75rem', color: 'var(--primary)', textDecoration: 'none', fontWeight: 500 }}>
+                  Forgot password?
+                </Link>
+              </div>
             </div>
 
             <button type="submit" disabled={loading} className="btn btn-primary" style={{ width: '100%', padding: '0.75rem', fontSize: '0.9rem', marginTop: '0.5rem', justifyContent: 'center' }}>

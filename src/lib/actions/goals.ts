@@ -53,3 +53,24 @@ export async function deleteGoal(id: string) {
   revalidatePath('/goals');
   revalidatePath('/');
 }
+
+export async function editGoal(id: string, data: {
+  name?: string; category?: string; targetAmount?: number; currentAmount?: number; deadline?: string | null;
+}) {
+  const user = await requireAuth();
+  if (!id) throw new Error('Missing id');
+
+  const updateData: any = { ...data };
+  if (data.deadline !== undefined) {
+    updateData.deadline = data.deadline ? new Date(data.deadline) : null;
+  }
+
+  const { count } = await prisma.goal.updateMany({
+    where: { id, userId: user.id },
+    data: updateData,
+  });
+  if (count === 0) throw new Error('Goal not found or ownership failed');
+  
+  revalidatePath('/goals');
+  revalidatePath('/');
+}

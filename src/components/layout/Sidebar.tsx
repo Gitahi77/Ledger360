@@ -2,7 +2,7 @@
 
 import {
   LayoutDashboard, ArrowLeftRight, PieChart, Target,
-  CreditCard, BarChart2, Settings, TrendingUp, LogOut, ShieldCheck
+  CreditCard, BarChart2, Settings, TrendingUp, LogOut, ShieldCheck, Tag
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -26,9 +26,10 @@ const navItems = [
     ],
   },
   {
-    group: 'INSIGHTS',
+    group: 'INSIGHTS & SETTINGS',
     items: [
       { name: 'Reports',  href: '/reports',  icon: BarChart2 },
+      { name: 'Categories', href: '/categories', icon: Tag },
       { name: 'Security', href: '/security', icon: ShieldCheck },
       { name: 'Settings', href: '/settings', icon: Settings  },
     ],

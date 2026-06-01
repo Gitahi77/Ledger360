@@ -3,7 +3,8 @@
 // Copyright (c) 2024–present Eric Gitahi. All rights reserved.
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { addGoal, updateGoalAmount, deleteGoal } from '@/lib/actions/goals';
+import { addGoal, editGoal, updateGoalAmount, deleteGoal } from '@/lib/actions/goals';
+import { addTransaction } from '@/lib/actions/transactions';
 import { CategoryIcon } from '@/components/CategoryIcon';
 import { fmtAdaptive, fmtFull, fmtPct } from '@/lib/format';
 import { Plus, CheckCircle2, TrendingUp, Trash2, Loader2, X, PiggyBank, Info } from 'lucide-react';
@@ -56,16 +57,17 @@ function goalStyle(pct: number) {
 }
 
 /* ── Add Goal Modal ───────────────────────────────────────── */
-function AddGoalModal({ onClose }: { onClose: () => void }) {
+function GoalModal({ goal, onClose, currency }: { goal?: Goal; onClose: () => void; currency: string }) {
   const router     = useRouter();
   const [, startT] = useTransition();
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
-  const [name,          setName]          = useState('');
-  const [category,      setCategory]      = useState('savings');
-  const [targetAmount,  setTargetAmount]  = useState('');
-  const [currentAmount, setCurrentAmount] = useState('0');
-  const [deadline,      setDeadline]      = useState('');
+  const [name,          setName]          = useState(goal?.name ?? '');
+  const [category,      setCategory]      = useState(goal?.category ?? 'savings');
+  const [targetAmount,  setTargetAmount]  = useState(goal ? String(goal.targetAmount) : '');
+  const [currentAmount, setCurrentAmount] = useState(goal ? String(goal.currentAmount) : '0');
+  const [deadline,      setDeadline]      = useState(goal?.deadline ? new Date(goal.deadline).toISOString().slice(0, 10) : '');
+  const isEdit = Boolean(goal);
 
   const GOAL_CATS = ['savings','emergency','travel','education','health','car','home','business','shopping','other'];
 
@@ -73,12 +75,21 @@ function AddGoalModal({ onClose }: { onClose: () => void }) {
     e.preventDefault();
     setLoading(true); setError('');
     try {
-      await addGoal({
-        name, category,
-        targetAmount:  parseFloat(targetAmount),
-        currentAmount: parseFloat(currentAmount || '0'),
-        deadline:      deadline || undefined,
-      });
+      if (isEdit && goal) {
+        await editGoal(goal.id, {
+          name, category,
+          targetAmount:  parseFloat(targetAmount),
+          currentAmount: parseFloat(currentAmount || '0'),
+          deadline:      deadline || null,
+        });
+      } else {
+        await addGoal({
+          name, category,
+          targetAmount:  parseFloat(targetAmount),
+          currentAmount: parseFloat(currentAmount || '0'),
+          deadline:      deadline || undefined,
+        });
+      }
       startT(() => router.refresh());
       onClose();
     } catch (err: any) {
@@ -90,7 +101,7 @@ function AddGoalModal({ onClose }: { onClose: () => void }) {
     <div style={{ position:'fixed', inset:0, zIndex:1000, background:'rgba(0,0,0,0.5)', backdropFilter:'blur(6px)', display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem' }} onClick={onClose}>
       <div className="card animate-in" style={{ width:'100%', maxWidth:460, padding:'1.75rem' }} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
-          <h2 className="card-title" style={{ marginBottom:0 }}>New Goal</h2>
+          <h2 className="card-title" style={{ marginBottom:0 }}>{isEdit ? 'Edit Goal' : 'New Goal'}</h2>
           <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', display:'flex' }}><X size={18}/></button>
         </div>
         {error && <div style={{ padding:'0.625rem', borderRadius:7, background:'var(--danger-light)', color:'var(--danger)', fontSize:'0.8rem', marginBottom:'1rem' }}>{error}</div>}
@@ -109,12 +120,12 @@ function AddGoalModal({ onClose }: { onClose: () => void }) {
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.75rem' }}>
             <div>
-              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Target Amount (KES)</label>
+              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Target Amount ({currency})</label>
               <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                 type="number" min="1" step="1" value={targetAmount} onChange={e => setTargetAmount(e.target.value)} required placeholder="100000" />
             </div>
             <div>
-              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Already Saved (KES)</label>
+              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Already Saved ({currency})</label>
               <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                 type="number" min="0" step="1" value={currentAmount} onChange={e => setCurrentAmount(e.target.value)} placeholder="0" />
             </div>
@@ -127,7 +138,7 @@ function AddGoalModal({ onClose }: { onClose: () => void }) {
               type="date" value={deadline} onChange={e => setDeadline(e.target.value)} />
           </div>
           <button type="submit" disabled={loading} className="btn btn-primary" style={{ width:'100%', justifyContent:'center', padding:'0.7rem', marginTop:'0.25rem' }}>
-            {loading ? <><Loader2 size={14} style={{ animation:'spin 1s linear infinite' }}/> Saving…</> : 'Create Goal'}
+            {loading ? <><Loader2 size={14} style={{ animation:'spin 1s linear infinite' }}/> Saving…</> : (isEdit ? 'Save Changes' : 'Create Goal')}
           </button>
         </form>
       </div>
@@ -136,11 +147,14 @@ function AddGoalModal({ onClose }: { onClose: () => void }) {
 }
 
 /* ── Add Funds Modal ──────────────────────────────────────── */
-function AddFundsModal({ goal, onClose }: { goal: Goal; onClose: () => void }) {
+function AddFundsModal({ goal, onClose, currency, categories }: { goal: Goal; onClose: () => void; currency: string; categories: { id: string; name: string }[] }) {
   const router     = useRouter();
   const [, startT] = useTransition();
   const [loading, setLoading] = useState(false);
   const [amount,  setAmount]  = useState('');
+  
+  const [recordTx, setRecordTx] = useState(false);
+  const [categoryId, setCategoryId] = useState(categories.find(c => c.name.toLowerCase() === 'transfer' || c.name.toLowerCase() === 'savings')?.id || categories[0]?.id || '');
 
   const addAmt   = parseFloat(amount || '0');
   const newTotal = goal.currentAmount + addAmt;
@@ -151,6 +165,18 @@ function AddFundsModal({ goal, onClose }: { goal: Goal; onClose: () => void }) {
     setLoading(true);
     try {
       await updateGoalAmount(goal.id, newTotal);
+      
+      if (recordTx && categoryId && addAmt > 0) {
+        await addTransaction({
+          amount: addAmt,
+          name: `Goal Contribution: ${goal.name}`,
+          type: 'expense',
+          date: new Date().toISOString().slice(0, 10),
+          categoryId,
+          note: `Contribution to ${goal.name}`,
+        });
+      }
+      
       startT(() => router.refresh());
       onClose();
     } catch (err: any) {
@@ -168,11 +194,11 @@ function AddFundsModal({ goal, onClose }: { goal: Goal; onClose: () => void }) {
           <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', display:'flex' }}><X size={18}/></button>
         </div>
         <p style={{ fontSize:'0.8rem', color:'var(--text-secondary)', marginBottom:'1rem' }}>
-          Adding to <strong>{goal.name}</strong> · current: {fmtAdaptive(goal.currentAmount)}
+          Adding to <strong>{goal.name}</strong> · current: {fmtAdaptive(goal.currentAmount, currency)}
         </p>
         <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:'0.875rem' }}>
           <div>
-            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Amount to Add (KES)</label>
+            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Amount to Add ({currency})</label>
             <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
               type="number" min="1" step="1" value={amount} onChange={e => setAmount(e.target.value)} required placeholder="5000" autoFocus />
           </div>
@@ -180,7 +206,7 @@ function AddFundsModal({ goal, onClose }: { goal: Goal; onClose: () => void }) {
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.5rem' }}>
               <div style={{ padding:'0.6rem 0.75rem', borderRadius:8, background:'var(--primary-light)', fontSize:'0.75rem' }}>
                 <div style={{ color:'var(--text-muted)', fontWeight:600, marginBottom:'0.1rem', textTransform:'uppercase', fontSize:'0.6rem', letterSpacing:'0.06em' }}>New total</div>
-                <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, color:'var(--primary)' }}>{fmtAdaptive(newTotal)}</div>
+                <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, color:'var(--primary)' }}>{fmtAdaptive(newTotal, currency)}</div>
               </div>
               <div style={{ padding:'0.6rem 0.75rem', borderRadius:8, background:'var(--success-light)', fontSize:'0.75rem' }}>
                 <div style={{ color:'var(--text-muted)', fontWeight:600, marginBottom:'0.1rem', textTransform:'uppercase', fontSize:'0.6rem', letterSpacing:'0.06em' }}>Progress</div>
@@ -188,6 +214,22 @@ function AddFundsModal({ goal, onClose }: { goal: Goal; onClose: () => void }) {
               </div>
             </div>
           )}
+          
+          <label style={{ display:'flex', alignItems:'center', gap:'0.5rem', cursor:'pointer', fontSize:'0.8rem', color:'var(--text-primary)' }}>
+            <input type="checkbox" checked={recordTx} onChange={e => setRecordTx(e.target.checked)} style={{ width:'1rem', height:'1rem' }} />
+            Record this contribution as an expense transaction
+          </label>
+          
+          {recordTx && (
+            <div className="animate-in" style={{ marginTop: '-0.25rem' }}>
+              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Expense Category</label>
+              <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
+                value={categoryId} onChange={e => setCategoryId(e.target.value)}>
+                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+          )}
+          
           <button type="submit" disabled={loading} className="btn btn-primary" style={{ width:'100%', justifyContent:'center', padding:'0.7rem' }}>
             {loading ? <><Loader2 size={14} style={{ animation:'spin 1s linear infinite' }}/> Saving…</> : 'Add Funds'}
           </button>
@@ -198,10 +240,11 @@ function AddFundsModal({ goal, onClose }: { goal: Goal; onClose: () => void }) {
 }
 
 /* ── Main Client Component ────────────────────────────────── */
-export function GoalsClient({ goals }: { goals: Goal[] }) {
+export function GoalsClient({ goals, currency, categories = [] }: { goals: Goal[], currency: string, categories?: { id: string; name: string }[] }) {
   const router     = useRouter();
   const [, startT] = useTransition();
   const [showAdd,      setShowAdd]      = useState(false);
+  const [editGoalObj,  setEditGoalObj]  = useState<Goal | null>(null);
   const [addFundsGoal, setAddFundsGoal] = useState<Goal | null>(null);
   const [celebrating,  setCelebrate]    = useState<string | null>(null);
   const [deletingId,   setDeletingId]   = useState<string | null>(null);
@@ -225,8 +268,9 @@ export function GoalsClient({ goals }: { goals: Goal[] }) {
 
   return (
     <>
-      {showAdd      && <AddGoalModal onClose={() => setShowAdd(false)} />}
-      {addFundsGoal && <AddFundsModal goal={addFundsGoal} onClose={() => setAddFundsGoal(null)} />}
+      {showAdd      && <GoalModal onClose={() => setShowAdd(false)} currency={currency} />}
+      {editGoalObj  && <GoalModal goal={editGoalObj} onClose={() => setEditGoalObj(null)} currency={currency} />}
+      {addFundsGoal && <AddFundsModal goal={addFundsGoal} onClose={() => setAddFundsGoal(null)} currency={currency} categories={categories} />}
 
       {/* Toolbar */}
       <div className="flex items-center justify-between mb-5 animate-in flex-wrap gap-3">
@@ -244,8 +288,8 @@ export function GoalsClient({ goals }: { goals: Goal[] }) {
               fontSize: totalSaved > 9_999_999 ? '1.6rem' : totalSaved > 999_999 ? '1.9rem' : '2.25rem',
               fontWeight:800, letterSpacing:'-0.04em', lineHeight:1,
               color:'var(--success)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
-            }}>{fmtAdaptive(totalSaved)}</p>
-            <p className="hero-sub">of {fmtAdaptive(totalTarget)} target</p>
+            }}>{fmtAdaptive(totalSaved, currency)}</p>
+            <p className="hero-sub">of {fmtAdaptive(totalTarget, currency)} target</p>
             <div className="hero-progress-wrap" style={{ marginTop:'0.75rem', paddingTop:'0.75rem' }}>
               <div className="hero-progress-labels">
                 <span className="hero-progress-label">Overall progress</span>
@@ -327,6 +371,10 @@ export function GoalsClient({ goals }: { goals: Goal[] }) {
                   </div>
                   <div className="flex items-center gap-2" style={{ flexShrink:0 }}>
                     <span className={`badge ${st.badge}`}>{st.label}</span>
+                    <button onClick={e => { e.stopPropagation(); setEditGoalObj(g); }} 
+                      style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', display:'flex', padding:'0.2rem' }}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                    </button>
                     <button onClick={e => { e.stopPropagation(); handleDelete(g.id); }} disabled={deletingId===g.id}
                       style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', display:'flex', padding:'0.2rem' }}>
                       {deletingId===g.id ? <Loader2 size={13} style={{ animation:'spin 1s linear infinite' }}/> : <Trash2 size={13}/>}
@@ -344,20 +392,20 @@ export function GoalsClient({ goals }: { goals: Goal[] }) {
                       letterSpacing:'-0.04em', lineHeight:1.1,
                       whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
                     }}>
-                      {fmtAdaptive(g.currentAmount)}
+                      {fmtAdaptive(g.currentAmount, currency)}
                     </div>
                     <div style={{ fontSize:'0.7rem', color:'var(--text-secondary)', marginTop:'0.2rem', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                      of {fmtAdaptive(g.targetAmount)}
+                      of {fmtAdaptive(g.targetAmount, currency)}
                     </div>
                     {inflTarget && inflTarget > g.targetAmount && (
                       <div
-                        title={`At Kenya's ~6.8% annual inflation (KNBS), you'll need ${fmtAdaptive(inflTarget)} in today's money to match your target by ${deadlineLabel}.`}
+                        title={`At Kenya's ~6.8% annual inflation (KNBS), you'll need ${fmtAdaptive(inflTarget, currency)} in today's money to match your target by ${deadlineLabel}.`}
                         style={{ display:'inline-flex', alignItems:'center', gap:'0.25rem', marginTop:'0.3rem',
                           fontSize:'0.62rem', fontWeight:700, color:'var(--warning)',
                           background:'rgba(234,179,8,0.12)', borderRadius:4, padding:'0.15rem 0.4rem',
                           cursor:'help', whiteSpace:'nowrap' }}
                       >
-                        <Info size={9}/> Inflation-adj: {fmtAdaptive(inflTarget)}
+                        <Info size={9}/> Inflation-adj: {fmtAdaptive(inflTarget, currency)}
                       </div>
                     )}
                   </div>
@@ -375,7 +423,7 @@ export function GoalsClient({ goals }: { goals: Goal[] }) {
                 ) : (
                   <div className="flex items-center justify-between">
                     <span style={{ fontSize:'0.72rem', color:'var(--text-secondary)', fontWeight:500, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', flex:1, marginRight:'0.5rem' }}>
-                      {fmtAdaptive(left)} to go
+                      {fmtAdaptive(left, currency)} to go
                     </span>
                     <div className="flex items-center gap-2" style={{ flexShrink:0 }}>
                       <button

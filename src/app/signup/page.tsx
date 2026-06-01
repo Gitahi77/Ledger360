@@ -5,15 +5,7 @@ import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 import { Eye, EyeOff, Loader2, User, Building2 } from 'lucide-react';
 
-const CURRENCIES = [
-  { code: 'KES', label: 'KES — Kenyan Shilling' },
-  { code: 'USD', label: 'USD — US Dollar'        },
-  { code: 'GBP', label: 'GBP — British Pound'    },
-  { code: 'EUR', label: 'EUR — Euro'              },
-  { code: 'NGN', label: 'NGN — Nigerian Naira'   },
-  { code: 'ZAR', label: 'ZAR — South African Rand'},
-  { code: 'GHS', label: 'GHS — Ghanaian Cedi'    },
-];
+import { CURRENCIES } from '@/lib/constants/currencies';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -124,7 +116,7 @@ export default function SignupPage() {
                 <div>
                   <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>Currency</label>
                   <select value={currency} onChange={e => setCurrency(e.target.value)} className="input-field" style={{ width: '100%', padding: '0.625rem 0.875rem', fontSize: '0.875rem' }}>
-                    {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
+                    {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.code} — {c.name}</option>)}
                   </select>
                 </div>
               </>

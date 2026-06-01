@@ -3,7 +3,7 @@
 // Copyright (c) 2024-present Eric Gitahi. All rights reserved.
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { addAsset, updateAsset, deleteAsset } from '@/lib/actions/networth';
+import { addAsset, editAsset, deleteAsset } from '@/lib/actions/networth';
 import { fmtAdaptive } from '@/lib/format';
 import { Plus, Trash2, Loader2, X, Home, Car, Briefcase, PiggyBank, Gem, BarChart3, Edit2 } from 'lucide-react';
 
@@ -21,7 +21,7 @@ const ASSET_ICONS: Record<string, React.ReactNode> = {
 };
 const ASSET_CATS = ['savings','property','vehicle','investments','business','jewelry','other'];
 
-function AssetModal({ asset, onClose }: { asset?: Asset; onClose: () => void }) {
+function AssetModal({ asset, onClose, currency }: { asset?: Asset; onClose: () => void; currency: string }) {
   const router     = useRouter();
   const [, startT] = useTransition();
   const [loading, setLoading] = useState(false);
@@ -35,7 +35,7 @@ function AssetModal({ asset, onClose }: { asset?: Asset; onClose: () => void }) 
     e.preventDefault();
     setLoading(true); setError('');
     try {
-      if (isEdit && asset) { await updateAsset(asset.id, parseFloat(value)); }
+      if (isEdit && asset) { await editAsset(asset.id, { name, category, value: parseFloat(value) }); }
       else { await addAsset({ name, category, value: parseFloat(value) }); }
       startT(() => router.refresh()); onClose();
     } catch (err: any) { setError(err.message ?? 'Something went wrong.'); }
@@ -51,23 +51,19 @@ function AssetModal({ asset, onClose }: { asset?: Asset; onClose: () => void }) 
         </div>
         {error && <div style={{ padding:'0.625rem', borderRadius:7, background:'var(--danger-light)', color:'var(--danger)', fontSize:'0.8rem', marginBottom:'1rem' }}>{error}</div>}
         <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:'0.875rem' }}>
-          {!isEdit && (
-            <>
-              <div>
-                <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Asset Name</label>
-                <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }} value={name} onChange={e => setName(e.target.value)} required placeholder="e.g. Family Land Machakos" />
-              </div>
-              <div>
-                <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Category</label>
-                <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }} value={category} onChange={e => setCategory(e.target.value)}>
-                  {ASSET_CATS.map(c => <option key={c} value={c}>{c.charAt(0).toUpperCase()+c.slice(1)}</option>)}
-                </select>
-              </div>
-            </>
-          )}
+          <div>
+            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Asset Name</label>
+            <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }} value={name} onChange={e => setName(e.target.value)} required placeholder="e.g. Family Land Machakos" />
+          </div>
+          <div>
+            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Category</label>
+            <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }} value={category} onChange={e => setCategory(e.target.value)}>
+              {ASSET_CATS.map(c => <option key={c} value={c}>{c.charAt(0).toUpperCase()+c.slice(1)}</option>)}
+            </select>
+          </div>
           <div>
             <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>
-              {isEdit ? 'New Estimated Value (KES)' : 'Current Value (KES)'}
+              {isEdit ? `New Estimated Value (${currency})` : `Current Value (${currency})`}
             </label>
             <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }} type="number" min="0" step="1" value={value} onChange={e => setValue(e.target.value)} required placeholder="500000" autoFocus={isEdit} />
           </div>
@@ -80,10 +76,10 @@ function AssetModal({ asset, onClose }: { asset?: Asset; onClose: () => void }) 
   );
 }
 
-export function NetWorthClient({ assets, liabilities, totalAssets, totalLiabilities, netWorth, debtRatio }: {
+export function NetWorthClient({ assets, liabilities, totalAssets, totalLiabilities, netWorth, debtRatio, currency }: {
   assets: Asset[]; liabilities: Loan[];
   totalAssets: number; totalLiabilities: number;
-  netWorth: number; debtRatio: number;
+  netWorth: number; debtRatio: number; currency: string;
 }) {
   const router     = useRouter();
   const [, startT] = useTransition();
@@ -108,8 +104,8 @@ export function NetWorthClient({ assets, liabilities, totalAssets, totalLiabilit
 
   return (
     <>
-      {showAdd   && <AssetModal onClose={() => setShowAdd(false)} />}
-      {editAsset && <AssetModal asset={editAsset} onClose={() => setEditAsset(null)} />}
+      {showAdd   && <AssetModal onClose={() => setShowAdd(false)} currency={currency} />}
+      {editAsset && <AssetModal asset={editAsset} onClose={() => setEditAsset(null)} currency={currency} />}
 
       {/* Toolbar */}
       <div className="flex items-center justify-between mb-5 animate-in flex-wrap gap-3">
@@ -129,19 +125,19 @@ export function NetWorthClient({ assets, liabilities, totalAssets, totalLiabilit
               color: positive ? 'var(--success)' : 'var(--danger)',
               whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
             }}>
-              {positive ? '+' : '−'}{fmtAdaptive(Math.abs(netWorth))}
+              {positive ? '+' : '−'}{fmtAdaptive(Math.abs(netWorth), currency)}
             </p>
             <p className="hero-sub">Assets minus liabilities</p>
           </div>
           <div className="hero-stats-grid">
             <div className="hero-stat-card">
               <p className="hero-label">Total Assets</p>
-              <p className="hero-stat-value tabular" style={{ color:'var(--success)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{fmtAdaptive(totalAssets)}</p>
+              <p className="hero-stat-value tabular" style={{ color:'var(--success)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{fmtAdaptive(totalAssets, currency)}</p>
               <p className="hero-sub">{assets.length} items</p>
             </div>
             <div className="hero-stat-card">
               <p className="hero-label">Total Liabilities</p>
-              <p className="hero-stat-value tabular" style={{ color:'var(--danger)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{fmtAdaptive(totalLiabilities)}</p>
+              <p className="hero-stat-value tabular" style={{ color:'var(--danger)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{fmtAdaptive(totalLiabilities, currency)}</p>
               <p className="hero-sub">{liabilities.length} loans</p>
             </div>
             <div className="hero-stat-card">
@@ -179,7 +175,7 @@ export function NetWorthClient({ assets, liabilities, totalAssets, totalLiabilit
                     <div style={{ fontSize:'0.65rem', color:'var(--text-muted)', textTransform:'capitalize' }}>{a.category}</div>
                   </div>
                   <div style={{ textAlign:'right', flexShrink:0 }}>
-                    <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:800, fontSize:'0.9rem', color:'var(--success)', whiteSpace:'nowrap' }}>{fmtAdaptive(a.value)}</div>
+                    <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:800, fontSize:'0.9rem', color:'var(--success)', whiteSpace:'nowrap' }}>{fmtAdaptive(a.value, currency)}</div>
                     <div style={{ display:'flex', gap:'0.3rem', justifyContent:'flex-end', marginTop:'0.2rem' }}>
                       <button onClick={() => setEditAsset(a)} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', display:'flex', padding:'0.15rem' }}><Edit2 size={12}/></button>
                       <button onClick={() => handleDelete(a.id)} disabled={deletingId===a.id} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', display:'flex', padding:'0.15rem' }}>
@@ -191,7 +187,7 @@ export function NetWorthClient({ assets, liabilities, totalAssets, totalLiabilit
               ))}
               <div style={{ padding:'0.625rem 1rem', borderRadius:8, background:'var(--success-light)', display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:'0.25rem' }}>
                 <span style={{ fontSize:'0.75rem', fontWeight:700, color:'var(--success)' }}>Total Assets</span>
-                <span style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'1rem', fontWeight:800, color:'var(--success)', whiteSpace:'nowrap' }}>{fmtAdaptive(totalAssets)}</span>
+                <span style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'1rem', fontWeight:800, color:'var(--success)', whiteSpace:'nowrap' }}>{fmtAdaptive(totalAssets, currency)}</span>
               </div>
             </div>
           )}
@@ -218,13 +214,13 @@ export function NetWorthClient({ assets, liabilities, totalAssets, totalLiabilit
                     <div style={{ fontSize:'0.65rem', color:'var(--text-muted)', textTransform:'capitalize' }}>{l.type}</div>
                   </div>
                   <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:800, fontSize:'0.9rem', color:'var(--danger)', whiteSpace:'nowrap', flexShrink:0 }}>
-                    {fmtAdaptive(l.balance)}
+                    {fmtAdaptive(l.balance, currency)}
                   </div>
                 </div>
               ))}
               <div style={{ padding:'0.625rem 1rem', borderRadius:8, background:'var(--danger-light)', display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:'0.25rem' }}>
                 <span style={{ fontSize:'0.75rem', fontWeight:700, color:'var(--danger)' }}>Total Liabilities</span>
-                <span style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'1rem', fontWeight:800, color:'var(--danger)', whiteSpace:'nowrap' }}>{fmtAdaptive(totalLiabilities)}</span>
+                <span style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'1rem', fontWeight:800, color:'var(--danger)', whiteSpace:'nowrap' }}>{fmtAdaptive(totalLiabilities, currency)}</span>
               </div>
             </div>
           )}

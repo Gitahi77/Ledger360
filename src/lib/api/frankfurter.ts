@@ -12,16 +12,18 @@ export interface FxRates {
 let _cache: FxRates | null = null;
 const CACHE_TTL = 60 * 60 * 1000; // 1 hour
 
-export async function getKesRates(): Promise<FxRates | null> {
-  if (_cache && Date.now() - _cache.updatedAt < CACHE_TTL) return _cache;
+export async function getRates(base: string = 'USD'): Promise<FxRates | null> {
+  const cacheKey = `rates_${base}`;
+  if (_cache && _cache.base === base && Date.now() - _cache.updatedAt < CACHE_TTL) return _cache;
   try {
+    const toCurrencies = ['USD', 'EUR', 'GBP', 'ZAR', 'CHF', 'JPY', 'KES'].filter(c => c !== base).join(',');
     const res = await fetch(
-      'https://api.frankfurter.app/latest?from=KES&to=USD,EUR,GBP,ZAR,CHF,JPY',
+      `https://api.frankfurter.app/latest?from=${base}&to=${toCurrencies}`,
       { next: { revalidate: 3600 } }
     );
     if (!res.ok) throw new Error(`Frankfurter ${res.status}`);
     const data = await res.json();
-    _cache = { ...data, updatedAt: Date.now() };
+    _cache = { ...data, base, updatedAt: Date.now() };
     return _cache;
   } catch (err) {
     console.warn('[Frankfurter] Failed to fetch FX rates:', err);

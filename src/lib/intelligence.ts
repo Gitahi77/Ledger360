@@ -25,6 +25,7 @@ function monthKey(date: Date): string {
 }
 
 export async function generateInsights(userId: string, currency = 'KES'): Promise<Insight[]> {
+  const prefs = await prisma.userPreferences.findUnique({ where: { userId } });
   const insights: Insight[] = [];
   const now = new Date();
   const thisMonthStart = startOfMonth(now);
@@ -71,6 +72,7 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
   });
 
   for (const [catId, current] of Object.entries(currentByCategory)) {
+    if (prefs?.notifOverbudget === false) break;
     const past = pastByCategory[catId];
     if (!past || past.months.size === 0) continue;
     const avgMonthlySpend = past.totalAmt / past.months.size;
@@ -100,6 +102,7 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
   });
 
   for (const [nameKey, matches] of Object.entries(nameGroups)) {
+    if (prefs?.notifBills === false) break;
     // Must appear in at least 2 distinct months to be considered recurring
     const distinctMonths = new Set(matches.map(t => monthKey(t.date)));
     if (distinctMonths.size < 2) continue;
@@ -137,34 +140,91 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
   const dailyBurnRate  = currentExpense / daysPassed;
   const projectedExpense = dailyBurnRate * daysInMonth;
 
-  if (currentIncome > 0) {
-    const projectedSavings = currentIncome - projectedExpense;
-    if (projectedSavings > 0) {
+  if (prefs?.notifInsights !== false) {
+    if (currentIncome > 0) {
+      const projectedSavings = currentIncome - projectedExpense;
+      if (projectedSavings > 0) {
+        insights.push({
+          id:          'forecast-positive',
+          type:        'forecast',
+          title:       'On pace to save this month',
+          description: `At your daily spend of ${currency} ${Math.round(dailyBurnRate).toLocaleString()}, you could save ~${currency} ${Math.round(projectedSavings).toLocaleString()} by month-end.`,
+          severity:    'success',
+        });
+      } else {
+        insights.push({
+          id:          'forecast-negative',
+          type:        'forecast',
+          title:       'Spending running ahead of income',
+          description: `At your current rate you may exceed income by ~${currency} ${Math.round(Math.abs(projectedSavings)).toLocaleString()} this month. Consider reviewing your expenses.`,
+          severity:    'warning',
+        });
+      }
+    } else if (currentExpense > 0) {
+      // No income recorded yet this month — still useful to show burn rate
       insights.push({
-        id:          'forecast-positive',
+        id:          'forecast-no-income',
         type:        'forecast',
-        title:       'On pace to save this month',
-        description: `At your daily spend of ${currency} ${Math.round(dailyBurnRate).toLocaleString()}, you could save ~${currency} ${Math.round(projectedSavings).toLocaleString()} by month-end.`,
-        severity:    'success',
-      });
-    } else {
-      insights.push({
-        id:          'forecast-negative',
-        type:        'forecast',
-        title:       'Spending running ahead of income',
-        description: `At your current rate you may exceed income by ~${currency} ${Math.round(Math.abs(projectedSavings)).toLocaleString()} this month. Consider reviewing your expenses.`,
-        severity:    'warning',
+        title:       'No income recorded yet this month',
+        description: `You're spending ~${currency} ${Math.round(dailyBurnRate).toLocaleString()}/day. Record your income to see your full cashflow forecast.`,
+        severity:    'info',
       });
     }
-  } else if (currentExpense > 0) {
-    // No income recorded yet this month — still useful to show burn rate
-    insights.push({
-      id:          'forecast-no-income',
-      type:        'forecast',
-      title:       'No income recorded yet this month',
-      description: `You're spending ~${currency} ${Math.round(dailyBurnRate).toLocaleString()}/day. Record your income to see your full cashflow forecast.`,
-      severity:    'info',
-    });
+  }
+
+  // ── GOAL PROGRESS ALERTS ───────────────────────────────────────────────────
+  if (prefs?.notifGoals !== false) {
+    const activeGoals = await prisma.goal.findMany({ where: { userId, targetAmount: { gt: 0 } } });
+    for (const goal of activeGoals) {
+      if (goal.currentAmount >= goal.targetAmount) {
+        insights.push({
+          id: `goal-met-${goal.id}`,
+          type: 'achievement',
+          title: 'Goal Achieved! 🎉',
+          description: `You have reached your goal for ${goal.name}! (${currency} ${goal.targetAmount.toLocaleString()})`,
+          severity: 'success',
+        });
+      } else {
+        const pct = Math.round((goal.currentAmount / goal.targetAmount) * 100);
+        if (pct === 50 || pct === 75 || pct === 90) {
+          insights.push({
+            id: `goal-prog-${goal.id}-${pct}`,
+            type: 'achievement',
+            title: 'Goal Milestone',
+            description: `You are ${pct}% of the way to your ${goal.name} goal. Keep it up!`,
+            severity: 'info',
+          });
+        }
+      }
+    }
+  }
+
+  // ── LOAN DUE ALERTS ────────────────────────────────────────────────────────
+  if (prefs?.notifLoanDue !== false) {
+    const activeLoans = await prisma.loan.findMany({ where: { userId, balance: { gt: 0 } } });
+    for (const loan of activeLoans) {
+      const dueDate = new Date(loan.nextDue);
+      const diffTime = dueDate.getTime() - now.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (diffDays >= 0 && diffDays <= 3) {
+        insights.push({
+          id: `loan-due-${loan.id}`,
+          type: 'recurring',
+          title: 'Upcoming Loan Payment',
+          description: `Your payment of ${currency} ${loan.monthlyPmt.toLocaleString()} for ${loan.name} is due in ${diffDays} day(s).`,
+          severity: 'warning',
+        });
+      } else if (diffDays < 0) {
+        insights.push({
+          id: `loan-overdue-${loan.id}`,
+          type: 'anomaly',
+          title: 'Overdue Loan Payment',
+          description: `Your payment for ${loan.name} is overdue by ${Math.abs(diffDays)} day(s)!`,
+          severity: 'danger',
+        });
+      }
+    }
   }
 
   // Sort: danger > warning > success > info, then return top 4

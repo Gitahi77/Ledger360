@@ -10,12 +10,27 @@ import { Download, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { fmtAdaptive } from '@/lib/format';
 
 type TrendRow     = { label: string; Income: number; Expenses: number; Savings: number };
-type Summary      = { income: number; expenses: number; savings: number; savingRate: number };
+type Summary      = { 
+  income: number; 
+  expenses: number; 
+  savings: number; 
+  savingRate: number;
+  previous: {
+    income: number;
+    expenses: number;
+    savings: number;
+    savingRate: number;
+    incomeChange: number;
+    expensesChange: number;
+    savingsChange: number;
+    savingRateChange: number;
+  }
+};
 type CategoryRow  = { name: string; value: number; pct: number; color: string };
 
 const tick = { fontSize: 10, fill: 'var(--text-muted)' };
 
-function Tip({ active, payload, label }: any) {
+function Tip({ active, payload, label, currency }: any) {
   if (!active || !payload?.length) return null;
   return (
     <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:8, padding:'0.625rem 0.875rem', boxShadow:'var(--shadow-md)' }}>
@@ -24,7 +39,7 @@ function Tip({ active, payload, label }: any) {
         <div key={p.name} style={{ display:'flex', alignItems:'center', gap:'0.4rem', marginBottom:'0.1rem' }}>
           <div style={{ width:7, height:7, borderRadius:'50%', background:p.color, flexShrink:0 }} />
           <span style={{ fontSize:'0.78rem', color:'var(--text-secondary)' }}>{p.name}:</span>
-          <span style={{ fontSize:'0.78rem', fontWeight:700, fontFamily:'Space Grotesk,sans-serif', color:'var(--text-primary)' }}>KES {Number(p.value).toLocaleString()}</span>
+          <span style={{ fontSize:'0.78rem', fontWeight:700, fontFamily:'Space Grotesk,sans-serif', color:'var(--text-primary)' }}>{currency} {Number(p.value).toLocaleString()}</span>
         </div>
       ))}
     </div>
@@ -32,15 +47,17 @@ function Tip({ active, payload, label }: any) {
 }
 
 export function ReportsClient({
-  period, trend, summary, categories,
+  period, trend, summary, categories, currency,
 }: {
   period: string;
   trend: TrendRow[];
   summary: Summary;
   categories: CategoryRow[];
+  currency: string;
 }) {
   const router      = useRouter();
   const periodLabel = period === 'this-week' ? 'This Week' : period === 'this-year' ? 'This Year' : 'This Month';
+  const prevLabel   = period === 'this-week' ? 'last week' : period === 'this-year' ? 'last year' : 'last month';
 
   function setPeriod(p: string) {
     router.push(`/reports?period=${p}`);
@@ -59,20 +76,16 @@ export function ReportsClient({
     a.click(); URL.revokeObjectURL(url);
   }
 
-  const isEmpty = summary.income === 0 && summary.expenses === 0;
+  function exportPDF() {
+    window.print();
+  }
 
-  // KPI color mapping via CSS tokens only — no hardcoded hex
-  const kpis = [
-    { label: `${periodLabel} Income`,   value: summary.income,   color: 'var(--success)', sign: '+' },
-    { label: `${periodLabel} Expenses`, value: summary.expenses, color: 'var(--danger)',  sign: '−' },
-    { label: 'Net Savings',             value: summary.savings,  color: summary.savings >= 0 ? 'var(--success)' : 'var(--danger)', sign: summary.savings >= 0 ? '+' : '−' },
-    { label: 'Saving Rate',             value: null,             color: 'var(--warning)', sign: '' },
-  ];
+  const isEmpty = summary.income === 0 && summary.expenses === 0;
 
   return (
     <>
       {/* Toolbar */}
-      <div className="flex items-center justify-between mb-5 animate-in flex-wrap gap-3">
+      <div className="flex items-center justify-between mb-5 animate-in flex-wrap gap-3 print-hide">
         <div style={{ display:'flex', gap:'0.5rem' }}>
           {['this-week','this-month','this-year'].map(p => (
             <button key={p} onClick={() => setPeriod(p)}
@@ -82,7 +95,10 @@ export function ReportsClient({
             </button>
           ))}
         </div>
-        <button className="btn btn-outline" onClick={exportCSV}><Download size={13}/> Export CSV</button>
+        <div style={{ display:'flex', gap:'0.5rem' }}>
+          <button className="btn btn-outline" onClick={exportCSV}><Download size={13}/> Export CSV</button>
+          <button className="btn btn-outline" onClick={exportPDF}><Download size={13}/> Export PDF</button>
+        </div>
       </div>
 
       {/* Hero — matches dashboard style exactly: dark surface, clear readable text */}
@@ -97,25 +113,40 @@ export function ReportsClient({
               color: summary.savings >= 0 ? 'var(--success)' : 'var(--danger)',
               whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
             }}>
-              {summary.savings >= 0 ? '+' : '−'}{fmtAdaptive(Math.abs(summary.savings))}
+              {summary.savings >= 0 ? '+' : '−'}{fmtAdaptive(Math.abs(summary.savings), currency)}
             </p>
-            <p className="hero-sub">Saving rate: {summary.savingRate}% of income</p>
+            <p className="hero-sub" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+              Saving rate: {summary.savingRate}% of income
+              <span style={{ 
+                color: summary.previous.savingsChange > 0 ? 'var(--success)' : summary.previous.savingsChange < 0 ? 'var(--danger)' : 'var(--text-muted)',
+                fontSize: '0.68rem',
+                fontWeight: 600
+              }}>
+                ({summary.previous.savingsChange > 0 ? '↑' : summary.previous.savingsChange < 0 ? '↓' : ''}{Math.abs(summary.previous.savingsChange)}% vs {prevLabel})
+              </span>
+            </p>
           </div>
           <div className="hero-stats-grid">
             <div className="hero-stat-card">
               <p className="hero-label">{periodLabel} Income</p>
-              <p className="hero-stat-value tabular" style={{ color:'var(--success)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>+{fmtAdaptive(summary.income)}</p>
-              <p className="hero-sub">↑ coming in</p>
+              <p className="hero-stat-value tabular" style={{ color:'var(--success)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>+{fmtAdaptive(summary.income, currency)}</p>
+              <p className="hero-sub" style={{ color: summary.previous.incomeChange > 0 ? 'var(--success)' : summary.previous.incomeChange < 0 ? 'var(--danger)' : 'var(--text-muted)' }}>
+                {summary.previous.incomeChange > 0 ? '↑' : summary.previous.incomeChange < 0 ? '↓' : ''}{Math.abs(summary.previous.incomeChange)}% vs {prevLabel}
+              </p>
             </div>
             <div className="hero-stat-card">
               <p className="hero-label">{periodLabel} Expenses</p>
-              <p className="hero-stat-value tabular" style={{ color:'var(--danger)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>−{fmtAdaptive(summary.expenses)}</p>
-              <p className="hero-sub">↓ going out</p>
+              <p className="hero-stat-value tabular" style={{ color:'var(--danger)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>−{fmtAdaptive(summary.expenses, currency)}</p>
+              <p className="hero-sub" style={{ color: summary.previous.expensesChange < 0 ? 'var(--success)' : summary.previous.expensesChange > 0 ? 'var(--danger)' : 'var(--text-muted)' }}>
+                {summary.previous.expensesChange > 0 ? '↑' : summary.previous.expensesChange < 0 ? '↓' : ''}{Math.abs(summary.previous.expensesChange)}% vs {prevLabel}
+              </p>
             </div>
             <div className="hero-stat-card">
               <p className="hero-label">Saving Rate</p>
               <p className="hero-stat-value tabular" style={{ color: summary.savingRate >= 20 ? 'var(--success)' : summary.savingRate >= 10 ? 'var(--warning)' : 'var(--danger)' }}>{summary.savingRate}%</p>
-              <p className="hero-sub">{summary.savingRate >= 20 ? '✓ Great' : summary.savingRate >= 10 ? '⚠ Ok' : '⛔ Low'}</p>
+              <p className="hero-sub" style={{ color: summary.previous.savingRateChange > 0 ? 'var(--success)' : summary.previous.savingRateChange < 0 ? 'var(--danger)' : 'var(--text-muted)' }}>
+                {summary.previous.savingRateChange > 0 ? '↑' : summary.previous.savingRateChange < 0 ? '↓' : ''}{Math.abs(summary.previous.savingRateChange)}% vs {prevLabel}
+              </p>
             </div>
           </div>
         </div>

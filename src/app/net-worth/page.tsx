@@ -2,9 +2,14 @@
 import { AppLayout } from '@/components/layout/AppLayout';
 import { getNetWorth } from '@/lib/actions/networth';
 import { NetWorthClient } from './NetWorthClient';
+import { requireAuth } from '@/lib/actions/_auth';
 
 export default async function NetWorthPage() {
-  const data = await getNetWorth();
+  const [data, user] = await Promise.all([
+    getNetWorth(),
+    requireAuth(),
+  ]);
+
   return (
     <AppLayout>
       <NetWorthClient
@@ -14,6 +19,7 @@ export default async function NetWorthPage() {
         totalLiabilities={data.totalLiabilities}
         netWorth={data.netWorth}
         debtRatio={data.debtRatio}
+        currency={user.currency}
       />
     </AppLayout>
   );
