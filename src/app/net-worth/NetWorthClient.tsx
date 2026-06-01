@@ -86,6 +86,8 @@ export function NetWorthClient({ assets, liabilities, totalAssets, totalLiabilit
   const [showAdd,    setShowAdd]    = useState(false);
   const [editAsset,  setEditAsset]  = useState<Asset | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  
+  const [openSection, setOpenSection] = useState<'assets' | 'liabilities' | null>(null);
 
   async function handleDelete(id: string) {
     if (!confirm('Remove this asset?')) return;
@@ -149,82 +151,107 @@ export function NetWorthClient({ assets, liabilities, totalAssets, totalLiabilit
         </div>
       </div>
 
-      {/* Two-column layout: Assets + Liabilities */}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1.25rem' }}>
-        {/* Assets */}
-        <div>
-          <div style={{ fontWeight:700, fontSize:'0.8125rem', color:'var(--text-primary)', marginBottom:'0.875rem', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-            Assets
-            <button className="btn btn-outline" style={{ padding:'0.25rem 0.625rem', fontSize:'0.72rem' }} onClick={() => setShowAdd(true)}><Plus size={11}/> Add</button>
+      {/* Accordion Layout: Assets + Liabilities */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+        
+        {/* Assets Accordion Header */}
+        <button 
+          onClick={() => setOpenSection(s => s === 'assets' ? null : 'assets')}
+          className="card"
+          style={{ padding: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', border: openSection === 'assets' ? '1px solid var(--primary)' : undefined }}
+        >
+          <div>
+            <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>Assets Breakdown</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{assets.length} items • {fmtAdaptive(totalAssets, currency)}</div>
           </div>
-          {assets.length === 0 ? (
-            <div className="card" style={{ textAlign:'center', padding:'2rem', color:'var(--text-muted)', fontSize:'0.8rem' }}>
-              <div style={{ fontSize:'1.75rem', marginBottom:'0.5rem' }}>🏦</div>
-              No assets yet — add your first one
+          <div style={{ color: 'var(--primary)' }}>
+            {openSection === 'assets' ? 'Hide Details' : 'View Details'}
+          </div>
+        </button>
+
+        {/* Assets Content */}
+        {openSection === 'assets' && (
+          <div className="animate-in" style={{ padding: '0 0.5rem 1rem 0.5rem' }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'flex-end', marginBottom:'0.875rem' }}>
+              <button className="btn btn-outline" style={{ padding:'0.35rem 0.75rem', fontSize:'0.75rem' }} onClick={() => setShowAdd(true)}><Plus size={13}/> Add Asset</button>
             </div>
-          ) : (
-            <div style={{ display:'flex', flexDirection:'column', gap:'0.625rem' }}>
-              {assets.map((a, i) => (
-                <div key={a.id} className={`card animate-in delay-${(i%4)+1}`}
-                  style={{ padding:'0.875rem 1.125rem', borderLeft:'3px solid var(--success)', display:'flex', alignItems:'center', gap:'0.75rem' }}>
-                  <div style={{ width:32, height:32, borderRadius:7, background:'var(--success-light)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, color:'var(--success)' }}>
-                    {ASSET_ICONS[a.category] ?? ASSET_ICONS.other}
-                  </div>
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontWeight:600, fontSize:'0.8125rem', color:'var(--text-primary)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{a.name}</div>
-                    <div style={{ fontSize:'0.65rem', color:'var(--text-muted)', textTransform:'capitalize' }}>{a.category}</div>
-                  </div>
-                  <div style={{ textAlign:'right', flexShrink:0 }}>
-                    <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:800, fontSize:'0.9rem', color:'var(--success)', whiteSpace:'nowrap' }}>{fmtAdaptive(a.value, currency)}</div>
-                    <div style={{ display:'flex', gap:'0.3rem', justifyContent:'flex-end', marginTop:'0.2rem' }}>
-                      <button onClick={() => setEditAsset(a)} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', display:'flex', padding:'0.15rem' }}><Edit2 size={12}/></button>
-                      <button onClick={() => handleDelete(a.id)} disabled={deletingId===a.id} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', display:'flex', padding:'0.15rem' }}>
-                        {deletingId===a.id ? <Loader2 size={12} style={{ animation:'spin 1s linear infinite' }}/> : <Trash2 size={12}/>}
-                      </button>
+            {assets.length === 0 ? (
+              <div className="card" style={{ textAlign:'center', padding:'2rem', color:'var(--text-muted)', fontSize:'0.8rem' }}>
+                <div style={{ fontSize:'1.75rem', marginBottom:'0.5rem' }}>🏦</div>
+                No assets yet — add your first one
+              </div>
+            ) : (
+              <div style={{ display:'flex', flexDirection:'column', gap:'0.625rem' }}>
+                {assets.map((a, i) => (
+                  <div key={a.id} className={`card animate-in delay-${(i%4)+1}`}
+                    style={{ padding:'0.875rem 1.125rem', borderLeft:'3px solid var(--success)', display:'flex', alignItems:'center', gap:'0.75rem' }}>
+                    <div style={{ width:32, height:32, borderRadius:7, background:'var(--success-light)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, color:'var(--success)' }}>
+                      {ASSET_ICONS[a.category] ?? ASSET_ICONS.other}
+                    </div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontWeight:600, fontSize:'0.8125rem', color:'var(--text-primary)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{a.name}</div>
+                      <div style={{ fontSize:'0.65rem', color:'var(--text-muted)', textTransform:'capitalize' }}>{a.category}</div>
+                    </div>
+                    <div style={{ textAlign:'right', flexShrink:0 }}>
+                      <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:800, fontSize:'0.9rem', color:'var(--success)', whiteSpace:'nowrap' }}>{fmtAdaptive(a.value, currency)}</div>
+                      <div style={{ display:'flex', gap:'0.3rem', justifyContent:'flex-end', marginTop:'0.2rem' }}>
+                        <button onClick={() => setEditAsset(a)} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', display:'flex', padding:'0.15rem' }}><Edit2 size={12}/></button>
+                        <button onClick={() => handleDelete(a.id)} disabled={deletingId===a.id} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', display:'flex', padding:'0.15rem' }}>
+                          {deletingId===a.id ? <Loader2 size={12} style={{ animation:'spin 1s linear infinite' }}/> : <Trash2 size={12}/>}
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-              <div style={{ padding:'0.625rem 1rem', borderRadius:8, background:'var(--success-light)', display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:'0.25rem' }}>
-                <span style={{ fontSize:'0.75rem', fontWeight:700, color:'var(--success)' }}>Total Assets</span>
-                <span style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'1rem', fontWeight:800, color:'var(--success)', whiteSpace:'nowrap' }}>{fmtAdaptive(totalAssets, currency)}</span>
+                ))}
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
 
-        {/* Liabilities */}
-        <div>
-          <div style={{ fontWeight:700, fontSize:'0.8125rem', color:'var(--text-primary)', marginBottom:'0.875rem' }}>Liabilities</div>
-          {liabilities.length === 0 ? (
-            <div className="card" style={{ textAlign:'center', padding:'2rem', color:'var(--text-muted)', fontSize:'0.8rem' }}>
-              <div style={{ fontSize:'1.75rem', marginBottom:'0.5rem' }}>✨</div>
-              No debts — debt free!
+        {/* Liabilities Accordion Header */}
+        <button 
+          onClick={() => setOpenSection(s => s === 'liabilities' ? null : 'liabilities')}
+          className="card"
+          style={{ padding: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', border: openSection === 'liabilities' ? '1px solid var(--primary)' : undefined }}
+        >
+          <div>
+            <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>Liabilities Breakdown</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{liabilities.length} loans • {fmtAdaptive(totalLiabilities, currency)}</div>
+          </div>
+          <div style={{ color: 'var(--primary)' }}>
+            {openSection === 'liabilities' ? 'Hide Details' : 'View Details'}
+          </div>
+        </button>
+
+        {/* Liabilities Content */}
+        {openSection === 'liabilities' && (
+          <div className="animate-in" style={{ padding: '0 0.5rem 1rem 0.5rem' }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'flex-end', marginBottom:'0.875rem' }}>
+              <button className="btn btn-outline" style={{ padding:'0.35rem 0.75rem', fontSize:'0.75rem' }} onClick={() => router.push('/loans')}><Plus size={13}/> Manage Loans</button>
             </div>
-          ) : (
-            <div style={{ display:'flex', flexDirection:'column', gap:'0.625rem' }}>
-              {liabilities.map((l, i) => (
-                <div key={l.id} className={`card animate-in delay-${(i%4)+1}`}
-                  style={{ padding:'0.875rem 1.125rem', borderLeft:'3px solid var(--danger)', display:'flex', alignItems:'center', gap:'0.75rem' }}>
-                  <div style={{ width:32, height:32, borderRadius:7, background:'var(--danger-light)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                    <span style={{ fontSize:'0.85rem' }}>💳</span>
-                  </div>
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontWeight:600, fontSize:'0.8125rem', color:'var(--text-primary)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{l.name}</div>
-                    <div style={{ fontSize:'0.65rem', color:'var(--text-muted)', textTransform:'capitalize' }}>{l.type}</div>
-                  </div>
-                  <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:800, fontSize:'0.9rem', color:'var(--danger)', whiteSpace:'nowrap', flexShrink:0 }}>
-                    {fmtAdaptive(l.balance, currency)}
-                  </div>
-                </div>
-              ))}
-              <div style={{ padding:'0.625rem 1rem', borderRadius:8, background:'var(--danger-light)', display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:'0.25rem' }}>
-                <span style={{ fontSize:'0.75rem', fontWeight:700, color:'var(--danger)' }}>Total Liabilities</span>
-                <span style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'1rem', fontWeight:800, color:'var(--danger)', whiteSpace:'nowrap' }}>{fmtAdaptive(totalLiabilities, currency)}</span>
+            {liabilities.length === 0 ? (
+              <div className="card" style={{ textAlign:'center', padding:'2rem', color:'var(--text-muted)', fontSize:'0.8rem' }}>
+                <div style={{ fontSize:'1.75rem', marginBottom:'0.5rem' }}>🎉</div>
+                No liabilities! You are debt free.
               </div>
-            </div>
-          )}
-        </div>
+            ) : (
+              <div style={{ display:'flex', flexDirection:'column', gap:'0.625rem' }}>
+                {liabilities.map((l, i) => (
+                  <div key={l.id} className={`card animate-in delay-${(i%4)+1}`}
+                    style={{ padding:'0.875rem 1.125rem', borderLeft:'3px solid var(--danger)', display:'flex', alignItems:'center', gap:'0.75rem' }}>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontWeight:600, fontSize:'0.8125rem', color:'var(--text-primary)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{l.name}</div>
+                      <div style={{ fontSize:'0.65rem', color:'var(--text-muted)', textTransform:'capitalize' }}>{l.type.replace('_', ' ')}</div>
+                    </div>
+                    <div style={{ textAlign:'right', flexShrink:0 }}>
+                      <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:800, fontSize:'0.9rem', color:'var(--danger)', whiteSpace:'nowrap' }}>{fmtAdaptive(l.balance, currency)}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </>
   );

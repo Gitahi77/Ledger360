@@ -20,14 +20,15 @@ import {
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { CURRENCIES } from '@/lib/constants/currencies';
 
-type Section = 'profile' | 'appearance' | 'preferences' | 'notifications' | 'data' | 'help';
+type Section = 'profile' | 'appearance' | 'preferences' | 'notifications' | 'security' | 'data' | 'help';
 
 const SECTIONS: { id: Section; label: string; Icon: React.ElementType; desc: string }[] = [
   { id: 'profile',       label: 'Profile',        Icon: User,        desc: 'Name, email, account type'     },
   { id: 'appearance',    label: 'Appearance',      Icon: Palette,     desc: 'Theme, accent color, display'  },
   { id: 'preferences',   label: 'Preferences',     Icon: Globe,       desc: 'Currency, date format'         },
   { id: 'notifications', label: 'Notifications',   Icon: Bell,        desc: 'Alerts and reminders'          },
-  { id: 'data',          label: 'Data & Privacy',  Icon: ShieldCheck, desc: 'Export, import, delete'        },
+  { id: 'security',      label: 'Security & Activity', Icon: ShieldCheck, desc: 'Audit logs and sessions'   },
+  { id: 'data',          label: 'Data & Privacy',  Icon: Database,    desc: 'Export, import, delete'        },
   { id: 'help',          label: 'Help & About',    Icon: HelpCircle,  desc: 'Guide, shortcuts, version'     },
 ];
 
@@ -168,7 +169,7 @@ function AccordionPanel({ children }: { children: React.ReactNode }) {
 /* ── Main Settings Client ─────────────────────────────────── */
 export function SettingsClient({
   initialName, initialEmail, initialCurrency, initialAccountType,
-  initialPrefs,
+  initialPrefs, logs,
 }: {
   initialName: string; initialEmail: string; initialCurrency: string; initialAccountType: string;
   initialPrefs: {
@@ -177,6 +178,7 @@ export function SettingsClient({
     notifOverbudget: boolean; notifGoals: boolean; notifBills: boolean;
     notifInsights: boolean; notifLoanDue: boolean;
   } | null;
+  logs: { id: string; action: string; resource: string; metadata: string; createdAt: string }[];
 }) {
   const router       = useRouter();
   const { update: updateSession } = useSession();
@@ -451,8 +453,54 @@ export function SettingsClient({
         </AccordionPanel>
       )}
 
+      {/* 5) Security & Activity */}
+      <AccordionHeader section={SECTIONS.find(s => s.id === 'security')!} isOpen={openSection === 'security'} onClick={() => toggleSection('security' as any)} />
+      {openSection === 'security' && (
+        <AccordionPanel>
+          <div style={{ marginBottom: '1rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+            Recent security events and account actions.
+          </div>
+          {logs.length === 0 ? (
+            <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>No activity logged yet.</p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: 400, overflowY: 'auto', paddingRight: '0.5rem' }}>
+              {logs.map(log => {
+                const date = new Date(log.createdAt);
+                return (
+                  <div key={log.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.875rem', background: 'var(--bg-app)', borderRadius: 8, border: '1px solid var(--border)' }}>
+                    <div style={{ flex: 1, minWidth: 0, marginRight: '1rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                        <span className={`badge ${log.action === 'DELETE' ? 'badge-red' : log.action === 'CREATE' ? 'badge-success' : 'badge-blue'}`}>
+                          {log.action}
+                        </span>
+                        <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.85rem' }}>{log.resource}</span>
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontFamily: 'monospace', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {(() => {
+                          if (!log.metadata) return 'System Action';
+                          try {
+                            const str = JSON.stringify(JSON.parse(log.metadata));
+                            return str;
+                          } catch {
+                            return log.metadata;
+                          }
+                        })()}
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right', fontSize: '0.75rem', color: 'var(--text-muted)', flexShrink: 0 }}>
+                      {date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                      <div style={{ fontSize: '0.7rem' }}>{date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </AccordionPanel>
+      )}
+
       {/* ── Data & Privacy ─────────────────────────────────────── */}
-      <AccordionHeader section={SECTIONS[4]} isOpen={openSection === 'data'} onClick={() => toggleSection('data')} />
+      <AccordionHeader section={SECTIONS.find(s => s.id === 'data')!} isOpen={openSection === 'data'} onClick={() => toggleSection('data')} />
       {openSection === 'data' && (
         <AccordionPanel>
           <div style={{ display:'flex', flexDirection:'column', gap:'0.625rem', marginBottom:'1.25rem' }}>

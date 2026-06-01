@@ -24,8 +24,12 @@ export function FxTicker({ currency }: { currency: string }) {
   async function load() {
     setLoading(true); setError(false);
     try {
-      const res = await fetch(`/api/fx-rates?base=${currency}`);
-      if (!res.ok) throw new Error();
+      let res = await fetch(`/api/fx-rates?base=${currency}`);
+      if (!res.ok) {
+        // Fallback to USD if the user's currency is unsupported (e.g. KES)
+        res = await fetch(`/api/fx-rates?base=USD`);
+        if (!res.ok) throw new Error();
+      }
       setRates(await res.json());
     } catch {
       setError(true);
@@ -44,13 +48,13 @@ export function FxTicker({ currency }: { currency: string }) {
   }, []);
 
   return (
-    <div className="card" style={{ padding: '1rem 1.25rem' }}>
+    <div className="card" style={{ padding: '1rem 1.25rem', marginBottom: '1rem' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.875rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <TrendingUp size={15} color="var(--primary)" />
           <span style={{ fontWeight: 700, fontSize: '0.8125rem', color: 'var(--text-primary)' }}>
-            {currency} Exchange Rates
+            {rates ? rates.base : currency} Exchange Rates
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

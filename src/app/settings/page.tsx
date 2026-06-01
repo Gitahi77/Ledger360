@@ -3,6 +3,8 @@
 import { AppLayout } from '@/components/layout/AppLayout';
 import { getUserProfile } from '@/lib/actions/reports';
 import { getUserPreferences } from '@/lib/actions/settings';
+import { requireAuth } from '@/lib/actions/_auth';
+import { prisma } from '@/lib/prisma';
 import { SettingsClient } from './SettingsClient';
 
 export const metadata = {
@@ -11,9 +13,16 @@ export const metadata = {
 };
 
 export default async function Settings() {
-  const [profile, prefs] = await Promise.all([
+  const user = await requireAuth();
+  
+  const [profile, prefs, logs] = await Promise.all([
     getUserProfile(),
     getUserPreferences(),
+    prisma.auditLog.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: 'desc' },
+      take: 25,
+    }),
   ]);
 
   return (
@@ -36,6 +45,13 @@ export default async function Settings() {
           notifInsights:   prefs.notifInsights,
           notifLoanDue:    prefs.notifLoanDue,
         } : null}
+        logs={logs.map(l => ({
+          id: l.id,
+          action: l.action,
+          resource: l.resource,
+          metadata: l.metadata,
+          createdAt: l.createdAt.toISOString()
+        }))}
       />
     </AppLayout>
   );

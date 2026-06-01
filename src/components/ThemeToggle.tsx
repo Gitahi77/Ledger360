@@ -8,19 +8,26 @@ export function ThemeToggle() {
 
   useEffect(() => {
     const initTheme = () => {
-      const currentTheme = document.documentElement.getAttribute('data-theme');
-      setIsDark(currentTheme === 'dark');
+      setIsDark(document.documentElement.getAttribute('data-theme') === 'dark');
     };
-    // Use setTimeout to avoid synchronous setState warning
     const timer = setTimeout(initTheme, 0);
-    return () => clearTimeout(timer);
+
+    const observer = new MutationObserver(() => {
+      initTheme();
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+    return () => {
+      clearTimeout(timer);
+      observer.disconnect();
+    };
   }, []);
 
   const toggleTheme = () => {
     const newTheme = isDark ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', newTheme);
     localStorage.setItem('theme', newTheme);
-    setIsDark(!isDark);
+    // MutationObserver will automatically pick up the attribute change and update state
   };
 
   if (isDark === null) return <div style={{ width: '40px', height: '40px' }} />;

@@ -1,5 +1,6 @@
 'use client';
 // src/components/navigation/MobileNav.tsx
+import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -17,7 +18,6 @@ const ITEMS = [
   { href: '/goals',        icon: Target,          label: 'Goals'        },
   { href: '/loans',        icon: CreditCard,      label: 'Loans'        },
   { href: '/reports',      icon: BarChart2,       label: 'Reports'      },
-  { href: '/security',     icon: ShieldCheck,     label: 'Security'     },
   { href: '/settings',     icon: Settings,        label: 'Settings'     },
 ];
 
@@ -27,6 +27,16 @@ export function MobileNav() {
   function isActive(href: string) {
     return href === '/' ? pathname === '/' : pathname.startsWith(href);
   }
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!scrollRef.current) return;
+    const activeEl = scrollRef.current.querySelector('[data-active="true"]');
+    if (activeEl) {
+      activeEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }
+  }, [pathname]);
 
   return (
     <nav
@@ -50,6 +60,7 @@ export function MobileNav() {
         scrollbarWidth: 'none',
         msOverflowStyle: 'none',
       }}
+      ref={scrollRef}
     >
       <style dangerouslySetInnerHTML={{__html: `
         .mobile-nav::-webkit-scrollbar { display: none; }
@@ -62,6 +73,7 @@ export function MobileNav() {
           <Link
             key={item.href}
             href={item.href}
+            data-active={active}
             style={{
               display: 'inline-flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
               flex: '0 0 auto', width: '22vw', maxWidth: '80px',
