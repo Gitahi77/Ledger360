@@ -1,6 +1,6 @@
 // src/app/api/upload/route.ts
 // Smart Upload Pipeline — supports CSV, Excel (.xlsx/.xls) and PDF without AI key.
-// If OPENAI_API_KEY is set, PDF/image screenshots also go through GPT-4o Vision.
+// If GOOGLE_GENERATIVE_AI_API_KEY is set, PDF/image screenshots also go through Gemini Vision.
 
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';

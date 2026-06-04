@@ -41,3 +41,6 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
+
+# mingit binaries (not part of the app — purge history with git filter-repo)
+mingit/
