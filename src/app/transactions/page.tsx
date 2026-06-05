@@ -2,6 +2,7 @@
 import { AppLayout } from '@/components/layout/AppLayout';
 import { getTransactions, getCategories } from '@/lib/actions/transactions';
 import { getAccounts } from '@/lib/actions/accounts';
+import { getTransfers } from '@/lib/actions/transfers';
 import { TransactionsClient } from './TransactionsClient';
 import { requireAuth } from '@/lib/actions/_auth';
 
@@ -14,12 +15,31 @@ export default async function Transactions({
   const period     = rawPeriod ?? 'this-month';
   const typeFilter = rawType   ?? 'all';
 
-  const [user, transactions, categories, accounts] = await Promise.all([
+  const [user, transactions, transfers, categories, accounts] = await Promise.all([
     requireAuth(),
-    getTransactions(period, typeFilter === 'all' ? undefined : typeFilter),
+    getTransactions(period, typeFilter === 'all' || typeFilter === 'transfer' ? undefined : typeFilter),
+    typeFilter === 'all' || typeFilter === 'transfer' ? getTransfers(period as any) : Promise.resolve([]),
     getCategories(),
     getAccounts(),
   ]);
+
+  const mappedTransfers = transfers.map(t => ({
+    id: t.id,
+    name: 'Transfer',
+    baseAmountMinor: t.amountMinor,
+    type: 'transfer',
+    date: t.date,
+    note: t.note,
+    category: {
+      id: 'transfer',
+      name: `${t.fromAccount.name} → ${t.toAccount.name}`,
+      icon: 'transfer',
+    }
+  }));
+
+  const allItems = [...transactions, ...mappedTransfers]
+    .filter(t => typeFilter === 'all' ? true : t.type === typeFilter)
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   // Compute summary totals from the unfiltered period (all types)
   const allForPeriod = typeFilter !== 'all'
@@ -32,7 +52,7 @@ export default async function Transactions({
   return (
     <AppLayout>
       <TransactionsClient
-        transactions={transactions}
+        transactions={allItems}
         categories={categories}
         accounts={accounts}
         totalIncome={totalIncome}

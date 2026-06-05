@@ -22,6 +22,19 @@ export const AddTransactionSchema = z.object({
 });
 export type AddTransactionInput = z.infer<typeof AddTransactionSchema>;
 
+/* ── Transfers ────────────────────────────────────────────── */
+export const AddTransferSchema = z.object({
+  fromAccountId: z.string().min(1, 'From account is required'),
+  toAccountId:   z.string().min(1, 'To account is required'),
+  amountMinor:   kes('Amount'),
+  date:          z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD'),
+  note:          z.string().max(500, 'Note too long').optional(),
+}).refine(data => data.fromAccountId !== data.toAccountId, {
+  message: "From and To accounts must be different",
+  path: ["toAccountId"],
+});
+export type AddTransferInput = z.infer<typeof AddTransferSchema>;
+
 /* ── Budgets ──────────────────────────────────────────────── */
 export const AddBudgetSchema = z.object({
   name:       z.string().min(1, 'Budget name is required').max(80),

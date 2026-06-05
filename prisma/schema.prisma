@@ -35,6 +35,7 @@ model User {
   assets        Asset[]
   auditLogs     AuditLog[]
   preferences   UserPreferences?
+  transfers     Transfer[]
 }
 
 // ── User Preferences (persisted settings) ────────────────────
@@ -94,6 +95,8 @@ model Account {
   archived     Boolean       @default(false)
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   transactions Transaction[]
+  transfersFrom Transfer[]   @relation("TransferFrom")
+  transfersTo   Transfer[]   @relation("TransferTo")
   createdAt    DateTime      @default(now())
 
   @@index([userId])
@@ -176,8 +179,9 @@ model Goal {
   deadline           DateTime?
   userId             String
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime   @default(now())
+  transfers Transfer[]
 }
 
 model Loan {
@@ -193,8 +197,9 @@ model Loan {
   daysOverdue         Int      @default(0)
   userId              String
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime   @default(now())
+  transfers Transfer[]
 
   @@index([userId])
 }
@@ -227,3 +232,31 @@ model AuditLog {
 
   @@index([userId, createdAt(sort: Desc)])
 }
+
+model Transfer {
+  id              String   @id @default(cuid())
+  userId          String
+  fromAccountId   String
+  toAccountId     String
+  amountMinor     Int
+  currency        String
+  baseAmountMinor Int
+  fxRate          Decimal  @db.Decimal(10, 6)
+  date            DateTime
+  note            String?
+  source          String   @default("MANUAL") // MANUAL, IMPORT, SYSTEM
+  goalId          String?
+  loanId          String?
+  createdAt       DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fromAccount Account  @relation("TransferFrom", fields: [fromAccountId], references: [id], onDelete: Restrict)
+  toAccount   Account  @relation("TransferTo", fields: [toAccountId], references: [id], onDelete: Restrict)
+  goal        Goal?    @relation(fields: [goalId], references: [id], onDelete: SetNull)
+  loan        Loan?    @relation(fields: [loanId], references: [id], onDelete: SetNull)
+
+  @@index([userId, date])
+  @@index([fromAccountId])
+  @@index([toAccountId])
+}
+

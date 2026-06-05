@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { CategoryIcon } from '@/components/CategoryIcon';
 import { SmartUpload } from '@/components/SmartUpload';
 import { addTransaction, editTransaction, deleteTransaction } from '@/lib/actions/transactions';
+import { createTransfer, deleteTransfer } from '@/lib/actions/transfers';
 import { fmtAdaptive } from '@/lib/format';
 import { Plus, FileDown, X, Loader2, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toMinor, toMajor } from '@/lib/money';
@@ -43,9 +44,10 @@ function TransactionModal({ tx, categories, accounts, currency, onClose }: { tx?
   const [error, setError]     = useState('');
   const [name,       setName]       = useState(tx?.name ?? '');
   const [amount,     setAmount]     = useState(tx ? String(toMajor(tx.baseAmountMinor)) : '');
-  const [type,       setType]       = useState<'income' | 'expense'>(tx ? (tx.type as any) : 'expense');
+  const [type,       setType]       = useState<'income' | 'expense' | 'transfer'>(tx ? (tx.type as any) : 'expense');
   const [categoryId, setCategoryId] = useState(tx?.category.id ?? '');
   const [accountId,  setAccountId]  = useState((tx as any)?.accountId ?? (accounts[0]?.id || ''));
+  const [toAccountId,setToAccountId]= useState('');
   const [date,       setDate]       = useState(tx ? new Date(tx.date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10));
   const [note,       setNote]       = useState(tx?.note ?? '');
   const isEdit = Boolean(tx);
@@ -54,13 +56,21 @@ function TransactionModal({ tx, categories, accounts, currency, onClose }: { tx?
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!categoryId) { setError('Please select a category.'); return; }
+    if (type !== 'transfer' && !categoryId) { setError('Please select a category.'); return; }
+    if (type === 'transfer' && accountId === toAccountId) { setError('From and To accounts must be different.'); return; }
+    if (type === 'transfer' && !toAccountId) { setError('Please select a destination account.'); return; }
+
     setLoading(true); setError('');
     try {
-      if (isEdit && tx) {
-        await editTransaction(tx.id, { name, baseAmountMinor: toMinor(parseFloat(amount)), type, categoryId, accountId, date: new Date(date), note });
+      if (type === 'transfer') {
+        if (isEdit) throw new Error('Editing transfers is not supported yet.');
+        await createTransfer({ fromAccountId: accountId, toAccountId, amountMinor: toMinor(parseFloat(amount)), date, note });
       } else {
-        await addTransaction({ name, baseAmountMinor: toMinor(parseFloat(amount)), type, categoryId, accountId, date, note });
+        if (isEdit && tx) {
+          await editTransaction(tx.id, { name, baseAmountMinor: toMinor(parseFloat(amount)), type, categoryId, accountId, date: new Date(date), note });
+        } else {
+          await addTransaction({ name, baseAmountMinor: toMinor(parseFloat(amount)), type, categoryId, accountId, date, note });
+        }
       }
       startT(() => router.refresh());
       onClose();
@@ -79,42 +89,67 @@ function TransactionModal({ tx, categories, accounts, currency, onClose }: { tx?
         {error && <div style={{ padding:'0.625rem', borderRadius:7, background:'var(--danger-light)', color:'var(--danger)', fontSize:'0.8rem', marginBottom:'1rem' }}>{error}</div>}
         <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:'0.875rem' }}>
           <div className="segmented-control" style={{ width:'100%' }}>
-            {(['expense', 'income'] as const).map(t => (
+            {(['expense', 'income', 'transfer'] as const).map(t => (
               <button key={t} type="button" onClick={() => { setType(t); setCategoryId(''); }}
                 className={`segmented-btn ${type === t ? 'active' : ''}`} style={{ flex:1, justifyContent:'center' }}>
-                {t === 'income' ? '+ Income' : '− Expense'}
+                {t === 'income' ? '+ Income' : t === 'expense' ? '− Expense' : '⇄ Transfer'}
               </button>
             ))}
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.75rem' }}>
-            <div>
-              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Description</label>
-              <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
-                value={name} onChange={e => setName(e.target.value)} required placeholder="e.g. Naivas Grocery" />
-            </div>
-            <div>
+            {type !== 'transfer' && (
+              <div>
+                <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Description</label>
+                <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
+                  value={name} onChange={e => setName(e.target.value)} required placeholder="e.g. Naivas Grocery" />
+              </div>
+            )}
+            <div style={{ gridColumn: type === 'transfer' ? '1 / -1' : 'auto' }}>
               <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Amount ({currency})</label>
               <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                 type="number" min="1" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} required placeholder="0.00" />
             </div>
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.75rem' }}>
-            <div>
-              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Category</label>
-              <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
-                value={categoryId} onChange={e => setCategoryId(e.target.value)} required>
-                <option value="">Select…</option>
-                {filteredCats.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-            </div>
-            <div>
-              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Account</label>
-              <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
-                value={accountId} onChange={e => setAccountId(e.target.value)} required>
-                <option value="">Select Account…</option>
-                {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-              </select>
-            </div>
+            {type !== 'transfer' ? (
+              <>
+                <div>
+                  <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Category</label>
+                  <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
+                    value={categoryId} onChange={e => setCategoryId(e.target.value)} required>
+                    <option value="">Select…</option>
+                    {filteredCats.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Account</label>
+                  <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
+                    value={accountId} onChange={e => setAccountId(e.target.value)} required>
+                    <option value="">Select Account…</option>
+                    {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                  </select>
+                </div>
+              </>
+            ) : (
+              <>
+                <div>
+                  <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>From Account</label>
+                  <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
+                    value={accountId} onChange={e => setAccountId(e.target.value)} required>
+                    <option value="">Select From Account…</option>
+                    {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>To Account</label>
+                  <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
+                    value={toAccountId} onChange={e => setToAccountId(e.target.value)} required>
+                    <option value="">Select To Account…</option>
+                    {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                  </select>
+                </div>
+              </>
+            )}
           </div>
           <div>
             <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Date</label>
@@ -126,8 +161,8 @@ function TransactionModal({ tx, categories, accounts, currency, onClose }: { tx?
             <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
               value={note} onChange={e => setNote(e.target.value)} placeholder="e.g. May salary" />
           </div>
-          <button type="submit" disabled={loading} className="btn btn-primary" style={{ width:'100%', justifyContent:'center', padding:'0.7rem', marginTop:'0.25rem' }}>
-            {loading ? <><Loader2 size={14} style={{ animation:'spin 1s linear infinite' }}/> Saving…</> : (isEdit ? 'Save Changes' : `Save ${type === 'income' ? 'Income' : 'Expense'}`)}
+          <button type="submit" disabled={loading || (isEdit && type === 'transfer')} className="btn btn-primary" style={{ width:'100%', justifyContent:'center', padding:'0.7rem', marginTop:'0.25rem' }}>
+            {loading ? <><Loader2 size={14} style={{ animation:'spin 1s linear infinite' }}/> Saving…</> : (isEdit ? 'Save Changes' : `Save ${type === 'income' ? 'Income' : type === 'expense' ? 'Expense' : 'Transfer'}`)}
           </button>
         </form>
       </div>
@@ -178,10 +213,14 @@ export function TransactionsClient({ transactions, categories, accounts, totalIn
     });
   }
 
-  async function handleDelete(id: string) {
+  async function handleDelete(id: string, type: string) {
     if (!confirm('Delete this transaction?')) return;
     setDeletingId(id);
-    await deleteTransaction(id);
+    if (type === 'transfer') {
+      await deleteTransfer(id);
+    } else {
+      await deleteTransaction(id);
+    }
     startT(() => router.refresh());
     setDeletingId(null);
   }
@@ -198,9 +237,9 @@ export function TransactionsClient({ transactions, categories, accounts, totalIn
       <div className="flex items-center justify-between mb-5 flex-wrap gap-3 animate-in">
         <div className="flex items-center gap-3 flex-wrap">
           <div className="segmented-control">
-            {(['all', 'income', 'expense'] as const).map(v => (
+            {(['all', 'income', 'expense', 'transfer'] as const).map(v => (
               <button key={v} onClick={() => setParam('type', v)} className={`segmented-btn ${typeFilter === v ? 'active' : ''}`}>
-                {v === 'all' ? 'All' : v === 'income' ? 'Income' : 'Expenses'}
+                {v === 'all' ? 'All' : v === 'income' ? 'Income' : v === 'expense' ? 'Expenses' : 'Transfers'}
               </button>
             ))}
           </div>
@@ -291,8 +330,8 @@ export function TransactionsClient({ transactions, categories, accounts, totalIn
                   type={tx.type}
                   icon={<CategoryIcon category={tx.category.icon ?? tx.category.name.toLowerCase()} name={tx.name} size={18}/>}
                   state={tx.type === 'pending' ? 'pending' : undefined}
-                  onDelete={() => handleDelete(tx.id)}
-                  onEdit={() => setEditTx(tx)}
+                  onDelete={() => handleDelete(tx.id, tx.type)}
+                  onEdit={tx.type === 'transfer' ? undefined : () => setEditTx(tx)}
                   isDeleting={deletingId === tx.id}
                 />
               ))}

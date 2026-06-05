@@ -25,7 +25,7 @@ const ParsedTransactionSchema = z.object({
   name: z.string(),
   date: z.string(),
   amount: z.number().positive(),
-  type: z.enum(['income', 'expense']),
+  type: z.enum(['income', 'expense', 'transfer']),
   category: z.string(),
   fee: z.number().optional(),
   ref: z.string().optional(),
@@ -40,9 +40,10 @@ Return a JSON array of transaction objects. Each object must have:
 - name: string (descriptive label e.g. "Send Money - JOHN KAMAU", "Paybill - KPLC", "Buy Goods - Naivas", "M-Pesa Withdrawal - Agent")
 - date: string (ISO format YYYY-MM-DD, infer year if missing — assume current year)
 - amount: number (always positive)
-- type: "income" | "expense" 
+- type: "income" | "expense" | "transfer"
   - income: received money, reversal, salary deposit
   - expense: sent money, paybill, buy goods, withdrawal, airtime, Fuliza
+  - transfer: moving money between own accounts or depositing to own savings
 - category: one of: Food & Grocery, Transport, Utilities, Entertainment, Health, Rent, Clothing, Savings, Transfer, Salary, Business, Airtime, Loan Repayment, Other
 - fee: number (transaction cost if mentioned, else omit)
 - ref: string (M-Pesa confirmation code e.g. "FG7K2X8L", else omit)
@@ -50,6 +51,7 @@ Return a JSON array of transaction objects. Each object must have:
 - raw: string (the original SMS text, verbatim)
 
 IMPORTANT RULES:
+- Moving money to own savings or another own account is "transfer", category "Transfer" or "Savings"
 - Fuliza deductions are "expense", category "Loan Repayment"
 - Received money from another person is "income", category "Transfer"
 - Buy Goods / Paybill / Till payments are "expense"
@@ -94,7 +96,7 @@ const ParsedDocTransactionSchema = z.object({
   name: z.string(),
   date: z.string(),
   amount: z.number().positive(),
-  type: z.enum(['income', 'expense']),
+  type: z.enum(['income', 'expense', 'transfer']),
   category: z.string(),
 });
 export type ParsedDocTransaction = z.infer<typeof ParsedDocTransactionSchema>;
@@ -105,10 +107,11 @@ Return a JSON array. Each item must have:
 - name: string (short description of the transaction)
 - date: string (YYYY-MM-DD)
 - amount: number (positive)
-- type: "income" | "expense"
+- type: "income" | "expense" | "transfer"
 - category: one of: Food & Grocery, Transport, Utilities, Entertainment, Health, Rent, Clothing, Savings, Transfer, Salary, Business, Airtime, Loan Repayment, Other
 
 Kenya-specific rules:
+- Internal transfers between own accounts or to own savings = transfer
 - M-Pesa paybill/till = expense
 - Salary/payroll credit = income
 - KPLC / Zuku / Safaricom = Utilities

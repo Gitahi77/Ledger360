@@ -28,7 +28,7 @@ export async function getAccountBalances(userId: string): Promise<AccountWithBal
   });
   
   return Promise.all(accounts.map(async (acc) => {
-    const [inc, exp] = await Promise.all([
+    const [inc, exp, transfersOut, transfersIn] = await Promise.all([
       prisma.transaction.aggregate({ 
         _sum: { baseAmountMinor: true }, 
         where: { userId, accountId: acc.id, type: 'income' } 
@@ -36,13 +36,22 @@ export async function getAccountBalances(userId: string): Promise<AccountWithBal
       prisma.transaction.aggregate({ 
         _sum: { baseAmountMinor: true }, 
         where: { userId, accountId: acc.id, type: 'expense' } 
+      }),
+      prisma.transfer.aggregate({
+        _sum: { amountMinor: true },
+        where: { userId, fromAccountId: acc.id }
+      }),
+      prisma.transfer.aggregate({
+        _sum: { amountMinor: true },
+        where: { userId, toAccountId: acc.id }
       })
-      // WO-8: Add transfers here
     ]);
 
     const balanceMinor = acc.openingMinor
       + (inc._sum.baseAmountMinor ?? 0) 
-      - (exp._sum.baseAmountMinor ?? 0);
+      - (exp._sum.baseAmountMinor ?? 0)
+      - (transfersOut._sum.amountMinor ?? 0)
+      + (transfersIn._sum.amountMinor ?? 0);
       
     return { ...acc, balanceMinor };
   }));
@@ -114,10 +123,14 @@ export async function deleteAccount(id: string) {
   const existing = await prisma.account.findUnique({ where: { id } });
   if (!existing || existing.userId !== userId) throw new Error('Account not found');
 
-  // Block deletion if transactions exist
-  const txCount = await prisma.transaction.count({ where: { accountId: id } });
-  if (txCount > 0) {
-    throw new Error('Cannot delete account with existing transactions. Please reassign them first.');
+  // Block deletion if transactions or transfers exist
+  const [txCount, transferFromCount, transferToCount] = await Promise.all([
+    prisma.transaction.count({ where: { accountId: id } }),
+    prisma.transfer.count({ where: { fromAccountId: id } }),
+    prisma.transfer.count({ where: { toAccountId: id } })
+  ]);
+  if (txCount > 0 || transferFromCount > 0 || transferToCount > 0) {
+    throw new Error('Cannot delete account with existing transactions or transfers. Please reassign them first.');
   }
 
   return prisma.$transaction(async (tx) => {

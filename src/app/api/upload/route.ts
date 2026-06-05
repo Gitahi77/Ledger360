@@ -263,7 +263,7 @@ const UploadRowSchema = z.object({
   date:     z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date'),
   name:     z.string().min(1).max(200),
   amount:   z.number().min(0),
-  type:     z.enum(['income', 'expense']),
+  type:     z.enum(['income', 'expense', 'transfer']),
   category: z.string().min(1).max(80),
   note:     z.string().optional(),
 });
@@ -381,7 +381,19 @@ export async function POST(request: Request) {
       categoryId: catMap[String(t.category)] ?? fallbackId,
     }));
 
-    return NextResponse.json({ success: true, transactions: parsed, count: parsed.length, method });
+    const incomeExpense = parsed.filter((t: any) => t.type !== 'transfer');
+    const detectedTransfers = parsed.filter((t: any) => t.type === 'transfer').map((t: any) => ({
+      ...t,
+      suggestedType: 'transfer'
+    }));
+
+    return NextResponse.json({ 
+      success: true, 
+      transactions: incomeExpense, 
+      detectedTransfers,
+      count: incomeExpense.length, 
+      method 
+    });
 
   } catch (err: any) {
     // Log full error server-side; never expose internal details to client
