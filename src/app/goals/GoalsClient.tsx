@@ -3,8 +3,7 @@
 // Copyright (c) 2024–present Eric Gitahi. All rights reserved.
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { addGoal, editGoal, updateGoalAmount, deleteGoal } from '@/lib/actions/goals';
-import { addTransaction } from '@/lib/actions/transactions';
+import { addGoal, editGoal, deleteGoal } from '@/lib/actions/goals';
 import { CategoryIcon } from '@/components/CategoryIcon';
 import { fmtAdaptive, fmtFull, fmtPct } from '@/lib/format';
 import { Plus, CheckCircle2, TrendingUp, Trash2, Loader2, X, PiggyBank, Info } from 'lucide-react';
@@ -66,7 +65,6 @@ function GoalModal({ goal, onClose, currency }: { goal?: Goal; onClose: () => vo
   const [name,          setName]          = useState(goal?.name ?? '');
   const [category,      setCategory]      = useState(goal?.category ?? 'savings');
   const [targetAmount,  setTargetAmount]  = useState(goal ? String(toMajor(goal.targetAmountMinor)) : '');
-  const [currentAmount, setCurrentAmount] = useState(goal ? String(toMajor(goal.currentAmountMinor)) : '0');
   const [deadline,      setDeadline]      = useState(goal?.deadline ? new Date(goal.deadline).toISOString().slice(0, 10) : '');
   const isEdit = Boolean(goal);
 
@@ -80,14 +78,12 @@ function GoalModal({ goal, onClose, currency }: { goal?: Goal; onClose: () => vo
         await editGoal(goal.id, {
           name, category,
           targetAmountMinor:  toMinor(parseFloat(targetAmount)),
-          currentAmountMinor: toMinor(parseFloat(currentAmount || '0')),
           deadline:      deadline || null,
         });
       } else {
         await addGoal({
           name, category,
           targetAmountMinor:  toMinor(parseFloat(targetAmount)),
-          currentAmountMinor: toMinor(parseFloat(currentAmount || '0')),
           deadline:      deadline || undefined,
         });
       }
@@ -119,16 +115,11 @@ function GoalModal({ goal, onClose, currency }: { goal?: Goal; onClose: () => vo
               {GOAL_CATS.map(c => <option key={c} value={c}>{c.charAt(0).toUpperCase()+c.slice(1)}</option>)}
             </select>
           </div>
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.75rem' }}>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr', gap:'0.75rem' }}>
             <div>
               <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Target Amount ({currency})</label>
               <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                 type="number" min="1" step="1" value={targetAmount} onChange={e => setTargetAmount(e.target.value)} required placeholder="100000" />
-            </div>
-            <div>
-              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Already Saved ({currency})</label>
-              <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
-                type="number" min="0" step="1" value={currentAmount} onChange={e => setCurrentAmount(e.target.value)} placeholder="0" />
             </div>
           </div>
           <div>
@@ -147,106 +138,12 @@ function GoalModal({ goal, onClose, currency }: { goal?: Goal; onClose: () => vo
   );
 }
 
-/* ── Add Funds Modal ──────────────────────────────────────── */
-function AddFundsModal({ goal, onClose, currency, categories }: { goal: Goal; onClose: () => void; currency: string; categories: { id: string; name: string }[] }) {
-  const router     = useRouter();
-  const [, startT] = useTransition();
-  const [loading, setLoading] = useState(false);
-  const [amount,  setAmount]  = useState('');
-  
-  const [recordTx, setRecordTx] = useState(false);
-  const [categoryId, setCategoryId] = useState(categories.find(c => c.name.toLowerCase() === 'transfer' || c.name.toLowerCase() === 'savings')?.id || categories[0]?.id || '');
-
-  const addAmtMinor = toMinor(parseFloat(amount || '0'));
-  const newTotalMinor = goal.currentAmountMinor + addAmtMinor;
-  const newPct   = goal.targetAmountMinor > 0 ? Math.min(100, Math.round((newTotalMinor / goal.targetAmountMinor) * 100)) : 0;
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      await updateGoalAmount(goal.id, newTotalMinor);
-      
-      if (recordTx && categoryId && addAmtMinor > 0) {
-        await addTransaction({
-          baseAmountMinor: addAmtMinor,
-          name: `Goal Contribution: ${goal.name}`,
-          type: 'expense',
-          date: new Date().toISOString().slice(0, 10),
-          categoryId,
-          note: `Contribution to ${goal.name}`,
-        });
-      }
-      
-      startT(() => router.refresh());
-      onClose();
-    } catch (err: any) {
-      // Could show error to user in future — for now, log and close
-      console.error('Failed to update goal amount:', err);
-      onClose();
-    } finally { setLoading(false); }
-  }
-
-  return (
-    <div style={{ position:'fixed', inset:0, zIndex:1000, background:'rgba(0,0,0,0.5)', backdropFilter:'blur(6px)', display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem' }} onClick={onClose}>
-      <div className="card animate-in" style={{ width:'100%', maxWidth:400, padding:'1.75rem' }} onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="card-title" style={{ marginBottom:0 }}>Add Funds</h2>
-          <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', display:'flex' }}><X size={18}/></button>
-        </div>
-        <p style={{ fontSize:'0.8rem', color:'var(--text-secondary)', marginBottom:'1rem' }}>
-          Adding to <strong>{goal.name}</strong> · current: {fmtAdaptive(goal.currentAmountMinor, currency)}
-        </p>
-        <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:'0.875rem' }}>
-          <div>
-            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Amount to Add ({currency})</label>
-            <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
-              type="number" min="1" step="1" value={amount} onChange={e => setAmount(e.target.value)} required placeholder="5000" autoFocus />
-          </div>
-          {addAmtMinor > 0 && (
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.5rem' }}>
-              <div style={{ padding:'0.6rem 0.75rem', borderRadius:8, background:'var(--primary-light)', fontSize:'0.75rem' }}>
-                <div style={{ color:'var(--text-muted)', fontWeight:600, marginBottom:'0.1rem', textTransform:'uppercase', fontSize:'0.6rem', letterSpacing:'0.06em' }}>New total</div>
-                <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, color:'var(--primary)' }}>{fmtAdaptive(newTotalMinor, currency)}</div>
-              </div>
-              <div style={{ padding:'0.6rem 0.75rem', borderRadius:8, background:'var(--success-light)', fontSize:'0.75rem' }}>
-                <div style={{ color:'var(--text-muted)', fontWeight:600, marginBottom:'0.1rem', textTransform:'uppercase', fontSize:'0.6rem', letterSpacing:'0.06em' }}>Progress</div>
-                <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, color:'var(--success)' }}>{newPct}%</div>
-              </div>
-            </div>
-          )}
-          
-          <label style={{ display:'flex', alignItems:'center', gap:'0.5rem', cursor:'pointer', fontSize:'0.8rem', color:'var(--text-primary)' }}>
-            <input type="checkbox" checked={recordTx} onChange={e => setRecordTx(e.target.checked)} style={{ width:'1rem', height:'1rem' }} />
-            Record this contribution as an expense transaction
-          </label>
-          
-          {recordTx && (
-            <div className="animate-in" style={{ marginTop: '-0.25rem' }}>
-              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Expense Category</label>
-              <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
-                value={categoryId} onChange={e => setCategoryId(e.target.value)}>
-                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-            </div>
-          )}
-          
-          <button type="submit" disabled={loading} className="btn btn-primary" style={{ width:'100%', justifyContent:'center', padding:'0.7rem' }}>
-            {loading ? <><Loader2 size={14} style={{ animation:'spin 1s linear infinite' }}/> Saving…</> : 'Add Funds'}
-          </button>
-        </form>
-      </div>
-    </div>
-  );
-}
-
 /* ── Main Client Component ────────────────────────────────── */
 export function GoalsClient({ goals, currency, categories = [] }: { goals: Goal[], currency: string, categories?: { id: string; name: string }[] }) {
   const router     = useRouter();
   const [, startT] = useTransition();
   const [showAdd,      setShowAdd]      = useState(false);
   const [editGoalObj,  setEditGoalObj]  = useState<Goal | null>(null);
-  const [addFundsGoal, setAddFundsGoal] = useState<Goal | null>(null);
   const [celebrating,  setCelebrate]    = useState<string | null>(null);
   const [deletingId,   setDeletingId]   = useState<string | null>(null);
 
@@ -271,7 +168,6 @@ export function GoalsClient({ goals, currency, categories = [] }: { goals: Goal[
     <>
       {showAdd      && <GoalModal onClose={() => setShowAdd(false)} currency={currency} />}
       {editGoalObj  && <GoalModal goal={editGoalObj} onClose={() => setEditGoalObj(null)} currency={currency} />}
-      {addFundsGoal && <AddFundsModal goal={addFundsGoal} onClose={() => setAddFundsGoal(null)} currency={currency} categories={categories} />}
 
       {/* Toolbar */}
       <div className="flex items-center justify-between mb-5 animate-in flex-wrap gap-3">
@@ -426,15 +322,6 @@ export function GoalsClient({ goals, currency, categories = [] }: { goals: Goal[
                     <span style={{ fontSize:'0.72rem', color:'var(--text-secondary)', fontWeight:500, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', flex:1, marginRight:'0.5rem' }}>
                       {fmtAdaptive(left, currency)} to go
                     </span>
-                    <div className="flex items-center gap-2" style={{ flexShrink:0 }}>
-                      <button
-                        onClick={e => { e.stopPropagation(); setAddFundsGoal(g); }}
-                        className="btn btn-outline"
-                        style={{ padding:'0.2rem 0.6rem', fontSize:'0.72rem', gap:'0.2rem' }}
-                      >
-                        <TrendingUp size={11}/> Add Funds
-                      </button>
-                    </div>
                   </div>
                 )}
               </div>

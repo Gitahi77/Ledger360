@@ -10,6 +10,9 @@ export async function getLoans() {
 
   const loans = await prisma.loan.findMany({
     where:   { userId: user.id },
+    include: {
+      transfers: { select: { baseAmountMinor: true } }
+    },
     orderBy: { annualRate: 'desc' },
   });
 
@@ -18,7 +21,11 @@ export async function getLoans() {
     const auto = due < today
       ? Math.floor((today.getTime() - due.getTime()) / 86_400_000)
       : 0;
-    return { ...l, daysOverdue: Math.max(l.daysOverdue, auto) };
+    const repaidAmount = l.transfers.reduce((s, t) => s + t.baseAmountMinor, 0);
+    const currentBalanceMinor = Math.max(0, l.balanceMinor - repaidAmount);
+    
+    const { transfers, ...rest } = l;
+    return { ...rest, balanceMinor: currentBalanceMinor, daysOverdue: auto };
   });
 }
 
@@ -45,26 +52,6 @@ export async function addLoan(raw: {
   revalidatePath('/');
 }
 
-export async function updateLoanBalance(
-  id: string,
-  balanceMinor: number,
-  daysOverdue: number,
-  nextDue?: string,
-) {
-  const user = await requireAuth();
-  if (!id) throw new Error('Missing id');
-  await prisma.loan.updateMany({
-    where: { id, userId: user.id },
-    data:  {
-      balanceMinor:     Math.max(0, Number(balanceMinor)),
-      daysOverdue: Math.max(0, Math.floor(Number(daysOverdue))),
-      ...(nextDue ? { nextDue: new Date(nextDue) } : {}),
-    },
-  });
-  revalidatePath('/loans');
-  revalidatePath('/');
-}
-
 export async function deleteLoan(id: string) {
   const user = await requireAuth();
   if (!id) throw new Error('Missing id');
@@ -75,7 +62,7 @@ export async function deleteLoan(id: string) {
 
 export async function editLoan(id: string, data: {
   name?: string; lender?: string; type?: string; originalAmountMinor?: number; balanceMinor?: number;
-  annualRate?: number; monthlyPaymentMinor?: number; nextDue?: string; daysOverdue?: number;
+  annualRate?: number; monthlyPaymentMinor?: number; nextDue?: string;
 }) {
   const user = await requireAuth();
   if (!id) throw new Error('Missing id');

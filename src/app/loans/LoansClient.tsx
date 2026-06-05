@@ -3,8 +3,7 @@
 // Copyright (c) 2024-present Eric Gitahi. All rights reserved.
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { addLoan, editLoan, updateLoanBalance, deleteLoan } from '@/lib/actions/loans';
-import { addTransaction } from '@/lib/actions/transactions';
+import { addLoan, editLoan, deleteLoan } from '@/lib/actions/loans';
 import { fmtAdaptive } from '@/lib/format';
 import { Plus, Trash2, Loader2, X, CreditCard, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
 import { toMinor, toMajor } from '@/lib/money';
@@ -234,124 +233,6 @@ function ExpandedForecast({ loan, monthsLeft, totalInterest, currency }: { loan:
   );
 }
 
-/* ── Record Payment Modal ─────────────────────────────────── */
-function RecordPaymentModal({ loan, onClose, currency, categories }: { loan: Loan; onClose: () => void; currency: string; categories: { id: string; name: string }[] }) {
-  const router     = useRouter();
-  const [, startT] = useTransition();
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState('');
-  const [payment,  setPayment]  = useState(String(toMajor(loan.monthlyPaymentMinor)));
-  // Default next due date to +1 month from current due date
-  const defaultNextDue = (() => {
-    const d = new Date(loan.nextDue);
-    d.setMonth(d.getMonth() + 1);
-    return d.toISOString().slice(0, 10);
-  })();
-  const [nextDue,  setNextDue]  = useState(defaultNextDue);
-  const [recordTx, setRecordTx] = useState(false);
-  const [categoryId, setCategoryId] = useState(categories.find(c => c.name.toLowerCase() === 'debt' || c.name.toLowerCase() === 'loan')?.id || categories[0]?.id || '');
-
-  const paymentAmtMinor = toMinor(parseFloat(payment || '0'));
-  // Correctly split payment into interest + principal (reducing-balance method)
-  const monthlyRate       = loan.annualRate / 100 / 12;
-  const interestChargeMinor    = Math.round(loan.balanceMinor * monthlyRate);
-  const principalReductionMinor = Math.max(0, paymentAmtMinor - interestChargeMinor);
-  const newBalanceMinor         = Math.max(0, loan.balanceMinor - principalReductionMinor);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true); setError('');
-    try {
-      await updateLoanBalance(loan.id, newBalanceMinor, 0, nextDue || undefined);
-      
-      if (recordTx && categoryId && paymentAmtMinor > 0) {
-        await addTransaction({
-          baseAmountMinor: paymentAmtMinor,
-          name: `Loan Repayment: ${loan.name}`,
-          type: 'expense',
-          date: new Date().toISOString().slice(0, 10),
-          categoryId,
-          note: `Principal: ${toMajor(principalReductionMinor)} | Interest: ${toMajor(interestChargeMinor)}`,
-        });
-      }
-      
-      startT(() => router.refresh());
-      onClose();
-    } catch (err: any) {
-      setError(err.message ?? 'Something went wrong.');
-    } finally { setLoading(false); }
-  }
-
-  return (
-    <div style={{ position:'fixed', inset:0, zIndex:1000, background:'rgba(0,0,0,0.45)', backdropFilter:'blur(4px)', display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem' }} onClick={onClose}>
-      <div className="card animate-in" style={{ width:'100%', maxWidth:420, padding:'1.75rem' }} onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="card-title" style={{ marginBottom:0 }}>Record Payment</h2>
-          <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', display:'flex' }}><X size={18}/></button>
-        </div>
-        <p style={{ fontSize:'0.8rem', color:'var(--text-secondary)', marginBottom:'1rem' }}>
-          Recording payment for <strong>{loan.name}</strong> · balance: {fmtAdaptive(loan.balanceMinor, currency)}
-        </p>
-        <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:'0.875rem' }}>
-          <div>
-            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Payment Amount ({currency})</label>
-            <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
-              type="number" min="1" step="1" value={payment} onChange={e => setPayment(e.target.value)} required autoFocus />
-          </div>
-          {/* Payment breakdown — interest vs principal */}
-          {paymentAmtMinor > 0 && (
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.5rem' }}>
-              <div style={{ padding:'0.6rem 0.75rem', borderRadius:8, background:'var(--warning-light)', fontSize:'0.75rem' }}>
-                <div style={{ color:'var(--text-muted)', fontWeight:600, marginBottom:'0.1rem', textTransform:'uppercase', fontSize:'0.6rem', letterSpacing:'0.06em' }}>Interest this month</div>
-                <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, color:'var(--danger)' }}>{fmtAdaptive(interestChargeMinor, currency)}</div>
-              </div>
-              <div style={{ padding:'0.6rem 0.75rem', borderRadius:8, background:'var(--success-light)', fontSize:'0.75rem' }}>
-                <div style={{ color:'var(--text-muted)', fontWeight:600, marginBottom:'0.1rem', textTransform:'uppercase', fontSize:'0.6rem', letterSpacing:'0.06em' }}>Principal Paid</div>
-                <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, color:'var(--success)' }}>{fmtAdaptive(principalReductionMinor, currency)}</div>
-              </div>
-            </div>
-          )}
-          {paymentAmtMinor > 0 && (
-            <div style={{ padding:'0.6rem 0.75rem', borderRadius:8, background:'var(--primary-light)', fontSize:'0.75rem' }}>
-              <div style={{ color:'var(--text-muted)', fontWeight:600, marginBottom:'0.1rem', textTransform:'uppercase', fontSize:'0.6rem', letterSpacing:'0.06em' }}>New balance</div>
-              <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, color:'var(--primary)' }}>{fmtAdaptive(newBalanceMinor, currency)}</div>
-            </div>
-          )}
-          <div>
-            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>
-              Next Due Date <span style={{ fontWeight:400, color:'var(--text-muted)' }}>(optional)</span>
-            </label>
-            <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
-              type="date" value={nextDue} onChange={e => setNextDue(e.target.value)} />
-          </div>
-          <div style={{ padding:'0.75rem', borderRadius:8, background:'var(--primary-light)', fontSize:'0.8rem', color:'var(--primary)', fontWeight:600 }}>
-            New balance: {currency} {toMajor(newBalanceMinor).toLocaleString()}
-          </div>
-          
-          <label style={{ display:'flex', alignItems:'center', gap:'0.5rem', cursor:'pointer', fontSize:'0.8rem', color:'var(--text-primary)' }}>
-            <input type="checkbox" checked={recordTx} onChange={e => setRecordTx(e.target.checked)} style={{ width:'1rem', height:'1rem' }} />
-            Record this payment as an expense transaction
-          </label>
-          
-          {recordTx && (
-            <div className="animate-in" style={{ marginTop: '-0.25rem' }}>
-              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Expense Category</label>
-              <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
-                value={categoryId} onChange={e => setCategoryId(e.target.value)}>
-                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-            </div>
-          )}
-          
-          <button type="submit" disabled={loading} className="btn btn-primary" style={{ width:'100%', justifyContent:'center', padding:'0.7rem' }}>
-            {loading ? <><Loader2 size={14} style={{ animation:'spin 1s linear infinite'}}/> Saving…</> : 'Record Payment'}
-          </button>
-          {error && <div style={{ padding:'0.5rem 0.625rem', borderRadius:7, background:'var(--danger-light)', color:'var(--danger)', fontSize:'0.8rem' }}>{error}</div>}
-        </form>
-      </div>
-    </div>
-  );
-}
 
 
 /* ── Main Client Component ────────────────────────────────── */
@@ -360,7 +241,6 @@ export function LoansClient({ loans, currency, categories = [] }: { loans: Loan[
   const [, startT] = useTransition();
   const [showAdd,     setShowAdd]     = useState(false);
   const [editLoanObj, setEditLoanObj] = useState<Loan | null>(null);
-  const [payingLoan,  setPayingLoan]  = useState<Loan | null>(null);
   const [deletingId,  setDeletingId]  = useState<string | null>(null);
   const [expanded,    setExpanded]    = useState<string | null>(null);
 
@@ -385,7 +265,6 @@ export function LoansClient({ loans, currency, categories = [] }: { loans: Loan[
     <>
       {showAdd    && <LoanModal onClose={() => setShowAdd(false)} currency={currency} />}
       {editLoanObj && <LoanModal loan={editLoanObj} onClose={() => setEditLoanObj(null)} currency={currency} />}
-      {payingLoan && <RecordPaymentModal loan={payingLoan} onClose={() => setPayingLoan(null)} currency={currency} categories={categories} />}
 
       {/* Toolbar */}
       <div className="flex items-center justify-between mb-5 animate-in flex-wrap gap-3">
@@ -539,9 +418,6 @@ export function LoansClient({ loans, currency, categories = [] }: { loans: Loan[
                     <button onClick={() => setExpanded(isExpanded ? null : l.id)}
                       className="btn btn-outline" style={{ padding:'0.25rem 0.6rem', fontSize:'0.72rem', gap:'0.25rem' }}>
                       Forecast {isExpanded ? <ChevronUp size={11}/> : <ChevronDown size={11}/>}
-                    </button>
-                    <button onClick={() => setPayingLoan(l)} className="btn btn-primary" style={{ padding:'0.25rem 0.75rem', fontSize:'0.72rem' }}>
-                      Record Payment
                     </button>
                   </div>
                 </div>

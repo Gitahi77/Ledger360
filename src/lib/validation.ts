@@ -25,12 +25,23 @@ export type AddTransactionInput = z.infer<typeof AddTransactionSchema>;
 /* ── Transfers ────────────────────────────────────────────── */
 export const AddTransferSchema = z.object({
   fromAccountId: z.string().min(1, 'From account is required'),
-  toAccountId:   z.string().min(1, 'To account is required'),
+  toAccountId:   z.string().optional().nullable(),
   amountMinor:   kes('Amount'),
   date:          z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD'),
   note:          z.string().max(500, 'Note too long').optional(),
-}).refine(data => data.fromAccountId !== data.toAccountId, {
+  goalId:        z.string().optional().nullable(),
+  loanId:        z.string().optional().nullable(),
+}).refine(data => {
+  if (data.toAccountId && data.fromAccountId === data.toAccountId) return false;
+  return true;
+}, {
   message: "From and To accounts must be different",
+  path: ["toAccountId"],
+}).refine(data => {
+  if (data.loanId) return !data.toAccountId;
+  return !!data.toAccountId;
+}, {
+  message: "Loan repayments cannot have a destination account; other transfers require one",
   path: ["toAccountId"],
 });
 export type AddTransferInput = z.infer<typeof AddTransferSchema>;
@@ -49,7 +60,6 @@ export const AddGoalSchema = z.object({
   name:          z.string().min(1, 'Goal name is required').max(80),
   category:      z.string().min(1),
   targetAmountMinor:  kes('Target amount'),
-  currentAmountMinor: optKes('Current amount').optional(),
   deadline:      z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal('')).optional(),
 });
 export type AddGoalInput = z.infer<typeof AddGoalSchema>;

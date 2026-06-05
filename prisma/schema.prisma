@@ -175,7 +175,6 @@ model Goal {
   name               String
   category           String
   targetAmountMinor  Int // stored as integer minor units (cents)
-  currentAmountMinor Int       @default(0)
   deadline           DateTime?
   userId             String
 
@@ -194,7 +193,6 @@ model Loan {
   annualRate          Float    @default(0) // percentage, NOT money
   monthlyPaymentMinor Int
   nextDue             DateTime
-  daysOverdue         Int      @default(0)
   userId              String
 
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -237,7 +235,7 @@ model Transfer {
   id              String   @id @default(cuid())
   userId          String
   fromAccountId   String
-  toAccountId     String
+  toAccountId     String?
   amountMinor     Int
   currency        String
   baseAmountMinor Int
@@ -251,7 +249,7 @@ model Transfer {
 
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   fromAccount Account  @relation("TransferFrom", fields: [fromAccountId], references: [id], onDelete: Restrict)
-  toAccount   Account  @relation("TransferTo", fields: [toAccountId], references: [id], onDelete: Restrict)
+  toAccount   Account? @relation("TransferTo", fields: [toAccountId], references: [id], onDelete: Restrict)
   goal        Goal?    @relation(fields: [goalId], references: [id], onDelete: SetNull)
   loan        Loan?    @relation(fields: [loanId], references: [id], onDelete: SetNull)
 

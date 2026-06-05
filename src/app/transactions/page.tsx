@@ -6,6 +6,9 @@ import { getTransfers } from '@/lib/actions/transfers';
 import { TransactionsClient } from './TransactionsClient';
 import { requireAuth } from '@/lib/actions/_auth';
 
+import { getGoals } from '@/lib/actions/goals';
+import { getLoans } from '@/lib/actions/loans';
+
 export default async function Transactions({
   searchParams,
 }: {
@@ -15,12 +18,14 @@ export default async function Transactions({
   const period     = rawPeriod ?? 'this-month';
   const typeFilter = rawType   ?? 'all';
 
-  const [user, transactions, transfers, categories, accounts] = await Promise.all([
+  const [user, transactions, transfers, categories, accounts, goals, loans] = await Promise.all([
     requireAuth(),
     getTransactions(period, typeFilter === 'all' || typeFilter === 'transfer' ? undefined : typeFilter),
     typeFilter === 'all' || typeFilter === 'transfer' ? getTransfers(period as any) : Promise.resolve([]),
     getCategories(),
     getAccounts(),
+    getGoals(),
+    getLoans(),
   ]);
 
   const mappedTransfers = transfers.map(t => ({
@@ -32,7 +37,7 @@ export default async function Transactions({
     note: t.note,
     category: {
       id: 'transfer',
-      name: `${t.fromAccount.name} → ${t.toAccount.name}`,
+      name: `${t.fromAccount.name} → ${t.toAccount ? t.toAccount.name : 'External'}`,
       icon: 'transfer',
     }
   }));
@@ -60,6 +65,8 @@ export default async function Transactions({
         period={period}
         typeFilter={typeFilter}
         currency={user.currency}
+        goals={goals}
+        loans={loans}
       />
     </AppLayout>
   );

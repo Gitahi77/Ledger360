@@ -36,40 +36,55 @@ export async function getTransfers(period?: 'this-month' | 'last-30-days' | 'all
 /* ── Add (Zod-validated) ──────────────────────────────────── */
 export async function createTransfer(raw: {
   fromAccountId: string;
-  toAccountId: string;
+  toAccountId?: string | null;
   amountMinor: number;
   date: string;
   note?: string;
+  goalId?: string | null;
+  loanId?: string | null;
 }) {
   const { AddTransferSchema } = await import('@/lib/validation');
   const data = AddTransferSchema.parse(raw);
   const user = await requireAuth();
 
   // Validate that accounts belong to the user
-  const [fromAccount, toAccount] = await Promise.all([
-    prisma.account.findFirst({ where: { id: data.fromAccountId, userId: user.id } }),
-    prisma.account.findFirst({ where: { id: data.toAccountId, userId: user.id } }),
-  ]);
-
+  const fromAccount = await prisma.account.findFirst({ where: { id: data.fromAccountId, userId: user.id } });
   if (!fromAccount) throw new Error('Invalid From Account');
-  if (!toAccount) throw new Error('Invalid To Account');
 
-  // Same-currency transfers only for now
-  if (fromAccount.currency !== toAccount.currency) {
-    throw new Error('Multi-currency transfers are not yet supported. Both accounts must have the same currency.');
+  let toAccount = null;
+  if (data.toAccountId) {
+    toAccount = await prisma.account.findFirst({ where: { id: data.toAccountId, userId: user.id } });
+    if (!toAccount) throw new Error('Invalid To Account');
+    
+    // Same-currency transfers only for now
+    if (fromAccount.currency !== toAccount.currency) {
+      throw new Error('Multi-currency transfers are not yet supported. Both accounts must have the same currency.');
+    }
+  }
+
+  if (data.goalId) {
+    const goal = await prisma.goal.findFirst({ where: { id: data.goalId, userId: user.id } });
+    if (!goal) throw new Error('Invalid Goal');
+  }
+
+  if (data.loanId) {
+    const loan = await prisma.loan.findFirst({ where: { id: data.loanId, userId: user.id } });
+    if (!loan) throw new Error('Invalid Loan');
   }
 
   const newTransfer = await prisma.transfer.create({
     data: {
       userId: user.id,
       fromAccountId: data.fromAccountId,
-      toAccountId: data.toAccountId,
+      toAccountId: data.toAccountId || null,
       amountMinor: data.amountMinor,
       currency: fromAccount.currency,
       baseAmountMinor: data.amountMinor, // fxRate = 1
       fxRate: 1,
       date: new Date(data.date),
       note: data.note,
+      goalId: data.goalId || null,
+      loanId: data.loanId || null,
       source: 'MANUAL',
     },
   });
@@ -79,11 +94,12 @@ export async function createTransfer(raw: {
     userId: user.id,
     action: 'CREATE',
     resource: 'Transfer',
-    metadata: { transferId: newTransfer.id, amount: data.amountMinor, from: data.fromAccountId, to: data.toAccountId },
+    metadata: { transferId: newTransfer.id, amount: data.amountMinor, from: data.fromAccountId, to: data.toAccountId ?? undefined, goal: data.goalId ?? undefined, loan: data.loanId ?? undefined },
   });
 
   revalidatePath('/transactions');
   revalidatePath('/accounts');
+  revalidatePath('/finance');
   revalidatePath('/');
 }
 

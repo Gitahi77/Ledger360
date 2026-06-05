@@ -175,9 +175,13 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
 
   // ── GOAL PROGRESS ALERTS ───────────────────────────────────────────────────
   if (prefs?.notifGoals !== false) {
-    const activeGoals = await prisma.goal.findMany({ where: { userId, targetAmountMinor: { gt: 0 } } });
+    const activeGoals = await prisma.goal.findMany({ 
+      where: { userId, targetAmountMinor: { gt: 0 } },
+      include: { transfers: true } 
+    });
     for (const goal of activeGoals) {
-      if (goal.currentAmountMinor >= goal.targetAmountMinor) {
+      const currentAmountMinor = goal.transfers.reduce((sum, t) => sum + t.baseAmountMinor, 0);
+      if (currentAmountMinor >= goal.targetAmountMinor) {
         insights.push({
           id: `goal-met-${goal.id}`,
           type: 'achievement',
@@ -186,7 +190,7 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
           severity: 'success',
         });
       } else {
-        const pct = Math.round((goal.currentAmountMinor / goal.targetAmountMinor) * 100);
+        const pct = Math.round((currentAmountMinor / goal.targetAmountMinor) * 100);
         if (pct === 50 || pct === 75 || pct === 90) {
           insights.push({
             id: `goal-prog-${goal.id}-${pct}`,

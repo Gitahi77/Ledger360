@@ -19,6 +19,8 @@ type Tx = {
 };
 type Category = { id: string; name: string; type: string; icon: string | null };
 type Account = { id: string; name: string };
+type Goal = { id: string; name: string };
+type Loan = { id: string; name: string };
 
 interface Props {
   transactions: Tx[];
@@ -29,6 +31,8 @@ interface Props {
   period: string;
   typeFilter: string;
   currency: string;
+  goals: Goal[];
+  loans: Loan[];
 }
 
 const PERIOD_LABELS: Record<string, string> = {
@@ -37,7 +41,7 @@ const PERIOD_LABELS: Record<string, string> = {
   'this-year':  'This Year',
 };
 
-function TransactionModal({ tx, categories, accounts, currency, onClose }: { tx?: Tx; categories: Category[]; accounts: Account[]; currency: string; onClose: () => void }) {
+function TransactionModal({ tx, categories, accounts, goals, loans, currency, onClose }: { tx?: Tx; categories: Category[]; accounts: Account[]; goals: Goal[]; loans: Loan[]; currency: string; onClose: () => void }) {
   const router = useRouter();
   const [, startT] = useTransition();
   const [loading, setLoading] = useState(false);
@@ -48,6 +52,8 @@ function TransactionModal({ tx, categories, accounts, currency, onClose }: { tx?
   const [categoryId, setCategoryId] = useState(tx?.category.id ?? '');
   const [accountId,  setAccountId]  = useState((tx as any)?.accountId ?? (accounts[0]?.id || ''));
   const [toAccountId,setToAccountId]= useState('');
+  const [goalId,     setGoalId]     = useState('');
+  const [loanId,     setLoanId]     = useState('');
   const [date,       setDate]       = useState(tx ? new Date(tx.date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10));
   const [note,       setNote]       = useState(tx?.note ?? '');
   const isEdit = Boolean(tx);
@@ -58,13 +64,13 @@ function TransactionModal({ tx, categories, accounts, currency, onClose }: { tx?
     e.preventDefault();
     if (type !== 'transfer' && !categoryId) { setError('Please select a category.'); return; }
     if (type === 'transfer' && accountId === toAccountId) { setError('From and To accounts must be different.'); return; }
-    if (type === 'transfer' && !toAccountId) { setError('Please select a destination account.'); return; }
+    if (type === 'transfer' && !loanId && !toAccountId) { setError('Please select a destination account or loan to repay.'); return; }
 
     setLoading(true); setError('');
     try {
       if (type === 'transfer') {
         if (isEdit) throw new Error('Editing transfers is not supported yet.');
-        await createTransfer({ fromAccountId: accountId, toAccountId, amountMinor: toMinor(parseFloat(amount)), date, note });
+        await createTransfer({ fromAccountId: accountId, toAccountId: loanId ? null : toAccountId, amountMinor: toMinor(parseFloat(amount)), date, note, goalId: goalId || null, loanId: loanId || null });
       } else {
         if (isEdit && tx) {
           await editTransaction(tx.id, { name, baseAmountMinor: toMinor(parseFloat(amount)), type, categoryId, accountId, date: new Date(date), note });
@@ -136,18 +142,40 @@ function TransactionModal({ tx, categories, accounts, currency, onClose }: { tx?
                   <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>From Account</label>
                   <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                     value={accountId} onChange={e => setAccountId(e.target.value)} required>
-                    <option value="">Select From Account…</option>
+                    <option value="">Select From Account...</option>
                     {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                   </select>
                 </div>
-                <div>
-                  <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>To Account</label>
-                  <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
-                    value={toAccountId} onChange={e => setToAccountId(e.target.value)} required>
-                    <option value="">Select To Account…</option>
-                    {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-                  </select>
-                </div>
+                {!loanId && (
+                  <div>
+                    <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>To Account</label>
+                    <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
+                      value={toAccountId} onChange={e => setToAccountId(e.target.value)} required>
+                      <option value="">Select To Account...</option>
+                      {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                    </select>
+                  </div>
+                )}
+                {goals.length > 0 && !loanId && (
+                  <div>
+                    <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Goal to Fund (Optional)</label>
+                    <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
+                      value={goalId} onChange={e => setGoalId(e.target.value)}>
+                      <option value="">None</option>
+                      {goals.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                    </select>
+                  </div>
+                )}
+                {loans.length > 0 && !goalId && (
+                  <div>
+                    <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Loan to Repay (Optional)</label>
+                    <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
+                      value={loanId} onChange={e => setLoanId(e.target.value)}>
+                      <option value="">None</option>
+                      {loans.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+                    </select>
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -170,7 +198,7 @@ function TransactionModal({ tx, categories, accounts, currency, onClose }: { tx?
   );
 }
 
-export function TransactionsClient({ transactions, categories, accounts, totalIncome, totalExpense, period, typeFilter, currency }: Props) {
+export function TransactionsClient({ transactions, categories, accounts, goals, loans, totalIncome, totalExpense, period, typeFilter, currency }: Props) {
   const router     = useRouter();
   const params     = useSearchParams();
   const [, startT] = useTransition();
@@ -229,8 +257,8 @@ export function TransactionsClient({ transactions, categories, accounts, totalIn
 
   return (
     <>
-      {showAdd && <TransactionModal categories={categories} accounts={accounts} currency={currency} onClose={() => setShowAdd(false)} />}
-      {editTx && <TransactionModal tx={editTx} categories={categories} accounts={accounts} currency={currency} onClose={() => setEditTx(null)} />}
+      {showAdd && <TransactionModal categories={categories} accounts={accounts} goals={goals} loans={loans} currency={currency} onClose={() => setShowAdd(false)} />}
+      {editTx && <TransactionModal tx={editTx} categories={categories} accounts={accounts} goals={goals} loans={loans} currency={currency} onClose={() => setEditTx(null)} />}
       {showUpload && <div className="card mb-5 animate-in"><SmartUpload /></div>}
 
       {/* Toolbar */}

@@ -6,16 +6,25 @@ import { requireAuth } from './_auth';
 
 export async function getGoals() {
   const user = await requireAuth();
-  return prisma.goal.findMany({
+  const goals = await prisma.goal.findMany({
     where: { userId: user.id },
+    include: {
+      transfers: { select: { baseAmountMinor: true } },
+    },
     orderBy: { deadline: 'asc' },
+  });
+
+  return goals.map(g => {
+    const currentAmountMinor = g.transfers.reduce((sum, t) => sum + t.baseAmountMinor, 0);
+    const { transfers, ...rest } = g;
+    return { ...rest, currentAmountMinor };
   });
 }
 
 /* ── Add (Zod-validated) ──────────────────────────────────── */
 export async function addGoal(raw: {
   name: string; category: string; targetAmountMinor: number;
-  currentAmountMinor?: number; deadline?: string;
+  deadline?: string;
 }) {
   const { AddGoalSchema } = await import('@/lib/validation');
   const data = AddGoalSchema.parse(raw);
@@ -25,22 +34,9 @@ export async function addGoal(raw: {
       name:          data.name,
       category:      data.category,
       targetAmountMinor:  data.targetAmountMinor,
-      currentAmountMinor: data.currentAmountMinor ?? 0,
       deadline:      data.deadline ? new Date(data.deadline) : null,
       userId:        user.id,
     },
-  });
-  revalidatePath('/goals');
-  revalidatePath('/');
-}
-
-export async function updateGoalAmount(id: string, currentAmountMinor: number) {
-  const user   = await requireAuth();
-  const amount = Math.max(0, Number(currentAmountMinor));
-  if (!id) throw new Error('Missing goal id');
-  await prisma.goal.updateMany({
-    where: { id, userId: user.id },
-    data:  { currentAmountMinor: amount },
   });
   revalidatePath('/goals');
   revalidatePath('/');
@@ -55,7 +51,7 @@ export async function deleteGoal(id: string) {
 }
 
 export async function editGoal(id: string, data: {
-  name?: string; category?: string; targetAmountMinor?: number; currentAmountMinor?: number; deadline?: string | null;
+  name?: string; category?: string; targetAmountMinor?: number; deadline?: string | null;
 }) {
   const user = await requireAuth();
   if (!id) throw new Error('Missing id');
