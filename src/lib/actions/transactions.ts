@@ -122,7 +122,7 @@ export async function getCategories(type?: 'income' | 'expense' | 'savings') {
 /* ── Add (Zod-validated) ──────────────────────────────────── */
 export async function addTransaction(raw: {
   name: string; baseAmountMinor: number; type: string;
-  categoryId: string; date: string; note?: string;
+  categoryId: string; accountId?: string; date: string; note?: string;
 }) {
   const { AddTransactionSchema } = await import('@/lib/validation');
   const data = AddTransactionSchema.parse(raw);
@@ -134,12 +134,24 @@ export async function addTransaction(raw: {
   });
   if (!cat) throw new Error('Invalid category');
 
+  // Find a default account if not provided
+  let accountId = data.accountId;
+  if (!accountId) {
+    const firstAccount = await prisma.account.findFirst({ where: { userId: user.id }, orderBy: { createdAt: 'asc' }});
+    if (firstAccount) accountId = firstAccount.id;
+    else {
+      const fallback = await prisma.account.create({ data: { userId: user.id, name: 'Default Account', type: 'bank', currency: 'KES' }});
+      accountId = fallback.id;
+    }
+  }
+
   const newTx = await prisma.transaction.create({
     data: { 
       name: data.name,
       baseAmountMinor: data.baseAmountMinor,
       type: data.type === 'income' ? 'income' : 'expense',
       categoryId: data.categoryId,
+      accountId: accountId,
       note: data.note,
       date: new Date(data.date), 
       userId: user.id 
@@ -161,11 +173,21 @@ export async function addTransaction(raw: {
 /* ── Bulk import (Smart Upload) ───────────────────────────── */
 export async function importTransactions(rows: {
   name: string; baseAmountMinor: number; type: string;
-  categoryName: string; date: string; note?: string;
+  categoryName: string; accountId?: string; date: string; note?: string;
 }[]) {
   const user = await requireAuth();
   if (!Array.isArray(rows) || rows.length === 0) throw new Error('No rows to import');
   if (rows.length > 500) throw new Error('Max 500 rows per import');
+
+  // Find a default account if not provided
+  let defaultAccountId = '';
+  const firstAccount = await prisma.account.findFirst({ where: { userId: user.id }, orderBy: { createdAt: 'asc' }});
+  if (firstAccount) defaultAccountId = firstAccount.id;
+  else {
+    // Should not happen if signup seeded accounts, but handle anyway
+    const fallback = await prisma.account.create({ data: { userId: user.id, name: 'Default Account', type: 'bank', currency: 'KES' }});
+    defaultAccountId = fallback.id;
+  }
 
   // Resolve or create categories dynamically based on the string provided by the user
   const categoryNames = [...new Set(rows.map(r => String(r.categoryName)))];
@@ -198,6 +220,7 @@ export async function importTransactions(rows: {
         baseAmountMinor: Math.abs(Number(r.baseAmountMinor)),
         type:       r.type === 'income' ? 'income' : 'expense',
         categoryId: catMap[String(r.categoryName)],
+        accountId:  r.accountId || defaultAccountId,
         date:       new Date(r.date),
         note:       r.note ? String(r.note).slice(0, 500) : undefined,
         userId:     user.id,
@@ -246,7 +269,7 @@ export async function deleteTransaction(id: string) {
 
 /* ── Edit (atomic ownership check) ────────────────────────── */
 export async function editTransaction(id: string, data: {
-  baseAmountMinor?: number; name?: string; type?: 'income' | 'expense'; date?: Date; categoryId?: string; note?: string;
+  baseAmountMinor?: number; name?: string; type?: 'income' | 'expense'; date?: Date; categoryId?: string; accountId?: string; note?: string;
 }) {
   const user = await requireAuth();
   if (!id) throw new Error('Missing id');

@@ -17,10 +17,12 @@ type Tx = {
   category: { id: string; name: string; icon: string | null };
 };
 type Category = { id: string; name: string; type: string; icon: string | null };
+type Account = { id: string; name: string };
 
 interface Props {
   transactions: Tx[];
   categories: Category[];
+  accounts: Account[];
   totalIncome: number;
   totalExpense: number;
   period: string;
@@ -34,7 +36,7 @@ const PERIOD_LABELS: Record<string, string> = {
   'this-year':  'This Year',
 };
 
-function TransactionModal({ tx, categories, currency, onClose }: { tx?: Tx; categories: Category[]; currency: string; onClose: () => void }) {
+function TransactionModal({ tx, categories, accounts, currency, onClose }: { tx?: Tx; categories: Category[]; accounts: Account[]; currency: string; onClose: () => void }) {
   const router = useRouter();
   const [, startT] = useTransition();
   const [loading, setLoading] = useState(false);
@@ -43,6 +45,7 @@ function TransactionModal({ tx, categories, currency, onClose }: { tx?: Tx; cate
   const [amount,     setAmount]     = useState(tx ? String(toMajor(tx.baseAmountMinor)) : '');
   const [type,       setType]       = useState<'income' | 'expense'>(tx ? (tx.type as any) : 'expense');
   const [categoryId, setCategoryId] = useState(tx?.category.id ?? '');
+  const [accountId,  setAccountId]  = useState((tx as any)?.accountId ?? (accounts[0]?.id || ''));
   const [date,       setDate]       = useState(tx ? new Date(tx.date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10));
   const [note,       setNote]       = useState(tx?.note ?? '');
   const isEdit = Boolean(tx);
@@ -55,9 +58,9 @@ function TransactionModal({ tx, categories, currency, onClose }: { tx?: Tx; cate
     setLoading(true); setError('');
     try {
       if (isEdit && tx) {
-        await editTransaction(tx.id, { name, baseAmountMinor: toMinor(parseFloat(amount)), type, categoryId, date: new Date(date), note });
+        await editTransaction(tx.id, { name, baseAmountMinor: toMinor(parseFloat(amount)), type, categoryId, accountId, date: new Date(date), note });
       } else {
-        await addTransaction({ name, baseAmountMinor: toMinor(parseFloat(amount)), type, categoryId, date, note });
+        await addTransaction({ name, baseAmountMinor: toMinor(parseFloat(amount)), type, categoryId, accountId, date, note });
       }
       startT(() => router.refresh());
       onClose();
@@ -105,10 +108,18 @@ function TransactionModal({ tx, categories, currency, onClose }: { tx?: Tx; cate
               </select>
             </div>
             <div>
-              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Date</label>
-              <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
-                type="date" value={date} onChange={e => setDate(e.target.value)} required />
+              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Account</label>
+              <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
+                value={accountId} onChange={e => setAccountId(e.target.value)} required>
+                <option value="">Select Account…</option>
+                {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+              </select>
             </div>
+          </div>
+          <div>
+            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Date</label>
+            <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
+              type="date" value={date} onChange={e => setDate(e.target.value)} required />
           </div>
           <div>
             <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Note <span style={{ fontWeight:400, color:'var(--text-muted)' }}>(optional)</span></label>
@@ -124,7 +135,7 @@ function TransactionModal({ tx, categories, currency, onClose }: { tx?: Tx; cate
   );
 }
 
-export function TransactionsClient({ transactions, categories, totalIncome, totalExpense, period, typeFilter, currency }: Props) {
+export function TransactionsClient({ transactions, categories, accounts, totalIncome, totalExpense, period, typeFilter, currency }: Props) {
   const router     = useRouter();
   const params     = useSearchParams();
   const [, startT] = useTransition();
@@ -179,8 +190,8 @@ export function TransactionsClient({ transactions, categories, totalIncome, tota
 
   return (
     <>
-      {showAdd && <TransactionModal categories={categories} currency={currency} onClose={() => setShowAdd(false)} />}
-      {editTx && <TransactionModal tx={editTx} categories={categories} currency={currency} onClose={() => setEditTx(null)} />}
+      {showAdd && <TransactionModal categories={categories} accounts={accounts} currency={currency} onClose={() => setShowAdd(false)} />}
+      {editTx && <TransactionModal tx={editTx} categories={categories} accounts={accounts} currency={currency} onClose={() => setEditTx(null)} />}
       {showUpload && <div className="card mb-5 animate-in"><SmartUpload /></div>}
 
       {/* Toolbar */}

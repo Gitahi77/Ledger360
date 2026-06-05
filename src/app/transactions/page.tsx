@@ -1,6 +1,7 @@
 // src/app/transactions/page.tsx — Live Server Component
 import { AppLayout } from '@/components/layout/AppLayout';
 import { getTransactions, getCategories } from '@/lib/actions/transactions';
+import { getAccounts } from '@/lib/actions/accounts';
 import { TransactionsClient } from './TransactionsClient';
 import { requireAuth } from '@/lib/actions/_auth';
 
@@ -13,10 +14,11 @@ export default async function Transactions({
   const period     = rawPeriod ?? 'this-month';
   const typeFilter = rawType   ?? 'all';
 
-  const [user, transactions, categories] = await Promise.all([
+  const [user, transactions, categories, accounts] = await Promise.all([
     requireAuth(),
     getTransactions(period, typeFilter === 'all' ? undefined : typeFilter),
     getCategories(),
+    getAccounts(),
   ]);
 
   // Compute summary totals from the unfiltered period (all types)
@@ -32,6 +34,7 @@ export default async function Transactions({
       <TransactionsClient
         transactions={transactions}
         categories={categories}
+        accounts={accounts}
         totalIncome={totalIncome}
         totalExpense={totalExpense}
         period={period}

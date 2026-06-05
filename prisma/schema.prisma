@@ -16,15 +16,16 @@ model User {
   password      String?
   accountType   String    @default("individual") // "individual" | "corporate"
   currency      String    @default("KES")
-  
+
   resetToken       String?
   resetTokenExpiry DateTime?
   sessionVersion   Int       @default(1)
 
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   accounts      Account[]
+  oauthAccounts OAuthAccount[]
   sessions      Session[]
   categories    Category[]
   transactions  Transaction[]
@@ -39,19 +40,19 @@ model User {
 // ── User Preferences (persisted settings) ────────────────────
 // One-to-one with User. Created on first settings save via upsert.
 model UserPreferences {
-  id           String  @id @default(cuid())
-  userId       String  @unique
-  user         User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Appearance
-  accentColor  String  @default("#1A73E8")
-  compactMode  Boolean @default(false)
-  smoothAnims  Boolean @default(true)
+  accentColor String  @default("#1A73E8")
+  compactMode Boolean @default(false)
+  smoothAnims Boolean @default(true)
 
   // Preferences
-  dateFormat   String  @default("DD/MM/YYYY")   // "DD/MM/YYYY" | "MM/DD/YYYY" | "YYYY-MM-DD"
-  weekStartDay String  @default("Monday")        // "Monday" | "Sunday"
-  savingRate   Int     @default(30)              // % of income target
+  dateFormat   String @default("DD/MM/YYYY") // "DD/MM/YYYY" | "MM/DD/YYYY" | "YYYY-MM-DD"
+  weekStartDay String @default("Monday") // "Monday" | "Sunday"
+  savingRate   Int    @default(30) // % of income target
 
   // Notification flags (in-app)
   notifOverbudget Boolean @default(true)
@@ -60,11 +61,11 @@ model UserPreferences {
   notifInsights   Boolean @default(false)
   notifLoanDue    Boolean @default(true)
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
-model Account {
+model OAuthAccount {
   id                String  @id @default(cuid())
   userId            String
   type              String
@@ -81,6 +82,21 @@ model Account {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+}
+
+model Account {
+  id           String        @id @default(cuid())
+  userId       String
+  name         String
+  type         String
+  currency     String
+  openingMinor Int           @default(0)
+  archived     Boolean       @default(false)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+  createdAt    DateTime      @default(now())
+
+  @@index([userId])
 }
 
 model Session {
@@ -103,7 +119,7 @@ model VerificationToken {
 model Category {
   id           String        @id @default(cuid())
   name         String
-  type         String        // "income" | "expense" | "savings"
+  type         String // "income" | "expense" | "savings"
   icon         String?
   userId       String
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -114,18 +130,20 @@ model Category {
 }
 
 model Transaction {
-  id               String   @id @default(cuid())
-  date             DateTime
-  baseAmountMinor  Int      // stored as integer minor units (cents)
-  currency         String   @default("KES")
-  type             String   // "income" | "expense"
-  name             String
-  note             String?
-  categoryId       String
-  userId           String
-  importedAt       DateTime? // non-null if imported via Smart Upload
+  id              String    @id @default(cuid())
+  date            DateTime
+  baseAmountMinor Int // stored as integer minor units (cents)
+  currency        String    @default("KES")
+  type            String // "income" | "expense"
+  name            String
+  note            String?
+  categoryId      String
+  accountId       String
+  userId          String
+  importedAt      DateTime? // non-null if imported via Smart Upload
 
   category Category @relation(fields: [categoryId], references: [id])
+  account  Account  @relation(fields: [accountId], references: [id])
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
@@ -134,10 +152,10 @@ model Transaction {
 }
 
 model Budget {
-  id               String   @id @default(cuid())
+  id               String @id @default(cuid())
   name             String
-  period           String   @default("monthly") // "weekly" | "monthly" | "yearly"
-  limitAmountMinor Int      // stored as integer minor units (cents)
+  period           String @default("monthly") // "weekly" | "monthly" | "yearly"
+  limitAmountMinor Int // stored as integer minor units (cents)
   categoryId       String
   userId           String
 
@@ -150,30 +168,30 @@ model Budget {
 }
 
 model Goal {
-  id                  String    @id @default(cuid())
-  name                String
-  category            String
-  targetAmountMinor   Int       // stored as integer minor units (cents)
-  currentAmountMinor  Int       @default(0)
-  deadline            DateTime?
-  userId              String
+  id                 String    @id @default(cuid())
+  name               String
+  category           String
+  targetAmountMinor  Int // stored as integer minor units (cents)
+  currentAmountMinor Int       @default(0)
+  deadline           DateTime?
+  userId             String
 
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 }
 
 model Loan {
-  id                    String   @id @default(cuid())
-  name                  String
-  lender                String
-  type                  String   // "Personal" | "Student" | "Mortgage" | "Credit Card" | "Informal"
-  originalAmountMinor   Int      // stored as integer minor units (cents)
-  balanceMinor          Int
-  annualRate            Float    @default(0)  // percentage, NOT money
-  monthlyPaymentMinor   Int
-  nextDue               DateTime
-  daysOverdue           Int      @default(0)
-  userId                String
+  id                  String   @id @default(cuid())
+  name                String
+  lender              String
+  type                String // "Personal" | "Student" | "Mortgage" | "Credit Card" | "Informal"
+  originalAmountMinor Int // stored as integer minor units (cents)
+  balanceMinor        Int
+  annualRate          Float    @default(0) // percentage, NOT money
+  monthlyPaymentMinor Int
+  nextDue             DateTime
+  daysOverdue         Int      @default(0)
+  userId              String
 
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
@@ -182,11 +200,11 @@ model Loan {
 }
 
 model Asset {
-  id          String   @id @default(cuid())
-  name        String
-  category    String   // "Liquid" | "Investment" | "Property"
-  valueMinor  Int      // stored as integer minor units (cents)
-  userId      String
+  id         String @id @default(cuid())
+  name       String
+  category   String // "Liquid" | "Investment" | "Property"
+  valueMinor Int // stored as integer minor units (cents)
+  userId     String
 
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   updatedAt DateTime @updatedAt
@@ -197,13 +215,13 @@ model Asset {
 
 // ── Security / Activity Logging ──────────────────────────────
 model AuditLog {
-  id        String   @id @default(cuid())
+  id        String  @id @default(cuid())
   userId    String
-  action    String   // e.g., "LOGIN", "IMPORT_TRANSACTIONS", "DELETE_BUDGET"
-  resource  String   // e.g., "Auth", "Transaction", "Budget"
-  metadata  String?  // JSON stringified details
+  action    String // e.g., "LOGIN", "IMPORT_TRANSACTIONS", "DELETE_BUDGET"
+  resource  String // e.g., "Auth", "Transaction", "Budget"
+  metadata  String? // JSON stringified details
   ipAddress String?
-  
+
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 

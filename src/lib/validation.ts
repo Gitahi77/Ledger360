@@ -16,6 +16,7 @@ export const AddTransactionSchema = z.object({
   baseAmountMinor:     kes('Amount'),
   type:       z.enum(['income', 'expense']),
   categoryId: z.string().min(1, 'Category is required'),
+  accountId:  z.string().optional(),
   date:       z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD'),
   note:       z.string().max(500, 'Note too long').optional(),
 });

@@ -82,6 +82,15 @@ export async function POST(req: Request) {
       skipDuplicates: true,
     });
 
+    // Seed default accounts
+    await prisma.account.createMany({
+      data: [
+        { name: 'M-Pesa', type: 'mobile_money', currency, userId: user.id },
+        { name: 'Cash', type: 'cash', currency, userId: user.id },
+      ],
+      skipDuplicates: true,
+    });
+
     // Do NOT return userId — unnecessary information leakage
     return NextResponse.json({ success: true }, { status: 201 });
 

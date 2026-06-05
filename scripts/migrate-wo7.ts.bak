@@ -1,0 +1,42 @@
+import { prisma } from '../src/lib/prisma';
+
+async function main() {
+  console.log('Starting WO-7 Account Migration...');
+  const users = await prisma.user.findMany();
+
+  for (const user of users) {
+    // 1. Check if an M-Pesa account already exists
+    let mpesaAccount = await prisma.account.findFirst({
+      where: { userId: user.id, name: 'M-Pesa' }
+    });
+
+    if (!mpesaAccount) {
+      mpesaAccount = await prisma.account.create({
+        data: {
+          userId: user.id,
+          name: 'M-Pesa',
+          type: 'mobile_money',
+          currency: user.currency || 'KES',
+          openingMinor: 0
+        }
+      });
+      console.log(`Created M-Pesa account for user ${user.id}`);
+    }
+
+    // 2. Assign all unassigned transactions to M-Pesa
+    const updated = await prisma.transaction.updateMany({
+      where: { userId: user.id, accountId: null },
+      data: { accountId: mpesaAccount.id }
+    });
+
+    if (updated.count > 0) {
+      console.log(`Assigned ${updated.count} transactions to M-Pesa for user ${user.id}`);
+    }
+  }
+
+  console.log('Migration complete!');
+}
+
+main()
+  .catch(console.error)
+  .finally(() => prisma.$disconnect());
