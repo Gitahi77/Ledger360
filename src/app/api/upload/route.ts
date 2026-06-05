@@ -16,7 +16,7 @@ export const maxDuration = 60; // allow up to 60s for AI processing
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 /* ── Category keyword map ────────────────────────────────── */
-const CATEGORY_RULES: { pattern: RegExp; category: string; type: 'income' | 'expense' }[] = [
+const CATEGORY_RULES: { pattern: RegExp; category: string; type: 'income' | 'expense' | 'transfer' }[] = [
   // Income
   { pattern: /salary|payroll|wage|pay slip/i,         category: 'Salary',           type: 'income'  },
   { pattern: /freelance|consulting|invoice/i,          category: 'Freelance',        type: 'income'  },
@@ -35,15 +35,15 @@ const CATEGORY_RULES: { pattern: RegExp; category: string; type: 'income' | 'exp
   { pattern: /airtime|data bundle|safaricom|airtel|telkom|tkash/i, category: 'Utilities', type: 'expense' },
   { pattern: /school|tuition|university|college|fees|kcse/i, category: 'Education',  type: 'expense' },
   { pattern: /amazon|jumia|clothing|shoes|fashion|kilimall/i, category: 'Clothing',   type: 'expense' },
-  // Savings — transfers to savings are INCOME-type (goal funding), not expenses
-  { pattern: /savings|goal|fixed deposit|mmf|cic/i,    category: 'Savings',          type: 'income'  },
+  // Savings — putting money into savings is a TRANSFER, not income
+  { pattern: /savings|goal|fixed deposit|mmf|cic/i,    category: 'Savings',          type: 'transfer'  },
   // M-Pesa specific
   { pattern: /withdraw|agent|atm|cash out/i,           category: 'Cash Withdrawal',  type: 'expense' },
   { pattern: /paybill|buy goods|till/i,                 category: 'Utilities',        type: 'expense' },
-  { pattern: /send money|transfer to/i,                 category: 'Transfer',         type: 'expense' },
+  { pattern: /send money|transfer to/i,                 category: 'Transfer',         type: 'transfer' },
 ];
 
-function autoCategory(description: string, amount: number): { category: string; type: 'income' | 'expense' } {
+function autoCategory(description: string, amount: number): { category: string; type: 'income' | 'expense' | 'transfer' } {
   for (const rule of CATEGORY_RULES) {
     if (rule.pattern.test(description)) {
       return { category: rule.category, type: rule.type };

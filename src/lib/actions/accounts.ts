@@ -1,6 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { requireAuth } from '@/lib/actions/_auth';
 import { z } from 'zod';
 import { Account } from '@prisma/client';
 
@@ -14,11 +13,8 @@ const AccountSchema = z.object({
 export type AccountWithBalance = Account & { balanceMinor: number };
 
 export async function getAccounts(): Promise<AccountWithBalance[]> {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) throw new Error('Unauthorized');
-  const userId = (session.user as any).id;
-
-  return getAccountBalances(userId);
+  const user = await requireAuth();
+  return getAccountBalances(user.id);
 }
 
 export async function getAccountBalances(userId: string): Promise<AccountWithBalance[]> {
@@ -58,24 +54,21 @@ export async function getAccountBalances(userId: string): Promise<AccountWithBal
 }
 
 export async function createAccount(data: z.infer<typeof AccountSchema>) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) throw new Error('Unauthorized');
-  const userId = (session.user as any).id;
-
+  const user = await requireAuth();
   const valid = AccountSchema.parse(data);
 
   return prisma.$transaction(async (tx) => {
     const account = await tx.account.create({
       data: {
         ...valid,
-        currency: valid.currency || (session.user as any).currency || 'KES',
-        userId,
+        currency: valid.currency || user.currency || 'KES',
+        userId: user.id,
       },
     });
 
     await tx.auditLog.create({
       data: {
-        userId,
+        userId: user.id,
         action: 'CREATE_ACCOUNT',
         resource: 'Account',
         metadata: JSON.stringify({ accountId: account.id, name: account.name }),
@@ -87,23 +80,21 @@ export async function createAccount(data: z.infer<typeof AccountSchema>) {
 }
 
 export async function updateAccount(id: string, data: Partial<z.infer<typeof AccountSchema>>) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) throw new Error('Unauthorized');
-  const userId = (session.user as any).id;
-
-  // Verify ownership
-  const existing = await prisma.account.findUnique({ where: { id } });
-  if (!existing || existing.userId !== userId) throw new Error('Account not found');
+  const user = await requireAuth();
 
   return prisma.$transaction(async (tx) => {
-    const updated = await tx.account.update({
-      where: { id },
+    const { count } = await tx.account.updateMany({
+      where: { id, userId: user.id },
       data,
     });
+    
+    if (count === 0) throw new Error('Account not found or unauthorized');
+
+    const updated = await tx.account.findUnique({ where: { id } });
 
     await tx.auditLog.create({
       data: {
-        userId,
+        userId: user.id,
         action: 'UPDATE_ACCOUNT',
         resource: 'Account',
         metadata: JSON.stringify({ accountId: id, updates: data }),
@@ -115,33 +106,31 @@ export async function updateAccount(id: string, data: Partial<z.infer<typeof Acc
 }
 
 export async function deleteAccount(id: string) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) throw new Error('Unauthorized');
-  const userId = (session.user as any).id;
-
-  // Verify ownership
-  const existing = await prisma.account.findUnique({ where: { id } });
-  if (!existing || existing.userId !== userId) throw new Error('Account not found');
+  const user = await requireAuth();
 
   // Block deletion if transactions or transfers exist
   const [txCount, transferFromCount, transferToCount] = await Promise.all([
-    prisma.transaction.count({ where: { accountId: id } }),
-    prisma.transfer.count({ where: { fromAccountId: id } }),
-    prisma.transfer.count({ where: { toAccountId: id } })
+    prisma.transaction.count({ where: { accountId: id, userId: user.id } }),
+    prisma.transfer.count({ where: { fromAccountId: id, userId: user.id } }),
+    prisma.transfer.count({ where: { toAccountId: id, userId: user.id } })
   ]);
   if (txCount > 0 || transferFromCount > 0 || transferToCount > 0) {
     throw new Error('Cannot delete account with existing transactions or transfers. Please reassign them first.');
   }
 
   return prisma.$transaction(async (tx) => {
-    await tx.account.delete({ where: { id } });
+    const { count } = await tx.account.deleteMany({
+      where: { id, userId: user.id }
+    });
+
+    if (count === 0) throw new Error('Account not found or unauthorized');
 
     await tx.auditLog.create({
       data: {
-        userId,
+        userId: user.id,
         action: 'DELETE_ACCOUNT',
         resource: 'Account',
-        metadata: JSON.stringify({ accountId: id, name: existing.name }),
+        metadata: JSON.stringify({ accountId: id }),
       },
     });
     
