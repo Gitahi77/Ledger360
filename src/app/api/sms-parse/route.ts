@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { parseMpesaSms } from '@/lib/api/gemini';
+import { redactForAI } from '@/lib/api/redact';
 import { checkLimit } from '@/lib/rateLimit';
 
 export async function POST(req: NextRequest) {
@@ -39,7 +40,8 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const transactions = await parseMpesaSms(sms);
+    const redactedSms = redactForAI(sms);
+    const transactions = await parseMpesaSms(redactedSms);
     return NextResponse.json({ transactions, count: transactions.length });
   } catch (err: any) {
     console.error('[SMS Parse] Error:', err);

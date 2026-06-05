@@ -4,6 +4,7 @@
 // Copyright (c) 2024-present Eric Gitahi. All rights reserved.
 
 import { GoogleGenerativeAI, HarmBlockThreshold, HarmCategory } from '@google/generative-ai';
+import { z } from 'zod';
 
 const API_KEY = process.env.GOOGLE_GENERATIVE_AI_API_KEY ?? '';
 
@@ -20,17 +21,18 @@ const SAFETY = [
 ];
 
 /* ─── M-Pesa SMS Parser ─────────────────────────────────────── */
-export interface ParsedTransaction {
-  name:     string;
-  date:     string;       // ISO YYYY-MM-DD
-  amount:   number;       // always positive
-  type:     'income' | 'expense';
-  category: string;
-  fee?:     number;
-  ref?:     string;       // M-Pesa confirmation code
-  balance?: number;       // balance after transaction
-  raw:      string;       // the original SMS line
-}
+const ParsedTransactionSchema = z.object({
+  name: z.string(),
+  date: z.string(),
+  amount: z.number().positive(),
+  type: z.enum(['income', 'expense']),
+  category: z.string(),
+  fee: z.number().optional(),
+  ref: z.string().optional(),
+  balance: z.number().optional(),
+  raw: z.string(),
+});
+export type ParsedTransaction = z.infer<typeof ParsedTransactionSchema>;
 
 const SMS_PROMPT = `You are a Kenyan personal finance assistant. Parse the following M-Pesa SMS messages into structured JSON.
 
@@ -60,7 +62,7 @@ Return ONLY a valid JSON array. No markdown, no explanation.`;
 export async function parseMpesaSms(smsText: string): Promise<ParsedTransaction[]> {
   const client = getClient();
   const model = client.getGenerativeModel({
-    model: 'gemini-1.5-flash',
+    model: process.env.GEMINI_MODEL || 'gemini-1.5-flash',
     safetySettings: SAFETY,
     generationConfig: { responseMimeType: 'application/json', temperature: 0.1 },
   });
@@ -70,7 +72,17 @@ export async function parseMpesaSms(smsText: string): Promise<ParsedTransaction[
 
   try {
     const parsed = JSON.parse(text);
-    return Array.isArray(parsed) ? parsed : [];
+    const parsedArray = Array.isArray(parsed) ? parsed : [];
+    
+    // Validate each item, skipping invalid ones
+    const validTransactions: ParsedTransaction[] = [];
+    for (const item of parsedArray) {
+      const parsedItem = ParsedTransactionSchema.safeParse(item);
+      if (parsedItem.success) {
+        validTransactions.push(parsedItem.data);
+      }
+    }
+    return validTransactions;
   } catch {
     console.error('[Gemini SMS] Failed to parse response from Gemini. It was not valid JSON.');
     return [];
@@ -78,13 +90,14 @@ export async function parseMpesaSms(smsText: string): Promise<ParsedTransaction[
 }
 
 /* ─── Document / Image Parser (replaces OpenAI Vision) ─────── */
-export interface ParsedDocTransaction {
-  name:     string;
-  date:     string;
-  amount:   number;
-  type:     'income' | 'expense';
-  category: string;
-}
+const ParsedDocTransactionSchema = z.object({
+  name: z.string(),
+  date: z.string(),
+  amount: z.number().positive(),
+  type: z.enum(['income', 'expense']),
+  category: z.string(),
+});
+export type ParsedDocTransaction = z.infer<typeof ParsedDocTransactionSchema>;
 
 const DOC_PROMPT = `You are a Kenyan personal finance assistant. Extract ALL financial transactions from this bank statement, receipt, or financial document.
 
@@ -112,7 +125,7 @@ export async function parseDocumentWithGemini(
 ): Promise<ParsedDocTransaction[]> {
   const client = getClient();
   const model = client.getGenerativeModel({
-    model: 'gemini-1.5-flash',
+    model: process.env.GEMINI_MODEL || 'gemini-1.5-flash',
     safetySettings: SAFETY,
     generationConfig: { responseMimeType: 'application/json', temperature: 0.1 },
   });
@@ -125,7 +138,17 @@ export async function parseDocumentWithGemini(
 
   try {
     const parsed = JSON.parse(text);
-    return Array.isArray(parsed) ? parsed : [];
+    const parsedArray = Array.isArray(parsed) ? parsed : [];
+    
+    // Validate each item, skipping invalid ones
+    const validTransactions: ParsedDocTransaction[] = [];
+    for (const item of parsedArray) {
+      const parsedItem = ParsedDocTransactionSchema.safeParse(item);
+      if (parsedItem.success) {
+        validTransactions.push(parsedItem.data);
+      }
+    }
+    return validTransactions;
   } catch {
     console.error('[Gemini Doc] Failed to parse document from Gemini. It was not valid JSON.');
     return [];
@@ -136,7 +159,7 @@ export async function parseDocumentWithGemini(
 export async function geminiPrompt(prompt: string): Promise<string> {
   const client = getClient();
   const model = client.getGenerativeModel({
-    model: 'gemini-1.5-flash',
+    model: process.env.GEMINI_MODEL || 'gemini-1.5-flash',
     safetySettings: SAFETY,
   });
   const result = await model.generateContent(prompt);

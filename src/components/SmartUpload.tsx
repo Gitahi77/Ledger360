@@ -22,6 +22,7 @@ export function SmartUpload({ onDone }: { onDone?: () => void }) {
   const [method,    setMethod]   = useState<'ai' | 'csv'>('csv');
   const [errMsg,    setErrMsg]   = useState('');
   const [isDragging,setDragging] = useState(false);
+  const [aiConsent, setAiConsent]= useState(false);
 
   /* ── Upload & parse ─────────────────────────────────────── */
   async function processFile(file: File) {
@@ -140,8 +141,25 @@ export function SmartUpload({ onDone }: { onDone?: () => void }) {
           onDragEnter={e => { e.preventDefault(); setDragging(true); }}
           onDragLeave={e => { e.preventDefault(); setDragging(false); }}
           onDragOver={e => e.preventDefault()}
-          onDrop={e => { e.preventDefault(); setDragging(false); const f = e.dataTransfer.files[0]; if (f) processFile(f); }}
-          onClick={() => document.getElementById('smart-upload-input')?.click()}
+          onDrop={e => {
+            e.preventDefault();
+            setDragging(false);
+            if (!aiConsent) {
+              setErrMsg('Please consent to AI processing before uploading.');
+              setState('error');
+              return;
+            }
+            const f = e.dataTransfer.files[0];
+            if (f) processFile(f);
+          }}
+          onClick={() => {
+            if (!aiConsent) {
+              setErrMsg('Please consent to AI processing before uploading.');
+              setState('error');
+              return;
+            }
+            document.getElementById('smart-upload-input')?.click();
+          }}
           style={{
             border: `2px dashed ${isDragging ? 'var(--primary)' : 'var(--border)'}`,
             borderRadius: 12, padding: '2.5rem 2rem', textAlign: 'center', cursor: 'pointer',
@@ -157,7 +175,7 @@ export function SmartUpload({ onDone }: { onDone?: () => void }) {
             Drop your bank statement here — PDF, CSV, Excel or screenshot.<br />
             Gemini AI will auto-detect and categorise every transaction.
           </p>
-          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', marginBottom: '1rem' }}>
             <a
               href="/Ledger360_Template.xlsx"
               download
@@ -169,6 +187,11 @@ export function SmartUpload({ onDone }: { onDone?: () => void }) {
             </a>
             <button className="btn btn-primary" style={{ pointerEvents: 'none' }}>Browse Files</button>
           </div>
+
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center', fontSize: '0.75rem', color: 'var(--text-muted)', cursor: 'pointer', textAlign: 'left', maxWidth: 400, margin: '0 auto' }} onClick={e => e.stopPropagation()}>
+            <input type="checkbox" checked={aiConsent} onChange={e => setAiConsent(e.target.checked)} />
+            <span>I consent to having my document securely parsed by Google Gemini AI. Personally identifying data is not used to train models.</span>
+          </label>
         </div>
       )}
 

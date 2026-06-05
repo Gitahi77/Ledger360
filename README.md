@@ -43,7 +43,7 @@ Think Mercury × YNAB × Notion — built for individuals who take their financi
 - **Database:** PostgreSQL via Neon + Prisma ORM
 - **Auth:** NextAuth.js (credential-based)
 - **Styling:** Institutional Vanilla CSS Design System (custom HSL token architecture)
-- **AI:** Rule-based intelligence engine with statistical anomaly detection
+- **AI:** Rule-based intelligence engine backed by Google Gemini. PII (phone numbers, account numbers) is securely redacted before external processing.
 - **Deployment:** Vercel (Edge Runtime)
 
 ---

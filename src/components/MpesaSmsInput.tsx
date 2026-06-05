@@ -147,7 +147,7 @@ export function MpesaSmsInput({ onImport }: Props) {
         </div>
         <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', maxWidth: 340 }}>
           Copy your M-Pesa confirmation SMS messages and paste them all below.
-          Gemini AI will extract every transaction automatically.
+          Gemini AI will extract every transaction automatically. Phone numbers and account details are redacted before parsing.
         </p>
       </div>
 
