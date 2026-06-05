@@ -8,6 +8,7 @@ import NextAuth, { type NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import bcrypt from 'bcryptjs';
+import * as argon2 from '@node-rs/argon2';
 import { prisma } from './prisma';
 import { loginLimiter } from './rateLimit';
 
@@ -37,14 +38,14 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email:    { label: 'Email',    type: 'email'    },
         password: { label: 'Password', type: 'password' },
-        // The login form sends the forwarded IP so the server action can rate-limit
-        ip:       { label: 'IP',       type: 'text'     },
+        // We no longer rely on client-supplied IP
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials?.email || !credentials?.password) return null;
 
         // ── Rate limit by IP ──────────────────────────────────────────────
-        const ip = credentials.ip ?? 'unknown';
+        const forwardedFor = req?.headers?.['x-forwarded-for'];
+        const ip = (typeof forwardedFor === 'string' ? forwardedFor.split(',')[0].trim() : undefined) ?? 'unknown';
         const rl = loginLimiter.check(`login:${ip}`);
         if (!rl.ok) {
           // Throwing causes NextAuth to surface "CredentialsSignin" error.
@@ -58,7 +59,11 @@ export const authOptions: NextAuthOptions = {
 
         if (!user || !user.password) return null;
 
-        const valid = await bcrypt.compare(credentials.password, user.password);
+        const isBcrypt = user.password.startsWith('$2a$') || user.password.startsWith('$2b$');
+        const valid = isBcrypt
+          ? await bcrypt.compare(credentials.password, user.password)
+          : await argon2.verify(user.password, credentials.password);
+          
         if (!valid) return null;
 
         return {

@@ -2,7 +2,7 @@
 
 import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
-import bcrypt from 'bcryptjs';
+import * as argon2 from '@node-rs/argon2';
 import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -16,12 +16,13 @@ export async function requestPasswordReset(email: string) {
   }
 
   const token = crypto.randomBytes(32).toString('hex');
-  const expiry = new Date(Date.now() + 1000 * 60 * 60); // 1 hour
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+  const expiry = new Date(Date.now() + 1000 * 60 * 30); // 30 minutes
 
   await prisma.user.update({
     where: { id: user.id },
     data: {
-      resetToken: token,
+      resetToken: tokenHash,
       resetTokenExpiry: expiry,
     }
   });
@@ -56,11 +57,12 @@ export async function requestPasswordReset(email: string) {
   return { success: true };
 }
 
-// Perform actual password reset
 export async function resetPassword(token: string, newPassword: string) {
+  const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
   const user = await prisma.user.findFirst({
     where: {
-      resetToken: token,
+      resetToken: tokenHash,
       resetTokenExpiry: { gt: new Date() }
     }
   });
@@ -69,7 +71,7 @@ export async function resetPassword(token: string, newPassword: string) {
     return { error: 'Invalid or expired reset token' };
   }
 
-  const hashedPassword = await bcrypt.hash(newPassword, 10);
+  const hashedPassword = await argon2.hash(newPassword);
 
   await prisma.user.update({
     where: { id: user.id },

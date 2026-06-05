@@ -2,7 +2,7 @@
 // Registration endpoint — validates input, hashes password, creates user + seeds categories
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
-import bcrypt from 'bcryptjs';
+import * as argon2 from '@node-rs/argon2';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { DEFAULT_CATEGORIES } from '@/lib/constants/categories';
@@ -55,11 +55,11 @@ export async function POST(req: Request) {
     // and prevent email enumeration via response time differences.
     const [existing, hashed] = await Promise.all([
       prisma.user.findUnique({ where: { email: normalisedEmail } }),
-      bcrypt.hash(password, 12),
+      argon2.hash(password),
     ]);
 
     if (existing) {
-      // Return 409 after bcrypt completes — timing is now equal for both branches
+      // Return 409 after hashing completes — timing is now equal for both branches
       return NextResponse.json(
         { error: 'An account with this email already exists.' },
         { status: 409 }

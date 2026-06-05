@@ -25,12 +25,8 @@ function LoginForm() {
     e.preventDefault();
     setLoading(true);
     setError('');
-    // Forward client IP to the server-side authorize callback for rate limiting.
-    // In a browser, we can only approximate via the server-side x-forwarded-for;
-    // passing a client hint is the best we can do without a server action wrapper.
     const res = await signIn('credentials', {
       email, password, redirect: false,
-      ip: typeof window !== 'undefined' ? window.location.hostname : 'unknown',
     });
     setLoading(false);
     if (res?.error) {
