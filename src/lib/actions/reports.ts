@@ -17,7 +17,7 @@ export async function getMonthlyTrend() {
       EXTRACT(YEAR  FROM date)::int AS yr,
       EXTRACT(MONTH FROM date)::int AS mo,
       type,
-      SUM(amount)::float            AS total
+      SUM("baseAmountMinor")::float            AS total
     FROM "Transaction"
     WHERE "userId" = ${user.id}
       AND type IN ('income','expense')
@@ -73,19 +73,19 @@ export async function getReportSummary(period: string) {
   }
 
   const [income, expenses, prevIncome, prevExpenses] = await Promise.all([
-    prisma.transaction.aggregate({ where: { userId: user.id, type: 'income',  date: { gte: from, lte: to } }, _sum: { amount: true } }),
-    prisma.transaction.aggregate({ where: { userId: user.id, type: 'expense', date: { gte: from, lte: to } }, _sum: { amount: true } }),
-    prisma.transaction.aggregate({ where: { userId: user.id, type: 'income',  date: { gte: prevFrom, lte: prevTo } }, _sum: { amount: true } }),
-    prisma.transaction.aggregate({ where: { userId: user.id, type: 'expense', date: { gte: prevFrom, lte: prevTo } }, _sum: { amount: true } }),
+    prisma.transaction.aggregate({ where: { userId: user.id, type: 'income',  date: { gte: from, lte: to } }, _sum: { baseAmountMinor: true } }),
+    prisma.transaction.aggregate({ where: { userId: user.id, type: 'expense', date: { gte: from, lte: to } }, _sum: { baseAmountMinor: true } }),
+    prisma.transaction.aggregate({ where: { userId: user.id, type: 'income',  date: { gte: prevFrom, lte: prevTo } }, _sum: { baseAmountMinor: true } }),
+    prisma.transaction.aggregate({ where: { userId: user.id, type: 'expense', date: { gte: prevFrom, lte: prevTo } }, _sum: { baseAmountMinor: true } }),
   ]);
 
-  const inc = income._sum.amount   ?? 0;
-  const exp = expenses._sum.amount ?? 0;
+  const inc = income._sum.baseAmountMinor   ?? 0;
+  const exp = expenses._sum.baseAmountMinor ?? 0;
   const sav = inc - exp;
   const sr  = inc > 0 ? Math.round((sav / inc) * 100) : 0;
 
-  const pInc = prevIncome._sum.amount   ?? 0;
-  const pExp = prevExpenses._sum.amount ?? 0;
+  const pInc = prevIncome._sum.baseAmountMinor   ?? 0;
+  const pExp = prevExpenses._sum.baseAmountMinor ?? 0;
   const pSav = pInc - pExp;
   const pSr  = pInc > 0 ? Math.round((pSav / pInc) * 100) : 0;
 
@@ -132,8 +132,8 @@ export async function getReportCategories(period: string) {
   const rows = await prisma.transaction.groupBy({
     by: ['categoryId'],
     where: { userId: user.id, type: 'expense', date: { gte: from, lte: to } },
-    _sum: { amount: true },
-    orderBy: { _sum: { amount: 'desc' } },
+    _sum: { baseAmountMinor: true },
+    orderBy: { _sum: { baseAmountMinor: 'desc' } },
     take: 8,
   });
 
@@ -141,13 +141,13 @@ export async function getReportCategories(period: string) {
 
   const cats   = await prisma.category.findMany({ where: { id: { in: rows.map(r => r.categoryId) } } });
   const catMap = Object.fromEntries(cats.map(c => [c.id, c]));
-  const total  = rows.reduce((s, r) => s + (r._sum.amount ?? 0), 0);
+  const total  = rows.reduce((s, r) => s + (r._sum.baseAmountMinor ?? 0), 0);
 
   const PALETTE = ['#0070F3','#16A34A','#DC2626','#D97706','#7C3AED','#0F766E','#DB2777','#F97316'];
   return rows.map((r, i) => ({
     name:  catMap[r.categoryId]?.name ?? 'Other',
-    value: r._sum.amount ?? 0,
-    pct:   total > 0 ? Math.round(((r._sum.amount ?? 0) / total) * 100) : 0,
+    value: r._sum.baseAmountMinor ?? 0,
+    pct:   total > 0 ? Math.round(((r._sum.baseAmountMinor ?? 0) / total) * 100) : 0,
     color: PALETTE[i % PALETTE.length],
   }));
 }

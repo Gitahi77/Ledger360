@@ -1,7 +1,8 @@
 import clsx from 'clsx';
+import { fmtFull } from '@/lib/format';
 
 interface LedgerAmountProps {
-  amount: number;
+  amountMinor: number;
   /** Pass 'income' | 'savings' to show green; anything else (expense) shows red. */
   type?: string;
   currency?: string;
@@ -9,7 +10,7 @@ interface LedgerAmountProps {
 }
 
 export function LedgerAmount({
-  amount,
+  amountMinor,
   type,
   currency = "KES",
   className,
@@ -18,10 +19,10 @@ export function LedgerAmount({
   // All DB amounts are stored as positive values; 'type' carries direction.
   const isPositive = type === 'income' || type === 'savings';
 
-  const formatted = new Intl.NumberFormat("en-KE", {
-    style: "currency",
-    currency,
-  }).format(Math.abs(amount));
+  // We let fmtFull handle the currency formatting. It will include the currency symbol.
+  // We remove the Math.abs here because fmtFull handles the value, but since we are
+  // adding +/- manually, we might want to pass Math.abs to fmtFull.
+  const formatted = fmtFull(Math.abs(amountMinor), currency);
 
   return (
     <div

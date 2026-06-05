@@ -7,8 +7,10 @@ import { addAsset, editAsset, deleteAsset } from '@/lib/actions/networth';
 import { fmtAdaptive } from '@/lib/format';
 import { Plus, Trash2, Loader2, X, Home, Car, Briefcase, PiggyBank, Gem, BarChart3, Edit2 } from 'lucide-react';
 
-type Asset = { id: string; name: string; category: string; value: number };
-type Loan  = { id: string; name: string; balance: number; type: string };
+import { toMinor, toMajor } from '@/lib/money';
+
+type Asset = { id: string; name: string; category: string; valueMinor: number };
+type Loan  = { id: string; name: string; balanceMinor: number; type: string };
 
 const ASSET_ICONS: Record<string, React.ReactNode> = {
   property:    <Home size={16}/>,
@@ -28,15 +30,15 @@ function AssetModal({ asset, onClose, currency }: { asset?: Asset; onClose: () =
   const [error, setError]     = useState('');
   const [name,     setName]     = useState(asset?.name     ?? '');
   const [category, setCategory] = useState(asset?.category ?? 'savings');
-  const [value,    setValue]    = useState(asset ? String(asset.value) : '');
+  const [value,    setValue]    = useState(asset ? String(toMajor(asset.valueMinor)) : '');
   const isEdit = Boolean(asset);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true); setError('');
     try {
-      if (isEdit && asset) { await editAsset(asset.id, { name, category, value: parseFloat(value) }); }
-      else { await addAsset({ name, category, value: parseFloat(value) }); }
+      if (isEdit && asset) { await editAsset(asset.id, { name, category, valueMinor: toMinor(parseFloat(value)) }); }
+      else { await addAsset({ name, category, valueMinor: toMinor(parseFloat(value)) }); }
       startT(() => router.refresh()); onClose();
     } catch (err: any) { setError(err.message ?? 'Something went wrong.'); }
     finally { setLoading(false); }
@@ -76,10 +78,10 @@ function AssetModal({ asset, onClose, currency }: { asset?: Asset; onClose: () =
   );
 }
 
-export function NetWorthClient({ assets, liabilities, totalAssets, totalLiabilities, netWorth, debtRatio, currency }: {
+export function NetWorthClient({ assets, liabilities, totalAssetsMinor, totalLiabilitiesMinor, netWorthMinor, debtRatio, currency }: {
   assets: Asset[]; liabilities: Loan[];
-  totalAssets: number; totalLiabilities: number;
-  netWorth: number; debtRatio: number; currency: string;
+  totalAssetsMinor: number; totalLiabilitiesMinor: number;
+  netWorthMinor: number; debtRatio: number; currency: string;
 }) {
   const router     = useRouter();
   const [, startT] = useTransition();
@@ -100,7 +102,7 @@ export function NetWorthClient({ assets, liabilities, totalAssets, totalLiabilit
     } finally { setDeletingId(null); }
   }
 
-  const positive = netWorth >= 0;
+  const positive = netWorthMinor >= 0;
   const debtColor = debtRatio < 40 ? 'var(--success)' : debtRatio < 70 ? 'var(--warning)' : 'var(--danger)';
   const debtLabel = debtRatio < 40 ? '✓ Healthy' : debtRatio < 70 ? '⚠ Watch this' : '⛔ High';
 
@@ -122,24 +124,24 @@ export function NetWorthClient({ assets, liabilities, totalAssets, totalLiabilit
             <p className="hero-label">Net Worth</p>
             <p style={{
               fontFamily:'Space Grotesk,sans-serif',
-              fontSize: Math.abs(netWorth) > 9_999_999 ? '1.6rem' : Math.abs(netWorth) > 999_999 ? '1.9rem' : '2.25rem',
+              fontSize: Math.abs(netWorthMinor) > 9_999_99900 ? '1.6rem' : Math.abs(netWorthMinor) > 999_99900 ? '1.9rem' : '2.25rem',
               fontWeight:800, letterSpacing:'-0.04em', lineHeight:1,
               color: positive ? 'var(--success)' : 'var(--danger)',
               whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
             }}>
-              {positive ? '+' : '−'}{fmtAdaptive(Math.abs(netWorth), currency)}
+              {positive ? '+' : '−'}{fmtAdaptive(Math.abs(netWorthMinor), currency)}
             </p>
             <p className="hero-sub">Assets minus liabilities</p>
           </div>
           <div className="hero-stats-grid">
             <div className="hero-stat-card">
               <p className="hero-label">Total Assets</p>
-              <p className="hero-stat-value tabular" style={{ color:'var(--success)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{fmtAdaptive(totalAssets, currency)}</p>
+              <p className="hero-stat-value tabular" style={{ color:'var(--success)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{fmtAdaptive(totalAssetsMinor, currency)}</p>
               <p className="hero-sub">{assets.length} items</p>
             </div>
             <div className="hero-stat-card">
               <p className="hero-label">Total Liabilities</p>
-              <p className="hero-stat-value tabular" style={{ color:'var(--danger)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{fmtAdaptive(totalLiabilities, currency)}</p>
+              <p className="hero-stat-value tabular" style={{ color:'var(--danger)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{fmtAdaptive(totalLiabilitiesMinor, currency)}</p>
               <p className="hero-sub">{liabilities.length} loans</p>
             </div>
             <div className="hero-stat-card">
@@ -162,7 +164,7 @@ export function NetWorthClient({ assets, liabilities, totalAssets, totalLiabilit
         >
           <div>
             <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>Assets Breakdown</div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{assets.length} items • {fmtAdaptive(totalAssets, currency)}</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{assets.length} items • {fmtAdaptive(totalAssetsMinor, currency)}</div>
           </div>
           <div style={{ color: 'var(--primary)' }}>
             {openSection === 'assets' ? 'Hide Details' : 'View Details'}
@@ -193,7 +195,7 @@ export function NetWorthClient({ assets, liabilities, totalAssets, totalLiabilit
                       <div style={{ fontSize:'0.65rem', color:'var(--text-muted)', textTransform:'capitalize' }}>{a.category}</div>
                     </div>
                     <div style={{ textAlign:'right', flexShrink:0 }}>
-                      <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:800, fontSize:'0.9rem', color:'var(--success)', whiteSpace:'nowrap' }}>{fmtAdaptive(a.value, currency)}</div>
+                      <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:800, fontSize:'0.9rem', color:'var(--success)', whiteSpace:'nowrap' }}>{fmtAdaptive(a.valueMinor, currency)}</div>
                       <div style={{ display:'flex', gap:'0.3rem', justifyContent:'flex-end', marginTop:'0.2rem' }}>
                         <button onClick={() => setEditAsset(a)} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', display:'flex', padding:'0.15rem' }}><Edit2 size={12}/></button>
                         <button onClick={() => handleDelete(a.id)} disabled={deletingId===a.id} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', display:'flex', padding:'0.15rem' }}>
@@ -216,7 +218,7 @@ export function NetWorthClient({ assets, liabilities, totalAssets, totalLiabilit
         >
           <div>
             <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>Liabilities Breakdown</div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{liabilities.length} loans • {fmtAdaptive(totalLiabilities, currency)}</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{liabilities.length} loans • {fmtAdaptive(totalLiabilitiesMinor, currency)}</div>
           </div>
           <div style={{ color: 'var(--primary)' }}>
             {openSection === 'liabilities' ? 'Hide Details' : 'View Details'}
@@ -244,7 +246,7 @@ export function NetWorthClient({ assets, liabilities, totalAssets, totalLiabilit
                       <div style={{ fontSize:'0.65rem', color:'var(--text-muted)', textTransform:'capitalize' }}>{l.type.replace('_', ' ')}</div>
                     </div>
                     <div style={{ textAlign:'right', flexShrink:0 }}>
-                      <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:800, fontSize:'0.9rem', color:'var(--danger)', whiteSpace:'nowrap' }}>{fmtAdaptive(l.balance, currency)}</div>
+                      <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:800, fontSize:'0.9rem', color:'var(--danger)', whiteSpace:'nowrap' }}>{fmtAdaptive(l.balanceMinor, currency)}</div>
                     </div>
                   </div>
                 ))}

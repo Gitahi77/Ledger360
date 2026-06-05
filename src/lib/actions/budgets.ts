@@ -17,10 +17,10 @@ export async function getBudgetsWithSpend(period = 'this-month') {
   const spendRows = await prisma.transaction.groupBy({
     by: ['categoryId'],
     where: { userId: user.id, type: 'expense', date: { gte: from, lte: to } },
-    _sum: { amount: true },
+    _sum: { baseAmountMinor: true },
   });
   const spendMap = Object.fromEntries(
-    spendRows.map(r => [r.categoryId, r._sum.amount ?? 0])
+    spendRows.map(r => [r.categoryId, r._sum.baseAmountMinor ?? 0])
   );
 
   return budgets.map(b => ({
@@ -28,7 +28,7 @@ export async function getBudgetsWithSpend(period = 'this-month') {
     name:     b.name,
     category: b.category.name,
     icon:     b.category.icon ?? b.category.name.toLowerCase(),
-    limit:    b.limitAmt,
+    limit:    b.limitAmountMinor,
     spent:    spendMap[b.categoryId] ?? 0,
     period:   b.period,
   }));
@@ -36,7 +36,7 @@ export async function getBudgetsWithSpend(period = 'this-month') {
 
 /* ── Add (Zod-validated) ──────────────────────────────────── */
 export async function addBudget(raw: {
-  name: string; categoryId: string; limitAmt: number; period: string;
+  name: string; categoryId: string; limitAmountMinor: number; period: string;
 }) {
   const { AddBudgetSchema } = await import('@/lib/validation');
   const data = AddBudgetSchema.parse(raw);
@@ -47,7 +47,7 @@ export async function addBudget(raw: {
   });
   if (!cat) throw new Error('Invalid category');
 
-  await prisma.budget.create({ data: { ...data, userId: user.id } });
+  await prisma.budget.create({ data: { ...data, userId: user.id, limitAmountMinor: data.limitAmountMinor } });
   revalidatePath('/budgets');
   revalidatePath('/');
 }
@@ -60,7 +60,7 @@ export async function deleteBudget(id: string) {
   revalidatePath('/');
 }
 
-export async function editBudget(id: string, data: { name?: string; limitAmt?: number; period?: 'monthly' | 'yearly'; categoryId?: string }) {
+export async function editBudget(id: string, data: { name?: string; limitAmountMinor?: number; period?: 'monthly' | 'yearly'; categoryId?: string }) {
   const user = await requireAuth();
   if (!id) throw new Error('Missing id');
   if (data.categoryId) {
@@ -69,7 +69,7 @@ export async function editBudget(id: string, data: { name?: string; limitAmt?: n
   }
   const { count } = await prisma.budget.updateMany({
     where: { id, userId: user.id },
-    data,
+    data: { ...data, limitAmountMinor: data.limitAmountMinor },
   });
   if (count === 0) throw new Error('Budget not found or ownership failed');
   revalidatePath('/budgets');

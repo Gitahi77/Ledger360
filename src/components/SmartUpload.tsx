@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { UploadCloud, Loader2, CheckCircle2, AlertCircle, ChevronRight, X, Smartphone, FileText } from 'lucide-react';
 import { importTransactions } from '@/lib/actions/transactions';
 import { MpesaSmsInput } from '@/components/MpesaSmsInput';
+import { toMinor } from '@/lib/money';
 
 type ParsedRow = {
   date: string; name: string; amount: number; type: string;
@@ -64,7 +65,7 @@ export function SmartUpload({ onDone }: { onDone?: () => void }) {
     const toImport = rows.filter((_, i) => selected.has(i));
     try {
       await importTransactions(toImport.map(r => ({
-        name: r.name, amount: r.amount, type: r.type,
+        name: r.name, baseAmountMinor: toMinor(r.amount), type: r.type,
         categoryName: r.category, date: r.date, note: r.note,
       })));
       setState('done');
@@ -90,7 +91,7 @@ export function SmartUpload({ onDone }: { onDone?: () => void }) {
         categoryName: t.category,
       }));
       await importTransactions(toImport.map(r => ({
-        name: r.name, amount: r.amount, type: r.type,
+        name: r.name, baseAmountMinor: toMinor(r.amount), type: r.type,
         date: r.date, categoryName: r.categoryName, note: r.note,
       })));
       setState('done');

@@ -11,6 +11,8 @@
  *  3. adaptive — auto-switches based on magnitude
  */
 
+import { toMajor } from './money';
+
 // Cache formatters so we don't instantiate Intl.NumberFormat repeatedly
 const formatters = new Map<string, Intl.NumberFormat>();
 
@@ -32,16 +34,16 @@ function getFormatter(currency: string, precise: boolean = false) {
  * Full precision: USD 1,234,567
  * Use in tables, modals, any context where precision matters.
  */
-export function fmtFull(amount: number, currency: string): string {
-  return getFormatter(currency, false).format(amount);
+export function fmtFull(amountMinor: number, currency: string): string {
+  return getFormatter(currency, false).format(toMajor(amountMinor));
 }
 
 /**
  * Two-decimal precision: USD 1,234,567.89
  * Use for loan balances, interest, and any calculation outputs.
  */
-export function fmtPrecise(amount: number, currency: string): string {
-  return getFormatter(currency, true).format(amount);
+export function fmtPrecise(amountMinor: number, currency: string): string {
+  return getFormatter(currency, true).format(toMajor(amountMinor));
 }
 
 /**
@@ -49,9 +51,10 @@ export function fmtPrecise(amount: number, currency: string): string {
  * Use for hero banners and KPI cards where space is limited.
  * Switches at 10K to keep numbers from overflowing containers.
  */
-export function fmtCompact(amount: number, currency: string): string {
-  const abs = Math.abs(amount);
-  const sign = amount < 0 ? '-' : '';
+export function fmtCompact(amountMinor: number, currency: string): string {
+  const major = toMajor(amountMinor);
+  const abs = Math.abs(major);
+  const sign = major < 0 ? '-' : '';
   const code = currency?.trim().toUpperCase() || 'USD';
   
   // Custom compact format that preserves the currency symbol
@@ -60,7 +63,7 @@ export function fmtCompact(amount: number, currency: string): string {
   if (abs >= 100_000)       return `${sign}${code} ${(abs / 1_000).toFixed(0)}K`;
   if (abs >= 10_000)        return `${sign}${code} ${(abs / 1_000).toFixed(1)}K`;
   
-  return getFormatter(currency, false).format(amount);
+  return getFormatter(currency, false).format(major);
 }
 
 /**
@@ -68,16 +71,16 @@ export function fmtCompact(amount: number, currency: string): string {
  * Threshold: above 999,999 → compact, otherwise → full.
  * Use in goal cards, budget rows, any responsive context.
  */
-export function fmtAdaptive(amount: number, currency: string, threshold = 999_999): string {
-  return Math.abs(amount) > threshold ? fmtCompact(amount, currency) : fmtFull(amount, currency);
+export function fmtAdaptive(amountMinor: number, currency: string, threshold = 999_999): string {
+  return Math.abs(toMajor(amountMinor)) > threshold ? fmtCompact(amountMinor, currency) : fmtFull(amountMinor, currency);
 }
 
 /**
  * Raw number with commas (no currency symbol).
  * Use when the unit is stated separately.
  */
-export function fmtRaw(amount: number): string {
-  return amount.toLocaleString('en-US', { maximumFractionDigits: 0 });
+export function fmtRaw(amountMinor: number): string {
+  return toMajor(amountMinor).toLocaleString('en-US', { maximumFractionDigits: 0 });
 }
 
 /**
@@ -85,9 +88,9 @@ export function fmtRaw(amount: number): string {
  * Primary: compact value   Sub: "of USD X full"
  * Use in hero banners and goal progress cards.
  */
-export function fmtWithSub(current: number, currency: string, target?: number): { primary: string; sub: string } {
-  const primary = fmtAdaptive(current, currency);
-  const sub = target !== undefined ? `of ${fmtAdaptive(target, currency)}` : '';
+export function fmtWithSub(currentMinor: number, currency: string, targetMinor?: number): { primary: string; sub: string } {
+  const primary = fmtAdaptive(currentMinor, currency);
+  const sub = targetMinor !== undefined ? `of ${fmtAdaptive(targetMinor, currency)}` : '';
   return { primary, sub };
 }
 

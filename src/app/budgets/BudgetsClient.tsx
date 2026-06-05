@@ -7,6 +7,7 @@ import { addBudget, editBudget, deleteBudget } from '@/lib/actions/budgets';
 import { SmartUpload } from '@/components/SmartUpload';
 import { fmtAdaptive } from '@/lib/format';
 import { Plus, Trash2, Loader2, X, FileDown, LayoutGrid } from 'lucide-react';
+import { toMinor, toMajor } from '@/lib/money';
 
 type Budget = { id: string; name: string; category: string; icon: string; limit: number; spent: number; period: string };
 type Category = { id: string; name: string; type: string };
@@ -25,7 +26,7 @@ function BudgetModal({ budget, categories, currency, onClose }: { budget?: Budge
   const [error, setError]     = useState('');
   const [name, setName]             = useState(budget?.name ?? '');
   const [categoryId, setCategoryId] = useState(''); // Need to map budget.category to categoryId later if we want proper edit, for now leave as is or find it
-  const [limitAmt, setLimitAmt]     = useState(budget ? String(budget.limit) : '');
+  const [limitAmt, setLimitAmt]     = useState(budget ? String(toMajor(budget.limit)) : '');
   const [period, setPeriod]         = useState(budget?.period ?? 'monthly');
   const expenseCats = categories.filter(c => c.type === 'expense');
   const isEdit = Boolean(budget);
@@ -44,9 +45,9 @@ function BudgetModal({ budget, categories, currency, onClose }: { budget?: Budge
     setLoading(true); setError('');
     try {
       if (isEdit && budget) {
-        await editBudget(budget.id, { name, categoryId, limitAmt: parseFloat(limitAmt), period: period as 'monthly' | 'yearly' });
+        await editBudget(budget.id, { name, categoryId, limitAmountMinor: toMinor(parseFloat(limitAmt)), period: period as 'monthly' | 'yearly' });
       } else {
-        await addBudget({ name, categoryId, limitAmt: parseFloat(limitAmt), period });
+        await addBudget({ name, categoryId, limitAmountMinor: toMinor(parseFloat(limitAmt)), period });
       }
       startT(() => router.refresh()); onClose();
     } catch (err: any) { setError(err.message ?? 'Something went wrong.'); }

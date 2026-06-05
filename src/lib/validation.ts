@@ -13,7 +13,7 @@ const optKes = (label = 'Amount') =>
 /* ── Transactions ─────────────────────────────────────────── */
 export const AddTransactionSchema = z.object({
   name:       z.string().min(1, 'Description is required').max(120, 'Description too long'),
-  amount:     kes('Amount'),
+  baseAmountMinor:     kes('Amount'),
   type:       z.enum(['income', 'expense']),
   categoryId: z.string().min(1, 'Category is required'),
   date:       z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD'),
@@ -25,7 +25,7 @@ export type AddTransactionInput = z.infer<typeof AddTransactionSchema>;
 export const AddBudgetSchema = z.object({
   name:       z.string().min(1, 'Budget name is required').max(80),
   categoryId: z.string().min(1, 'Category is required'),
-  limitAmt:   kes('Spending limit'),
+  limitAmountMinor:   kes('Spending limit'),
   period:     z.enum(['weekly', 'monthly', 'yearly']),
 });
 export type AddBudgetInput = z.infer<typeof AddBudgetSchema>;
@@ -34,8 +34,8 @@ export type AddBudgetInput = z.infer<typeof AddBudgetSchema>;
 export const AddGoalSchema = z.object({
   name:          z.string().min(1, 'Goal name is required').max(80),
   category:      z.string().min(1),
-  targetAmount:  kes('Target amount'),
-  currentAmount: optKes('Current amount').optional(),
+  targetAmountMinor:  kes('Target amount'),
+  currentAmountMinor: optKes('Current amount').optional(),
   deadline:      z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal('')).optional(),
 });
 export type AddGoalInput = z.infer<typeof AddGoalSchema>;
@@ -45,10 +45,10 @@ export const AddLoanSchema = z.object({
   name:        z.string().min(1, 'Loan name is required').max(80),
   lender:      z.string().min(1, 'Lender is required').max(80),
   type:        z.string().min(1),
-  originalAmt: kes('Original amount'),
-  balance:     optKes('Current balance'),
+  originalAmountMinor: kes('Original amount'),
+  balanceMinor:     optKes('Current balance'),
   annualRate:  z.number().min(0).max(100),
-  monthlyPmt:  kes('Monthly payment'),
+  monthlyPaymentMinor:  kes('Monthly payment'),
   nextDue:     z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Next due date must be YYYY-MM-DD'),
 });
 export type AddLoanInput = z.infer<typeof AddLoanSchema>;
@@ -57,7 +57,7 @@ export type AddLoanInput = z.infer<typeof AddLoanSchema>;
 export const AddAssetSchema = z.object({
   name:     z.string().min(1, 'Asset name is required').max(80),
   category: z.string().min(1),
-  value:    optKes('Asset value'),
+  valueMinor:    optKes('Asset value'),
 });
 export type AddAssetInput = z.infer<typeof AddAssetSchema>;
 

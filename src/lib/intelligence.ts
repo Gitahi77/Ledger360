@@ -10,6 +10,7 @@ import { prisma } from './prisma';
 import {
   startOfMonth, subMonths, getDate, getDaysInMonth,
 } from 'date-fns';
+import { toMajor } from '@/lib/money';
 
 export type Insight = {
   id: string;
@@ -59,7 +60,7 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
     if (!pastByCategory[t.categoryId]) {
       pastByCategory[t.categoryId] = { totalAmt: 0, months: new Set() };
     }
-    pastByCategory[t.categoryId].totalAmt += t.amount;
+    pastByCategory[t.categoryId].totalAmt += t.baseAmountMinor;
     pastByCategory[t.categoryId].months.add(monthKey(t.date));
   });
 
@@ -68,7 +69,7 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
     if (!currentByCategory[t.categoryId]) {
       currentByCategory[t.categoryId] = { totalAmt: 0, name: t.category.name };
     }
-    currentByCategory[t.categoryId].totalAmt += t.amount;
+    currentByCategory[t.categoryId].totalAmt += t.baseAmountMinor;
   });
 
   for (const [catId, current] of Object.entries(currentByCategory)) {
@@ -118,13 +119,13 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
     const todayDate = getDate(now);
 
     if (todayDate >= avgDate - 5 && todayDate <= avgDate + 5) {
-      const avgAmount = matches.reduce((acc, t) => acc + t.amount, 0) / matches.length;
+      const avgAmountMinor = matches.reduce((acc, t) => acc + t.baseAmountMinor, 0) / matches.length;
       const displayName = matches[0].name; // use original casing for display
       insights.push({
         id:          `recurring-${nameKey}`,
         type:        'recurring',
         title:       'Upcoming recurring payment',
-        description: `"${displayName}" usually arrives around the ${avgDate}th (~${currency} ${Math.round(avgAmount).toLocaleString()}).`,
+        description: `"${displayName}" usually arrives around the ${avgDate}th (~${currency} ${Math.round(toMajor(avgAmountMinor)).toLocaleString()}).`,
         severity:    'info',
       });
     }
@@ -132,23 +133,23 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
 
   // ── CASHFLOW FORECAST ──────────────────────────────────────────────────────
   // Show expense-side warning even when income = 0 (e.g. student / new user).
-  const currentIncome  = currentMonthTx.filter(t => t.type === 'income').reduce((a, b) => a + b.amount, 0);
-  const currentExpense = currentMonthTx.filter(t => t.type === 'expense').reduce((a, b) => a + b.amount, 0);
+  const currentIncomeMinor  = currentMonthTx.filter(t => t.type === 'income').reduce((a, b) => a + b.baseAmountMinor, 0);
+  const currentExpenseMinor = currentMonthTx.filter(t => t.type === 'expense').reduce((a, b) => a + b.baseAmountMinor, 0);
 
   const daysPassed     = Math.max(getDate(now), 1);
   const daysInMonth    = getDaysInMonth(now);
-  const dailyBurnRate  = currentExpense / daysPassed;
-  const projectedExpense = dailyBurnRate * daysInMonth;
+  const dailyBurnRateMinor  = currentExpenseMinor / daysPassed;
+  const projectedExpenseMinor = dailyBurnRateMinor * daysInMonth;
 
   if (prefs?.notifInsights !== false) {
-    if (currentIncome > 0) {
-      const projectedSavings = currentIncome - projectedExpense;
-      if (projectedSavings > 0) {
+    if (currentIncomeMinor > 0) {
+      const projectedSavingsMinor = currentIncomeMinor - projectedExpenseMinor;
+      if (projectedSavingsMinor > 0) {
         insights.push({
           id:          'forecast-positive',
           type:        'forecast',
           title:       'On pace to save this month',
-          description: `At your daily spend of ${currency} ${Math.round(dailyBurnRate).toLocaleString()}, you could save ~${currency} ${Math.round(projectedSavings).toLocaleString()} by month-end.`,
+          description: `At your daily spend of ${currency} ${Math.round(toMajor(dailyBurnRateMinor)).toLocaleString()}, you could save ~${currency} ${Math.round(toMajor(projectedSavingsMinor)).toLocaleString()} by month-end.`,
           severity:    'success',
         });
       } else {
@@ -156,17 +157,17 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
           id:          'forecast-negative',
           type:        'forecast',
           title:       'Spending running ahead of income',
-          description: `At your current rate you may exceed income by ~${currency} ${Math.round(Math.abs(projectedSavings)).toLocaleString()} this month. Consider reviewing your expenses.`,
+          description: `At your current rate you may exceed income by ~${currency} ${Math.round(Math.abs(toMajor(projectedSavingsMinor))).toLocaleString()} this month. Consider reviewing your expenses.`,
           severity:    'warning',
         });
       }
-    } else if (currentExpense > 0) {
+    } else if (currentExpenseMinor > 0) {
       // No income recorded yet this month — still useful to show burn rate
       insights.push({
         id:          'forecast-no-income',
         type:        'forecast',
         title:       'No income recorded yet this month',
-        description: `You're spending ~${currency} ${Math.round(dailyBurnRate).toLocaleString()}/day. Record your income to see your full cashflow forecast.`,
+        description: `You're spending ~${currency} ${Math.round(toMajor(dailyBurnRateMinor)).toLocaleString()}/day. Record your income to see your full cashflow forecast.`,
         severity:    'info',
       });
     }
@@ -174,18 +175,18 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
 
   // ── GOAL PROGRESS ALERTS ───────────────────────────────────────────────────
   if (prefs?.notifGoals !== false) {
-    const activeGoals = await prisma.goal.findMany({ where: { userId, targetAmount: { gt: 0 } } });
+    const activeGoals = await prisma.goal.findMany({ where: { userId, targetAmountMinor: { gt: 0 } } });
     for (const goal of activeGoals) {
-      if (goal.currentAmount >= goal.targetAmount) {
+      if (goal.currentAmountMinor >= goal.targetAmountMinor) {
         insights.push({
           id: `goal-met-${goal.id}`,
           type: 'achievement',
           title: 'Goal Achieved! 🎉',
-          description: `You have reached your goal for ${goal.name}! (${currency} ${goal.targetAmount.toLocaleString()})`,
+          description: `You have reached your goal for ${goal.name}! (${currency} ${toMajor(goal.targetAmountMinor).toLocaleString()})`,
           severity: 'success',
         });
       } else {
-        const pct = Math.round((goal.currentAmount / goal.targetAmount) * 100);
+        const pct = Math.round((goal.currentAmountMinor / goal.targetAmountMinor) * 100);
         if (pct === 50 || pct === 75 || pct === 90) {
           insights.push({
             id: `goal-prog-${goal.id}-${pct}`,
@@ -201,7 +202,7 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
 
   // ── LOAN DUE ALERTS ────────────────────────────────────────────────────────
   if (prefs?.notifLoanDue !== false) {
-    const activeLoans = await prisma.loan.findMany({ where: { userId, balance: { gt: 0 } } });
+    const activeLoans = await prisma.loan.findMany({ where: { userId, balanceMinor: { gt: 0 } } });
     for (const loan of activeLoans) {
       const dueDate = new Date(loan.nextDue);
       const diffTime = dueDate.getTime() - now.getTime();
@@ -212,7 +213,7 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
           id: `loan-due-${loan.id}`,
           type: 'recurring',
           title: 'Upcoming Loan Payment',
-          description: `Your payment of ${currency} ${loan.monthlyPmt.toLocaleString()} for ${loan.name} is due in ${diffDays} day(s).`,
+          description: `Your payment of ${currency} ${toMajor(loan.monthlyPaymentMinor).toLocaleString()} for ${loan.name} is due in ${diffDays} day(s).`,
           severity: 'warning',
         });
       } else if (diffDays < 0) {

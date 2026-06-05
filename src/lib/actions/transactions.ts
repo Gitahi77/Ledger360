@@ -26,19 +26,16 @@ export async function getTransactionSummary(period = 'this-month') {
   const user = await requireAuth();
   const { from, to } = periodDates(period);
 
-  const [income, expenses] = await Promise.all([
-    prisma.transaction.aggregate({
-      where: { userId: user.id, type: 'income',  date: { gte: from, lte: to } },
-      _sum: { amount: true },
-    }),
-    prisma.transaction.aggregate({
-      where: { userId: user.id, type: 'expense', date: { gte: from, lte: to } },
-      _sum: { amount: true },
-    }),
-  ]);
+  const prevFrom = new Date(from); prevFrom.setMonth(prevFrom.getMonth() - 1);
+  const prevTo = new Date(to); prevTo.setMonth(prevTo.getMonth() - 1);
 
-  const inc = income._sum.amount   ?? 0;
-  const exp = expenses._sum.amount ?? 0;
+  const income   = await prisma.transaction.aggregate({ where: { userId: user.id, type: 'income',   date: { gte: from, lte: to } }, _sum: { baseAmountMinor: true } });
+  const expenses = await prisma.transaction.aggregate({ where: { userId: user.id, type: 'expense',  date: { gte: from, lte: to } }, _sum: { baseAmountMinor: true } });
+  const prevInc  = await prisma.transaction.aggregate({ where: { userId: user.id, type: 'income',   date: { gte: prevFrom, lte: prevTo } }, _sum: { baseAmountMinor: true } });
+  const prevExp  = await prisma.transaction.aggregate({ where: { userId: user.id, type: 'expense',  date: { gte: prevFrom, lte: prevTo } }, _sum: { baseAmountMinor: true } });
+
+  const inc = income._sum.baseAmountMinor ?? 0;
+  const exp = expenses._sum.baseAmountMinor ?? 0;
   return {
     income:     inc,
     expenses:   exp,
@@ -60,7 +57,7 @@ export async function getMonthlyChartData() {
       EXTRACT(YEAR  FROM date)::int  AS yr,
       EXTRACT(MONTH FROM date)::int  AS mo,
       type,
-      SUM(amount)::float             AS total
+      SUM("baseAmountMinor")::float  AS total
     FROM "Transaction"
     WHERE
       "userId" = ${user.id}
@@ -92,8 +89,8 @@ export async function getCategoryBreakdown(period = 'this-month') {
   const rows = await prisma.transaction.groupBy({
     by: ['categoryId'],
     where: { userId: user.id, type: 'expense', date: { gte: from, lte: to } },
-    _sum: { amount: true },
-    orderBy: { _sum: { amount: 'desc' } },
+    _sum: { baseAmountMinor: true },
+    orderBy: { _sum: { baseAmountMinor: 'desc' } },
   });
 
   const categories = await prisma.category.findMany({
@@ -101,12 +98,12 @@ export async function getCategoryBreakdown(period = 'this-month') {
   });
   const catMap = Object.fromEntries(categories.map(c => [c.id, c]));
 
-  const total = rows.reduce((s, r) => s + (r._sum.amount ?? 0), 0);
+  const total = rows.reduce((s, r) => s + (r._sum.baseAmountMinor ?? 0), 0);
   return rows.map(r => ({
     name:  catMap[r.categoryId]?.name ?? r.categoryId,
     icon:  catMap[r.categoryId]?.icon ?? 'other',
-    value: r._sum.amount ?? 0,
-    pct:   total > 0 ? Math.round(((r._sum.amount ?? 0) / total) * 100) : 0,
+    value: r._sum.baseAmountMinor ?? 0,
+    pct:   total > 0 ? Math.round(((r._sum.baseAmountMinor ?? 0) / total) * 100) : 0,
   }));
 }
 
@@ -124,7 +121,7 @@ export async function getCategories(type?: 'income' | 'expense' | 'savings') {
 
 /* ── Add (Zod-validated) ──────────────────────────────────── */
 export async function addTransaction(raw: {
-  name: string; amount: number; type: string;
+  name: string; baseAmountMinor: number; type: string;
   categoryId: string; date: string; note?: string;
 }) {
   const { AddTransactionSchema } = await import('@/lib/validation');
@@ -138,7 +135,15 @@ export async function addTransaction(raw: {
   if (!cat) throw new Error('Invalid category');
 
   const newTx = await prisma.transaction.create({
-    data: { ...data, date: new Date(data.date), userId: user.id },
+    data: { 
+      name: data.name,
+      baseAmountMinor: data.baseAmountMinor,
+      type: data.type === 'income' ? 'income' : 'expense',
+      categoryId: data.categoryId,
+      note: data.note,
+      date: new Date(data.date), 
+      userId: user.id 
+    },
   });
 
   // Security Audit
@@ -147,7 +152,7 @@ export async function addTransaction(raw: {
     userId: user.id,
     action: 'CREATE',
     resource: 'Transaction',
-    metadata: { txId: newTx.id, amount: data.amount, name: data.name },
+    metadata: { txId: newTx.id, amount: data.baseAmountMinor, name: data.name },
   });
   revalidatePath('/transactions');
   revalidatePath('/');
@@ -155,7 +160,7 @@ export async function addTransaction(raw: {
 
 /* ── Bulk import (Smart Upload) ───────────────────────────── */
 export async function importTransactions(rows: {
-  name: string; amount: number; type: string;
+  name: string; baseAmountMinor: number; type: string;
   categoryName: string; date: string; note?: string;
 }[]) {
   const user = await requireAuth();
@@ -190,7 +195,7 @@ export async function importTransactions(rows: {
       })
       .map(r => ({
         name:       String(r.name).slice(0, 120),
-        amount:     Math.abs(Number(r.amount)),
+        baseAmountMinor: Math.abs(Number(r.baseAmountMinor)),
         type:       r.type === 'income' ? 'income' : 'expense',
         categoryId: catMap[String(r.categoryName)],
         date:       new Date(r.date),
@@ -241,7 +246,7 @@ export async function deleteTransaction(id: string) {
 
 /* ── Edit (atomic ownership check) ────────────────────────── */
 export async function editTransaction(id: string, data: {
-  amount?: number; name?: string; type?: 'income' | 'expense'; date?: Date; categoryId?: string; note?: string;
+  baseAmountMinor?: number; name?: string; type?: 'income' | 'expense'; date?: Date; categoryId?: string; note?: string;
 }) {
   const user = await requireAuth();
   if (!id) throw new Error('Missing id');

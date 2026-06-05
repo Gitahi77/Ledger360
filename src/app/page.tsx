@@ -59,7 +59,7 @@ export default async function Dashboard({
   // e.g. if it's June (month 5, 0-indexed), monthsLeft = 12 - 6 = 6 (Jul–Dec)
   const now          = new Date();
   const monthsLeft   = Math.max(0, 11 - now.getMonth()); // 0 in December
-  const projected    = Math.max(0, summary.savings * monthsLeft + netWorth.netWorth);
+  const projected    = Math.max(0, summary.savings * monthsLeft + netWorth.netWorthMinor);
   const periodLabel  = period === 'this-week' ? 'This Week' : period === 'this-year' ? 'This Year' : 'This Month';
   
   const targetRate = prefs?.savingRate ?? 20;
@@ -88,9 +88,9 @@ export default async function Dashboard({
           {/* Primary stat — Net Worth */}
           <div>
             <p className="hero-label">Net Worth</p>
-            <BalanceText value={fmtAdaptive(netWorth.netWorth, currency)} />
+            <BalanceText value={fmtAdaptive(netWorth.netWorthMinor, currency)} />
             <p className="hero-sub" style={{ whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-              Assets {fmtAdaptive(netWorth.totalAssets, currency)} · Debt {fmtAdaptive(netWorth.totalLiabilities, currency)}
+              Assets {fmtAdaptive(netWorth.totalAssetsMinor, currency)} · Debt {fmtAdaptive(netWorth.totalLiabilitiesMinor, currency)}
             </p>
           </div>
 
@@ -207,7 +207,7 @@ export default async function Dashboard({
                 <div key={l.id} className="flex items-center justify-between" style={{ fontSize:'0.78rem', marginBottom:'0.375rem' }}>
                   <span style={{ color:'var(--text-secondary)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'55%' }}>{l.name}</span>
                   <span style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, color: l.daysOverdue > 0 ? 'var(--danger)' : 'var(--text-primary)', whiteSpace:'nowrap' }}>
-                    {fmtAdaptive(l.balance, currency)}
+                    {fmtAdaptive(l.balanceMinor, currency)}
                   </span>
                 </div>
               ))}

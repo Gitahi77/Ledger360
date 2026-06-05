@@ -15,9 +15,9 @@ export default async function NetWorthPage() {
       <NetWorthClient
         assets={data.assets}
         liabilities={data.liabilities}
-        totalAssets={data.totalAssets}
-        totalLiabilities={data.totalLiabilities}
-        netWorth={data.netWorth}
+        totalAssetsMinor={data.totalAssetsMinor}
+        totalLiabilitiesMinor={data.totalLiabilitiesMinor}
+        netWorthMinor={data.netWorthMinor}
         debtRatio={data.debtRatio}
         currency={user.currency}
       />

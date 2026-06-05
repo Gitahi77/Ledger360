@@ -10,30 +10,30 @@ export async function getNetWorth() {
   const assets = await prisma.asset.findMany({ where: { userId: user.id } });
   const loans  = await prisma.loan.findMany({ where: { userId: user.id } });
 
-  const totalAssets      = assets.reduce((s, a) => s + a.value, 0);
-  const totalLiabilities = loans.reduce((s, l) => s + l.balance, 0);
+  const totalAssetsMinor      = assets.reduce((s, a) => s + a.valueMinor, 0);
+  const totalLiabilitiesMinor = loans.reduce((s, l) => s + l.balanceMinor, 0);
 
   return {
     assets,
     liabilities:     loans,
-    totalAssets,
-    totalLiabilities,
-    netWorth:  totalAssets - totalLiabilities,
-    debtRatio: totalAssets > 0 ? Math.round((totalLiabilities / totalAssets) * 100) : 0,
+    totalAssetsMinor,
+    totalLiabilitiesMinor,
+    netWorthMinor:  totalAssetsMinor - totalLiabilitiesMinor,
+    debtRatio: totalAssetsMinor > 0 ? Math.round((totalLiabilitiesMinor / totalAssetsMinor) * 100) : 0,
   };
 }
 
 /* ── Add asset (Zod-validated) ────────────────────────────── */
-export async function addAsset(raw: { name: string; category: string; value: number }) {
+export async function addAsset(raw: { name: string; category: string; valueMinor: number }) {
   const { AddAssetSchema } = await import('@/lib/validation');
   const data = AddAssetSchema.parse(raw);
   const user = await requireAuth();
-  await prisma.asset.create({ data: { ...data, userId: user.id } });
+  await prisma.asset.create({ data: { ...data, userId: user.id, valueMinor: data.valueMinor } });
   revalidatePath('/net-worth');
   revalidatePath('/');
 }
 
-export async function editAsset(id: string, data: { name?: string; category?: string; value?: number }) {
+export async function editAsset(id: string, data: { name?: string; category?: string; valueMinor?: number }) {
   const user = await requireAuth();
   if (!id) throw new Error('Missing id');
   

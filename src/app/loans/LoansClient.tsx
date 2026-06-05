@@ -7,16 +7,17 @@ import { addLoan, editLoan, updateLoanBalance, deleteLoan } from '@/lib/actions/
 import { addTransaction } from '@/lib/actions/transactions';
 import { fmtAdaptive } from '@/lib/format';
 import { Plus, Trash2, Loader2, X, CreditCard, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
+import { toMinor, toMajor } from '@/lib/money';
 
 type Loan = {
   id: string; name: string; lender: string; type: string;
-  originalAmt: number; balance: number; annualRate: number;
-  monthlyPmt: number; nextDue: Date; daysOverdue: number;
+  originalAmountMinor: number; balanceMinor: number; annualRate: number;
+  monthlyPaymentMinor: number; nextDue: Date; daysOverdue: number;
 };
 
 // All colours via CSS token vars — adapts to light and dark automatically
 function loanStyle(l: Loan) {
-  const paidPct = Math.min(100, Math.round(((l.originalAmt - l.balance) / l.originalAmt) * 100));
+  const paidPct = Math.min(100, Math.round(((l.originalAmountMinor - l.balanceMinor) / l.originalAmountMinor) * 100));
   if (l.daysOverdue > 0) return {
     badge: 'badge-danger',  label: 'Overdue',
     color: 'var(--danger)',  barGrad: 'linear-gradient(90deg,var(--danger),hsl(0,78%,72%))',
@@ -48,10 +49,10 @@ function LoanModal({ loan, onClose, currency }: { loan?: Loan; onClose: () => vo
   const [name,       setName]       = useState(loan?.name ?? '');
   const [lender,     setLender]     = useState(loan?.lender ?? '');
   const [type,       setType]       = useState(loan?.type ?? 'personal');
-  const [origAmt,    setOrigAmt]    = useState(loan ? String(loan.originalAmt) : '');
-  const [balance,    setBalance]    = useState(loan ? String(loan.balance) : '');
+  const [origAmt,    setOrigAmt]    = useState(loan ? String(toMajor(loan.originalAmountMinor)) : '');
+  const [balance,    setBalance]    = useState(loan ? String(toMajor(loan.balanceMinor)) : '');
   const [rate,       setRate]       = useState(loan ? String(loan.annualRate) : '');
-  const [monthly,    setMonthly]    = useState(loan ? String(loan.monthlyPmt) : '');
+  const [monthly,    setMonthly]    = useState(loan ? String(toMajor(loan.monthlyPaymentMinor)) : '');
   const [nextDue,    setNextDue]    = useState(loan?.nextDue ? new Date(loan.nextDue).toISOString().slice(0, 10) : '');
   const isEdit = Boolean(loan);
 
@@ -64,19 +65,19 @@ function LoanModal({ loan, onClose, currency }: { loan?: Loan; onClose: () => vo
       if (isEdit && loan) {
         await editLoan(loan.id, {
           name, lender, type,
-          originalAmt: parseFloat(origAmt),
-          balance:     parseFloat(balance || origAmt),
+          originalAmountMinor: toMinor(parseFloat(origAmt)),
+          balanceMinor:     toMinor(parseFloat(balance || origAmt)),
           annualRate:  parseFloat(rate),
-          monthlyPmt:  parseFloat(monthly),
+          monthlyPaymentMinor:  toMinor(parseFloat(monthly)),
           nextDue,
         });
       } else {
         await addLoan({
           name, lender, type,
-          originalAmt: parseFloat(origAmt),
-          balance:     parseFloat(balance || origAmt),
+          originalAmountMinor: toMinor(parseFloat(origAmt)),
+          balanceMinor:     toMinor(parseFloat(balance || origAmt)),
           annualRate:  parseFloat(rate),
-          monthlyPmt:  parseFloat(monthly),
+          monthlyPaymentMinor:  toMinor(parseFloat(monthly)),
           nextDue,
         });
       }
@@ -162,16 +163,16 @@ function ExpandedForecast({ loan, monthsLeft, totalInterest, currency }: { loan:
   const [extraPayment, setExtraPayment] = useState(0);
 
   const monthlyRate = loan.annualRate / 100 / 12;
-  const totalPmt    = loan.monthlyPmt + extraPayment;
-  const minPmt      = monthlyRate > 0 ? loan.balance * monthlyRate : 0;
-  const newMonths   = totalPmt <= minPmt
+  const totalPmtMinor    = loan.monthlyPaymentMinor + toMinor(extraPayment);
+  const minPmtMinor      = monthlyRate > 0 ? loan.balanceMinor * monthlyRate : 0;
+  const newMonths   = totalPmtMinor <= minPmtMinor
     ? Infinity
     : monthlyRate > 0
-      ? Math.ceil(Math.log(totalPmt / (totalPmt - loan.balance * monthlyRate)) / Math.log(1 + monthlyRate))
-      : Math.ceil(loan.balance / totalPmt);
-  const newInterest = isFinite(newMonths) ? Math.round(Math.max(0, (totalPmt * newMonths) - loan.balance)) : 0;
+      ? Math.ceil(Math.log(totalPmtMinor / (totalPmtMinor - loan.balanceMinor * monthlyRate)) / Math.log(1 + monthlyRate))
+      : Math.ceil(loan.balanceMinor / totalPmtMinor);
+  const newInterestMinor = isFinite(newMonths) ? Math.round(Math.max(0, (totalPmtMinor * newMonths) - loan.balanceMinor)) : 0;
   const monthsSaved = isFinite(monthsLeft) && isFinite(newMonths) ? Math.max(0, monthsLeft - newMonths) : 0;
-  const interestSaved = totalInterest - newInterest;
+  const interestSavedMinor = totalInterest - newInterestMinor;
 
   const payoffDate = (months: number) => {
     if (!isFinite(months)) return 'N/A';
@@ -219,7 +220,7 @@ function ExpandedForecast({ loan, monthsLeft, totalInterest, currency }: { loan:
             {[
               { label:'New payoff', value: payoffDate(newMonths), color:'var(--success)' },
               { label:'Months saved', value:`${monthsSaved} mo`, color:'var(--success)' },
-              { label:'Interest saved', value: fmtAdaptive(interestSaved, currency), color:'var(--success)' },
+              { label:'Interest saved', value: fmtAdaptive(interestSavedMinor, currency), color:'var(--success)' },
             ].map(r => (
               <div key={r.label} style={{ background:'var(--success-light)', borderRadius:7, padding:'0.5rem 0.625rem', border:'1px solid var(--success)' }}>
                 <div style={{ fontSize:'0.58rem', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', color:'var(--text-muted)', marginBottom:'0.15rem' }}>{r.label}</div>
@@ -239,7 +240,7 @@ function RecordPaymentModal({ loan, onClose, currency, categories }: { loan: Loa
   const [, startT] = useTransition();
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState('');
-  const [payment,  setPayment]  = useState(String(loan.monthlyPmt));
+  const [payment,  setPayment]  = useState(String(toMajor(loan.monthlyPaymentMinor)));
   // Default next due date to +1 month from current due date
   const defaultNextDue = (() => {
     const d = new Date(loan.nextDue);
@@ -250,27 +251,27 @@ function RecordPaymentModal({ loan, onClose, currency, categories }: { loan: Loa
   const [recordTx, setRecordTx] = useState(false);
   const [categoryId, setCategoryId] = useState(categories.find(c => c.name.toLowerCase() === 'debt' || c.name.toLowerCase() === 'loan')?.id || categories[0]?.id || '');
 
-  const paymentAmt = parseFloat(payment || '0');
+  const paymentAmtMinor = toMinor(parseFloat(payment || '0'));
   // Correctly split payment into interest + principal (reducing-balance method)
   const monthlyRate       = loan.annualRate / 100 / 12;
-  const interestCharge    = Math.round(loan.balance * monthlyRate);
-  const principalReduction = Math.max(0, paymentAmt - interestCharge);
-  const newBalance         = Math.max(0, loan.balance - principalReduction);
+  const interestChargeMinor    = Math.round(loan.balanceMinor * monthlyRate);
+  const principalReductionMinor = Math.max(0, paymentAmtMinor - interestChargeMinor);
+  const newBalanceMinor         = Math.max(0, loan.balanceMinor - principalReductionMinor);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true); setError('');
     try {
-      await updateLoanBalance(loan.id, newBalance, 0, nextDue || undefined);
+      await updateLoanBalance(loan.id, newBalanceMinor, 0, nextDue || undefined);
       
-      if (recordTx && categoryId && paymentAmt > 0) {
+      if (recordTx && categoryId && paymentAmtMinor > 0) {
         await addTransaction({
-          amount: paymentAmt,
+          baseAmountMinor: paymentAmtMinor,
           name: `Loan Repayment: ${loan.name}`,
           type: 'expense',
           date: new Date().toISOString().slice(0, 10),
           categoryId,
-          note: `Principal: ${principalReduction} | Interest: ${interestCharge}`,
+          note: `Principal: ${toMajor(principalReductionMinor)} | Interest: ${toMajor(interestChargeMinor)}`,
         });
       }
       
@@ -289,7 +290,7 @@ function RecordPaymentModal({ loan, onClose, currency, categories }: { loan: Loa
           <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', display:'flex' }}><X size={18}/></button>
         </div>
         <p style={{ fontSize:'0.8rem', color:'var(--text-secondary)', marginBottom:'1rem' }}>
-          Recording payment for <strong>{loan.name}</strong> · balance: {fmtAdaptive(loan.balance, currency)}
+          Recording payment for <strong>{loan.name}</strong> · balance: {fmtAdaptive(loan.balanceMinor, currency)}
         </p>
         <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:'0.875rem' }}>
           <div>
@@ -298,22 +299,22 @@ function RecordPaymentModal({ loan, onClose, currency, categories }: { loan: Loa
               type="number" min="1" step="1" value={payment} onChange={e => setPayment(e.target.value)} required autoFocus />
           </div>
           {/* Payment breakdown — interest vs principal */}
-          {paymentAmt > 0 && (
+          {paymentAmtMinor > 0 && (
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.5rem' }}>
               <div style={{ padding:'0.6rem 0.75rem', borderRadius:8, background:'var(--warning-light)', fontSize:'0.75rem' }}>
                 <div style={{ color:'var(--text-muted)', fontWeight:600, marginBottom:'0.1rem', textTransform:'uppercase', fontSize:'0.6rem', letterSpacing:'0.06em' }}>Interest this month</div>
-                <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, color:'var(--danger)' }}>{fmtAdaptive(interestCharge, currency)}</div>
+                <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, color:'var(--danger)' }}>{fmtAdaptive(interestChargeMinor, currency)}</div>
               </div>
               <div style={{ padding:'0.6rem 0.75rem', borderRadius:8, background:'var(--success-light)', fontSize:'0.75rem' }}>
                 <div style={{ color:'var(--text-muted)', fontWeight:600, marginBottom:'0.1rem', textTransform:'uppercase', fontSize:'0.6rem', letterSpacing:'0.06em' }}>Principal Paid</div>
-                <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, color:'var(--success)' }}>{fmtAdaptive(principalReduction, currency)}</div>
+                <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, color:'var(--success)' }}>{fmtAdaptive(principalReductionMinor, currency)}</div>
               </div>
             </div>
           )}
-          {paymentAmt > 0 && (
+          {paymentAmtMinor > 0 && (
             <div style={{ padding:'0.6rem 0.75rem', borderRadius:8, background:'var(--primary-light)', fontSize:'0.75rem' }}>
               <div style={{ color:'var(--text-muted)', fontWeight:600, marginBottom:'0.1rem', textTransform:'uppercase', fontSize:'0.6rem', letterSpacing:'0.06em' }}>New balance</div>
-              <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, color:'var(--primary)' }}>{fmtAdaptive(newBalance, currency)}</div>
+              <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, color:'var(--primary)' }}>{fmtAdaptive(newBalanceMinor, currency)}</div>
             </div>
           )}
           <div>
@@ -324,7 +325,7 @@ function RecordPaymentModal({ loan, onClose, currency, categories }: { loan: Loa
               type="date" value={nextDue} onChange={e => setNextDue(e.target.value)} />
           </div>
           <div style={{ padding:'0.75rem', borderRadius:8, background:'var(--primary-light)', fontSize:'0.8rem', color:'var(--primary)', fontWeight:600 }}>
-            New balance: {currency} {newBalance.toLocaleString()}
+            New balance: {currency} {toMajor(newBalanceMinor).toLocaleString()}
           </div>
           
           <label style={{ display:'flex', alignItems:'center', gap:'0.5rem', cursor:'pointer', fontSize:'0.8rem', color:'var(--text-primary)' }}>
@@ -363,11 +364,11 @@ export function LoansClient({ loans, currency, categories = [] }: { loans: Loan[
   const [deletingId,  setDeletingId]  = useState<string | null>(null);
   const [expanded,    setExpanded]    = useState<string | null>(null);
 
-  const totalDebt     = loans.reduce((s, l) => s + l.balance, 0);
-  const totalOriginal = loans.reduce((s, l) => s + l.originalAmt, 0);
-  const totalMonthly  = loans.reduce((s, l) => s + l.monthlyPmt, 0);
+  const totalDebtMinor     = loans.reduce((s, l) => s + l.balanceMinor, 0);
+  const totalOriginalMinor = loans.reduce((s, l) => s + l.originalAmountMinor, 0);
+  const totalMonthlyMinor  = loans.reduce((s, l) => s + l.monthlyPaymentMinor, 0);
   const overdue       = loans.filter(l => l.daysOverdue > 0).length;
-  const paidPct       = totalOriginal > 0 ? Math.min(100, Math.round(((totalOriginal - totalDebt) / totalOriginal) * 100)) : 0;
+  const paidPct       = totalOriginalMinor > 0 ? Math.min(100, Math.round(((totalOriginalMinor - totalDebtMinor) / totalOriginalMinor) * 100)) : 0;
 
   async function handleDelete(id: string) {
     if (!confirm('Delete this loan?')) return;
@@ -399,11 +400,11 @@ export function LoansClient({ loans, currency, categories = [] }: { loans: Loan[
             <p className="hero-label">Total Debt</p>
             <p style={{
               fontFamily:'Space Grotesk,sans-serif',
-              fontSize: totalDebt > 9_999_999 ? '1.6rem' : totalDebt > 999_999 ? '1.9rem' : '2.25rem',
+              fontSize: totalDebtMinor > 9_999_99900 ? '1.6rem' : totalDebtMinor > 999_99900 ? '1.9rem' : '2.25rem',
               fontWeight:800, letterSpacing:'-0.04em', lineHeight:1,
               color:'var(--danger)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
-            }}>{fmtAdaptive(totalDebt, currency)}</p>
-            <p className="hero-sub">of {fmtAdaptive(totalOriginal, currency)} original · {paidPct}% paid</p>
+            }}>{fmtAdaptive(totalDebtMinor, currency)}</p>
+            <p className="hero-sub">of {fmtAdaptive(totalOriginalMinor, currency)} original · {paidPct}% paid</p>
             <div className="hero-progress-wrap" style={{ marginTop:'0.75rem', paddingTop:'0.75rem' }}>
               <div className="hero-progress-labels">
                 <span className="hero-progress-label">Repayment progress</span>
@@ -422,7 +423,7 @@ export function LoansClient({ loans, currency, categories = [] }: { loans: Loan[
             </div>
             <div className="hero-stat-card">
               <p className="hero-label">Monthly Pmts</p>
-              <p className="hero-stat-value tabular" style={{ color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{fmtAdaptive(totalMonthly, currency)}</p>
+              <p className="hero-stat-value tabular" style={{ color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{fmtAdaptive(totalMonthlyMinor, currency)}</p>
               <p className="hero-sub">per month</p>
             </div>
             <div className="hero-stat-card">
@@ -450,15 +451,15 @@ export function LoansClient({ loans, currency, categories = [] }: { loans: Loan[
 
             // Amortization calculator with safety guards
             const monthlyRate   = l.annualRate / 100 / 12;
-            const minPayment    = monthlyRate > 0 ? l.balance * monthlyRate : 0; // payment must exceed this
-            const paymentValid  = l.monthlyPmt > minPayment;
+            const minPaymentMinor    = monthlyRate > 0 ? l.balanceMinor * monthlyRate : 0; // payment must exceed this
+            const paymentValid  = l.monthlyPaymentMinor > minPaymentMinor;
             const monthsLeft    = !paymentValid
               ? Infinity
               : monthlyRate > 0
-                ? Math.ceil(Math.log(l.monthlyPmt / (l.monthlyPmt - l.balance * monthlyRate)) / Math.log(1 + monthlyRate))
-                : Math.ceil(l.balance / l.monthlyPmt);
-            const totalInterest = isFinite(monthsLeft)
-              ? Math.round(Math.max(0, (l.monthlyPmt * monthsLeft) - l.balance))
+                ? Math.ceil(Math.log(l.monthlyPaymentMinor / (l.monthlyPaymentMinor - l.balanceMinor * monthlyRate)) / Math.log(1 + monthlyRate))
+                : Math.ceil(l.balanceMinor / l.monthlyPaymentMinor);
+            const totalInterestMinor = isFinite(monthsLeft)
+              ? Math.round(Math.max(0, (l.monthlyPaymentMinor * monthsLeft) - l.balanceMinor))
               : 0;
 
             return (
@@ -495,13 +496,13 @@ export function LoansClient({ loans, currency, categories = [] }: { loans: Loan[
                   <div style={{ minWidth:0, flex:1, marginRight:'0.5rem' }}>
                     <div style={{
                       fontFamily:'Space Grotesk,sans-serif',
-                      fontSize: l.balance > 9_999_999 ? '1.1rem' : l.balance > 999_999 ? '1.25rem' : '1.5rem',
+                      fontSize: l.balanceMinor > 9_999_99900 ? '1.1rem' : l.balanceMinor > 999_99900 ? '1.25rem' : '1.5rem',
                       fontWeight:800, color:st.color, letterSpacing:'-0.04em', lineHeight:1.1,
                       whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
                     }}>
-                      {fmtAdaptive(l.balance, currency)}
+                      {fmtAdaptive(l.balanceMinor, currency)}
                     </div>
-                    <div style={{ fontSize:'0.7rem', color:'var(--text-secondary)', marginTop:'0.2rem', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>of {fmtAdaptive(l.originalAmt, currency)} original</div>
+                    <div style={{ fontSize:'0.7rem', color:'var(--text-secondary)', marginTop:'0.2rem', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>of {fmtAdaptive(l.originalAmountMinor, currency)} original</div>
                   </div>
                   <div style={{ textAlign:'right', flexShrink:0 }}>
                     <div style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'1.5rem', fontWeight:800, color:st.color, lineHeight:1, opacity:0.88 }}>{st.paidPct}%</div>
@@ -518,7 +519,7 @@ export function LoansClient({ loans, currency, categories = [] }: { loans: Loan[
                   <div style={{ display:'flex', gap:'1rem' }}>
                     <div>
                       <div style={{ fontSize:'0.65rem', color:'var(--text-muted)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em' }}>Monthly</div>
-                      <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, fontSize:'0.85rem', color:'var(--text-primary)', whiteSpace:'nowrap' }}>{fmtAdaptive(l.monthlyPmt, currency)}</div>
+                      <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, fontSize:'0.85rem', color:'var(--text-primary)', whiteSpace:'nowrap' }}>{fmtAdaptive(l.monthlyPaymentMinor, currency)}</div>
                     </div>
                     <div>
                       <div style={{ fontSize:'0.65rem', color:'var(--text-muted)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em' }}>Next Due</div>
@@ -547,7 +548,7 @@ export function LoansClient({ loans, currency, categories = [] }: { loans: Loan[
 
                 {/* Expanded interest forecast + interactive extra payment simulator */}
                 {isExpanded && (
-                  <ExpandedForecast loan={l} monthsLeft={monthsLeft} totalInterest={totalInterest} currency={currency} />
+                  <ExpandedForecast loan={l} monthsLeft={monthsLeft} totalInterest={totalInterestMinor} currency={currency} />
                 )}
               </div>
             );

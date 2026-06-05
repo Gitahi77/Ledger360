@@ -8,10 +8,11 @@ import { SmartUpload } from '@/components/SmartUpload';
 import { addTransaction, editTransaction, deleteTransaction } from '@/lib/actions/transactions';
 import { fmtAdaptive } from '@/lib/format';
 import { Plus, FileDown, X, Loader2, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { toMinor, toMajor } from '@/lib/money';
 import { TransactionRow } from '@/components/finance/TransactionRow';
 
 type Tx = {
-  id: string; name: string; amount: number; type: string;
+  id: string; name: string; baseAmountMinor: number; type: string;
   date: Date; note: string | null;
   category: { id: string; name: string; icon: string | null };
 };
@@ -39,7 +40,7 @@ function TransactionModal({ tx, categories, currency, onClose }: { tx?: Tx; cate
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
   const [name,       setName]       = useState(tx?.name ?? '');
-  const [amount,     setAmount]     = useState(tx ? String(tx.amount) : '');
+  const [amount,     setAmount]     = useState(tx ? String(toMajor(tx.baseAmountMinor)) : '');
   const [type,       setType]       = useState<'income' | 'expense'>(tx ? (tx.type as any) : 'expense');
   const [categoryId, setCategoryId] = useState(tx?.category.id ?? '');
   const [date,       setDate]       = useState(tx ? new Date(tx.date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10));
@@ -54,9 +55,9 @@ function TransactionModal({ tx, categories, currency, onClose }: { tx?: Tx; cate
     setLoading(true); setError('');
     try {
       if (isEdit && tx) {
-        await editTransaction(tx.id, { name, amount: parseFloat(amount), type, categoryId, date: new Date(date), note });
+        await editTransaction(tx.id, { name, baseAmountMinor: toMinor(parseFloat(amount)), type, categoryId, date: new Date(date), note });
       } else {
-        await addTransaction({ name, amount: parseFloat(amount), type, categoryId, date, note });
+        await addTransaction({ name, baseAmountMinor: toMinor(parseFloat(amount)), type, categoryId, date, note });
       }
       startT(() => router.refresh());
       onClose();
@@ -147,7 +148,7 @@ export function TransactionsClient({ transactions, categories, totalIncome, tota
       tx.name.toLowerCase().includes(q) ||
       tx.category.name.toLowerCase().includes(q) ||
       (tx.note && tx.note.toLowerCase().includes(q)) ||
-      String(tx.amount).includes(q)
+      String(toMajor(tx.baseAmountMinor)).includes(q)
     );
   });
   const totalPages = Math.max(1, Math.ceil(filteredTxs.length / PAGE_SIZE));
@@ -275,7 +276,7 @@ export function TransactionsClient({ transactions, categories, totalIncome, tota
                   key={tx.id}
                   title={tx.name}
                   subtitle={tx.note ? `${tx.category.name} • ${tx.note}` : tx.category.name}
-                  amount={tx.amount}
+                  amountMinor={tx.baseAmountMinor}
                   type={tx.type}
                   icon={<CategoryIcon category={tx.category.icon ?? tx.category.name.toLowerCase()} name={tx.name} size={18}/>}
                   state={tx.type === 'pending' ? 'pending' : undefined}

@@ -5,7 +5,7 @@ import { ReactNode } from 'react';
 interface TransactionRowProps {
   title: string;
   subtitle: string;
-  amount: number;
+  amountMinor: number;
   /** Transaction type — drives colour: 'income'/'savings' = green, 'expense' = red */
   type?: string;
   state?: "pending" | "reconciled" | "flagged";
@@ -19,7 +19,7 @@ interface TransactionRowProps {
 export function TransactionRow({
   title,
   subtitle,
-  amount,
+  amountMinor,
   type,
   state,
   icon,
@@ -44,7 +44,7 @@ export function TransactionRow({
       </div>
 
       <div className="transaction-row-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-        <LedgerAmount amount={amount} type={type} />
+        <LedgerAmount amountMinor={amountMinor} type={type} />
         {onEdit && (
           <button
             onClick={(e) => { e.stopPropagation(); onEdit(); }}

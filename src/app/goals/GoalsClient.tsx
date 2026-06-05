@@ -9,10 +9,11 @@ import { CategoryIcon } from '@/components/CategoryIcon';
 import { fmtAdaptive, fmtFull, fmtPct } from '@/lib/format';
 import { Plus, CheckCircle2, TrendingUp, Trash2, Loader2, X, PiggyBank, Info } from 'lucide-react';
 import { inflationAdjustedTarget, yearsUntil } from '@/lib/api/inflation';
+import { toMinor, toMajor } from '@/lib/money';
 
 type Goal = {
   id: string; name: string; category: string;
-  targetAmount: number; currentAmount: number;
+  targetAmountMinor: number; currentAmountMinor: number;
   deadline: Date | null;
 };
 
@@ -64,8 +65,8 @@ function GoalModal({ goal, onClose, currency }: { goal?: Goal; onClose: () => vo
   const [error, setError]     = useState('');
   const [name,          setName]          = useState(goal?.name ?? '');
   const [category,      setCategory]      = useState(goal?.category ?? 'savings');
-  const [targetAmount,  setTargetAmount]  = useState(goal ? String(goal.targetAmount) : '');
-  const [currentAmount, setCurrentAmount] = useState(goal ? String(goal.currentAmount) : '0');
+  const [targetAmount,  setTargetAmount]  = useState(goal ? String(toMajor(goal.targetAmountMinor)) : '');
+  const [currentAmount, setCurrentAmount] = useState(goal ? String(toMajor(goal.currentAmountMinor)) : '0');
   const [deadline,      setDeadline]      = useState(goal?.deadline ? new Date(goal.deadline).toISOString().slice(0, 10) : '');
   const isEdit = Boolean(goal);
 
@@ -78,15 +79,15 @@ function GoalModal({ goal, onClose, currency }: { goal?: Goal; onClose: () => vo
       if (isEdit && goal) {
         await editGoal(goal.id, {
           name, category,
-          targetAmount:  parseFloat(targetAmount),
-          currentAmount: parseFloat(currentAmount || '0'),
+          targetAmountMinor:  toMinor(parseFloat(targetAmount)),
+          currentAmountMinor: toMinor(parseFloat(currentAmount || '0')),
           deadline:      deadline || null,
         });
       } else {
         await addGoal({
           name, category,
-          targetAmount:  parseFloat(targetAmount),
-          currentAmount: parseFloat(currentAmount || '0'),
+          targetAmountMinor:  toMinor(parseFloat(targetAmount)),
+          currentAmountMinor: toMinor(parseFloat(currentAmount || '0')),
           deadline:      deadline || undefined,
         });
       }
@@ -156,19 +157,19 @@ function AddFundsModal({ goal, onClose, currency, categories }: { goal: Goal; on
   const [recordTx, setRecordTx] = useState(false);
   const [categoryId, setCategoryId] = useState(categories.find(c => c.name.toLowerCase() === 'transfer' || c.name.toLowerCase() === 'savings')?.id || categories[0]?.id || '');
 
-  const addAmt   = parseFloat(amount || '0');
-  const newTotal = goal.currentAmount + addAmt;
-  const newPct   = goal.targetAmount > 0 ? Math.min(100, Math.round((newTotal / goal.targetAmount) * 100)) : 0;
+  const addAmtMinor = toMinor(parseFloat(amount || '0'));
+  const newTotalMinor = goal.currentAmountMinor + addAmtMinor;
+  const newPct   = goal.targetAmountMinor > 0 ? Math.min(100, Math.round((newTotalMinor / goal.targetAmountMinor) * 100)) : 0;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     try {
-      await updateGoalAmount(goal.id, newTotal);
+      await updateGoalAmount(goal.id, newTotalMinor);
       
-      if (recordTx && categoryId && addAmt > 0) {
+      if (recordTx && categoryId && addAmtMinor > 0) {
         await addTransaction({
-          amount: addAmt,
+          baseAmountMinor: addAmtMinor,
           name: `Goal Contribution: ${goal.name}`,
           type: 'expense',
           date: new Date().toISOString().slice(0, 10),
@@ -194,7 +195,7 @@ function AddFundsModal({ goal, onClose, currency, categories }: { goal: Goal; on
           <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', display:'flex' }}><X size={18}/></button>
         </div>
         <p style={{ fontSize:'0.8rem', color:'var(--text-secondary)', marginBottom:'1rem' }}>
-          Adding to <strong>{goal.name}</strong> · current: {fmtAdaptive(goal.currentAmount, currency)}
+          Adding to <strong>{goal.name}</strong> · current: {fmtAdaptive(goal.currentAmountMinor, currency)}
         </p>
         <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:'0.875rem' }}>
           <div>
@@ -202,11 +203,11 @@ function AddFundsModal({ goal, onClose, currency, categories }: { goal: Goal; on
             <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
               type="number" min="1" step="1" value={amount} onChange={e => setAmount(e.target.value)} required placeholder="5000" autoFocus />
           </div>
-          {addAmt > 0 && (
+          {addAmtMinor > 0 && (
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.5rem' }}>
               <div style={{ padding:'0.6rem 0.75rem', borderRadius:8, background:'var(--primary-light)', fontSize:'0.75rem' }}>
                 <div style={{ color:'var(--text-muted)', fontWeight:600, marginBottom:'0.1rem', textTransform:'uppercase', fontSize:'0.6rem', letterSpacing:'0.06em' }}>New total</div>
-                <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, color:'var(--primary)' }}>{fmtAdaptive(newTotal, currency)}</div>
+                <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, color:'var(--primary)' }}>{fmtAdaptive(newTotalMinor, currency)}</div>
               </div>
               <div style={{ padding:'0.6rem 0.75rem', borderRadius:8, background:'var(--success-light)', fontSize:'0.75rem' }}>
                 <div style={{ color:'var(--text-muted)', fontWeight:600, marginBottom:'0.1rem', textTransform:'uppercase', fontSize:'0.6rem', letterSpacing:'0.06em' }}>Progress</div>
@@ -249,10 +250,10 @@ export function GoalsClient({ goals, currency, categories = [] }: { goals: Goal[
   const [celebrating,  setCelebrate]    = useState<string | null>(null);
   const [deletingId,   setDeletingId]   = useState<string | null>(null);
 
-  const totalSaved  = goals.reduce((s, g) => s + g.currentAmount, 0);
-  const totalTarget = goals.reduce((s, g) => s + g.targetAmount,  0);
-  const achieved    = goals.filter(g => g.currentAmount >= g.targetAmount).length;
-  const almostThere = goals.filter(g => { const p = (g.currentAmount/g.targetAmount)*100; return p >= 70 && p < 100; }).length;
+  const totalSaved  = goals.reduce((s, g) => s + g.currentAmountMinor, 0);
+  const totalTarget = goals.reduce((s, g) => s + g.targetAmountMinor,  0);
+  const achieved    = goals.filter(g => g.currentAmountMinor >= g.targetAmountMinor).length;
+  const almostThere = goals.filter(g => { const p = (g.currentAmountMinor/g.targetAmountMinor)*100; return p >= 70 && p < 100; }).length;
   const overallPct  = totalTarget > 0 ? Math.min(100, Math.round((totalSaved/totalTarget)*100)) : 0;
 
   async function handleDelete(id: string) {
@@ -331,18 +332,18 @@ export function GoalsClient({ goals, currency, categories = [] }: { goals: Goal[
       ) : (
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(300px,1fr))', gap:'1.125rem' }}>
           {goals.map((g, i) => {
-            // Guard against division-by-zero when targetAmount is 0
-            const pct  = g.targetAmount > 0
-              ? Math.min(100, Math.round((g.currentAmount / g.targetAmount) * 100))
+            // Guard against division-by-zero when targetAmountMinor is 0
+            const pct  = g.targetAmountMinor > 0
+              ? Math.min(100, Math.round((g.currentAmountMinor / g.targetAmountMinor) * 100))
               : 0;
             const st   = goalStyle(pct);
-            const left = Math.max(0, g.targetAmount - g.currentAmount);
+            const left = Math.max(0, g.targetAmountMinor - g.currentAmountMinor);
             const deadlineLabel = g.deadline
               ? new Date(g.deadline).toLocaleDateString('en-GB', { month:'short', year:'numeric' })
               : 'No deadline';
             const yrsLeft = g.deadline ? yearsUntil(g.deadline) : 0;
-            const inflTarget = (g.deadline && yrsLeft > 0.25)
-              ? inflationAdjustedTarget(g.targetAmount, yrsLeft)
+            const inflTargetMinor = (g.deadline && yrsLeft > 0.25)
+              ? inflationAdjustedTarget(g.targetAmountMinor, yrsLeft)
               : null;
 
             return (
@@ -387,25 +388,25 @@ export function GoalsClient({ goals, currency, categories = [] }: { goals: Goal[
                   <div style={{ minWidth:0, flex:1, marginRight:'0.5rem' }}>
                     <div style={{
                       fontFamily:'Space Grotesk,sans-serif',
-                      fontSize: g.currentAmount > 9_999_999 ? '1.1rem' : g.currentAmount > 999_999 ? '1.25rem' : '1.5rem',
+                      fontSize: g.currentAmountMinor > 9_999_99900 ? '1.1rem' : g.currentAmountMinor > 999_99900 ? '1.25rem' : '1.5rem',
                       fontWeight:800, color:st.numColor,
                       letterSpacing:'-0.04em', lineHeight:1.1,
                       whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
                     }}>
-                      {fmtAdaptive(g.currentAmount, currency)}
+                      {fmtAdaptive(g.currentAmountMinor, currency)}
                     </div>
                     <div style={{ fontSize:'0.7rem', color:'var(--text-secondary)', marginTop:'0.2rem', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                      of {fmtAdaptive(g.targetAmount, currency)}
+                      of {fmtAdaptive(g.targetAmountMinor, currency)}
                     </div>
-                    {inflTarget && inflTarget > g.targetAmount && (
+                    {inflTargetMinor && inflTargetMinor > g.targetAmountMinor && (
                       <div
-                        title={`At Kenya's ~6.8% annual inflation (KNBS), you'll need ${fmtAdaptive(inflTarget, currency)} in today's money to match your target by ${deadlineLabel}.`}
+                        title={`At Kenya's ~6.8% annual inflation (KNBS), you'll need ${fmtAdaptive(inflTargetMinor, currency)} in today's money to match your target by ${deadlineLabel}.`}
                         style={{ display:'inline-flex', alignItems:'center', gap:'0.25rem', marginTop:'0.3rem',
                           fontSize:'0.62rem', fontWeight:700, color:'var(--warning)',
                           background:'rgba(234,179,8,0.12)', borderRadius:4, padding:'0.15rem 0.4rem',
                           cursor:'help', whiteSpace:'nowrap' }}
                       >
-                        <Info size={9}/> Inflation-adj: {fmtAdaptive(inflTarget, currency)}
+                        <Info size={9}/> Inflation-adj: {fmtAdaptive(inflTargetMinor, currency)}
                       </div>
                     )}
                   </div>

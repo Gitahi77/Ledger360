@@ -114,15 +114,16 @@ model Category {
 }
 
 model Transaction {
-  id          String   @id @default(cuid())
-  date        DateTime
-  amount      Float
-  type        String   // "income" | "expense"
-  name        String
-  note        String?
-  categoryId  String
-  userId      String
-  importedAt  DateTime? // non-null if imported via Smart Upload
+  id               String   @id @default(cuid())
+  date             DateTime
+  baseAmountMinor  Int      // stored as integer minor units (cents)
+  currency         String   @default("KES")
+  type             String   // "income" | "expense"
+  name             String
+  note             String?
+  categoryId       String
+  userId           String
+  importedAt       DateTime? // non-null if imported via Smart Upload
 
   category Category @relation(fields: [categoryId], references: [id])
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -133,12 +134,12 @@ model Transaction {
 }
 
 model Budget {
-  id         String   @id @default(cuid())
-  name       String
-  period     String   @default("monthly") // "weekly" | "monthly" | "yearly"
-  limitAmt   Float
-  categoryId String
-  userId     String
+  id               String   @id @default(cuid())
+  name             String
+  period           String   @default("monthly") // "weekly" | "monthly" | "yearly"
+  limitAmountMinor Int      // stored as integer minor units (cents)
+  categoryId       String
+  userId           String
 
   category Category @relation(fields: [categoryId], references: [id])
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -149,30 +150,30 @@ model Budget {
 }
 
 model Goal {
-  id            String    @id @default(cuid())
-  name          String
-  category      String
-  targetAmount  Float
-  currentAmount Float     @default(0)
-  deadline      DateTime?
-  userId        String
+  id                  String    @id @default(cuid())
+  name                String
+  category            String
+  targetAmountMinor   Int       // stored as integer minor units (cents)
+  currentAmountMinor  Int       @default(0)
+  deadline            DateTime?
+  userId              String
 
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 }
 
 model Loan {
-  id          String   @id @default(cuid())
-  name        String
-  lender      String
-  type        String   // "Personal" | "Student" | "Mortgage" | "Credit Card" | "Informal"
-  originalAmt Float
-  balance     Float
-  annualRate  Float    @default(0)
-  monthlyPmt  Float
-  nextDue     DateTime
-  daysOverdue Int      @default(0)
-  userId      String
+  id                    String   @id @default(cuid())
+  name                  String
+  lender                String
+  type                  String   // "Personal" | "Student" | "Mortgage" | "Credit Card" | "Informal"
+  originalAmountMinor   Int      // stored as integer minor units (cents)
+  balanceMinor          Int
+  annualRate            Float    @default(0)  // percentage, NOT money
+  monthlyPaymentMinor   Int
+  nextDue               DateTime
+  daysOverdue           Int      @default(0)
+  userId                String
 
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
@@ -181,11 +182,11 @@ model Loan {
 }
 
 model Asset {
-  id        String   @id @default(cuid())
-  name      String
-  category  String   // "Liquid" | "Investment" | "Property"
-  value     Float
-  userId    String
+  id          String   @id @default(cuid())
+  name        String
+  category    String   // "Liquid" | "Investment" | "Property"
+  valueMinor  Int      // stored as integer minor units (cents)
+  userId      String
 
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   updatedAt DateTime @updatedAt

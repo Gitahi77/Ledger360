@@ -25,14 +25,21 @@ export async function getLoans() {
 /* ── Add (Zod-validated) ──────────────────────────────────── */
 export async function addLoan(raw: {
   name: string; lender: string; type: string;
-  originalAmt: number; balance: number;
-  annualRate: number; monthlyPmt: number; nextDue: string;
+  originalAmountMinor: number; balanceMinor: number;
+  annualRate: number; monthlyPaymentMinor: number; nextDue: string;
 }) {
   const { AddLoanSchema } = await import('@/lib/validation');
   const data = AddLoanSchema.parse(raw);
   const user = await requireAuth();
   await prisma.loan.create({
-    data: { ...data, nextDue: new Date(data.nextDue), userId: user.id },
+    data: {
+      ...data,
+      userId: user.id,
+      nextDue: new Date(data.nextDue),
+      originalAmountMinor: data.originalAmountMinor,
+      balanceMinor: data.balanceMinor,
+      monthlyPaymentMinor: data.monthlyPaymentMinor,
+    },
   });
   revalidatePath('/loans');
   revalidatePath('/');
@@ -40,7 +47,7 @@ export async function addLoan(raw: {
 
 export async function updateLoanBalance(
   id: string,
-  balance: number,
+  balanceMinor: number,
   daysOverdue: number,
   nextDue?: string,
 ) {
@@ -49,7 +56,7 @@ export async function updateLoanBalance(
   await prisma.loan.updateMany({
     where: { id, userId: user.id },
     data:  {
-      balance:     Math.max(0, Number(balance)),
+      balanceMinor:     Math.max(0, Number(balanceMinor)),
       daysOverdue: Math.max(0, Math.floor(Number(daysOverdue))),
       ...(nextDue ? { nextDue: new Date(nextDue) } : {}),
     },
@@ -67,8 +74,8 @@ export async function deleteLoan(id: string) {
 }
 
 export async function editLoan(id: string, data: {
-  name?: string; lender?: string; type?: string; originalAmt?: number; balance?: number;
-  annualRate?: number; monthlyPmt?: number; nextDue?: string; daysOverdue?: number;
+  name?: string; lender?: string; type?: string; originalAmountMinor?: number; balanceMinor?: number;
+  annualRate?: number; monthlyPaymentMinor?: number; nextDue?: string; daysOverdue?: number;
 }) {
   const user = await requireAuth();
   if (!id) throw new Error('Missing id');
