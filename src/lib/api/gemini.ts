@@ -72,7 +72,7 @@ export async function parseMpesaSms(smsText: string): Promise<ParsedTransaction[
     const parsed = JSON.parse(text);
     return Array.isArray(parsed) ? parsed : [];
   } catch {
-    console.error('[Gemini SMS] Failed to parse response:', text);
+    console.error('[Gemini SMS] Failed to parse response from Gemini. It was not valid JSON.');
     return [];
   }
 }
@@ -127,7 +127,7 @@ export async function parseDocumentWithGemini(
     const parsed = JSON.parse(text);
     return Array.isArray(parsed) ? parsed : [];
   } catch {
-    console.error('[Gemini Doc] Failed to parse response:', text);
+    console.error('[Gemini Doc] Failed to parse document from Gemini. It was not valid JSON.');
     return [];
   }
 }

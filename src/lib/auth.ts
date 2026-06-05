@@ -10,7 +10,7 @@ import { PrismaAdapter } from '@auth/prisma-adapter';
 import bcrypt from 'bcryptjs';
 import * as argon2 from '@node-rs/argon2';
 import { prisma } from './prisma';
-import { loginLimiter } from './rateLimit';
+import { checkLimit } from './rateLimit';
 
 // Fail fast at startup if secret is missing — random per-process secret
 // would invalidate all sessions on every deploy.
@@ -46,7 +46,7 @@ export const authOptions: NextAuthOptions = {
         // ── Rate limit by IP ──────────────────────────────────────────────
         const forwardedFor = req?.headers?.['x-forwarded-for'];
         const ip = (typeof forwardedFor === 'string' ? forwardedFor.split(',')[0].trim() : undefined) ?? 'unknown';
-        const rl = loginLimiter.check(`login:${ip}`);
+        const rl = await checkLimit('login', `login:${ip}`);
         if (!rl.ok) {
           // Throwing causes NextAuth to surface "CredentialsSignin" error.
           // The login form maps any error to a generic message — safe.

@@ -63,4 +63,10 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+import { withSentryConfig } from '@sentry/nextjs';
+
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG || "ledger360",
+  project: process.env.SENTRY_PROJECT || "ledger360",
+  silent: !process.env.CI,
+});

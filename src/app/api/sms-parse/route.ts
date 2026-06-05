@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { parseMpesaSms } from '@/lib/api/gemini';
+import { checkLimit } from '@/lib/rateLimit';
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -18,6 +19,19 @@ export async function POST(req: NextRequest) {
 
   if (!sms.trim()) {
     return NextResponse.json({ error: 'No SMS text provided' }, { status: 400 });
+  }
+
+  if (sms.length > 8000) {
+    return NextResponse.json({ error: 'SMS text is too long (max 8000 characters)' }, { status: 400 });
+  }
+
+  const userId = (session.user as any).id as string;
+  const rl = await checkLimit('ai', `ai:${userId}`);
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: `AI rate limit reached. Try again in ${rl.retryAfter}s.` },
+      { status: 429, headers: { 'Retry-After': String(rl.retryAfter) } }
+    );
   }
 
   if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {

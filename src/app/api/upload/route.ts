@@ -8,7 +8,7 @@ import { getServerSession } from 'next-auth';
 import { z } from 'zod';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { uploadLimiter } from '@/lib/rateLimit';
+import { checkLimit } from '@/lib/rateLimit';
 
 export const maxDuration = 60; // allow up to 60s for AI processing
 
@@ -238,8 +238,15 @@ function parseMpesaStyle(text: string): RawRow[] {
 }
 
 /* ── Gemini Vision parser (uses GOOGLE_GENERATIVE_AI_API_KEY) ───── */
-async function parseWithAI(fileBuffer: ArrayBuffer, mimeType: string): Promise<any[] | null> {
+async function parseWithAI(fileBuffer: ArrayBuffer, mimeType: string, userId: string): Promise<any[] | null> {
   if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) return null;
+  
+  const rlAi = await checkLimit('ai', `ai:${userId}`);
+  if (!rlAi.ok) {
+    console.warn(`[SmartUpload] AI rate limit hit for user ${userId}`);
+    return null; // fallback to non-AI methods
+  }
+
   try {
     const { parseDocumentWithGemini } = await import('@/lib/api/gemini');
     const base64 = Buffer.from(fileBuffer).toString('base64');
@@ -270,7 +277,7 @@ export async function POST(request: Request) {
   const userId = (session.user as any).id as string;
 
   // ── Rate limiting ──────────────────────────────────────────
-  const rl = uploadLimiter.check(`upload:${userId}`);
+  const rl = await checkLimit('upload', `upload:${userId}`);
   if (!rl.ok) {
     return NextResponse.json(
       { error: `Upload limit reached. Please wait ${rl.retryAfter} seconds.` },
@@ -310,7 +317,7 @@ export async function POST(request: Request) {
 
     // 2. PDF → Gemini AI then M-Pesa pattern fallback
     if (transactions.length === 0 && isPDF) {
-      const aiResult = await parseWithAI(fileBuffer, mimeType);
+      const aiResult = await parseWithAI(fileBuffer, mimeType, userId);
       if (aiResult?.length) {
         transactions = aiResult;
         method = 'ai';
@@ -322,7 +329,7 @@ export async function POST(request: Request) {
 
     // 3. Image → Gemini Vision
     if (transactions.length === 0 && isImage) {
-      const aiResult = await parseWithAI(fileBuffer, mimeType);
+      const aiResult = await parseWithAI(fileBuffer, mimeType, userId);
       if (aiResult?.length) { transactions = aiResult; method = 'ai'; }
     }
 

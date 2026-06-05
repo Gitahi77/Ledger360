@@ -6,7 +6,7 @@ import * as argon2 from '@node-rs/argon2';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { DEFAULT_CATEGORIES } from '@/lib/constants/categories';
-import { signupLimiter } from '@/lib/rateLimit';
+import { checkLimit } from '@/lib/rateLimit';
 
 // ── Input validation schema ───────────────────────────────────────────────
 const SignupSchema = z.object({
@@ -23,7 +23,7 @@ export async function POST(req: Request) {
   // ── Rate limiting (by IP) ─────────────────────────────────────────────
   const headersList = await headers();
   const ip = headersList.get('x-forwarded-for')?.split(',')[0].trim() ?? 'unknown';
-  const rl = signupLimiter.check(`signup:${ip}`);
+  const rl = await checkLimit('signup', `signup:${ip}`);
   if (!rl.ok) {
     return NextResponse.json(
       { error: `Too many signup attempts. Please try again in ${rl.retryAfter} seconds.` },

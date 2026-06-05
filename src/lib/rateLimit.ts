@@ -6,6 +6,8 @@
 //   const limiter = new RateLimiter({ windowMs: 60_000, max: 5 });
 //   const { ok, retryAfter } = limiter.check(key);
 //   if (!ok) return 429;
+import { Ratelimit } from '@upstash/ratelimit';
+import { Redis } from '@upstash/redis';
 
 interface Entry { count: number; reset: number; }
 
@@ -57,3 +59,38 @@ export const signupLimiter = new RateLimiter({ windowMs: 60 * 60_000, max: 5 });
 
 /** Upload: max 20 uploads per user per hour */
 export const uploadLimiter = new RateLimiter({ windowMs: 60 * 60_000, max: 20 });
+
+/** AI parsing: max 15 requests per user per hour */
+export const aiLimiter = new RateLimiter({ windowMs: 60 * 60_000, max: 15 });
+
+// ── Distributed limiters (Upstash Redis) ─────────────────────
+const hasRedis = !!process.env.UPSTASH_REDIS_REST_URL && !!process.env.UPSTASH_REDIS_REST_TOKEN;
+const redis = hasRedis ? Redis.fromEnv() : null;
+
+function make(max: number, windowSec: number) {
+  if (!redis) return null;
+  return new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(max, `${windowSec} s`) });
+}
+
+export const limiters = {
+  login:  make(10, 15 * 60),
+  signup: make(5, 60 * 60),
+  upload: make(20, 60 * 60),
+  ai:     make(15, 60 * 60),
+};
+
+export async function checkLimit(name: keyof typeof limiters, key: string) {
+  const rl = limiters[name];
+  if (rl) {
+    const r = await rl.limit(key);
+    return { ok: r.success, retryAfter: r.success ? 0 : Math.ceil((r.reset - Date.now()) / 1000) };
+  }
+  
+  // Dev fallback using in-memory
+  if (name === 'login') return loginLimiter.check(key);
+  if (name === 'signup') return signupLimiter.check(key);
+  if (name === 'upload') return uploadLimiter.check(key);
+  if (name === 'ai') return aiLimiter.check(key);
+  
+  return { ok: true, retryAfter: 0 };
+}
