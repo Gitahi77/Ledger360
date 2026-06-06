@@ -76,7 +76,7 @@ export async function createTransfer(raw: {
     if (!loan) throw new Error('Please choose a valid loan.');
     
     if (data.amountMinor > loan.balanceMinor) {
-      throw new Error(`You can't pay more than you owe. This loan's remaining balance is ${loan.currency} ${toMajor(loan.balanceMinor)}.`);
+      throw new Error(`You can't pay more than you owe. This loan's remaining balance is  ${toMajor(loan.balanceMinor)}.`);
     }
   }
 
@@ -167,7 +167,7 @@ export async function editTransfer(id: string, raw: {
     const headroom = loan.balanceMinor + oldRepaymentAmount;
 
     if (data.amountMinor > headroom) {
-      throw new Error(`You can't pay more than you owe. This loan's remaining balance is ${loan.currency} ${toMajor(headroom)}.`);
+      throw new Error(`You can't pay more than you owe. This loan's remaining balance is  ${toMajor(headroom)}.`);
     }
   }
 

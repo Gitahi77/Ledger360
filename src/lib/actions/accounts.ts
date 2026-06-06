@@ -9,6 +9,7 @@ const AccountSchema = z.object({
   type: z.enum(['mobile_money', 'bank', 'cash', 'credit_card', 'savings', 'investment']),
   currency: z.string().length(3).optional(),
   openingMinor: z.number().int().default(0),
+  archived: z.boolean().optional(),
 });
 
 export type AccountWithBalance = Account & { balanceMinor: number };
