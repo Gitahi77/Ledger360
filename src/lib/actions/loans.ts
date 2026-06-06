@@ -3,13 +3,13 @@
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { requireAuth } from './_auth';
+import { computeLoanBalance } from '@/lib/shared-computations';
 
-export async function getLoans() {
-  const user  = await requireAuth();
+export async function getLoansForUser(userId: string) {
   const today = new Date();
 
   const loans = await prisma.loan.findMany({
-    where:   { userId: user.id },
+    where:   { userId: userId },
     include: {
       transfers: { select: { baseAmountMinor: true } }
     },
@@ -22,11 +22,16 @@ export async function getLoans() {
       ? Math.floor((today.getTime() - due.getTime()) / 86_400_000)
       : 0;
     const repaidAmount = l.transfers.reduce((s, t) => s + t.baseAmountMinor, 0);
-    const currentBalanceMinor = Math.max(0, l.balanceMinor - repaidAmount);
+    const currentBalanceMinor = computeLoanBalance(l.balanceMinor, repaidAmount);
     
     const { transfers, ...rest } = l;
     return { ...rest, balanceMinor: currentBalanceMinor, daysOverdue: auto };
   });
+}
+
+export async function getLoans() {
+  const user = await requireAuth();
+  return getLoansForUser(user.id);
 }
 
 /* ── Add (Zod-validated) ──────────────────────────────────── */

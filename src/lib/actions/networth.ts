@@ -3,21 +3,31 @@
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { requireAuth } from './_auth';
+import { getAccountBalances } from './accounts';
+import { getLoansForUser } from './loans';
 
 export async function getNetWorth() {
   const user = await requireAuth();
 
-  const assets = await prisma.asset.findMany({ where: { userId: user.id } });
-  const loans  = await prisma.loan.findMany({ where: { userId: user.id } });
+  const accounts = await getAccountBalances(user.id);
+  const assets   = await prisma.asset.findMany({ where: { userId: user.id } });
+  const loans    = await getLoansForUser(user.id);
 
-  const totalAssetsMinor      = assets.reduce((s, a) => s + a.valueMinor, 0);
-  const totalLiabilitiesMinor = loans.reduce((s, l) => s + l.balanceMinor, 0);
+  const cashAccounts = accounts.filter(a => a.type !== 'credit_card' || a.balanceMinor > 0);
+  const debtAccounts = accounts.filter(a => a.type === 'credit_card' && a.balanceMinor < 0);
+
+  const totalCashMinor        = cashAccounts.reduce((s, a) => s + a.balanceMinor, 0);
+  const totalCardDebtMinor    = debtAccounts.reduce((s, a) => s + Math.abs(a.balanceMinor), 0);
+  
+  const totalAssetsMinor      = assets.reduce((s, a) => s + a.valueMinor, 0) + totalCashMinor;
+  const totalLiabilitiesMinor = loans.reduce((s, l) => s + l.balanceMinor, 0) + totalCardDebtMinor;
 
   return {
     assets,
     liabilities:     loans,
     totalAssetsMinor,
     totalLiabilitiesMinor,
+    totalCashMinor,
     netWorthMinor:  totalAssetsMinor - totalLiabilitiesMinor,
     debtRatio: totalAssetsMinor > 0 ? Math.round((totalLiabilitiesMinor / totalAssetsMinor) * 100) : 0,
   };

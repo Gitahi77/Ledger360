@@ -68,8 +68,24 @@ export async function createTransfer(raw: {
   }
 
   if (data.loanId) {
-    const loan = await prisma.loan.findFirst({ where: { id: data.loanId, userId: user.id } });
+    const { getLoansForUser } = await import('@/lib/actions/loans');
+    const loans = await getLoansForUser(user.id);
+    const loan = loans.find(l => l.id === data.loanId);
     if (!loan) throw new Error('Invalid Loan');
+    
+    if (data.amountMinor > loan.balanceMinor) {
+      throw new Error(`Repayment exceeds current loan balance.`);
+    }
+  }
+
+  // Overdraft prevention
+  if (fromAccount.type !== 'credit_card') {
+    const { getAccountBalances } = await import('@/lib/actions/accounts');
+    const balances = await getAccountBalances(user.id);
+    const acc = balances.find(a => a.id === fromAccount.id);
+    if (acc && acc.balanceMinor - data.amountMinor < 0) {
+      throw new Error('Insufficient funds. This transfer would result in a negative balance.');
+    }
   }
 
   const newTransfer = await prisma.transfer.create({

@@ -244,13 +244,18 @@ export function TransactionsClient({ transactions, categories, accounts, goals, 
   async function handleDelete(id: string, type: string) {
     if (!confirm('Delete this transaction?')) return;
     setDeletingId(id);
-    if (type === 'transfer') {
-      await deleteTransfer(id);
-    } else {
-      await deleteTransaction(id);
+    try {
+      if (type === 'transfer') {
+        await deleteTransfer(id);
+      } else {
+        await deleteTransaction(id);
+      }
+      startT(() => router.refresh());
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete transaction');
+    } finally {
+      setDeletingId(null);
     }
-    startT(() => router.refresh());
-    setDeletingId(null);
   }
 
   const periodLabel = PERIOD_LABELS[period] ?? 'This Period';

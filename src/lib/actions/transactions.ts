@@ -145,6 +145,16 @@ export async function addTransaction(raw: {
     }
   }
 
+  // Overdraft prevention
+  if (data.type === 'expense' && accountId) {
+    const { getAccountBalances } = await import('@/lib/actions/accounts');
+    const balances = await getAccountBalances(user.id);
+    const acc = balances.find(a => a.id === accountId);
+    if (acc && acc.type !== 'credit_card' && acc.balanceMinor - data.baseAmountMinor < 0) {
+      throw new Error('Insufficient funds. This expense would result in a negative account balance.');
+    }
+  }
+
   const newTx = await prisma.transaction.create({
     data: { 
       name: data.name,
@@ -273,6 +283,32 @@ export async function editTransaction(id: string, data: {
 }) {
   const user = await requireAuth();
   if (!id) throw new Error('Missing id');
+
+  const oldTx = await prisma.transaction.findFirst({ where: { id, userId: user.id } });
+  if (!oldTx) throw new Error('Transaction not found');
+
+  const newType = data.type ?? oldTx.type;
+  const newAmount = data.baseAmountMinor ?? oldTx.baseAmountMinor;
+  const newAccountId = data.accountId ?? oldTx.accountId;
+
+  if (newType === 'expense' && newAccountId) {
+    const { getAccountBalances } = await import('@/lib/actions/accounts');
+    const balances = await getAccountBalances(user.id);
+    const acc = balances.find(a => a.id === newAccountId);
+    
+    if (acc && acc.type !== 'credit_card') {
+      let effectiveBalance = acc.balanceMinor;
+      if (oldTx.type === 'expense' && oldTx.accountId === newAccountId) {
+        effectiveBalance += oldTx.baseAmountMinor; // restore old amount
+      } else if (oldTx.type === 'income' && oldTx.accountId === newAccountId) {
+        effectiveBalance -= oldTx.baseAmountMinor; // remove old income
+      }
+      
+      if (effectiveBalance - newAmount < 0) {
+        throw new Error('Insufficient funds. This update would result in a negative account balance.');
+      }
+    }
+  }
 
   const { count } = await prisma.transaction.updateMany({
     where: { id, userId: user.id },

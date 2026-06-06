@@ -206,7 +206,9 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
 
   // ── LOAN DUE ALERTS ────────────────────────────────────────────────────────
   if (prefs?.notifLoanDue !== false) {
-    const activeLoans = await prisma.loan.findMany({ where: { userId, balanceMinor: { gt: 0 } } });
+    const { getLoansForUser } = await import('@/lib/actions/loans');
+    const allLoans = await getLoansForUser(userId);
+    const activeLoans = allLoans.filter(l => l.balanceMinor > 0);
     for (const loan of activeLoans) {
       const dueDate = new Date(loan.nextDue);
       const diffTime = dueDate.getTime() - now.getTime();
