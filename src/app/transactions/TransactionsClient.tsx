@@ -32,6 +32,7 @@ interface Props {
   accounts: Account[];
   totalIncome: number;
   totalExpense: number;
+  moneyOut: number;
   period: string;
   typeFilter: string;
   currency: string;
@@ -208,7 +209,10 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
   );
 }
 
-export function TransactionsClient({ transactions, categories, accounts, goals, loans, totalIncome, totalExpense, period, typeFilter, currency }: Props) {
+export function TransactionsClient({
+  transactions, categories, accounts, totalIncome, totalExpense, moneyOut,
+  period, typeFilter, currency, goals, loans
+}: Props) {
   const router     = useRouter();
   const params     = useSearchParams();
   const [, startT] = useTransition();
@@ -337,7 +341,7 @@ export function TransactionsClient({ transactions, categories, accounts, goals, 
             </div>
             <div className="hero-stat-card">
               <p className="hero-label">{PERIOD_LABELS[period] || 'All Time'} Money Out</p>
-              <p className="hero-stat-value tabular" style={{ color:'var(--danger)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{fmtAdaptive(totalExpense, currency)}</p>
+              <p className="hero-stat-value tabular" style={{ color:'var(--danger)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{fmtAdaptive(moneyOut, currency)}</p>
               <p className="hero-sub">- Going out</p>
             </div>
             <div className="hero-stat-card">

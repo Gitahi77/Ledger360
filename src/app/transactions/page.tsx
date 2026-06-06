@@ -56,6 +56,7 @@ export default async function Transactions({
     : transactions;
 
   const totalIncome  = allForPeriod.filter(t => t.type === 'income').reduce((s, t) => s + t.baseAmountMinor, 0);
+  const totalExpense = allForPeriod.filter(t => t.type === 'expense').reduce((s, t) => s + t.baseAmountMinor, 0);
 
   const { moneyOut } = await getTransactionSummary(period);
 
@@ -66,7 +67,8 @@ export default async function Transactions({
         categories={categories}
         accounts={accounts}
         totalIncome={totalIncome}
-        totalExpense={moneyOut}
+        totalExpense={totalExpense}
+        moneyOut={moneyOut}
         period={period}
         typeFilter={typeFilter}
         currency={user.currency}
