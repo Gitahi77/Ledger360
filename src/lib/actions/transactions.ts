@@ -222,6 +222,11 @@ export async function importTransactions(rows: {
   await prisma.transaction.createMany({
     data: rows
       .filter(r => {
+        // Drop anything that isn't strictly income or expense (e.g. transfers)
+        if (r.type !== 'income' && r.type !== 'expense') {
+          console.warn('[importTransactions] Dropping non-income/expense row:', r.name, r.type);
+          return false;
+        }
         // Validate date before new Date() — NaN dates crash Prisma
         const d = new Date(r.date);
         if (isNaN(d.getTime())) {
@@ -233,7 +238,7 @@ export async function importTransactions(rows: {
       .map(r => ({
         name:       String(r.name).slice(0, 120),
         baseAmountMinor: Math.abs(Number(r.baseAmountMinor)),
-        type:       r.type === 'income' ? 'income' : 'expense',
+        type:       r.type as 'income' | 'expense',
         categoryId: catMap[String(r.categoryName)],
         accountId:  targetAccountId,
         date:       new Date(r.date),
@@ -243,7 +248,7 @@ export async function importTransactions(rows: {
         importHash: r.importHash || null,
         reference:  r.reference || null,
       })),
-    skipDuplicates: true,
+    // Deduplication is enforced via UI previews and importHash checks, not DB constraints
   });
 
   // Security Audit

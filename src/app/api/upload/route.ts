@@ -352,6 +352,11 @@ export async function POST(request: Request) {
 
     // 3. Image → Gemini Vision
     if (transactions.length === 0 && isImage) {
+      if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+        return NextResponse.json({
+          error: 'Image and receipt uploads require a configured Gemini AI API Key.'
+        }, { status: 422 });
+      }
       const aiResult = await parseWithAI(fileBuffer, mimeType, userId);
       if (aiResult?.length) { transactions = aiResult; method = 'ai'; }
     }

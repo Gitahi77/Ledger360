@@ -221,7 +221,7 @@ export function SmartUpload({ onDone }: { onDone?: () => void }) {
 
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center', fontSize: '0.75rem', color: 'var(--text-muted)', cursor: 'pointer', textAlign: 'left', maxWidth: 400, margin: '0 auto' }} onClick={e => e.stopPropagation()}>
             <input type="checkbox" checked={aiConsent} onChange={e => setAiConsent(e.target.checked)} />
-            <span>I consent to having my document securely parsed by Google Gemini AI. Personally identifying data is not used to train models.</span>
+            <span>I consent to having my document securely parsed by Google Gemini AI. Note: PDFs and images are sent in full (no redaction). Data is NOT used to train models.</span>
           </label>
         </div>
       )}
