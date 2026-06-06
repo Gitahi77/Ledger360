@@ -14,7 +14,7 @@ export default async function AccountsPage() {
 
   return (
     <AppLayout>
-      <AccountsClient initialAccounts={allAccounts} currency={user.currency} />
+      <AccountsClient accounts={allAccounts} currency={user.currency} />
     </AppLayout>
   );
 }

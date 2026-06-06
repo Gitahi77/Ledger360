@@ -40,9 +40,9 @@ export async function getTransactionSummary(period = 'this-month') {
 
   const transfersOut = await prisma.transfer.aggregate({
     where: { userId: user.id, toAccountId: null, date: { gte: from, lte: to } },
-    _sum: { amountMinor: true }
+    _sum: { baseAmountMinor: true }
   });
-  const moneyOut = exp + (transfersOut._sum.amountMinor ?? 0);
+  const moneyOut = exp + (transfersOut._sum.baseAmountMinor ?? 0);
 
   return {
     income:     inc,

@@ -199,7 +199,7 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
             <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
               value={note} onChange={e => setNote(e.target.value)} placeholder="e.g. May salary" />
           </div>
-          <button type="submit" disabled={loading || (isEdit && type === 'transfer')} className="btn btn-primary" style={{ width:'100%', justifyContent:'center', padding:'0.7rem', marginTop:'0.25rem' }}>
+          <button type="submit" disabled={loading} className="btn btn-primary" style={{ width:'100%', justifyContent:'center', padding:'0.7rem', marginTop:'0.25rem' }}>
             {loading ? <><Loader2 size={14} style={{ animation:'spin 1s linear infinite' }}/> Saving…</> : (isEdit ? 'Save Changes' : `Save ${type === 'income' ? 'Income' : type === 'expense' ? 'Expense' : 'Transfer'}`)}
           </button>
         </form>
@@ -273,7 +273,7 @@ export function TransactionsClient({ transactions, categories, accounts, goals, 
   return (
     <>
       {showAdd && <TransactionModal categories={categories} accounts={accounts} goals={goals} loans={loans} currency={currency} onClose={() => setShowAdd(false)} />}
-      {editTx && <TransactionModal tx={editTx} categories={categories} accounts={accounts} goals={goals} loans={loans} currency={currency} onClose={() => setEditTx(null)} />}
+      {editTx && <TransactionModal key={editTx.id} tx={editTx} categories={categories} accounts={accounts} goals={goals} loans={loans} currency={currency} onClose={() => setEditTx(null)} />}
       {showUpload && <div className="card mb-5 animate-in"><SmartUpload /></div>}
 
       {/* Toolbar */}
@@ -336,7 +336,7 @@ export function TransactionsClient({ transactions, categories, accounts, goals, 
               <p className="hero-sub">{totalIncome > 0 ? '+ Coming in' : 'No income yet'}</p>
             </div>
             <div className="hero-stat-card">
-              <p className="hero-label">{PERIOD_LABELS[period] || 'All Time'} Spent</p>
+              <p className="hero-label">{PERIOD_LABELS[period] || 'All Time'} Money Out</p>
               <p className="hero-stat-value tabular" style={{ color:'var(--danger)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{fmtAdaptive(totalExpense, currency)}</p>
               <p className="hero-sub">- Going out</p>
             </div>
@@ -373,9 +373,9 @@ export function TransactionsClient({ transactions, categories, accounts, goals, 
                   type={tx.type}
                   icon={<CategoryIcon category={tx.category.icon ?? tx.category.name.toLowerCase()} name={tx.name} size={18}/>}
                   state={tx.type === 'pending' ? 'pending' : undefined}
-                  onClick={tx.type === 'transfer' ? undefined : () => setEditTx(tx)}
+                  onClick={() => setEditTx(tx)}
                   onDelete={() => handleDelete(tx.id, tx.type)}
-                  onEdit={tx.type === 'transfer' ? undefined : () => setEditTx(tx)}
+                  onEdit={() => setEditTx(tx)}
                   isDeleting={deletingId === tx.id}
                 />
               ))}

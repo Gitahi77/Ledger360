@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/actions/_auth';
 import { z } from 'zod';
 import { Account } from '@prisma/client';
+import { revalidatePath } from 'next/cache';
 
 const AccountSchema = z.object({
   name: z.string().min(1).max(100),
@@ -13,6 +14,12 @@ const AccountSchema = z.object({
 });
 
 export type AccountWithBalance = Account & { balanceMinor: number };
+
+function invalidateAccountPaths() {
+  revalidatePath('/accounts');
+  revalidatePath('/');
+  revalidatePath('/net-worth');
+}
 
 export async function getAccounts(): Promise<AccountWithBalance[]> {
   const user = await requireAuth();
@@ -60,7 +67,7 @@ export async function createAccount(data: z.infer<typeof AccountSchema>) {
   const user = await requireAuth();
   const valid = AccountSchema.parse(data);
 
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     const account = await tx.account.create({
       data: {
         ...valid,
@@ -80,12 +87,15 @@ export async function createAccount(data: z.infer<typeof AccountSchema>) {
 
     return account;
   });
+
+  invalidateAccountPaths();
+  return result;
 }
 
 export async function updateAccount(id: string, data: Partial<z.infer<typeof AccountSchema>>) {
   const user = await requireAuth();
 
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     const { count } = await tx.account.updateMany({
       where: { id, userId: user.id },
       data,
@@ -106,6 +116,9 @@ export async function updateAccount(id: string, data: Partial<z.infer<typeof Acc
 
     return updated;
   });
+
+  invalidateAccountPaths();
+  return result;
 }
 
 export async function deleteAccount(id: string) {
@@ -121,7 +134,7 @@ export async function deleteAccount(id: string) {
     throw new Error('Cannot delete account with existing transactions or transfers. Please reassign them first.');
   }
 
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     const { count } = await tx.account.deleteMany({
       where: { id, userId: user.id }
     });
@@ -139,4 +152,7 @@ export async function deleteAccount(id: string) {
     
     return true;
   });
+
+  invalidateAccountPaths();
+  return result;
 }

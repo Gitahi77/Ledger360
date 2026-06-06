@@ -11,6 +11,8 @@ import {
   exportUserData, deleteAllUserData, deleteUserAccount,
 } from '@/lib/actions/settings';
 import { signOut } from 'next-auth/react';
+import { toMajor } from '@/lib/money';
+import { fmtAdaptive } from '@/lib/format';
 import {
   User, Bell, Palette, ShieldCheck, Database,
   HelpCircle, Download, Trash2, ExternalLink, Info,
@@ -466,26 +468,61 @@ export function SettingsClient({
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: 400, overflowY: 'auto', paddingRight: '0.5rem' }}>
               {logs.map(log => {
                 const date = new Date(log.createdAt);
+                
+                // Extract action and map to verb
+                const rawAction = log.action.split('_')[0].toUpperCase();
+                const actionVerbs: Record<string, string> = {
+                  CREATE: 'added',
+                  UPDATE: 'updated',
+                  DELETE: 'deleted',
+                  IMPORT: 'imported'
+                };
+                const verb = actionVerbs[rawAction] || 'modified';
+                const resourceNoun = (log.resource || 'item').toLowerCase();
+                
+                // Parse metadata to form a clean sentence
+                let details = '';
+                if (log.metadata) {
+                  try {
+                    const meta = JSON.parse(log.metadata);
+                    const parts = [];
+                    if (meta.name) {
+                      parts.push(`"${meta.name}"`);
+                    }
+                    
+                    const minorAmt = meta.amountMinor ?? meta.baseAmountMinor;
+                    if (minorAmt !== undefined) {
+                      parts.push(`for ${fmtAdaptive(toMajor(minorAmt), initialCurrency || 'KES')}`);
+                    }
+                    
+                    if (parts.length > 0) {
+                      details = parts.join(' ');
+                    } else {
+                      // fallback to a clean fields list
+                      const keys = Object.keys(meta).filter(k => !k.includes('Id'));
+                      if (keys.length > 0) {
+                        details = `(Fields: ${keys.join(', ')})`;
+                      }
+                    }
+                  } catch {
+                    // non-JSON metadata fallback
+                    details = log.metadata.startsWith('{') ? '' : log.metadata;
+                  }
+                }
+
                 return (
                   <div key={log.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.875rem', background: 'var(--bg-app)', borderRadius: 8, border: '1px solid var(--border)' }}>
                     <div style={{ flex: 1, minWidth: 0, marginRight: '1rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                        <span className={`badge ${log.action === 'DELETE' ? 'badge-red' : log.action === 'CREATE' ? 'badge-success' : 'badge-blue'}`}>
-                          {log.action}
+                        <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.85rem' }}>
+                          You {verb} a {resourceNoun}
                         </span>
-                        <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.85rem' }}>{log.resource}</span>
                       </div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontFamily: 'monospace', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {(() => {
-                          if (!log.metadata) return 'System Action';
-                          try {
-                            const str = JSON.stringify(JSON.parse(log.metadata));
-                            return str;
-                          } catch {
-                            return log.metadata;
-                          }
-                        })()}
-                      </div>
+                      {details && (
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {details}
+                        </div>
+                      )}
                     </div>
                     <div style={{ textAlign: 'right', fontSize: '0.75rem', color: 'var(--text-muted)', flexShrink: 0 }}>
                       {date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}

@@ -1,6 +1,6 @@
 // src/app/transactions/page.tsx — Live Server Component
 import { AppLayout } from '@/components/layout/AppLayout';
-import { getTransactions, getCategories } from '@/lib/actions/transactions';
+import { getTransactions, getCategories, getTransactionSummary } from '@/lib/actions/transactions';
 import { getAccounts } from '@/lib/actions/accounts';
 import { getTransfers } from '@/lib/actions/transfers';
 import { TransactionsClient } from './TransactionsClient';
@@ -56,7 +56,8 @@ export default async function Transactions({
     : transactions;
 
   const totalIncome  = allForPeriod.filter(t => t.type === 'income').reduce((s, t) => s + t.baseAmountMinor, 0);
-  const totalExpense = allForPeriod.filter(t => t.type === 'expense').reduce((s, t) => s + t.baseAmountMinor, 0);
+
+  const { moneyOut } = await getTransactionSummary(period);
 
   return (
     <AppLayout>
@@ -65,7 +66,7 @@ export default async function Transactions({
         categories={categories}
         accounts={accounts}
         totalIncome={totalIncome}
-        totalExpense={totalExpense}
+        totalExpense={moneyOut}
         period={period}
         typeFilter={typeFilter}
         currency={user.currency}
