@@ -8,7 +8,7 @@ import { useSession } from 'next-auth/react';
 import { updateProfile } from '@/lib/actions/reports';
 import {
   saveAppearance, savePreferences, saveNotifications,
-  exportUserData, deleteAllUserData, deleteAccount,
+  exportUserData, deleteAllUserData, deleteUserAccount,
 } from '@/lib/actions/settings';
 import { signOut } from 'next-auth/react';
 import {
@@ -318,7 +318,7 @@ export function SettingsClient({
   async function handleDeleteAccount() {
     setDataState({ saving: true, saved: false, error: '' });
     try {
-      await deleteAccount();
+      await deleteUserAccount();
       signOut({ callbackUrl: '/login' });
     } catch (e: any) {
       setDataState({ saving: false, saved: false, error: e.message || 'Failed to delete account.' });

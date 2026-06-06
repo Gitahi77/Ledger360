@@ -16,7 +16,6 @@ const PAGE_TITLES: Record<string, string> = {
   '/loans':        'Loans & Debt',
   '/reports':      'Reports',
   '/settings':     'Settings',
-  '/security':     'Security',
 };
 
 export function AppLayout({ children }: { children: ReactNode }) {

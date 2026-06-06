@@ -39,7 +39,11 @@ export default async function Transactions({
       id: 'transfer',
       name: `${t.fromAccount.name} → ${t.toAccount ? t.toAccount.name : 'External'}`,
       icon: 'transfer',
-    }
+    },
+    fromAccountId: t.fromAccountId,
+    toAccountId: t.toAccountId,
+    goalId: t.goalId,
+    loanId: t.loanId,
   }));
 
   const allItems = [...transactions, ...mappedTransfers]

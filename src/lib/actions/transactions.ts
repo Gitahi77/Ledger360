@@ -37,9 +37,17 @@ export async function getTransactionSummary(period = 'this-month') {
 
   const inc = income._sum.baseAmountMinor ?? 0;
   const exp = expenses._sum.baseAmountMinor ?? 0;
+
+  const transfersOut = await prisma.transfer.aggregate({
+    where: { userId: user.id, toAccountId: null, date: { gte: from, lte: to } },
+    _sum: { amountMinor: true }
+  });
+  const moneyOut = exp + (transfersOut._sum.amountMinor ?? 0);
+
   return {
     income:     inc,
     expenses:   exp,
+    moneyOut:   moneyOut,
     savings:    inc - exp,
     savingRate: inc > 0 ? Math.round(((inc - exp) / inc) * 100) : 0,
   };
@@ -133,7 +141,7 @@ export async function addTransaction(raw: {
   const cat = await prisma.category.findFirst({
     where: { id: data.categoryId, userId: user.id },
   });
-  if (!cat) throw new Error('Invalid category');
+  if (!cat) throw new Error('Please choose a valid category.');
 
   // Find a default account if not provided
   let accountId = data.accountId;
@@ -148,10 +156,11 @@ export async function addTransaction(raw: {
 
   // Overdraft prevention
   if (data.type === 'expense' && accountId) {
+    const { toMajor } = await import('@/lib/money');
     const balances = await getAccountBalances(user.id);
     const acc = balances.find(a => a.id === accountId);
     if (acc && acc.type !== 'credit_card' && acc.balanceMinor - data.baseAmountMinor < 0) {
-      throw new Error('Insufficient funds. This expense would result in a negative account balance.');
+      throw new Error(`Not enough money in ${acc.name}. Available: ${acc.currency} ${toMajor(acc.balanceMinor)}.`);
     }
   }
 
@@ -292,6 +301,7 @@ export async function editTransaction(id: string, data: {
   const newAccountId = data.accountId ?? oldTx.accountId;
 
   if (newType === 'expense' && newAccountId) {
+    const { toMajor } = await import('@/lib/money');
     const balances = await getAccountBalances(user.id);
     const acc = balances.find(a => a.id === newAccountId);
     
@@ -304,7 +314,7 @@ export async function editTransaction(id: string, data: {
       }
       
       if (effectiveBalance - newAmount < 0) {
-        throw new Error('Insufficient funds. This update would result in a negative account balance.');
+        throw new Error(`Not enough money in ${acc.name}. Available: ${acc.currency} ${toMajor(effectiveBalance)}.`);
       }
     }
   }

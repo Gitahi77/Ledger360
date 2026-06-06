@@ -14,7 +14,8 @@ export type AccountWithBalance = Account & { balanceMinor: number };
 
 export async function getAccounts(): Promise<AccountWithBalance[]> {
   const user = await requireAuth();
-  return getAccountBalances(user.id);
+  const all = await getAccountBalances(user.id);
+  return all.filter(a => !a.archived);
 }
 
 export async function getAccountBalances(userId: string): Promise<AccountWithBalance[]> {

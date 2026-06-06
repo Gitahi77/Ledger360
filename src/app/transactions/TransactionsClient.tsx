@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { CategoryIcon } from '@/components/CategoryIcon';
 import { SmartUpload } from '@/components/SmartUpload';
 import { addTransaction, editTransaction, deleteTransaction } from '@/lib/actions/transactions';
-import { createTransfer, deleteTransfer } from '@/lib/actions/transfers';
+import { createTransfer, editTransfer, deleteTransfer } from '@/lib/actions/transfers';
 import { fmtAdaptive } from '@/lib/format';
 import { Plus, FileDown, X, Loader2, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toMinor, toMajor } from '@/lib/money';
@@ -16,6 +16,10 @@ type Tx = {
   id: string; name: string; baseAmountMinor: number; type: string;
   date: Date; note: string | null;
   category: { id: string; name: string; icon: string | null };
+  fromAccountId?: string | null;
+  toAccountId?: string | null;
+  goalId?: string | null;
+  loanId?: string | null;
 };
 type Category = { id: string; name: string; type: string; icon: string | null };
 type Account = { id: string; name: string };
@@ -47,13 +51,16 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
   const [name,       setName]       = useState(tx?.name ?? '');
-  const [amount,     setAmount]     = useState(tx ? String(toMajor(tx.baseAmountMinor)) : '');
+  const [amount,     setAmount]     = useState(tx ? (toMajor(tx.baseAmountMinor)).toString() : '');
   const [type,       setType]       = useState<'income' | 'expense' | 'transfer'>(tx ? (tx.type as any) : 'expense');
   const [categoryId, setCategoryId] = useState(tx?.category.id ?? '');
-  const [accountId,  setAccountId]  = useState((tx as any)?.accountId ?? (accounts[0]?.id || ''));
-  const [toAccountId,setToAccountId]= useState('');
-  const [goalId,     setGoalId]     = useState('');
-  const [loanId,     setLoanId]     = useState('');
+  
+  const initialAccountId = tx?.type === 'transfer' ? (tx.fromAccountId ?? accounts[0]?.id ?? '') : ((tx as any)?.accountId ?? accounts[0]?.id ?? '');
+  const [accountId,  setAccountId]  = useState(initialAccountId);
+  
+  const [toAccountId,setToAccountId]= useState(tx?.toAccountId ?? '');
+  const [goalId,     setGoalId]     = useState(tx?.goalId ?? '');
+  const [loanId,     setLoanId]     = useState(tx?.loanId ?? '');
   const [date,       setDate]       = useState(tx ? new Date(tx.date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10));
   const [note,       setNote]       = useState(tx?.note ?? '');
   const isEdit = Boolean(tx);
@@ -69,8 +76,11 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
     setLoading(true); setError('');
     try {
       if (type === 'transfer') {
-        if (isEdit) throw new Error('Editing transfers is not supported yet.');
-        await createTransfer({ fromAccountId: accountId, toAccountId: loanId ? null : toAccountId, amountMinor: toMinor(parseFloat(amount)), date, note, goalId: goalId || null, loanId: loanId || null });
+        if (isEdit && tx) {
+          await editTransfer(tx.id, { fromAccountId: accountId, toAccountId: loanId ? null : toAccountId, amountMinor: toMinor(parseFloat(amount)), date, note, goalId: goalId || null, loanId: loanId || null });
+        } else {
+          await createTransfer({ fromAccountId: accountId, toAccountId: loanId ? null : toAccountId, amountMinor: toMinor(parseFloat(amount)), date, note, goalId: goalId || null, loanId: loanId || null });
+        }
       } else {
         if (isEdit && tx) {
           await editTransaction(tx.id, { name, baseAmountMinor: toMinor(parseFloat(amount)), type, categoryId, accountId, date: new Date(date), note });

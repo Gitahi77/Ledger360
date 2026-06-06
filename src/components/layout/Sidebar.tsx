@@ -2,7 +2,7 @@
 
 import {
   LayoutDashboard, ArrowLeftRight, PieChart, Target,
-  CreditCard, BarChart2, Settings, TrendingUp, LogOut, ShieldCheck, Tag
+  CreditCard, BarChart2, Settings, TrendingUp, LogOut, ShieldCheck, Tag, Landmark
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -15,6 +15,7 @@ const navItems = [
       { name: 'Dashboard',    href: '/',            icon: LayoutDashboard },
       { name: 'Net Worth',    href: '/net-worth',   icon: TrendingUp      },
       { name: 'Transactions', href: '/transactions', icon: ArrowLeftRight  },
+      { name: 'Accounts',     href: '/accounts',    icon: Landmark        },
     ],
   },
   {
@@ -30,7 +31,6 @@ const navItems = [
     items: [
       { name: 'Reports',  href: '/reports',  icon: BarChart2 },
       { name: 'Categories', href: '/categories', icon: Tag },
-      { name: 'Security', href: '/security', icon: ShieldCheck },
       { name: 'Settings', href: '/settings', icon: Settings  },
     ],
   },

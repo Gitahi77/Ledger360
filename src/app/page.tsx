@@ -99,8 +99,8 @@ export default async function Dashboard({
             {[
               { label: 'Total Cash',             value: fmtAdaptive(netWorth.totalCashMinor, currency),  sub: 'Excludes credit card debt', color: 'var(--text-primary)' },
               { label: `${periodLabel} Income`,  value: fmtAdaptive(summary.income, currency),   sub: summary.income > 0 ? '+ Coming in' : 'No income yet',     color: 'var(--success)'      },
-              { label: `${periodLabel} Spent`,   value: fmtAdaptive(summary.expenses, currency), sub: summary.expenses > 0 ? '- Going out' : 'No expenses yet', color: 'var(--text-primary)' },
-              { label: 'Saving Rate',            value: `${summary.savingRate}%`,       sub: summary.savingRate >= targetRate ? `🎯 Target met (${targetRate}%)` : summary.savingRate >= halfTarget ? '⚠ Getting there' : '⚠ Needs attention', color: srColor },
+              { label: `${periodLabel} Money Out`,   value: fmtAdaptive(summary.moneyOut, currency), sub: summary.moneyOut > 0 ? '- Going out' : 'No money out yet', color: 'var(--text-primary)' },
+              { label: 'Saving Rate',            value: `${summary.savingRate}%`,       sub: summary.savingRate >= targetRate ? `🎯 Target met (${targetRate}%)` : summary.savingRate >= halfTarget ? '📈 Getting there' : '⚠️ Needs attention', color: srColor },
             ].map(s => (
               <div key={s.label} className="hero-stat-card">
                 <p className="hero-label">{s.label}</p>

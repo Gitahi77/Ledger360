@@ -163,7 +163,7 @@ describe('Financial Logic and Validations', () => {
       // Overpayment should throw
       await expect(createTransfer({
         fromAccountId: 'acc-1', loanId: 'loan-1', amountMinor: 1200, date: '2023-10-10'
-      })).rejects.toThrow(/Repayment exceeds current loan balance/);
+      })).rejects.toThrow(/You can't pay more than you owe/);
 
       // Exact payoff should succeed
       await expect(createTransfer({
@@ -172,16 +172,16 @@ describe('Financial Logic and Validations', () => {
     });
 
     it('rejects account overdrafts for standard accounts in addTransaction', async () => {
-      vi.mocked(getAccountBalances).mockResolvedValue([{ id: 'acc-1', type: 'bank', balanceMinor: 500, userId: 'user-1', name: 'Bank', currency: 'KES', openingMinor: 0, createdAt: new Date(), updatedAt: new Date() }]);
+      vi.mocked(getAccountBalances).mockResolvedValue([{ id: 'acc-1', type: 'bank', balanceMinor: 500, userId: 'user-1', name: 'Bank', currency: 'KES', openingMinor: 0, archived: false, createdAt: new Date(), updatedAt: new Date() }]);
       vi.mocked(prisma.category.findFirst).mockResolvedValue({ id: 'cat-1', userId: 'user-1', name: 'Food', type: 'expense', icon: null, color: null, createdAt: new Date(), updatedAt: new Date() });
 
       await expect(addTransaction({
         name: 'Lunch', type: 'expense', baseAmountMinor: 600, categoryId: 'cat-1', accountId: 'acc-1', date: '2023-10-10'
-      })).rejects.toThrow(/Insufficient funds/);
+      })).rejects.toThrow(/Not enough money in Bank/);
     });
 
     it('allows overdrafts for credit_card accounts in addTransaction', async () => {
-      vi.mocked(getAccountBalances).mockResolvedValue([{ id: 'acc-cc', type: 'credit_card', balanceMinor: 0, userId: 'user-1', name: 'CC', currency: 'KES', openingMinor: 0, createdAt: new Date(), updatedAt: new Date() }]);
+      vi.mocked(getAccountBalances).mockResolvedValue([{ id: 'acc-cc', type: 'credit_card', balanceMinor: 0, userId: 'user-1', name: 'CC', currency: 'KES', openingMinor: 0, archived: false, createdAt: new Date(), updatedAt: new Date() }]);
       vi.mocked(prisma.category.findFirst).mockResolvedValue({ id: 'cat-1', userId: 'user-1', name: 'Food', type: 'expense', icon: null, color: null, createdAt: new Date(), updatedAt: new Date() });
       
       // Should succeed
@@ -193,7 +193,7 @@ describe('Financial Logic and Validations', () => {
     it('computes effective balance correctly when editing a transaction', async () => {
       // Current balance is 500, but that includes a 300 expense we are editing.
       // So effective balance before the new edit is 500 + 300 = 800.
-      vi.mocked(getAccountBalances).mockResolvedValue([{ id: 'acc-1', type: 'bank', balanceMinor: 500, userId: 'user-1', name: 'Bank', currency: 'KES', openingMinor: 0, createdAt: new Date(), updatedAt: new Date() }]);
+      vi.mocked(getAccountBalances).mockResolvedValue([{ id: 'acc-1', type: 'bank', balanceMinor: 500, userId: 'user-1', name: 'Bank', currency: 'KES', openingMinor: 0, archived: false, createdAt: new Date(), updatedAt: new Date() }]);
       
       vi.mocked(prisma.transaction.findFirst).mockResolvedValue({
         id: 'tx-1', type: 'expense', baseAmountMinor: 300, accountId: 'acc-1', userId: 'user-1', name: 'Lunch', categoryId: 'cat-1', date: new Date(), note: null, createdAt: new Date(), updatedAt: new Date()
@@ -208,7 +208,7 @@ describe('Financial Logic and Validations', () => {
       // Increasing expense to 900: 800 - 900 = -100 < 0 (Rejected)
       await expect(editTransaction('tx-1', {
         baseAmountMinor: 900
-      })).rejects.toThrow(/Insufficient funds/);
+      })).rejects.toThrow(/Not enough money in Bank/);
     });
   });
 });
