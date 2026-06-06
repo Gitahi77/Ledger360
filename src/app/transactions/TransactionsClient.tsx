@@ -363,6 +363,7 @@ export function TransactionsClient({ transactions, categories, accounts, goals, 
                   type={tx.type}
                   icon={<CategoryIcon category={tx.category.icon ?? tx.category.name.toLowerCase()} name={tx.name} size={18}/>}
                   state={tx.type === 'pending' ? 'pending' : undefined}
+                  onClick={tx.type === 'transfer' ? undefined : () => setEditTx(tx)}
                   onDelete={() => handleDelete(tx.id, tx.type)}
                   onEdit={tx.type === 'transfer' ? undefined : () => setEditTx(tx)}
                   isDeleting={deletingId === tx.id}

@@ -1,8 +1,77 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { computeLoanBalance } from '../lib/shared-computations';
 
-describe('Shared Computations', () => {
-  describe('computeLoanBalance', () => {
+// Mock dependencies
+vi.mock('@/lib/actions/_auth', () => ({
+  requireAuth: vi.fn().mockResolvedValue({ id: 'user-1' })
+}));
+
+vi.mock('@/lib/actions/accounts', () => ({
+  getAccountBalances: vi.fn()
+}));
+
+vi.mock('@/lib/actions/loans', () => ({
+  getLoansForUser: vi.fn()
+}));
+
+vi.mock('next/cache', () => ({
+  revalidatePath: vi.fn()
+}));
+
+vi.mock('@/lib/prisma', () => ({
+  prisma: {
+    account: {
+      findFirst: vi.fn(),
+      findMany: vi.fn()
+    },
+    asset: {
+      findMany: vi.fn()
+    },
+    loan: {
+      findFirst: vi.fn(),
+      findMany: vi.fn()
+    },
+    goal: {
+      findMany: vi.fn().mockResolvedValue([])
+    },
+    category: {
+      findFirst: vi.fn()
+    },
+    transfer: {
+      create: vi.fn().mockResolvedValue({ id: 'transfer-mocked' })
+    },
+    transaction: {
+      findFirst: vi.fn(),
+      findMany: vi.fn(),
+      updateMany: vi.fn(),
+      create: vi.fn().mockResolvedValue({ id: 'tx-mocked' })
+    },
+    userPreferences: {
+      findUnique: vi.fn().mockResolvedValue({ currency: 'KES' })
+    }
+  }
+}));
+
+vi.mock('@/lib/audit', () => ({
+  logActivity: vi.fn()
+}));
+
+// Import modules to test after mocks are set up
+import { getNetWorth } from '../lib/actions/networth';
+import { getAccountBalances } from '../lib/actions/accounts';
+import { getLoansForUser } from '../lib/actions/loans';
+import { prisma } from '../lib/prisma';
+import { createTransfer } from '../lib/actions/transfers';
+import { addTransaction, editTransaction } from '../lib/actions/transactions';
+import { generateInsights } from '../lib/intelligence';
+
+describe('Financial Logic and Validations', () => {
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('Shared Computations (computeLoanBalance)', () => {
     it('computes balance correctly with partial repayment', () => {
       expect(computeLoanBalance(1000, 200)).toBe(800);
     });
@@ -15,7 +84,131 @@ describe('Shared Computations', () => {
       expect(computeLoanBalance(1000, 1200)).toBe(0);
     });
   });
-});
 
-// For integration tests against DB, we'd need a test DB setup.
-// Let's at least test the pure logic for now.
+  describe('Net Worth Calculation', () => {
+    it('calculates net worth with cash and computed loans, preventing double-counting of credit cards', async () => {
+      // Mock account balances
+      vi.mocked(getAccountBalances).mockResolvedValue([
+        { id: 'acc-1', type: 'bank', balanceMinor: 5000, userId: 'user-1', name: 'Bank', currency: 'KES', openingMinor: 0, createdAt: new Date(), updatedAt: new Date() },
+        { id: 'acc-2', type: 'credit_card', balanceMinor: -2000, userId: 'user-1', name: 'CC', currency: 'KES', openingMinor: 0, createdAt: new Date(), updatedAt: new Date() }
+      ]);
+
+      // Mock assets
+      vi.mocked(prisma.asset.findMany).mockResolvedValue([
+        { id: 'ast-1', userId: 'user-1', name: 'Car', category: 'Vehicle', valueMinor: 10000, createdAt: new Date(), updatedAt: new Date() }
+      ]);
+
+      // Mock loans
+      vi.mocked(getLoansForUser).mockResolvedValue([
+        { id: 'loan-1', balanceMinor: 3000, userId: 'user-1', name: 'Personal Loan', lender: 'Bank', type: 'personal', currency: 'KES', annualRate: 10, totalTerms: 12, monthlyPaymentMinor: 250, nextDue: new Date(), createdAt: new Date(), updatedAt: new Date(), daysOverdue: 0 }
+      ]);
+
+      const result = await getNetWorth();
+
+      // Cash should only be the positive bank account
+      expect(result.totalCashMinor).toBe(5000);
+      
+      // Total Assets = Cash (5000) + Asset (10000)
+      expect(result.totalAssetsMinor).toBe(15000);
+
+      // Liabilities = Loan (3000) + Credit Card Debt (2000)
+      expect(result.totalLiabilitiesMinor).toBe(5000);
+
+      // Net worth = 15000 - 5000 = 10000
+      expect(result.netWorthMinor).toBe(10000);
+    });
+  });
+
+  describe('Intelligence Engine', () => {
+    it('excludes fully repaid loans from active/overdue alerts', async () => {
+      const now = new Date();
+      const pastDate = new Date(now.getTime() - 86400000 * 5); // 5 days ago (overdue)
+      const futureDate = new Date(now.getTime() + 86400000 * 2); // 2 days future (upcoming)
+
+      vi.mocked(getLoansForUser).mockResolvedValue([
+        // Active upcoming loan
+        { id: 'loan-active', balanceMinor: 1000, nextDue: futureDate, monthlyPaymentMinor: 100, name: 'Active Loan', userId: 'user-1', lender: 'Bank', type: 'personal', currency: 'KES', annualRate: 10, totalTerms: 12, createdAt: new Date(), updatedAt: new Date(), daysOverdue: 0 },
+        // Repaid loan (overdue date, but balance is 0 so should not trigger)
+        { id: 'loan-repaid', balanceMinor: 0, nextDue: pastDate, monthlyPaymentMinor: 100, name: 'Repaid Loan', userId: 'user-1', lender: 'Bank', type: 'personal', currency: 'KES', annualRate: 10, totalTerms: 12, createdAt: new Date(), updatedAt: new Date(), daysOverdue: 0 }
+      ]);
+
+      vi.mocked(prisma.transaction.findMany).mockResolvedValue([
+        { id: 'tx-1', date: pastDate, type: 'expense', baseAmountMinor: 100, accountId: 'a', categoryId: 'c', category: { name: 'c' }, userId: 'u', name: 'n', note: null, createdAt: now, updatedAt: now } as any,
+        { id: 'tx-2', date: pastDate, type: 'expense', baseAmountMinor: 100, accountId: 'a', categoryId: 'c', category: { name: 'c' }, userId: 'u', name: 'n', note: null, createdAt: now, updatedAt: now } as any,
+        { id: 'tx-3', date: pastDate, type: 'expense', baseAmountMinor: 100, accountId: 'a', categoryId: 'c', category: { name: 'c' }, userId: 'u', name: 'n', note: null, createdAt: now, updatedAt: now } as any,
+        { id: 'tx-4', date: pastDate, type: 'expense', baseAmountMinor: 100, accountId: 'a', categoryId: 'c', category: { name: 'c' }, userId: 'u', name: 'n', note: null, createdAt: now, updatedAt: now } as any,
+        { id: 'tx-5', date: pastDate, type: 'expense', baseAmountMinor: 100, accountId: 'a', categoryId: 'c', category: { name: 'c' }, userId: 'u', name: 'n', note: null, createdAt: now, updatedAt: now } as any
+      ]);
+      
+      // We pass mocked dates/functions if needed, but generateInsights reads from module scope.
+      // So we just call it.
+      const insights = await generateInsights('user-1');
+      
+      const loanAlerts = insights.filter(i => i.id.startsWith('loan-'));
+      expect(loanAlerts.length).toBe(1);
+      expect(loanAlerts[0].id).toBe('loan-due-loan-active');
+    });
+  });
+
+  describe('Overdraft and Overpayment Validations', () => {
+    it('rejects loan overpayment but allows exact payoff via createTransfer', async () => {
+      // Setup
+      vi.mocked(getAccountBalances).mockResolvedValue([{ id: 'acc-1', type: 'bank', balanceMinor: 5000, userId: 'user-1', name: 'Bank', currency: 'KES', openingMinor: 0, createdAt: new Date(), updatedAt: new Date() }]);
+      vi.mocked(prisma.account.findFirst).mockResolvedValue({ id: 'acc-1', type: 'bank', currency: 'KES', userId: 'user-1', name: 'Bank', openingMinor: 0, createdAt: new Date(), updatedAt: new Date() });
+      vi.mocked(getLoansForUser).mockResolvedValue([
+        { id: 'loan-1', balanceMinor: 1000, userId: 'user-1', name: 'Personal Loan', lender: 'Bank', type: 'personal', currency: 'KES', annualRate: 10, totalTerms: 12, monthlyPaymentMinor: 250, nextDue: new Date(), createdAt: new Date(), updatedAt: new Date(), daysOverdue: 0 }
+      ]);
+      vi.mocked(prisma.loan.findFirst).mockResolvedValue({ id: 'loan-1', balanceMinor: 1000, userId: 'user-1', name: 'Personal Loan', lender: 'Bank', type: 'personal', currency: 'KES', annualRate: 10, totalTerms: 12, monthlyPaymentMinor: 250, nextDue: new Date(), createdAt: new Date(), updatedAt: new Date() });
+
+      // Overpayment should throw
+      await expect(createTransfer({
+        fromAccountId: 'acc-1', loanId: 'loan-1', amountMinor: 1200, date: '2023-10-10'
+      })).rejects.toThrow(/Repayment exceeds current loan balance/);
+
+      // Exact payoff should succeed
+      await expect(createTransfer({
+        fromAccountId: 'acc-1', loanId: 'loan-1', amountMinor: 1000, date: '2023-10-10'
+      })).resolves.not.toThrow();
+    });
+
+    it('rejects account overdrafts for standard accounts in addTransaction', async () => {
+      vi.mocked(getAccountBalances).mockResolvedValue([{ id: 'acc-1', type: 'bank', balanceMinor: 500, userId: 'user-1', name: 'Bank', currency: 'KES', openingMinor: 0, createdAt: new Date(), updatedAt: new Date() }]);
+      vi.mocked(prisma.category.findFirst).mockResolvedValue({ id: 'cat-1', userId: 'user-1', name: 'Food', type: 'expense', icon: null, color: null, createdAt: new Date(), updatedAt: new Date() });
+
+      await expect(addTransaction({
+        name: 'Lunch', type: 'expense', baseAmountMinor: 600, categoryId: 'cat-1', accountId: 'acc-1', date: '2023-10-10'
+      })).rejects.toThrow(/Insufficient funds/);
+    });
+
+    it('allows overdrafts for credit_card accounts in addTransaction', async () => {
+      vi.mocked(getAccountBalances).mockResolvedValue([{ id: 'acc-cc', type: 'credit_card', balanceMinor: 0, userId: 'user-1', name: 'CC', currency: 'KES', openingMinor: 0, createdAt: new Date(), updatedAt: new Date() }]);
+      vi.mocked(prisma.category.findFirst).mockResolvedValue({ id: 'cat-1', userId: 'user-1', name: 'Food', type: 'expense', icon: null, color: null, createdAt: new Date(), updatedAt: new Date() });
+      
+      // Should succeed
+      await expect(addTransaction({
+        name: 'Lunch', type: 'expense', baseAmountMinor: 600, categoryId: 'cat-1', accountId: 'acc-cc', date: '2023-10-10'
+      })).resolves.not.toThrow();
+    });
+
+    it('computes effective balance correctly when editing a transaction', async () => {
+      // Current balance is 500, but that includes a 300 expense we are editing.
+      // So effective balance before the new edit is 500 + 300 = 800.
+      vi.mocked(getAccountBalances).mockResolvedValue([{ id: 'acc-1', type: 'bank', balanceMinor: 500, userId: 'user-1', name: 'Bank', currency: 'KES', openingMinor: 0, createdAt: new Date(), updatedAt: new Date() }]);
+      
+      vi.mocked(prisma.transaction.findFirst).mockResolvedValue({
+        id: 'tx-1', type: 'expense', baseAmountMinor: 300, accountId: 'acc-1', userId: 'user-1', name: 'Lunch', categoryId: 'cat-1', date: new Date(), note: null, createdAt: new Date(), updatedAt: new Date()
+      });
+      vi.mocked(prisma.transaction.updateMany).mockResolvedValue({ count: 1 });
+
+      // Increasing expense to 700: 800 - 700 = 100 >= 0 (Allowed)
+      await expect(editTransaction('tx-1', {
+        baseAmountMinor: 700
+      })).resolves.not.toThrow();
+
+      // Increasing expense to 900: 800 - 900 = -100 < 0 (Rejected)
+      await expect(editTransaction('tx-1', {
+        baseAmountMinor: 900
+      })).rejects.toThrow(/Insufficient funds/);
+    });
+  });
+});

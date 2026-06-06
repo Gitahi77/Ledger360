@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { periodDates } from '@/lib/dateUtils';
 import { revalidatePath } from 'next/cache';
 import { requireAuth } from './_auth';
+import { getAccountBalances } from './accounts';
 
 /* ── List ─────────────────────────────────────────────────── */
 export async function getTransactions(period = 'this-month', type?: string) {
@@ -147,7 +148,6 @@ export async function addTransaction(raw: {
 
   // Overdraft prevention
   if (data.type === 'expense' && accountId) {
-    const { getAccountBalances } = await import('@/lib/actions/accounts');
     const balances = await getAccountBalances(user.id);
     const acc = balances.find(a => a.id === accountId);
     if (acc && acc.type !== 'credit_card' && acc.balanceMinor - data.baseAmountMinor < 0) {
@@ -292,7 +292,6 @@ export async function editTransaction(id: string, data: {
   const newAccountId = data.accountId ?? oldTx.accountId;
 
   if (newType === 'expense' && newAccountId) {
-    const { getAccountBalances } = await import('@/lib/actions/accounts');
     const balances = await getAccountBalances(user.id);
     const acc = balances.find(a => a.id === newAccountId);
     
