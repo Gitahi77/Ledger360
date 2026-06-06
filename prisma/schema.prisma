@@ -144,6 +144,8 @@ model Transaction {
   accountId       String
   userId          String
   importedAt      DateTime? // non-null if imported via Smart Upload
+  importHash      String?   // dedup key (WO-11)
+  reference       String?   // source transaction reference (WO-11)
 
   category Category @relation(fields: [categoryId], references: [id])
   account  Account  @relation(fields: [accountId], references: [id])

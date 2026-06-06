@@ -58,17 +58,19 @@ interface RawRow {
   description: string;
   amount: number;
   type?: string;
+  reference?: string;
 }
 
 function rowToTransaction(row: RawRow) {
   const { category, type } = autoCategory(row.description, row.amount);
   return {
-    date:     row.date,
-    name:     row.description.slice(0, 100),
-    amount:   Math.abs(row.amount),
-    type:     row.type ?? type,
+    date:      row.date,
+    name:      row.description.slice(0, 100),
+    amount:    Math.abs(row.amount),
+    type:      row.type ?? type,
     category,
-    note:     'Imported via Smart Upload',
+    reference: row.reference?.slice(0, 50),
+    note:      'Imported via Smart Upload',
   };
 }
 
@@ -119,7 +121,8 @@ function parseCSVText(text: string): RawRow[] {
   }
 
   const iDate   = cols.findIndex(c => /date|time/.test(c));
-  const iDesc   = cols.findIndex(c => /description|narration|detail|reference|particulars|receipt/.test(c));
+  const iDesc   = cols.findIndex(c => /description|narration|detail|particulars/.test(c));
+  const iRef    = cols.findIndex(c => /reference|receipt|ref\b|code/.test(c));
   const iAmount = cols.findIndex(c => /^amount$|^value$|^sum$/.test(c));
   const iDebit  = cols.findIndex(c => /debit|withdrawal|out|paid/.test(c));
   const iCredit = cols.findIndex(c => /credit|deposit|in|received/.test(c));
@@ -133,6 +136,7 @@ function parseCSVText(text: string): RawRow[] {
 
     const dateStr = cells[iDate >= 0 ? iDate : 0];
     const desc    = cells[iDesc >= 0 ? iDesc : 1] || 'Unknown';
+    const ref     = iRef >= 0 ? cells[iRef] : undefined;
     let amount    = 0;
     let type: 'income' | 'expense' | undefined;
 
@@ -155,22 +159,33 @@ function parseCSVText(text: string): RawRow[] {
     const date = parseDate(dateStr);
     if (!date) continue;
 
-    rows.push({ date, description: desc, amount, type });
+    rows.push({ date, description: desc, amount, type, reference: ref });
   }
   return rows;
 }
 
 /* ── Excel parser (.xlsx / .xls) ─────────────────────────── */
 async function parseExcel(buffer: ArrayBuffer): Promise<RawRow[]> {
-  const XLSX = await import('xlsx');
-  const workbook = XLSX.read(Buffer.from(buffer), { type: 'buffer', cellDates: true });
-  const sheetName = workbook.SheetNames[0];
-  if (!sheetName) return [];
+  const ExcelJS = await import('exceljs');
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(buffer);
+  
+  const sheet = workbook.worksheets[0];
+  if (!sheet) return [];
 
-  const sheet = workbook.Sheets[sheetName];
-  // Convert to CSV text and reuse the CSV parser — simpler & more flexible than AOA
-  const csv = XLSX.utils.sheet_to_csv(sheet);
-  return parseCSVText(csv);
+  // Convert to CSV text and reuse the CSV parser
+  const csvRows: string[] = [];
+  sheet.eachRow((row) => {
+    const rowValues = (row.values as any[]).slice(1).map(val => {
+      if (val === null || val === undefined) return '';
+      if (val instanceof Date) return val.toISOString();
+      if (typeof val === 'object' && val.text) return val.text;
+      return String(val).replace(/"/g, '""');
+    });
+    csvRows.push('"' + rowValues.join('","') + '"');
+  });
+  
+  return parseCSVText(csvRows.join('\n'));
 }
 
 /* ── PDF text extractor ──────────────────────────────────── */
@@ -225,13 +240,20 @@ function parseMpesaStyle(text: string): RawRow[] {
 
     // Description: everything between date and first number
     const afterDate = trimmed.slice(dateMatch.index! + dateMatch[1].length).trim();
-    const desc = afterDate.replace(amountPattern, '').trim().slice(0, 100) || 'M-Pesa Transaction';
+    
+    // M-Pesa receipts usually start with a 10-character code
+    const refMatch = afterDate.match(/^[A-Z0-9]{10}\b/);
+    const reference = refMatch ? refMatch[0] : undefined;
+    const descRaw = refMatch ? afterDate.slice(10).trim() : afterDate;
+
+    const desc = descRaw.replace(amountPattern, '').trim().slice(0, 100) || 'M-Pesa Transaction';
 
     rows.push({
       date,
       description: desc || 'M-Pesa Transaction',
       amount: Math.abs(amount),
       type: amount < 0 ? 'expense' : 'income',
+      reference,
     });
   }
   return rows;
@@ -260,12 +282,13 @@ async function parseWithAI(fileBuffer: ArrayBuffer, mimeType: string, userId: st
 
 /* ── Zod schema to validate each transaction row before DB insert ── */
 const UploadRowSchema = z.object({
-  date:     z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date'),
-  name:     z.string().min(1).max(200),
-  amount:   z.number().min(0),
-  type:     z.enum(['income', 'expense', 'transfer']),
-  category: z.string().min(1).max(80),
-  note:     z.string().optional(),
+  date:      z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date'),
+  name:      z.string().min(1).max(200),
+  amount:    z.number().min(0),
+  type:      z.enum(['income', 'expense', 'transfer']),
+  category:  z.string().min(1).max(80),
+  reference: z.string().optional(),
+  note:      z.string().optional(),
 });
 
 /* ── Main route handler ──────────────────────────────────── */
@@ -381,17 +404,35 @@ export async function POST(request: Request) {
       categoryId: catMap[String(t.category)] ?? fallbackId,
     }));
 
-    const incomeExpense = parsed.filter((t: any) => t.type !== 'transfer');
-    const detectedTransfers = parsed.filter((t: any) => t.type === 'transfer').map((t: any) => ({
-      ...t,
-      suggestedType: 'transfer'
+    const crypto = await import('crypto');
+    const enhancedParsed = parsed.map((r: any) => {
+      let hashStr = '';
+      if (r.reference) {
+        hashStr = `${userId}:${r.reference}`;
+      } else {
+        hashStr = `${userId}:${r.date}:${r.amount}:${String(r.name).trim().toLowerCase()}`;
+      }
+      const importHash = crypto.createHash('sha256').update(hashStr).digest('hex');
+      return { ...r, importHash };
+    });
+
+    const hashes = enhancedParsed.map((r: any) => r.importHash);
+    const existing = await prisma.transaction.findMany({
+      where: { userId, importHash: { in: hashes } },
+      select: { importHash: true }
+    });
+    const existingSet = new Set(existing.map(tx => tx.importHash));
+
+    const finalParsed = enhancedParsed.map((r: any) => ({
+      ...r,
+      isDuplicate: existingSet.has(r.importHash),
+      isTransfer: r.type === 'transfer'
     }));
 
     return NextResponse.json({ 
       success: true, 
-      transactions: incomeExpense, 
-      detectedTransfers,
-      count: incomeExpense.length, 
+      transactions: finalParsed,
+      count: finalParsed.filter((t: any) => !t.isDuplicate && !t.isTransfer).length, 
       method 
     });
 

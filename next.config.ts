@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   // ── Server packages that need Node.js fs/native modules ──────────────────
   // serverExternalPackages is a stable top-level option in Next.js 15+.
   // It prevents Edge/Webpack from bundling Node.js-only packages.
-  serverExternalPackages: ['pdf-parse', 'xlsx', 'bcryptjs'],
+  serverExternalPackages: ['pdf-parse', 'bcryptjs'],
 
   // ── HTTP Security Headers ─────────────────────────────────────────────────
   // Applied to every response. Covers OWASP Top-10 browser-side risks.

@@ -192,21 +192,17 @@ export async function addTransaction(raw: {
 /* ── Bulk import (Smart Upload) ───────────────────────────── */
 export async function importTransactions(rows: {
   name: string; baseAmountMinor: number; type: string;
-  categoryName: string; accountId?: string; date: string; note?: string;
-}[]) {
+  categoryName: string; date: string; note?: string;
+  reference?: string; importHash?: string;
+}[], targetAccountId: string) {
   const user = await requireAuth();
   if (!Array.isArray(rows) || rows.length === 0) throw new Error('No rows to import');
   if (rows.length > 500) throw new Error('Max 500 rows per import');
+  if (!targetAccountId) throw new Error('Account ID is required for import');
 
-  // Find a default account if not provided
-  let defaultAccountId = '';
-  const firstAccount = await prisma.account.findFirst({ where: { userId: user.id }, orderBy: { createdAt: 'asc' }});
-  if (firstAccount) defaultAccountId = firstAccount.id;
-  else {
-    // Should not happen if signup seeded accounts, but handle anyway
-    const fallback = await prisma.account.create({ data: { userId: user.id, name: 'Default Account', type: 'bank', currency: 'KES' }});
-    defaultAccountId = fallback.id;
-  }
+  // Verify the target account exists and belongs to the user
+  const account = await prisma.account.findFirst({ where: { id: targetAccountId, userId: user.id } });
+  if (!account) throw new Error('Selected account not found');
 
   // Resolve or create categories dynamically based on the string provided by the user
   const categoryNames = [...new Set(rows.map(r => String(r.categoryName)))];
@@ -239,11 +235,13 @@ export async function importTransactions(rows: {
         baseAmountMinor: Math.abs(Number(r.baseAmountMinor)),
         type:       r.type === 'income' ? 'income' : 'expense',
         categoryId: catMap[String(r.categoryName)],
-        accountId:  r.accountId || defaultAccountId,
+        accountId:  targetAccountId,
         date:       new Date(r.date),
         note:       r.note ? String(r.note).slice(0, 500) : undefined,
         userId:     user.id,
         importedAt: new Date(),
+        importHash: r.importHash || null,
+        reference:  r.reference || null,
       })),
     skipDuplicates: true,
   });

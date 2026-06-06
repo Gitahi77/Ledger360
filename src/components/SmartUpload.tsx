@@ -1,13 +1,16 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { UploadCloud, Loader2, CheckCircle2, AlertCircle, ChevronRight, X, Smartphone, FileText } from 'lucide-react';
 import { importTransactions } from '@/lib/actions/transactions';
+import { getAccounts } from '@/lib/actions/accounts';
 import { MpesaSmsInput } from '@/components/MpesaSmsInput';
 import { toMinor } from '@/lib/money';
 
 type ParsedRow = {
   date: string; name: string; amount: number; type: string;
   category: string; categoryId: string; note?: string;
+  reference?: string; importHash?: string;
+  isDuplicate?: boolean; isTransfer?: boolean;
 };
 
 type UploadState = 'idle' | 'uploading' | 'reviewing' | 'importing' | 'done' | 'error';
@@ -23,6 +26,15 @@ export function SmartUpload({ onDone }: { onDone?: () => void }) {
   const [errMsg,    setErrMsg]   = useState('');
   const [isDragging,setDragging] = useState(false);
   const [aiConsent, setAiConsent]= useState(false);
+  const [accounts,  setAccounts] = useState<any[]>([]);
+  const [accountId, setAccountId]= useState<string>('');
+
+  useEffect(() => {
+    getAccounts().then(accs => {
+      setAccounts(accs);
+      if (accs.length > 0) setAccountId(accs[0].id);
+    }).catch(console.error);
+  }, []);
 
   /* ── Upload & parse ─────────────────────────────────────── */
   async function processFile(file: File) {
@@ -49,7 +61,9 @@ export function SmartUpload({ onDone }: { onDone?: () => void }) {
 
       setTimeout(() => {
         setRows(data.transactions);
-        setSelected(new Set(data.transactions.map((_: any, i: number) => i)));
+        setSelected(new Set(data.transactions.map((r: any, i: number) => 
+          (r.isDuplicate || r.isTransfer) ? -1 : i
+        ).filter((i: number) => i !== -1)));
         setMethod(data.method);
         setState('reviewing');
       }, 400);
@@ -63,12 +77,13 @@ export function SmartUpload({ onDone }: { onDone?: () => void }) {
   /* ── Confirm import ──────────────────────────────────────── */
   async function confirmImport() {
     setState('importing');
-    const toImport = rows.filter((_, i) => selected.has(i));
+    const toImport = rows.filter((r, i) => selected.has(i) && !r.isTransfer);
     try {
       await importTransactions(toImport.map(r => ({
         name: r.name, baseAmountMinor: toMinor(r.amount), type: r.type,
         categoryName: r.category, date: r.date, note: r.note,
-      })));
+        importHash: r.importHash, reference: r.reference
+      })), accountId);
       setState('done');
       setTimeout(() => { onDone?.(); }, 1500);
     } catch (e: any) {
@@ -78,11 +93,17 @@ export function SmartUpload({ onDone }: { onDone?: () => void }) {
   }
 
   function toggleRow(i: number) {
+    if (rows[i].isTransfer) return; // Cannot import transfers
     setSelected(s => { const n = new Set(s); n.has(i) ? n.delete(i) : n.add(i); return n; });
   }
 
   /* ── SMS import handler ──────────────────────────────────── */
   async function handleSmsImport(txs: Array<{ name: string; date: string; amount: number; type: 'income' | 'expense'; category: string; fee?: number }>) {
+    if (!accountId) {
+      setErrMsg('Please select an account first.');
+      setState('error');
+      return;
+    }
     setState('importing');
     try {
       const toImport = txs.map(t => ({
@@ -94,7 +115,7 @@ export function SmartUpload({ onDone }: { onDone?: () => void }) {
       await importTransactions(toImport.map(r => ({
         name: r.name, baseAmountMinor: toMinor(r.amount), type: r.type,
         date: r.date, categoryName: r.categoryName, note: r.note,
-      })));
+      })), accountId);
       setState('done');
       setTimeout(() => { onDone?.(); }, 1500);
     } catch (e: any) {
@@ -135,6 +156,22 @@ export function SmartUpload({ onDone }: { onDone?: () => void }) {
         </div>
       )}
 
+      {/* Account Selector */}
+      <div style={{ marginBottom: '1.25rem', textAlign: 'left' }}>
+        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.4rem' }}>Import into Account</label>
+        <select
+          value={accountId}
+          onChange={e => setAccountId(e.target.value)}
+          className="input-base"
+          style={{ width: '100%' }}
+        >
+          <option value="" disabled>Select an account...</option>
+          {accounts.map(acc => (
+            <option key={acc.id} value={acc.id}>{acc.name} ({acc.currency})</option>
+          ))}
+        </select>
+      </div>
+
       {/* File upload tab */}
       {tab === 'file' && (
         <div
@@ -144,20 +181,14 @@ export function SmartUpload({ onDone }: { onDone?: () => void }) {
           onDrop={e => {
             e.preventDefault();
             setDragging(false);
-            if (!aiConsent) {
-              setErrMsg('Please consent to AI processing before uploading.');
-              setState('error');
-              return;
-            }
+            if (!accountId) { setErrMsg('Please select an account first.'); setState('error'); return; }
+            if (!aiConsent) { setErrMsg('Please consent to AI processing before uploading.'); setState('error'); return; }
             const f = e.dataTransfer.files[0];
             if (f) processFile(f);
           }}
           onClick={() => {
-            if (!aiConsent) {
-              setErrMsg('Please consent to AI processing before uploading.');
-              setState('error');
-              return;
-            }
+            if (!accountId) { setErrMsg('Please select an account first.'); setState('error'); return; }
+            if (!aiConsent) { setErrMsg('Please consent to AI processing before uploading.'); setState('error'); return; }
             document.getElementById('smart-upload-input')?.click();
           }}
           style={{
@@ -256,31 +287,45 @@ export function SmartUpload({ onDone }: { onDone?: () => void }) {
             </tr>
           </thead>
           <tbody>
-            {rows.map((r, i) => (
-              <tr key={i} onClick={() => toggleRow(i)} style={{ cursor: 'pointer', opacity: selected.has(i) ? 1 : 0.45 }}>
-                <td><input type="checkbox" checked={selected.has(i)} onChange={() => toggleRow(i)} onClick={e => e.stopPropagation()} /></td>
-                <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</td>
-                <td>{r.date}</td>
-                <td>
-                  <input
-                    type="text"
-                    value={r.category}
-                    onChange={(e) => {
-                      const newRows = [...rows];
-                      newRows[i].category = e.target.value;
-                      setRows(newRows);
-                    }}
-                    style={{
-                      background: 'transparent', border: '1px solid var(--border)', borderRadius: 4,
-                      padding: '2px 6px', fontSize: '0.72rem', width: 110, color: 'var(--text-primary)'
-                    }}
-                  />
-                </td>
-                <td style={{ textAlign: 'right', fontFamily: 'Space Grotesk,sans-serif', fontWeight: 700, color: r.type === 'income' ? 'var(--success)' : 'var(--text-primary)' }}>
-                  {r.type === 'income' ? '+' : '−'}KES {r.amount.toLocaleString()}
-                </td>
-              </tr>
-            ))}
+            {rows.map((r, i) => {
+              const rowStyle = r.isTransfer 
+                ? { opacity: 0.5, background: 'var(--bg-card-hover)', cursor: 'not-allowed' }
+                : { cursor: 'pointer', opacity: selected.has(i) ? 1 : 0.5, background: r.isDuplicate ? 'var(--danger-light)' : 'transparent' };
+              
+              return (
+                <tr key={i} onClick={() => toggleRow(i)} style={rowStyle}>
+                  <td>
+                    <input type="checkbox" checked={selected.has(i)} disabled={r.isTransfer} onChange={() => toggleRow(i)} onClick={e => e.stopPropagation()} />
+                  </td>
+                  <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div style={{ fontWeight: 600 }}>{r.name}</div>
+                    {r.reference && <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Ref: {r.reference}</div>}
+                    {r.isDuplicate && <div style={{ fontSize: '0.65rem', color: 'var(--danger)', fontWeight: 600 }}>Duplicate Warning</div>}
+                    {r.isTransfer && <div style={{ fontSize: '0.65rem', color: 'var(--primary)', fontWeight: 600 }}>Suggested Transfer (Skipped)</div>}
+                  </td>
+                  <td>{r.date}</td>
+                  <td>
+                    <input
+                      type="text"
+                      value={r.category}
+                      disabled={r.isTransfer}
+                      onChange={(e) => {
+                        const newRows = [...rows];
+                        newRows[i].category = e.target.value;
+                        setRows(newRows);
+                      }}
+                      style={{
+                        background: 'transparent', border: '1px solid var(--border)', borderRadius: 4,
+                        padding: '2px 6px', fontSize: '0.72rem', width: 110, color: 'var(--text-primary)'
+                      }}
+                    />
+                  </td>
+                  <td style={{ textAlign: 'right', fontFamily: 'Space Grotesk,sans-serif', fontWeight: 700, color: r.type === 'income' ? 'var(--success)' : (r.isTransfer ? 'var(--primary)' : 'var(--text-primary)') }}>
+                    {r.type === 'income' ? '+' : '-'}KES {r.amount.toLocaleString()}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
