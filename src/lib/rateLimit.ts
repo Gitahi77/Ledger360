@@ -63,6 +63,9 @@ export const uploadLimiter = new RateLimiter({ windowMs: 60 * 60_000, max: 20 })
 /** AI parsing: max 15 requests per user per hour */
 export const aiLimiter = new RateLimiter({ windowMs: 60 * 60_000, max: 15 });
 
+/** API endpoints: max 60 requests per minute */
+export const apiLimiter = new RateLimiter({ windowMs: 60_000, max: 60 });
+
 // ── Distributed limiters (Upstash Redis) ─────────────────────
 const hasRedis = !!process.env.UPSTASH_REDIS_REST_URL && !!process.env.UPSTASH_REDIS_REST_TOKEN;
 const redis = hasRedis ? Redis.fromEnv() : null;
@@ -77,6 +80,7 @@ export const limiters = {
   signup: make(5, 60 * 60),
   upload: make(20, 60 * 60),
   ai:     make(15, 60 * 60),
+  api:    make(60, 60),
 };
 
 export async function checkLimit(name: keyof typeof limiters, key: string) {
@@ -91,6 +95,7 @@ export async function checkLimit(name: keyof typeof limiters, key: string) {
   if (name === 'signup') return signupLimiter.check(key);
   if (name === 'upload') return uploadLimiter.check(key);
   if (name === 'ai') return aiLimiter.check(key);
+  if (name === 'api') return apiLimiter.check(key);
   
   return { ok: true, retryAfter: 0 };
 }
