@@ -44,5 +44,14 @@ ARCHITECTURE / ANTI-DRIFT
 - Every JSON API responds { data, error, meta }.
 - Preserve existing philosophy/intent comments.
 
+NEW INVARIANTS (I-21 to I-27)
+- **I-21 — Cross-border / AI consent.** No personal data is sent to a third-party or out of the user's jurisdiction (including any AI provider) without explicit, withdrawable, logged consent and a recorded lawful basis.
+- **I-22 — Data-subject rights are real.** Export produces a complete, machine-readable copy of all the user's data; deletion genuinely erases or irreversibly anonymizes within a defined window. Both are exercisable in-app.
+- **I-23 — Idempotent mutations.** Every mutating API endpoint accepts an idempotency key and is safe to retry without duplicating data.
+- **I-24 — No restricted-permission lock-in.** No core feature may depend on a restricted mobile permission (e.g., READ_SMS) as its only path; a policy-compliant alternative always exists.
+- **I-25 — Defined retention.** Every data type has a defined retention period enforced by a deletion job; nothing is kept indefinitely by default.
+- **I-26 — No hardcoded user-facing copy.** All user-facing strings route through i18n (enables Swahili and future locales).
+- **I-27 — Breach-ready.** A documented incident-response process exists that meets the 72-hour ODPC notification requirement.
+
 If a task seems to require breaking any rule above, STOP and ask the human.
 <!-- END:ledger360-constitution -->

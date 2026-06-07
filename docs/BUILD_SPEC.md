@@ -1,5 +1,7 @@
 # Ledger360 — The Definitive Build Specification (v2, audit-complete)
 
+*Legal & Data-Protection Foundation: see Part 14. WO-19 is a launch-blocker.*
+
 **This is the single source of truth for building and scaling Ledger360.** It is the result of a full, line-by-line audit of the repository. It contains: the product philosophy, a behavioral-finance engine (the reason people use the app), the accounting structure, the complete list of audit findings, the recommended scaling architecture and tools, an API design standard, the actual code to use, the immutable rules the AI must enforce, and the exact order of work.
 
 It is written to be handed to an AI coding agent (Antigravity). The human's only job is in **Part 0** — paste two things and run one prompt. Everything else, the agent reads here.
@@ -131,6 +133,15 @@ A change that breaks one of these is a defect even if it "works." Keep all true 
 - **I-19 — Consistent API envelope.** Every JSON API responds `{ data, error, meta }` (Part 8).
 - **I-20 — Preserve intent comments.** Keep philosophy/intent header comments; extend only when a task changes that intent.
 
+**NEW INVARIANTS (I-21 to I-27)**
+- **I-21 — Cross-border / AI consent.** No personal data is sent to a third-party or out of the user's jurisdiction (including any AI provider) without explicit, withdrawable, logged consent and a recorded lawful basis.
+- **I-22 — Data-subject rights are real.** Export produces a complete, machine-readable copy of all the user's data; deletion genuinely erases or irreversibly anonymizes within a defined window. Both are exercisable in-app.
+- **I-23 — Idempotent mutations.** Every mutating API endpoint accepts an idempotency key and is safe to retry without duplicating data.
+- **I-24 — No restricted-permission lock-in.** No core feature may depend on a restricted mobile permission (e.g., READ_SMS) as its only path; a policy-compliant alternative always exists.
+- **I-25 — Defined retention.** Every data type has a defined retention period enforced by a deletion job; nothing is kept indefinitely by default.
+- **I-26 — No hardcoded user-facing copy.** All user-facing strings route through i18n (enables Swahili and future locales).
+- **I-27 — Breach-ready.** A documented incident-response process exists that meets the 72-hour ODPC notification requirement.
+
 ---
 
 # PART 5 — WORKING PROTOCOL
@@ -159,7 +170,15 @@ Everything found in the audit, so nothing is lost. Each maps to a work order. Se
 - 🟠 **Sensitive data in logs.** `gemini.ts` logs raw model output (financial data) via `console.error`; other routes log freely. → WO-5
 - 🟡 **JWT callback hits the DB on every request** for session-version + currency sync — correct for security but a per-request DB round-trip that will cost at scale. → WO-5 (optimize), revisit in WO-18
 - 🟡 **`bcryptjs`** (pure-JS) is slower/weaker than native bcrypt or argon2. → WO-4
-- 🟢 **CSP allows `unsafe-inline`/`unsafe-eval`.** Acceptable for Next's inline bootstrap; nonce-based hardening is a future improvement. → not scheduled (noted)
+- 🟡 **CSP allows `unsafe-inline`/`unsafe-eval`.** Acceptable for Next's inline bootstrap; nonce-based hardening is a future improvement. → not scheduled (noted)
+
+#### Security Hardening for Scale (Reserved)
+- **MFA / 2FA**: Expected for a finance app; reserved for future implementation (TOTP at minimum).
+- **Encryption at rest**: Confirm Neon/Postgres encrypts at rest; treat financial data as highly sensitive.
+- **API token & secret management**: Rotation, scoping, revocation; never long-lived unscoped tokens.
+- **Certificate pinning** on mobile to resist MITM.
+- **Multi-device session management**: List/revoke sessions across web + mobile (extends the existing session-version mechanism).
+- **Rate limiting per user/token** for the API (extends the existing shared limiter to the mobile surface).
 
 ### Data integrity (financial correctness)
 - 🔴 **Money stored as `Float`.** Every amount/balance/value/limit/target is floating-point — guaranteed rounding drift in a finance app. → WO-3
@@ -621,6 +640,14 @@ One at a time, in order. "Do NOT" lists name the most likely drift for that task
 
 ## Phase 0 — Stabilize & secure the foundation
 
+### WO-19 — Compliance Foundation
+**Objective:** Establish the legal and data-protection baseline required by the Kenya DPA before handling real users.
+**Scope:** ODPC registration (founder action); Privacy Policy + ToS documents; cross-border safeguards mapping; defining a retention policy.
+**Spec:** (1) Register as a Data Controller with the ODPC (this is mandatory for financial/high-risk data). (2) Draft a DPA-compliant Privacy Policy and ToS stating the lawful basis for processing, the AI/cross-border data transfer, retention windows, and data-subject rights. (3) Identify the lawful basis (consent + contract) for each processing activity. (4) Outline an Incident Response Runbook (Breach-ready, I-27) to meet the 72-hour notification rule. 
+**Acceptance:** ODPC certificate acquired; Privacy Policy + ToS published and linked in-app; runbook drafted.
+**Note:** This is a **LAUNCH-BLOCKER** (must be completed before any real-user launch). It is *not* a blocker for the next immediate code work order (WO-12).
+**Commit:** `WO-19: Compliance foundation`
+
 ### WO-1 — Repo hygiene & configuration
 **Objective:** Remove cruft and document configuration.
 **Scope:** `.gitignore`; `package.json` (deps); new `.env.example`; stale comments in `src/app/api/upload/route.ts`.
@@ -666,8 +693,9 @@ One at a time, in order. "Do NOT" lists name the most likely drift for that task
 ### WO-6 — AI data governance
 **Objective:** Stop leaking PII to the AI; make the model safe, current, and validated.
 **Scope:** `src/lib/api/gemini.ts`; new `src/lib/api/redact.ts`; `src/app/api/sms-parse/route.ts`; `src/app/api/upload/route.ts`; a short consent/notice in the relevant UI (`SmartUpload.tsx`, `MpesaSmsInput.tsx`); README AI description.
-**Spec:** (1) Add `redact.ts` (Part 10.4); apply `redactForAI()` to SMS text before sending to Gemini. For document/image parsing, show the user a clear notice that the file is processed by Google's AI and require explicit consent before upload. (2) Make the model configurable via `GEMINI_MODEL` (no hardcoded model string in source); document that the deployment must use a **data-governed Gemini tier that does not train on submitted data** (verify the current tier/model name in Google's official docs at deploy time). (3) Validate every AI response with a Zod schema (I-7) — reject/skip malformed items instead of trusting `JSON.parse`. (4) Update the README so the AI description is accurate and transparent about what is sent externally.
-**Acceptance:** SMS sent to Gemini contains no phone numbers/long account numbers; model id comes from env; AI output passes Zod before use; UI discloses external processing; README is accurate.
+**Spec:** (1) Add `redact.ts` (Part 10.4); apply `redactForAI()` to SMS text before sending to Gemini. (2) **Consent-gate ALL AI submissions.** For document/image parsing, explicitly require withdrawable user consent. Show a documented frontend notice stating that PDFs/images are sent in full and cannot be redacted. (3) Make the model configurable via `GEMINI_MODEL` (no hardcoded model string); you must use a **data-governed Gemini tier with a strict no-training guarantee** (verify the current tier/model name in Google's official docs at deploy time). (4) Validate every AI response with a Zod schema (I-7) — reject/skip malformed items instead of trusting `JSON.parse`. (5) Update the README so the AI description is accurate and transparent about what is sent externally.
+**Acceptance:** ALL AI endpoints require recorded consent; SMS sent to Gemini contains no phone numbers/long account numbers; model id comes from env; AI output passes Zod before use; UI explicitly discloses full-document external processing; README is accurate.
+**Note:** The consent and recorded lawful basis for cross-border transfer to Gemini must be live before any real users, since this AI transfer is already happening today.
 **Do NOT:** remove the M-Pesa-aware prompts (they are the moat); send full names/phones unredacted; hardcode a model string.
 **Commit:** `WO-6: AI data governance + validation`
 
@@ -794,3 +822,45 @@ on your own change, and STOP. Do not begin the next work order.
 ```
 
 *Build the foundation first (Phases 0–3) so the numbers are true, then the behavioral engine (Phase 4) so the numbers change lives. Keep to the order, keep to the Constitution, and the mission holds across every session.*
+
+---
+
+# PART 14 — LEGAL & DATA-PROTECTION FOUNDATION
+Ledger360 processes personal financial data in Kenya, triggering Data Controller obligations under the Data Protection Act (DPA), 2019. 
+- **ODPC Registration**: Mandatory regardless of size exemptions, due to processing high-risk financial data. (Founder task; referenced in Privacy Policy).
+- **Lawful Basis & Consent**: Every processing purpose (especially financial processing and AI transmission) requires explicit, granular, withdrawable, and auditable consent.
+- **Cross-Border Transfers**: Using Gemini transfers data outside Kenya. This requires recorded safeguards, an explicit lawful basis (consent + governed agreement), and ODPC declaration.
+- **DPIA (Data Protection Impact Assessment)**: Required before launching the behavioral/profiling engine (WO-14–17).
+- **Data-Subject Rights**: In-app tools for complete, machine-readable export and genuine erasure (irreversible anonymization/hard deletion) within a defined window.
+- **Breach Notification**: Must meet the 72-hour ODPC notification rule.
+- **Retention Policy**: Data must not be kept indefinitely. Define and enforce deletion rules.
+- **Privacy Policy + ToS**: Must plainly state the AI data handling, data rights, and controller details.
+
+---
+
+# PART 15 — MOBILE-READINESS ARCHITECTURE
+These decisions shape WO-12 and prevent costly retrofitting for native mobile apps.
+- **Mobile SMS-Capture Reality**: Native `READ_SMS` is largely blocked by Google Play policy (budgeting apps are routinely denied). Do not rely on background SMS capture. The compliant ingestion spine is **Share-to-App, SMS Paste, and Statement Uploads**.
+- **Token-Based Auth**: The API must support bearer access tokens and refresh tokens. Cookie sessions alone are insufficient for mobile.
+- **Idempotency**: All mutating endpoints must accept an idempotency key to prevent double-posting on intermittent networks.
+- **Offline & Sync Strategy (Reserved)**: Future mobile versions may require offline capability. The API data model must plan for `updatedAt` on all records, soft-delete semantics (`deletedAt`/`archived`), client-generatable IDs, and a conflict resolution strategy (e.g., last-write-wins). Do not implement `deletedAt` cascades yet, but reserve the design.
+- **Push Notifications (FCM)**: Behavioral engine nudges will require FCM and a notification-preferences model.
+- **Data Budgets**: Target low-end Android and metered connections via small payloads, pagination, and caching.
+
+---
+
+# PART 16 — OPERATIONAL & RELIABILITY
+- **Backups & PITR**: Define backup cadence and Point-In-Time-Recovery (RPO/RTO) targets with Neon.
+- **Incident Response Runbook**: Concrete steps + owners for a breach (tied to ODPC notification).
+- **Retention & Deletion Jobs**: Scheduled cron/workers to enforce the retention policy.
+- **AI Cost Controls**: Per-user and global spend caps/alerts on Gemini usage to prevent runaway costs from import loops.
+- **Observability**: Beyond Sentry, ensure uptime and latency monitoring.
+- **CI/CD Gate**: WO-13 tests, linting, and type-checks are required blockers for merges protecting money math.
+
+---
+
+# PART 17 — PRODUCT & REACH
+- **Localization (i18n)**: English + Swahili from the start.
+- **Accessibility (a11y)**: Baseline contrast, labels, and screen-reader support.
+- **Recurring Transactions**: Anticipate rent/salary/subscriptions in the data model.
+- **Categorization Ownership**: Long-term strategy to own the transaction categorization model in-house rather than renting extraction AI indefinitely.
