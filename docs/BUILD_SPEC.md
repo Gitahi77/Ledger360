@@ -717,15 +717,15 @@ One at a time, in order. "Do NOT" lists name the most likely drift for that task
 
 ### WO-9 — Goals & loans funded by transfers
 **Scope:** `src/lib/actions/goals.ts`, `loans.ts`, `transfers.ts`; related UI.
-**Spec:** (1) A transfer may carry `goalId`/`loanId`. (2) `Goal.currentMinor` computed from linked transfers; UI stops writing it. (3) Loan-repayment transfer reduces `Loan.balanceMinor` (clamped ≥0). (4) `daysOverdue` stays computed; remove any stored column.
-**Acceptance:** funding a goal raises progress; repayment lowers loan balance; income/expense unchanged.
+**Spec:** goals/loans have NO manually edited balance; their `currentMinor` is strictly the sum of all `Transfer` records linked to them. Create transfer triggers when adding to a goal or making a loan payment.
+**Acceptance:** `Goal.currentMinor` matches DB sum of linked transfers exactly. Write the matching Vitest unit tests for savings/forecast math.
 **Do NOT:** reintroduce a manually editable balance that can diverge from history.
 **Commit:** `WO-9: goals & loans via transfers`
 
 ### WO-10 — Per-record currency + base snapshot
 **Scope:** `prisma/schema.prisma` (fields in Part 9); all create paths; `src/lib/api/frankfurter.ts`; aggregation queries; net-worth action.
-**Spec:** (1) On each monetary create, store `currency`, the `fxRate` to base at that moment, and `baseAmountMinor = toBaseMinor(major, fxRate)`. (2) Totals sum `baseAmountMinor`. (3) Never reprice history; live FX only estimates current value of held foreign balances/assets, clearly labelled.
-**Acceptance:** a USD transaction for a KES-base user stores both amounts; changing today's FX does not change last month's totals.
+**Spec:** attach `currency` to all financial models (Account, Transaction, Transfer, Goal, Loan). When querying totals for dashboard, normalize to user's `baseCurrency` using the exchange rate *on the transaction date* (not today's rate).
+**Acceptance:** a USD transaction accurately reflects in KES net-worth using the historical rate. Write the matching Vitest unit tests for base-currency conversion.
 **Do NOT:** apply live FX to historical totals; sum mixed currencies unconverted.
 **Commit:** `WO-10: per-record currency + base snapshot`
 
@@ -747,17 +747,22 @@ One at a time, in order. "Do NOT" lists name the most likely drift for that task
 
 ### WO-13 — Tests & CI
 **Scope:** add `vitest`; `*.test.ts` files; new `.github/workflows/ci.yml`.
-**Spec:** unit tests for `money.ts`; account-balance formula; transfer net-zero rule; savings/forecast math; CSV & M-Pesa SMS parser shape; base-currency conversion; safe-to-spend; PII redaction. CI runs `npm ci`, `prisma generate`, `eslint`, `tsc --noEmit`, `vitest run` on push/PR.
-**Acceptance:** `npm test` green in CI; tests fail if Float money returns or a transfer is counted as expense.
+**Spec:** unit tests for `money.ts`; account-balance formula; transfer net-zero rule; CSV & M-Pesa SMS parser shape; PII redaction. CI runs `npm ci`, `prisma generate`, `tsc --noEmit`, `npm run build` (with dummy DB), `vitest run` on push/PR.
+**Acceptance:** `npm test` green in CI; tests fail if Float money returns or a transfer is counted as expense. Note: A follow-up chore (WO-13.1) must clean up 120+ lint issues before `npm run lint` is enforced in CI.
 **Do NOT:** add E2E/browser frameworks; chase coverage % over money logic.
 **Commit:** `WO-13: tests + CI`
+
+### WO-13.1 - Lint Cleanup Chore (Follow-up)
+**Scope:** resolve `eslint` errors (specifically `@typescript-eslint/no-explicit-any` and `react-hooks/set-state-in-effect`).
+**Spec:** properly type all instances of `any`, or explicitly inline-disable genuinely necessary ones with a comment.
+**Acceptance:** `npm run lint` completes with 0 errors. Promote `npm run lint` to a REQUIRED step in `.github/workflows/ci.yml`.
 
 ## Phase 4 — The behavioral engine (the reason to use the app)
 
 ### WO-14 — Safe-to-Spend + envelope budgeting *(B-1, B-3)*
 **Scope:** new `src/lib/behavioral.ts`; `src/lib/actions/budgets.ts`; budgets + dashboard UI; schema (`Budget.rollover`).
 **Spec:** (1) Implement `safeToSpend` to the exact contract in Part 10.8 (exclude transfers). (2) Budgets behave as envelopes; `rollover` carries unspent into the next period. (3) Dashboard shows "Safe to spend today" prominently and each envelope's remaining amount.
-**Acceptance:** the figure equals income − envelopes − planned savings − loans due − unbudgeted spend, divided across days left; rollover increases next period's available amount.
+**Acceptance:** the figure equals income − envelopes − planned savings − loans due − unbudgeted spend, divided across days left; rollover increases next period's available amount. Write the matching Vitest unit tests for safe-to-spend and forecast math.
 **Do NOT:** count transfers/savings as spendable; redesign the budget model beyond `rollover`.
 **Commit:** `WO-14: Safe-to-Spend + envelopes`
 

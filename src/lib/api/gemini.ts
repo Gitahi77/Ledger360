@@ -21,7 +21,7 @@ const SAFETY = [
 ];
 
 /* ─── M-Pesa SMS Parser ─────────────────────────────────────── */
-const ParsedTransactionSchema = z.object({
+export const ParsedTransactionSchema = z.object({
   name: z.string(),
   date: z.string(),
   amount: z.number().positive(),
@@ -92,7 +92,7 @@ export async function parseMpesaSms(smsText: string): Promise<ParsedTransaction[
 }
 
 /* ─── Document / Image Parser (replaces OpenAI Vision) ─────── */
-const ParsedDocTransactionSchema = z.object({
+export const ParsedDocTransactionSchema = z.object({
   name: z.string(),
   date: z.string(),
   amount: z.number().positive(),

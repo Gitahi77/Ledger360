@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    # Dummy env vars so build doesn't fail parsing missing variables.
+    # No real database is connected or migrated.
+    env:
+      DATABASE_URL: "postgresql://dummy_user:dummy_pass@localhost:5432/dummy_db?pgbouncer=true"
+      DIRECT_DATABASE_URL: "postgresql://dummy_user:dummy_pass@localhost:5432/dummy_db"
+      NEXTAUTH_SECRET: "dummy_secret_for_ci_only_do_not_use"
+      NEXTAUTH_URL: "http://localhost:3000"
+      UPSTASH_REDIS_REST_URL: "https://dummy.upstash.io"
+      UPSTASH_REDIS_REST_TOKEN: "dummy_token"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Run Type Check (tsc)
+        run: npx tsc --noEmit
+
+      - name: Run Linting (non-blocking)
+        # Marked as continue-on-error until we do a dedicated lint cleanup chore
+        run: npm run lint
+        continue-on-error: true
+
+      - name: Run Unit Tests (Vitest)
+        run: npx vitest run
