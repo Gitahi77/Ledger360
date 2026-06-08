@@ -27,7 +27,7 @@ export function SafeToSpendCard({
   const [expanded, setExpanded] = useState(false);
 
   const { remainingMinor, perDayMinor, daysLeft, breakdown } = data;
-  const isSafe = remainingMinor > 0;
+  const isSafe = remainingMinor >= 0;
 
   return (
     <div 
@@ -49,7 +49,7 @@ export function SafeToSpendCard({
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
               <ShieldCheck size={18} opacity={0.9} />
               <span style={{ fontSize: '0.85rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', opacity: 0.9 }}>
-                Safe to Spend
+                {isSafe ? 'Safe to Spend' : 'Overspent'}
               </span>
             </div>
             
@@ -61,11 +61,14 @@ export function SafeToSpendCard({
               letterSpacing: '-0.04em',
               marginBottom: '0.5rem'
             }}>
-              {fmtAdaptive(Math.max(0, remainingMinor), currency)}
+              {fmtAdaptive(remainingMinor, currency)}
             </div>
             
             <div style={{ fontSize: '0.85rem', opacity: 0.9, fontWeight: 500 }}>
-              {fmtAdaptive(perDayMinor, currency)} / day for {daysLeft} days
+              {isSafe 
+                ? `${fmtAdaptive(perDayMinor, currency)} / day for ${daysLeft} days` 
+                : 'Reduce spending to get back on track'
+              }
             </div>
           </div>
           

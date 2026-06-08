@@ -167,4 +167,25 @@ describe('safeToSpend', () => {
     expect(res.discretionaryMinor).toBe(80000);
     expect(res.remainingMinor).toBe(70000);
   });
+
+  it('allows remainingMinor to be negative (honest negative) when massively overspending unbudgeted', async () => {
+    vi.mocked(prisma.userPreferences.findUnique).mockResolvedValue({ expectedMonthlyIncomeMinor: 100000, savingRate: 0 } as any);
+    
+    // Spend 120,000 on unbudgeted things
+    vi.mocked(prisma.transaction.aggregate).mockImplementation((async (args: any) => {
+      if (args.where?.categoryId?.notIn) return { _sum: { baseAmountMinor: 120000 } } as any;
+      return { _sum: { baseAmountMinor: 0 } } as any;
+    }) as any);
+
+    const res = await safeToSpend(userId, 'monthly');
+    // expected = 100000
+    // discretionary = 100000
+    // unbudgetedSpend = 120000
+    // remaining = -20000
+    // perDay = 0 (clamped)
+    
+    expect(res.discretionaryMinor).toBe(100000);
+    expect(res.remainingMinor).toBe(-20000);
+    expect(res.perDayMinor).toBe(0);
+  });
 });
