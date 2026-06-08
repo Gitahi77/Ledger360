@@ -841,7 +841,7 @@ Ledger360 processes personal financial data in Kenya, triggering Data Controller
 # PART 15 — MOBILE-READINESS ARCHITECTURE
 These decisions shape WO-12 and prevent costly retrofitting for native mobile apps.
 - **Mobile SMS-Capture Reality**: Native `READ_SMS` is largely blocked by Google Play policy (budgeting apps are routinely denied). Do not rely on background SMS capture. The compliant ingestion spine is **Share-to-App, SMS Paste, and Statement Uploads**.
-- **Token-Based Auth**: The API must support bearer access tokens and refresh tokens. Cookie sessions alone are insufficient for mobile.
+- **Token-Based Auth**: The API must support bearer access tokens and refresh tokens. Cookie sessions alone are insufficient for mobile. As a prerequisite (e.g., in WO-18), all wrapped server actions must be refactored to accept an explicit `userId` (following the `getLoansForUser` pattern) rather than relying internally on `requireAuth()`, which is session-only.
 - **Idempotency**: All mutating endpoints must accept an idempotency key to prevent double-posting on intermittent networks.
 - **Offline & Sync Strategy (Reserved)**: Future mobile versions may require offline capability. The API data model must plan for `updatedAt` on all records, soft-delete semantics (`deletedAt`/`archived`), client-generatable IDs, and a conflict resolution strategy (e.g., last-write-wins). Do not implement `deletedAt` cascades yet, but reserve the design.
 - **Push Notifications (FCM)**: Behavioral engine nudges will require FCM and a notification-preferences model.
