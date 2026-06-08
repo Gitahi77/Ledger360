@@ -11,7 +11,7 @@ import {
   exportUserData, deleteAllUserData, deleteUserAccount,
 } from '@/lib/actions/settings';
 import { signOut } from 'next-auth/react';
-import { toMajor } from '@/lib/money';
+import { toMajor, toMinor } from '@/lib/money';
 import { fmtAdaptive } from '@/lib/format';
 import {
   User, Bell, Palette, ShieldCheck, Database,
@@ -179,6 +179,7 @@ export function SettingsClient({
     dateFormat: string; weekStartDay: string; savingRate: number;
     notifOverbudget: boolean; notifGoals: boolean; notifBills: boolean;
     notifInsights: boolean; notifLoanDue: boolean;
+    expectedMonthlyIncomeMinor: number | null;
   } | null;
   logs: { id: string; action: string; resource: string; metadata: string | null; createdAt: string }[];
 }) {
@@ -209,6 +210,7 @@ export function SettingsClient({
   const [dateFormat,  setDateFmt]    = useState(initialPrefs?.dateFormat    ?? 'DD/MM/YYYY');
   const [savingRate,  setSavingRate] = useState(String(initialPrefs?.savingRate ?? 30));
   const [weekStart,   setWeekStart]  = useState(initialPrefs?.weekStartDay  ?? 'Monday');
+  const [expectedMonthlyIncome, setExpectedMonthlyIncome] = useState(initialPrefs?.expectedMonthlyIncomeMinor != null ? String(toMajor(initialPrefs.expectedMonthlyIncomeMinor)) : '');
 
   // Notification flags
   const [notifs, setNotifs] = useState({
@@ -277,6 +279,7 @@ export function SettingsClient({
         dateFormat:  dateFormat  as 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY-MM-DD',
         weekStartDay: weekStart  as 'Monday' | 'Sunday',
         savingRate: Math.min(80, Math.max(1, parseInt(savingRate) || 30)),
+        expectedMonthlyIncomeMinor: expectedMonthlyIncome ? toMinor(parseFloat(expectedMonthlyIncome)) : null,
       });
       startT(() => router.refresh());
     });
@@ -414,6 +417,13 @@ export function SettingsClient({
                 <input type="number" value={savingRate} min={1} max={80} onChange={e => setSavingRate(e.target.value)}
                   style={{ width:60, padding:'0.375rem 0.5rem', borderRadius:6, border:'1px solid var(--border)', background:'var(--bg-card)', color:'var(--text-primary)', fontSize:'0.8rem', textAlign:'center', fontFamily:'Space Grotesk,sans-serif', fontWeight:700 }} />
                 <span style={{ fontSize:'0.8rem', color:'var(--text-muted)' }}>% of income</span>
+              </div>
+            </Row>
+            <Row label="Expected Monthly Income" desc="Optional. Overrides actual income for Safe-to-Spend calculations.">
+              <div style={{ display:'flex', alignItems:'center', gap:'0.4rem' }}>
+                <span style={{ fontSize:'0.8rem', color:'var(--text-muted)' }}>{initialCurrency}</span>
+                <input type="number" value={expectedMonthlyIncome} onChange={e => setExpectedMonthlyIncome(e.target.value)} placeholder="Auto"
+                  style={{ width:100, padding:'0.375rem 0.5rem', borderRadius:6, border:'1px solid var(--border)', background:'var(--bg-card)', color:'var(--text-primary)', fontSize:'0.8rem', textAlign:'right', fontFamily:'Space Grotesk,sans-serif', fontWeight:700 }} />
               </div>
             </Row>
             <Row label="Week Start Day" desc="First day shown in calendar views">

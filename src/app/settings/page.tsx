@@ -44,6 +44,7 @@ export default async function Settings() {
           notifBills:      prefs.notifBills,
           notifInsights:   prefs.notifInsights,
           notifLoanDue:    prefs.notifLoanDue,
+          expectedMonthlyIncomeMinor: prefs.expectedMonthlyIncomeMinor,
         } : null}
         logs={logs.map(l => ({
           id: l.id,

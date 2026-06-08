@@ -9,7 +9,7 @@ import { fmtAdaptive } from '@/lib/format';
 import { Plus, Trash2, Loader2, X, FileDown, LayoutGrid } from 'lucide-react';
 import { toMinor, toMajor } from '@/lib/money';
 
-type Budget = { id: string; name: string; category: string; icon: string; limit: number; spent: number; period: string };
+type Budget = { id: string; name: string; category: string; icon: string; limit: number; spent: number; period: string; rollover?: boolean };
 type Category = { id: string; name: string; type: string };
 
 function budgetStyle(limit: number, spent: number) {
@@ -28,6 +28,7 @@ function BudgetModal({ budget, categories, currency, onClose }: { budget?: Budge
   const [categoryId, setCategoryId] = useState(''); // Need to map budget.category to categoryId later if we want proper edit, for now leave as is or find it
   const [limitAmt, setLimitAmt]     = useState(budget ? String(toMajor(budget.limit)) : '');
   const [period, setPeriod]         = useState(budget?.period ?? 'monthly');
+  const [rollover, setRollover]     = useState(budget?.rollover ?? false);
   const expenseCats = categories.filter(c => c.type === 'expense');
   const isEdit = Boolean(budget);
 
@@ -45,9 +46,9 @@ function BudgetModal({ budget, categories, currency, onClose }: { budget?: Budge
     setLoading(true); setError('');
     try {
       if (isEdit && budget) {
-        await editBudget(budget.id, { name, categoryId, limitAmountMinor: toMinor(parseFloat(limitAmt)), period: period as 'monthly' | 'yearly' });
+        await editBudget(budget.id, { name, categoryId, limitAmountMinor: toMinor(parseFloat(limitAmt)), period: period as 'monthly' | 'yearly', rollover });
       } else {
-        await addBudget({ name, categoryId, limitAmountMinor: toMinor(parseFloat(limitAmt)), period });
+        await addBudget({ name, categoryId, limitAmountMinor: toMinor(parseFloat(limitAmt)), period, rollover });
       }
       startT(() => router.refresh()); onClose();
     } catch (err: any) { setError(err.message ?? 'Something went wrong.'); }
@@ -84,10 +85,16 @@ function BudgetModal({ budget, categories, currency, onClose }: { budget?: Budge
               </select>
             </div>
           </div>
-            <div>
-              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Monthly Limit ({currency})</label>
-              <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }} type="number" min="1" step="1" value={limitAmt} onChange={e => setLimitAmt(e.target.value)} required placeholder="5000" />
-            </div>
+          <div>
+            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Monthly Limit ({currency})</label>
+            <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }} type="number" min="1" step="1" value={limitAmt} onChange={e => setLimitAmt(e.target.value)} required placeholder="5000" />
+          </div>
+          <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', marginTop:'0.25rem' }}>
+            <input type="checkbox" id="rollover" checked={rollover} onChange={e => setRollover(e.target.checked)} style={{ cursor:'pointer' }} />
+            <label htmlFor="rollover" style={{ fontSize:'0.8rem', color:'var(--text-secondary)', cursor:'pointer' }}>
+              <strong>Strict Envelope</strong> (carry unspent amount to next period)
+            </label>
+          </div>
           <button type="submit" disabled={loading} className="btn btn-primary" style={{ width:'100%', justifyContent:'center', padding:'0.7rem', marginTop:'0.25rem' }}>
             {loading ? <><Loader2 size={14} style={{ animation:'spin 1s linear infinite' }}/> Saving…</> : (isEdit ? 'Save Changes' : 'Create Budget')}
           </button>
@@ -208,7 +215,10 @@ export function BudgetsClient({ budgets, categories, totalBudgeted, totalSpent, 
                 style={{ borderTop:`3px solid ${st.borderColor}` }}>
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <div style={{ fontWeight:700, fontSize:'0.875rem', color:'var(--text-primary)' }}>{b.name}</div>
+                    <div style={{ fontWeight:700, fontSize:'0.875rem', color:'var(--text-primary)' }}>
+                      {b.name}
+                      {b.rollover && <span className="badge" style={{ marginLeft:'0.5rem', background:'var(--bg-card)', border:'1px solid var(--border-color)', color:'var(--text-muted)' }}>Envelope</span>}
+                    </div>
                     <div style={{ fontSize:'0.7rem', color:'var(--text-muted)', marginTop:'0.1rem', textTransform:'capitalize' }}>{b.category} · {b.period}</div>
                   </div>
                   <div className="flex items-center gap-2">

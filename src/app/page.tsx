@@ -12,10 +12,12 @@ import { getTransactionSummary, getMonthlyChartData, getCategoryBreakdown } from
 import { getBudgetsWithSpend } from '@/lib/actions/budgets';
 import { getLoans } from '@/lib/actions/loans';
 import { getNetWorth } from '@/lib/actions/networth';
+import { safeToSpend } from '@/lib/behavioral';
 import { ArrowRight, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { requireAuth } from '@/lib/actions/_auth';
 import { InsightsFeed } from '@/components/dashboard/InsightsFeed';
+import { SafeToSpendCard } from '@/components/dashboard/SafeToSpendCard';
 import { BalanceText } from '@/components/typography/BalanceText';
 import { FxTicker } from '@/components/FxTicker';
 import { fmtAdaptive, fmtFull } from '@/lib/format';
@@ -42,7 +44,7 @@ export default async function Dashboard({
   const currency = user.currency;
 
   // Parallel fetches for production speed (Neon connection poolers support this well).
-  const [summary, budgets, loans, netWorth, chartData, donutData, insights, prefs] = await Promise.all([
+  const [summary, budgets, loans, netWorth, chartData, donutData, insights, prefs, safeToSpendData] = await Promise.all([
     getTransactionSummary(period),
     getBudgetsWithSpend(period),
     getLoans(),
@@ -52,6 +54,7 @@ export default async function Dashboard({
     // Pass user currency so insights use the right symbol (not hardcoded KES)
     import('@/lib/intelligence').then(m => m.generateInsights(user.id, user.currency)),
     prisma.userPreferences.findUnique({ where: { userId: user.id } }),
+    safeToSpend(user.id, period as any),
   ]);
 
   const overdueLoanCount = loans.filter(l => l.daysOverdue > 0).length;
@@ -81,6 +84,8 @@ export default async function Dashboard({
 
       {/* Intelligence Engine Insights */}
       <InsightsFeed initialInsights={insights} />
+
+      <SafeToSpendCard data={safeToSpendData} currency={currency} />
 
       {/* Protective Dashboard Hero — Grounded and Stable */}
       <div className="dashboard-hero animate-in">

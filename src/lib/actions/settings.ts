@@ -12,6 +12,7 @@ const PrefsSchema = z.object({
   dateFormat:    z.enum(['DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']),
   weekStartDay:  z.enum(['Monday', 'Sunday']),
   savingRate:    z.number().int().min(1).max(80),
+  expectedMonthlyIncomeMinor: z.number().int().nullable().optional(),
 });
 
 const NotifSchema = z.object({

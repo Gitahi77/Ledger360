@@ -54,6 +54,7 @@ model UserPreferences {
   dateFormat   String @default("DD/MM/YYYY") // "DD/MM/YYYY" | "MM/DD/YYYY" | "YYYY-MM-DD"
   weekStartDay String @default("Monday") // "Monday" | "Sunday"
   savingRate   Int    @default(30) // % of income target
+  expectedMonthlyIncomeMinor Int? // optional override for safe-to-spend expected income
 
   // Notification flags (in-app)
   notifOverbudget Boolean @default(true)
@@ -161,6 +162,7 @@ model Budget {
   name             String
   period           String @default("monthly") // "weekly" | "monthly" | "yearly"
   limitAmountMinor Int // stored as integer minor units (cents)
+  rollover         Boolean @default(false)
   categoryId       String
   userId           String
 
@@ -259,4 +261,3 @@ model Transfer {
   @@index([fromAccountId])
   @@index([toAccountId])
 }
-
