@@ -87,26 +87,29 @@ export async function getUserPreferences() {
 /* ── Export all user data as JSON ─────────────────────────── */
 export async function exportUserData() {
   const user = await requireAuth();
-  const [transactions, budgets, goals, loans, assets, categories] = await Promise.all([
+  const [transactions, budgets, goals, loans, assets, categories, accounts, transfers] = await Promise.all([
     prisma.transaction.findMany({ where: { userId: user.id }, include: { category: true }, orderBy: { date: 'desc' } }),
     prisma.budget.findMany({ where: { userId: user.id }, include: { category: true } }),
     prisma.goal.findMany({ where: { userId: user.id } }),
     prisma.loan.findMany({ where: { userId: user.id } }),
     prisma.asset.findMany({ where: { userId: user.id } }),
     prisma.category.findMany({ where: { userId: user.id } }),
+    prisma.account.findMany({ where: { userId: user.id } }),
+    prisma.transfer.findMany({ where: { userId: user.id } }),
   ]);
-  return { transactions, budgets, goals, loans, assets, categories, exportedAt: new Date().toISOString() };
+  return { transactions, budgets, goals, loans, assets, categories, accounts, transfers, exportedAt: new Date().toISOString() };
 }
 
 /* ── Delete all user financial data (keeps account) ─────── */
 export async function deleteAllUserData() {
   const user = await requireAuth();
-  // Delete in dependency order to satisfy FK constraints
+  await prisma.transfer.deleteMany({   where: { userId: user.id } });
   await prisma.transaction.deleteMany({ where: { userId: user.id } });
   await prisma.budget.deleteMany({     where: { userId: user.id } });
   await prisma.goal.deleteMany({       where: { userId: user.id } });
   await prisma.loan.deleteMany({       where: { userId: user.id } });
   await prisma.asset.deleteMany({      where: { userId: user.id } });
+  await prisma.account.deleteMany({    where: { userId: user.id } });
   await prisma.category.deleteMany({   where: { userId: user.id } });
   await prisma.userPreferences.deleteMany({ where: { userId: user.id } });
   revalidatePath('/');

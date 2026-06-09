@@ -46,10 +46,45 @@ export async function safeToSpend(userId: string, period: 'weekly' | 'monthly' |
 
   // 3. Expected Income
   let expectedIncome = 0;
-  if (period === 'monthly' && prefs?.expectedMonthlyIncomeMinor != null) {
-    expectedIncome = prefs.expectedMonthlyIncomeMinor;
+  if (period === 'monthly') {
+    if (prefs?.expectedMonthlyIncomeMinor != null) {
+      expectedIncome = prefs.expectedMonthlyIncomeMinor;
+    } else {
+      // Average of income over 3 complete calendar months before current month
+      const threeMonthsAgoStart = new Date(from.getFullYear(), from.getMonth() - 3, 1);
+      const lastMonthEnd = new Date(from.getFullYear(), from.getMonth(), 0, 23, 59, 59, 999);
+      
+      const oldestIncome = await prisma.transaction.findFirst({
+        where: { userId, type: 'income', date: { lte: lastMonthEnd } },
+        orderBy: { date: 'asc' }
+      });
+
+      if (oldestIncome) {
+        const trailingIncome = await prisma.transaction.aggregate({
+          where: { userId, type: 'income', date: { gte: threeMonthsAgoStart, lte: lastMonthEnd } },
+          _sum: { baseAmountMinor: true }
+        });
+        
+        // Calculate months of history (capped at 3)
+        const oldestMonth = oldestIncome.date.getFullYear() * 12 + oldestIncome.date.getMonth();
+        const lastMonth = lastMonthEnd.getFullYear() * 12 + lastMonthEnd.getMonth();
+        const historyMonths = Math.max(1, lastMonth - oldestMonth + 1);
+        const divisor = Math.min(3, historyMonths);
+        
+        expectedIncome = Math.round((trailingIncome._sum.baseAmountMinor ?? 0) / divisor);
+      }
+
+      // If no history (or average is 0), fall back to current period actual income
+      if (expectedIncome === 0) {
+        const currentIncomeRows = await prisma.transaction.aggregate({
+          where: { userId, type: 'income', date: { gte: from, lte: to } },
+          _sum: { baseAmountMinor: true }
+        });
+        expectedIncome = currentIncomeRows._sum.baseAmountMinor ?? 0;
+      }
+    }
   } else {
-    // Actual income recorded this period (fallback)
+    // Actual income recorded this period (fallback for weekly/yearly)
     const incomeRows = await prisma.transaction.aggregate({
       where: { userId, type: 'income', date: { gte: from, lte: to } },
       _sum: { baseAmountMinor: true }

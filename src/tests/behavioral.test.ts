@@ -6,7 +6,7 @@ import { getLoansForUser } from '@/lib/actions/loans';
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     userPreferences: { findUnique: vi.fn() },
-    transaction: { aggregate: vi.fn() },
+    transaction: { aggregate: vi.fn(), findFirst: vi.fn() },
     budget: { findMany: vi.fn() },
   }
 }));
@@ -27,6 +27,7 @@ describe('safeToSpend', () => {
     vi.mocked(getLoansForUser).mockResolvedValue([]);
     vi.mocked(prisma.budget.findMany).mockResolvedValue([]);
     vi.mocked(prisma.transaction.aggregate).mockResolvedValue({ _sum: { baseAmountMinor: 0 } } as any);
+    vi.mocked(prisma.transaction.findFirst).mockResolvedValue(null);
   });
 
   it('calculates discretionary and remaining correctly with basic inputs', async () => {

@@ -601,7 +601,7 @@ export async function getAccountBalances(userId: string) {
 // Present-bias relief (B-3) via envelope budgeting (B-1). All amounts base-currency MINOR.
 // Transfers excluded by construction (I-4).
 //   discretionary = expectedIncome − Σ expense-budget limits − plannedSavings − loanDue
-//   remaining     = discretionary − unbudgetedSpendThisPeriod
+//   remaining     = discretionary − unbudgetedSpendThisPeriod − envelopeOverspendPenalty
 //   perDay        = max(0, remaining) / daysLeftInPeriod
 // Returns { discretionaryMinor, remainingMinor, perDayMinor, daysLeft }.
 export async function safeToSpend(userId: string, period?: 'weekly' | 'monthly' | 'yearly'):
