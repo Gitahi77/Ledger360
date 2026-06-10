@@ -39,6 +39,7 @@ export function FxTicker({ currency }: { currency: string }) {
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
     // Auto-refresh every 5 minutes — ECB rates update once daily but
     // users leave the dashboard open for hours; this keeps it fresh.

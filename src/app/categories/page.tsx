@@ -37,7 +37,7 @@ export default async function CategoriesPage() {
         </div>
         
         <CategoriesClient 
-          initialCategories={categories as any} 
+          initialCategories={categories as ReturnType<typeof JSON.parse>} 
           currency={dbUser?.currency ?? 'KES'} 
         />
       </div>

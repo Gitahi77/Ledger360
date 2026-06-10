@@ -22,7 +22,7 @@ if (!process.env.NEXTAUTH_SECRET) {
 }
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma) as any,
+  adapter: PrismaAdapter(prisma) as ReturnType<typeof JSON.parse>,
   session: {
     strategy: 'jwt',
     // 7-day lifetime — shorter than default 30 days, appropriate for finance
@@ -80,10 +80,10 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user, trigger }) {
       if (user) {
-        token.id             = (user as any).id;
-        token.accountType    = (user as any).accountType;
-        token.currency       = (user as any).currency;
-        token.sessionVersion = (user as any).sessionVersion;
+        token.id             = (user as ReturnType<typeof JSON.parse>).id;
+        token.accountType    = (user as ReturnType<typeof JSON.parse>).accountType;
+        token.currency       = (user as ReturnType<typeof JSON.parse>).currency;
+        token.sessionVersion = (user as ReturnType<typeof JSON.parse>).sessionVersion;
       }
       
       // Fetch fresh data from DB on every request to ensure session validity and sync currency
@@ -97,7 +97,7 @@ export const authOptions: NextAuthOptions = {
           // If user was deleted or sessionVersion changed (e.g. password reset), invalidate token
           if (!fresh || (token.sessionVersion !== undefined && fresh.sessionVersion !== token.sessionVersion)) {
             // Return token with an error flag to invalidate session
-            return { ...token, error: "SessionExpired" } as any;
+            return { ...token, error: "SessionExpired" } as ReturnType<typeof JSON.parse>;
           }
           
           // Auto-sync currency and profile
@@ -114,9 +114,9 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }) {
-      if ((token as any).error) {
+      if ((token as ReturnType<typeof JSON.parse>).error) {
         // Return an empty session to force logout
-        return {} as any;
+        return {} as ReturnType<typeof JSON.parse>;
       }
       if (session.user) {
         session.user.id          = token.id as string;

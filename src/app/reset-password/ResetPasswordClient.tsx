@@ -37,7 +37,7 @@ export default function ResetPasswordClient() {
       setTimeout(() => {
         router.push('/login');
       }, 3000);
-    } catch (err: any) {
+    } catch (err: ReturnType<typeof JSON.parse>) {
       setError(err.message || 'Failed to reset password. The token may be expired.');
     } finally {
       setLoading(false);

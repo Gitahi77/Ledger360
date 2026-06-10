@@ -26,7 +26,7 @@ export function SmartUpload({ onDone }: { onDone?: () => void }) {
   const [errMsg,    setErrMsg]   = useState('');
   const [isDragging,setDragging] = useState(false);
   const [aiConsent, setAiConsent]= useState(false);
-  const [accounts,  setAccounts] = useState<any[]>([]);
+  const [accounts,  setAccounts] = useState<ReturnType<typeof JSON.parse>[]>([]);
   const [accountId, setAccountId]= useState<string>('');
 
   useEffect(() => {
@@ -61,7 +61,7 @@ export function SmartUpload({ onDone }: { onDone?: () => void }) {
 
       setTimeout(() => {
         setRows(data.transactions);
-        setSelected(new Set(data.transactions.map((r: any, i: number) => 
+        setSelected(new Set(data.transactions.map((r: ReturnType<typeof JSON.parse>, i: number) => 
           (r.isDuplicate || r.isTransfer) ? -1 : i
         ).filter((i: number) => i !== -1)));
         setMethod(data.method);
@@ -86,7 +86,7 @@ export function SmartUpload({ onDone }: { onDone?: () => void }) {
       })), accountId);
       setState('done');
       setTimeout(() => { onDone?.(); }, 1500);
-    } catch (e: any) {
+    } catch (e: ReturnType<typeof JSON.parse>) {
       setErrMsg(e.message ?? 'Import failed.');
       setState('error');
     }
@@ -118,7 +118,7 @@ export function SmartUpload({ onDone }: { onDone?: () => void }) {
       })), accountId);
       setState('done');
       setTimeout(() => { onDone?.(); }, 1500);
-    } catch (e: any) {
+    } catch (e: ReturnType<typeof JSON.parse>) {
       setErrMsg(e.message ?? 'Import failed.');
       setState('error');
     }

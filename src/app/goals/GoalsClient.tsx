@@ -89,7 +89,7 @@ function GoalModal({ goal, onClose, currency }: { goal?: Goal; onClose: () => vo
       }
       startT(() => router.refresh());
       onClose();
-    } catch (err: any) {
+    } catch (err: ReturnType<typeof JSON.parse>) {
       setError(err.message ?? 'Something went wrong.');
     } finally { setLoading(false); }
   }

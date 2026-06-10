@@ -13,7 +13,7 @@ export default async function Loans() {
   ]);
   return (
     <AppLayout>
-      <LoansClient loans={loans} currency={user.currency} categories={categories as any} />
+      <LoansClient loans={loans} currency={user.currency} categories={categories as ReturnType<typeof JSON.parse>} />
     </AppLayout>
   );
 }

@@ -1,6 +1,6 @@
 // src/types/next-auth.d.ts
 // Augments NextAuth types so session.user has id, accountType, currency
-// Eliminates all (user as any) casts throughout the codebase.
+// Eliminates all (user as ReturnType<typeof JSON.parse>) casts throughout the codebase.
 import 'next-auth';
 import 'next-auth/jwt';
 

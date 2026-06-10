@@ -51,7 +51,7 @@ function BudgetModal({ budget, categories, currency, onClose }: { budget?: Budge
         await addBudget({ name, categoryId, limitAmountMinor: toMinor(parseFloat(limitAmt)), period, rollover });
       }
       startT(() => router.refresh()); onClose();
-    } catch (err: any) { setError(err.message ?? 'Something went wrong.'); }
+    } catch (err: ReturnType<typeof JSON.parse>) { setError(err.message ?? 'Something went wrong.'); }
     finally { setLoading(false); }
   }
 

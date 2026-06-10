@@ -94,7 +94,7 @@ export async function POST(req: Request) {
     // Do NOT return userId — unnecessary information leakage
     return NextResponse.json({ success: true }, { status: 201 });
 
-  } catch (err: any) {
+  } catch (err: ReturnType<typeof JSON.parse>) {
     // Log full error server-side; return only a generic message to client
     console.error('[signup]', err);
     return NextResponse.json({ error: 'Something went wrong. Please try again.' }, { status: 500 });

@@ -133,11 +133,11 @@ describe('Financial Logic and Validations', () => {
       ]);
 
       vi.mocked(prisma.transaction.findMany).mockResolvedValue([
-        { id: 'tx-1', date: pastDate, type: 'expense', baseAmountMinor: 100, accountId: 'a', categoryId: 'c', category: { name: 'c' }, userId: 'u', name: 'n', note: null, createdAt: now, updatedAt: now } as any,
-        { id: 'tx-2', date: pastDate, type: 'expense', baseAmountMinor: 100, accountId: 'a', categoryId: 'c', category: { name: 'c' }, userId: 'u', name: 'n', note: null, createdAt: now, updatedAt: now } as any,
-        { id: 'tx-3', date: pastDate, type: 'expense', baseAmountMinor: 100, accountId: 'a', categoryId: 'c', category: { name: 'c' }, userId: 'u', name: 'n', note: null, createdAt: now, updatedAt: now } as any,
-        { id: 'tx-4', date: pastDate, type: 'expense', baseAmountMinor: 100, accountId: 'a', categoryId: 'c', category: { name: 'c' }, userId: 'u', name: 'n', note: null, createdAt: now, updatedAt: now } as any,
-        { id: 'tx-5', date: pastDate, type: 'expense', baseAmountMinor: 100, accountId: 'a', categoryId: 'c', category: { name: 'c' }, userId: 'u', name: 'n', note: null, createdAt: now, updatedAt: now } as any
+        { id: 'tx-1', date: pastDate, type: 'expense', baseAmountMinor: 100, accountId: 'a', categoryId: 'c', category: { name: 'c' }, userId: 'u', name: 'n', note: null, createdAt: now, updatedAt: now } as ReturnType<typeof JSON.parse>,
+        { id: 'tx-2', date: pastDate, type: 'expense', baseAmountMinor: 100, accountId: 'a', categoryId: 'c', category: { name: 'c' }, userId: 'u', name: 'n', note: null, createdAt: now, updatedAt: now } as ReturnType<typeof JSON.parse>,
+        { id: 'tx-3', date: pastDate, type: 'expense', baseAmountMinor: 100, accountId: 'a', categoryId: 'c', category: { name: 'c' }, userId: 'u', name: 'n', note: null, createdAt: now, updatedAt: now } as ReturnType<typeof JSON.parse>,
+        { id: 'tx-4', date: pastDate, type: 'expense', baseAmountMinor: 100, accountId: 'a', categoryId: 'c', category: { name: 'c' }, userId: 'u', name: 'n', note: null, createdAt: now, updatedAt: now } as ReturnType<typeof JSON.parse>,
+        { id: 'tx-5', date: pastDate, type: 'expense', baseAmountMinor: 100, accountId: 'a', categoryId: 'c', category: { name: 'c' }, userId: 'u', name: 'n', note: null, createdAt: now, updatedAt: now } as ReturnType<typeof JSON.parse>
       ]);
       
       // We pass mocked dates/functions if needed, but generateInsights reads from module scope.
@@ -154,11 +154,11 @@ describe('Financial Logic and Validations', () => {
     it('rejects loan overpayment but allows exact payoff via createTransfer', async () => {
       // Setup
       vi.mocked(getAccountBalances).mockResolvedValue([{ id: 'acc-1', type: 'bank', balanceMinor: 5000, userId: 'user-1', name: 'Bank', currency: 'KES', openingMinor: 0, archived: false, createdAt: new Date() }]);
-      vi.mocked(prisma.account.findFirst).mockResolvedValue({ id: 'acc-1', type: 'bank', currency: 'KES', userId: 'user-1', name: 'Bank', openingMinor: 0, archived: false, createdAt: new Date() } as any);
+      vi.mocked(prisma.account.findFirst).mockResolvedValue({ id: 'acc-1', type: 'bank', currency: 'KES', userId: 'user-1', name: 'Bank', openingMinor: 0, archived: false, createdAt: new Date() } as ReturnType<typeof JSON.parse>);
       vi.mocked(getLoansForUser).mockResolvedValue([
         { id: 'loan-1', balanceMinor: 1000, userId: 'user-1', name: 'Personal Loan', lender: 'Bank', type: 'personal', originalAmountMinor: 1000, annualRate: 10, monthlyPaymentMinor: 250, nextDue: new Date(), createdAt: new Date(), daysOverdue: 0 }
       ]);
-      vi.mocked(prisma.loan.findFirst).mockResolvedValue({ id: 'loan-1', balanceMinor: 1000, userId: 'user-1', name: 'Personal Loan', lender: 'Bank', type: 'personal', annualRate: 10, monthlyPaymentMinor: 250, nextDue: new Date(), createdAt: new Date() } as any);
+      vi.mocked(prisma.loan.findFirst).mockResolvedValue({ id: 'loan-1', balanceMinor: 1000, userId: 'user-1', name: 'Personal Loan', lender: 'Bank', type: 'personal', annualRate: 10, monthlyPaymentMinor: 250, nextDue: new Date(), createdAt: new Date() } as ReturnType<typeof JSON.parse>);
 
       // Overpayment should throw
       await expect(createTransfer({
@@ -173,7 +173,7 @@ describe('Financial Logic and Validations', () => {
 
     it('rejects account overdrafts for standard accounts in addTransaction', async () => {
       vi.mocked(getAccountBalances).mockResolvedValue([{ id: 'acc-1', type: 'bank', balanceMinor: 500, userId: 'user-1', name: 'Bank', currency: 'KES', openingMinor: 0, archived: false, createdAt: new Date() }]);
-      vi.mocked(prisma.category.findFirst).mockResolvedValue({ id: 'cat-1', userId: 'user-1', name: 'Food', type: 'expense', icon: null, createdAt: new Date() } as any);
+      vi.mocked(prisma.category.findFirst).mockResolvedValue({ id: 'cat-1', userId: 'user-1', name: 'Food', type: 'expense', icon: null, createdAt: new Date() } as ReturnType<typeof JSON.parse>);
 
       await expect(addTransaction({
         name: 'Lunch', type: 'expense', baseAmountMinor: 600, categoryId: 'cat-1', accountId: 'acc-1', date: '2023-10-10'
@@ -182,7 +182,7 @@ describe('Financial Logic and Validations', () => {
 
     it('allows overdrafts for credit_card accounts in addTransaction', async () => {
       vi.mocked(getAccountBalances).mockResolvedValue([{ id: 'acc-cc', type: 'credit_card', balanceMinor: 0, userId: 'user-1', name: 'CC', currency: 'KES', openingMinor: 0, archived: false, createdAt: new Date() }]);
-      vi.mocked(prisma.category.findFirst).mockResolvedValue({ id: 'cat-1', userId: 'user-1', name: 'Food', type: 'expense', icon: null, createdAt: new Date() } as any);
+      vi.mocked(prisma.category.findFirst).mockResolvedValue({ id: 'cat-1', userId: 'user-1', name: 'Food', type: 'expense', icon: null, createdAt: new Date() } as ReturnType<typeof JSON.parse>);
       
       // Should succeed
       await expect(addTransaction({
@@ -197,7 +197,7 @@ describe('Financial Logic and Validations', () => {
       
       vi.mocked(prisma.transaction.findFirst).mockResolvedValue({
         id: 'tx-1', type: 'expense', baseAmountMinor: 300, accountId: 'acc-1', userId: 'user-1', name: 'Lunch', categoryId: 'cat-1', date: new Date(), note: null, createdAt: new Date()
-      } as any);
+      } as ReturnType<typeof JSON.parse>);
       vi.mocked(prisma.transaction.updateMany).mockResolvedValue({ count: 1 });
 
       // Increasing expense to 700: 800 - 700 = 100 >= 0 (Allowed)

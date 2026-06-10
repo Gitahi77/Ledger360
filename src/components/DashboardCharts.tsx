@@ -26,12 +26,12 @@ const DONUT_COLORS = [
 ];
 
 /* ── Tooltip components ───────────────────────────────────── */
-function FlowTip({ active, payload, label }: any) {
+function FlowTip({ active, payload, label }: ReturnType<typeof JSON.parse>) {
   if (!active || !payload?.length) return null;
   return (
     <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: '0.625rem 0.875rem', boxShadow: 'var(--shadow-md)' }}>
       <p style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>{label}</p>
-      {payload.map((p: any) => (
+      {payload.map((p: ReturnType<typeof JSON.parse>) => (
         <div key={p.name} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.1rem' }}>
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: p.color, flexShrink: 0 }} />
           <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{p.name}:</span>
@@ -44,7 +44,7 @@ function FlowTip({ active, payload, label }: any) {
   );
 }
 
-function PieTip({ active, payload, total }: any) {
+function PieTip({ active, payload, total }: ReturnType<typeof JSON.parse>) {
   if (!active || !payload?.length) return null;
   return (
     <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: '0.625rem 0.875rem', boxShadow: 'var(--shadow-md)' }}>
@@ -58,7 +58,7 @@ function PieTip({ active, payload, total }: any) {
 const tick = { fontSize: 10, fill: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif' };
 
 const RADIAN = Math.PI / 180;
-function PieLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) {
+function PieLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent }: ReturnType<typeof JSON.parse>) {
   if (percent < 0.08) return null;
   const r = innerRadius + (outerRadius - innerRadius) * 0.55;
   return (

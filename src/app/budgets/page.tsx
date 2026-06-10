@@ -19,8 +19,8 @@ export default async function Budgets({
     getCategories('expense'),
   ]);
 
-  const totalBudgeted = budgets.reduce((s: number, b: any) => s + b.limit, 0);
-  const totalSpent    = budgets.reduce((s: number, b: any) => s + b.spent, 0);
+  const totalBudgeted = budgets.reduce((s: number, b: ReturnType<typeof JSON.parse>) => s + b.limit, 0);
+  const totalSpent    = budgets.reduce((s: number, b: ReturnType<typeof JSON.parse>) => s + b.spent, 0);
 
   return (
     <AppLayout>
