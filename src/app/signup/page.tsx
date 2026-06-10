@@ -171,6 +171,13 @@ export default function SignupPage() {
             Already have an account?{' '}
             <Link href="/login" style={{ color: 'var(--primary)', fontWeight: 600 }}>Sign in</Link>
           </div>
+
+          <div style={{ marginTop: '1rem', textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+            By signing up, you agree to our{' '}
+            <Link href="/tos" style={{ color: 'var(--primary)', textDecoration: 'underline' }}>Terms</Link>
+            {' '}and{' '}
+            <Link href="/privacy" style={{ color: 'var(--primary)', textDecoration: 'underline' }}>Privacy Policy</Link>.
+          </div>
         </div>
       </div>
     </div>

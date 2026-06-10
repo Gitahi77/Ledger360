@@ -6,7 +6,7 @@ import Link from 'next/link';
 import {
   LayoutDashboard, ArrowLeftRight, PieChart, Target,
   CreditCard, BarChart2, TrendingUp, Settings,
-  Tags, Menu, X, Landmark
+  Tags, Menu, X, Landmark, Shield, FileText
 } from 'lucide-react';
 
 const MAIN_ITEMS = [
@@ -23,6 +23,8 @@ const MORE_ITEMS = [
   { href: '/loans',        icon: CreditCard,      label: 'Loans'        },
   { href: '/reports',      icon: BarChart2,       label: 'Reports'      },
   { href: '/settings',     icon: Settings,        label: 'Settings'     },
+  { href: '/privacy',      icon: Shield,          label: 'Privacy'      },
+  { href: '/tos',          icon: FileText,        label: 'Terms'        },
 ];
 
 export function MobileNav() {
