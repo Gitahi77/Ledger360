@@ -82,7 +82,7 @@ function LoanModal({ loan, onClose, currency }: { loan?: Loan; onClose: () => vo
       }
       startT(() => router.refresh());
       onClose();
-    } catch (err: ReturnType<typeof JSON.parse>) {
+    } catch (err: any) {
       setError(err.message ?? 'Something went wrong.');
     } finally { setLoading(false); }
   }

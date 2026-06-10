@@ -18,7 +18,7 @@ export default function ForgotPasswordPage() {
     try {
       await requestPasswordReset(email);
       setSent(true);
-    } catch (err: ReturnType<typeof JSON.parse>) {
+    } catch (err: any) {
       setError(err.message || 'Something went wrong.');
     } finally {
       setLoading(false);

@@ -32,7 +32,6 @@ export function MobileNav() {
   const [showMore, setShowMore] = useState(false);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setShowMore(false);
   }, [pathname]);
 

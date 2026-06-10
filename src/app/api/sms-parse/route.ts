@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'SMS text is too long (max 8000 characters)' }, { status: 400 });
   }
 
-  const userId = (session.user as ReturnType<typeof JSON.parse>).id as string;
+  const userId = (session.user as any).id as string;
   const rl = await checkLimit('ai', `ai:${userId}`);
   if (!rl.ok) {
     return NextResponse.json(
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
     const redactedSms = redactForAI(sms);
     const transactions = await parseMpesaSms(redactedSms);
     return NextResponse.json({ transactions, count: transactions.length });
-  } catch (err: ReturnType<typeof JSON.parse>) {
+  } catch (err: any) {
     console.error('[SMS Parse] Error:', err);
     return NextResponse.json(
       { error: 'Failed to parse SMS. Please try again.' },

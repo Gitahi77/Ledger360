@@ -176,7 +176,7 @@ async function parseExcel(buffer: ArrayBuffer): Promise<RawRow[]> {
   // Convert to CSV text and reuse the CSV parser
   const csvRows: string[] = [];
   sheet.eachRow((row) => {
-    const rowValues = (row.values as ReturnType<typeof JSON.parse>[]).slice(1).map(val => {
+    const rowValues = (row.values as any[]).slice(1).map(val => {
       if (val === null || val === undefined) return '';
       if (val instanceof Date) return val.toISOString();
       if (typeof val === 'object' && val.text) return val.text;
@@ -260,7 +260,7 @@ function parseMpesaStyle(text: string): RawRow[] {
 }
 
 /* ── Gemini Vision parser (uses GOOGLE_GENERATIVE_AI_API_KEY) ───── */
-async function parseWithAI(fileBuffer: ArrayBuffer, mimeType: string, userId: string): Promise<ReturnType<typeof JSON.parse>[] | null> {
+async function parseWithAI(fileBuffer: ArrayBuffer, mimeType: string, userId: string): Promise<any[] | null> {
   if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) return null;
   
   const rlAi = await checkLimit('ai', `ai:${userId}`);
@@ -297,7 +297,7 @@ export async function POST(request: Request) {
   if (!session?.user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  const userId = (session.user as ReturnType<typeof JSON.parse>).id as string;
+  const userId = (session.user as any).id as string;
 
   // ── Rate limiting ──────────────────────────────────────────
   const rl = await checkLimit('upload', `upload:${userId}`);
@@ -325,7 +325,7 @@ export async function POST(request: Request) {
     const fileName   = file.name?.toLowerCase() ?? '';
     const fileBuffer = await file.arrayBuffer();
 
-    let transactions: ReturnType<typeof JSON.parse>[] = [];
+    let transactions: any[] = [];
     let method = 'csv';
 
     const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls') || mimeType.includes('spreadsheet') || mimeType.includes('excel');
@@ -375,7 +375,7 @@ export async function POST(request: Request) {
     }
 
     // ── Validate every row with Zod before touching the DB ─────
-    const validRows = transactions.filter((t: ReturnType<typeof JSON.parse>) => {
+    const validRows = transactions.filter((t: any) => {
       const result = UploadRowSchema.safeParse(t);
       if (!result.success) {
         console.warn('[upload] Skipping invalid row:', result.error.flatten(), t);
@@ -390,27 +390,27 @@ export async function POST(request: Request) {
     }
 
     // Resolve category IDs for the user
-    const categoryNames = [...new Set(validRows.map((t: ReturnType<typeof JSON.parse>) => String(t.category)))];
+    const categoryNames = [...new Set(validRows.map((t: any) => String(t.category)))];
     const existingCats  = await prisma.category.findMany({ where: { userId, name: { in: categoryNames } } });
     const catMap: Record<string, string> = Object.fromEntries(existingCats.map(c => [c.name, c.id]));
 
     for (const name of categoryNames) {
       if (!catMap[name]) {
         const cat = await prisma.category.create({
-          data: { name, type: validRows.find((t: ReturnType<typeof JSON.parse>) => t.category === name)?.type ?? 'expense', userId },
+          data: { name, type: validRows.find((t: any) => t.category === name)?.type ?? 'expense', userId },
         });
         catMap[name] = cat.id;
       }
     }
 
     const fallbackId = catMap['Food & Grocery'] ?? catMap[categoryNames[0]];
-    const parsed = validRows.map((t: ReturnType<typeof JSON.parse>) => ({
+    const parsed = validRows.map((t: any) => ({
       ...t,
       categoryId: catMap[String(t.category)] ?? fallbackId,
     }));
 
     const crypto = await import('crypto');
-    const enhancedParsed = parsed.map((r: ReturnType<typeof JSON.parse>) => {
+    const enhancedParsed = parsed.map((r: any) => {
       let hashStr = '';
       if (r.reference) {
         hashStr = `${userId}:${r.reference}`;
@@ -421,14 +421,14 @@ export async function POST(request: Request) {
       return { ...r, importHash };
     });
 
-    const hashes = enhancedParsed.map((r: ReturnType<typeof JSON.parse>) => r.importHash);
+    const hashes = enhancedParsed.map((r: any) => r.importHash);
     const existing = await prisma.transaction.findMany({
       where: { userId, importHash: { in: hashes } },
       select: { importHash: true }
     });
     const existingSet = new Set(existing.map(tx => tx.importHash));
 
-    const finalParsed = enhancedParsed.map((r: ReturnType<typeof JSON.parse>) => ({
+    const finalParsed = enhancedParsed.map((r: any) => ({
       ...r,
       isDuplicate: existingSet.has(r.importHash),
       isTransfer: r.type === 'transfer'
@@ -437,11 +437,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ 
       success: true, 
       transactions: finalParsed,
-      count: finalParsed.filter((t: ReturnType<typeof JSON.parse>) => !t.isDuplicate && !t.isTransfer).length, 
+      count: finalParsed.filter((t: any) => !t.isDuplicate && !t.isTransfer).length, 
       method 
     });
 
-  } catch (err: ReturnType<typeof JSON.parse>) {
+  } catch (err: any) {
     // Log full error server-side; never expose internal details to client
     console.error('[SmartUpload]', err);
     return NextResponse.json(

@@ -247,7 +247,7 @@ export function SettingsClient({
       await fn();
       setter({ saving: false, saved: true, error: '' });
       setTimeout(() => setter({ saving: false, saved: false, error: '' }), 3000);
-    } catch (err: ReturnType<typeof JSON.parse>) {
+    } catch (err: any) {
       setter({ saving: false, saved: false, error: err?.message ?? 'Save failed' });
     }
   }
@@ -325,7 +325,7 @@ export function SettingsClient({
     try {
       await deleteUserAccount();
       signOut({ callbackUrl: '/login' });
-    } catch (e: ReturnType<typeof JSON.parse>) {
+    } catch (e: any) {
       setDataState({ saving: false, saved: false, error: e.message || 'Failed to delete account.' });
     }
   }
@@ -466,7 +466,7 @@ export function SettingsClient({
       )}
 
       {/* 5) Security & Activity */}
-      <AccordionHeader section={SECTIONS.find(s => s.id === 'security')!} isOpen={openSection === 'security'} onClick={() => toggleSection('security' as ReturnType<typeof JSON.parse>)} />
+      <AccordionHeader section={SECTIONS.find(s => s.id === 'security')!} isOpen={openSection === 'security'} onClick={() => toggleSection('security' as any)} />
       {openSection === 'security' && (
         <AccordionPanel>
           <div style={{ marginBottom: '1rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>

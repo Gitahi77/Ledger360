@@ -30,12 +30,12 @@ type CategoryRow  = { name: string; value: number; pct: number; color: string };
 
 const tick = { fontSize: 10, fill: 'var(--text-muted)' };
 
-function Tip({ active, payload, label, currency }: ReturnType<typeof JSON.parse>) {
+function Tip({ active, payload, label, currency }: any) {
   if (!active || !payload?.length) return null;
   return (
     <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:8, padding:'0.625rem 0.875rem', boxShadow:'var(--shadow-md)' }}>
       <p style={{ fontSize:'0.68rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em', color:'var(--text-muted)', marginBottom:'0.35rem' }}>{label}</p>
-      {payload.map((p: ReturnType<typeof JSON.parse>) => (
+      {payload.map((p: any) => (
         <div key={p.name} style={{ display:'flex', alignItems:'center', gap:'0.4rem', marginBottom:'0.1rem' }}>
           <div style={{ width:7, height:7, borderRadius:'50%', background:p.color, flexShrink:0 }} />
           <span style={{ fontSize:'0.78rem', color:'var(--text-secondary)' }}>{p.name}:</span>

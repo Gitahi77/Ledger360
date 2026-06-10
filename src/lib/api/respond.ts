@@ -19,11 +19,11 @@ export type ApiResponse<T> = {
   error: {
     code: 'UNAUTHORIZED' | 'VALIDATION_ERROR' | 'RATE_LIMITED' | 'NOT_FOUND' | 'INTERNAL' | 'CONFLICT';
     message: string;
-    details?: ReturnType<typeof JSON.parse>;
+    details?: any;
   } | null;
   meta: {
     requestId: string;
-    [key: string]: ReturnType<typeof JSON.parse>;
+    [key: string]: any;
   };
 };
 
@@ -39,7 +39,7 @@ function createResponse<T>(
   );
 }
 
-export function apiRoute<T = ReturnType<typeof JSON.parse>, U = ReturnType<typeof JSON.parse>>(
+export function apiRoute<T = any, U = any>(
   schema: z.ZodType<T> | null,
   handler: RouteHandler<T, U>
 ) {
@@ -58,7 +58,7 @@ export function apiRoute<T = ReturnType<typeof JSON.parse>, U = ReturnType<typeo
       // 2. Rate Limiting (I-14)
       const limit = await checkLimit('api', `api:${userId}`);
       if (!limit.ok) {
-        return createResponse(null, { code: 'RATE_LIMITED', message: 'Too mReturnType<typeof JSON.parse> requests' }, 429, requestId);
+        return createResponse(null, { code: 'RATE_LIMITED', message: 'Too many requests' }, 429, requestId);
       }
 
       // 3. Idempotency Check (I-23)
@@ -115,7 +115,7 @@ export function apiRoute<T = ReturnType<typeof JSON.parse>, U = ReturnType<typeo
           if (err instanceof z.ZodError) {
             return createResponse(
               null, 
-              { code: 'VALIDATION_ERROR', message: 'Invalid input', details: (err as z.ZodError<ReturnType<typeof JSON.parse>>).issues }, 
+              { code: 'VALIDATION_ERROR', message: 'Invalid input', details: (err as z.ZodError<any>).issues }, 
               400, 
               requestId
             );
@@ -141,7 +141,7 @@ export function apiRoute<T = ReturnType<typeof JSON.parse>, U = ReturnType<typeo
 
       return NextResponse.json(envelope, { status: 200 });
 
-    } catch (error: ReturnType<typeof JSON.parse>) {
+    } catch (error: any) {
       console.error(`[API Error] ${req.method} ${req.nextUrl.pathname}:`, error);
 
       // If we errored internally, release the idempotency lock so they can retry
@@ -155,7 +155,7 @@ export function apiRoute<T = ReturnType<typeof JSON.parse>, U = ReturnType<typeo
       }
 
       // Map specific error messages from actions to structured codes where possible
-      let code: ApiResponse<ReturnType<typeof JSON.parse>>['error'] = { code: 'INTERNAL', message: 'Internal server error' };
+      let code: ApiResponse<any>['error'] = { code: 'INTERNAL', message: 'Internal server error' };
       let status = 500;
 
       if (error instanceof Error) {

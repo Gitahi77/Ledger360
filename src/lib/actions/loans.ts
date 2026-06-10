@@ -72,7 +72,7 @@ export async function editLoan(id: string, data: {
   const user = await requireAuth();
   if (!id) throw new Error('Missing id');
 
-  const updateData: ReturnType<typeof JSON.parse> = { ...data };
+  const updateData: any = { ...data };
   if (data.nextDue) updateData.nextDue = new Date(data.nextDue);
 
   const { count } = await prisma.loan.updateMany({

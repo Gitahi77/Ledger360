@@ -13,7 +13,7 @@ let _cache: FxRates | null = null;
 const CACHE_TTL = 60 * 60 * 1000; // 1 hour
 
 export async function getRates(base: string = 'USD'): Promise<FxRates | null> {
-  const _cacheKey = `rates_${base}`;
+  const cacheKey = `rates_${base}`;
   if (_cache && _cache.base === base && Date.now() - _cache.updatedAt < CACHE_TTL) return _cache;
   try {
     const toCurrencies = ['USD', 'EUR', 'GBP', 'ZAR', 'CHF', 'JPY', 'KES'].filter(c => c !== base).join(',');

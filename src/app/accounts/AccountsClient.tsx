@@ -22,7 +22,7 @@ const ACCOUNT_TYPES = [
 ];
 
 // Helper to get an icon
-function TrendingUpIcon(props: ReturnType<typeof JSON.parse>) {
+function TrendingUpIcon(props: any) {
   return <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>;
 }
 
@@ -68,19 +68,19 @@ export function AccountsClient({ accounts, currency }: { accounts: Account[], cu
     try {
       const data = {
         name,
-        type: type as ReturnType<typeof JSON.parse>,
+        type: type as any,
         openingMinor: toMinor(parseFloat(opening || '0')),
       };
       
       if (editingAcc) {
         await updateAccount(editingAcc.id, data);
       } else {
-        await createAccount(data as ReturnType<typeof JSON.parse>);
+        await createAccount(data as any);
       }
       
       setShowModal(false);
       startT(() => router.refresh());
-    } catch (err: ReturnType<typeof JSON.parse>) {
+    } catch (err: any) {
       setError(err.message ?? 'Something went wrong.');
     } finally {
       setLoading(false);
@@ -91,7 +91,7 @@ export function AccountsClient({ accounts, currency }: { accounts: Account[], cu
     try {
       await updateAccount(acc.id, { archived: !acc.archived });
       startT(() => router.refresh());
-    } catch (err: ReturnType<typeof JSON.parse>) {
+    } catch (err: any) {
       alert(err.message ?? 'Could not archive account.');
     }
   }
@@ -102,7 +102,7 @@ export function AccountsClient({ accounts, currency }: { accounts: Account[], cu
     try {
       await deleteAccount(id);
       startT(() => router.refresh());
-    } catch (err: ReturnType<typeof JSON.parse>) {
+    } catch (err: any) {
       alert(err.message ?? 'Could not delete account.');
     } finally {
       setDeletingId(null);

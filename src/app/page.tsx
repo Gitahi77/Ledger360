@@ -54,7 +54,7 @@ export default async function Dashboard({
     // Pass user currency so insights use the right symbol (not hardcoded KES)
     import('@/lib/intelligence').then(m => m.generateInsights(user.id, user.currency)),
     prisma.userPreferences.findUnique({ where: { userId: user.id } }),
-    safeToSpend(user.id, period as ReturnType<typeof JSON.parse>),
+    safeToSpend(user.id, period as any),
   ]);
 
   const overdueLoanCount = loans.filter(l => l.daysOverdue > 0).length;

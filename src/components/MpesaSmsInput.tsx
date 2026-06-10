@@ -40,9 +40,9 @@ export function MpesaSmsInput({ onImport }: Props) {
       if (!res.ok) throw new Error(data.error ?? 'Parse failed');
       if (!data.transactions?.length) throw new Error('No transactions found in that SMS text');
       setParsed(data.transactions);
-      setSelected(new Set(data.transactions.map((_: ReturnType<typeof JSON.parse>, i: number) => i)));
+      setSelected(new Set(data.transactions.map((_: any, i: number) => i)));
       setState('review');
-    } catch (e: ReturnType<typeof JSON.parse>) {
+    } catch (e: any) {
       setErrMsg(e.message);
       setState('error');
     }

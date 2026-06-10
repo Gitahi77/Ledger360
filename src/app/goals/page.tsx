@@ -16,7 +16,7 @@ export default async function Goals() {
       <GoalsClient 
         goals={goals}
         currency={user.currency}
-        categories={categories as ReturnType<typeof JSON.parse>}
+        categories={categories as any}
       />
     </AppLayout>
   );

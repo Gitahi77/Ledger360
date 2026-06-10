@@ -34,7 +34,7 @@ describe('apiRoute Wrapper', () => {
 
   const route = apiRoute(dummySchema, dummyHandler);
 
-  function createRequest(method: string, body?: ReturnType<typeof JSON.parse>, headers: Record<string, string> = {}) {
+  function createRequest(method: string, body?: any, headers: Record<string, string> = {}) {
     const reqHeaders = new Headers();
     Object.entries(headers).forEach(([k, v]) => reqHeaders.set(k, v));
     
@@ -48,7 +48,7 @@ describe('apiRoute Wrapper', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(auth.getServerSession).mockResolvedValue({ user: { id: 'user-1' } } as ReturnType<typeof JSON.parse>);
+    vi.mocked(auth.getServerSession).mockResolvedValue({ user: { id: 'user-1' } } as any);
     vi.mocked(rateLimit.checkLimit).mockResolvedValue({ ok: true, retryAfter: 0 });
     vi.mocked(idempotency.checkIdempotency).mockResolvedValue(null);
     vi.mocked(idempotency.lockIdempotencyKey).mockResolvedValue(true);

@@ -56,7 +56,7 @@ export async function editGoal(id: string, data: {
   const user = await requireAuth();
   if (!id) throw new Error('Missing id');
 
-  const updateData: ReturnType<typeof JSON.parse> = { ...data };
+  const updateData: any = { ...data };
   if (data.deadline !== undefined) {
     updateData.deadline = data.deadline ? new Date(data.deadline) : null;
   }

@@ -42,7 +42,7 @@ export async function getNseStocks(): Promise<{ stocks: NseStock[]; isLive: bool
     const raw = await res.json();
 
     // Normalize API response (shape may vary)
-    const stocks: NseStock[] = (Array.isArray(raw) ? raw : raw.stocks ?? []).map((s: ReturnType<typeof JSON.parse>) => ({
+    const stocks: NseStock[] = (Array.isArray(raw) ? raw : raw.stocks ?? []).map((s: any) => ({
       symbol:    s.symbol ?? s.ticker ?? '',
       name:      s.name ?? s.company ?? s.symbol ?? '',
       price:     parseFloat(s.price ?? s.last ?? 0),

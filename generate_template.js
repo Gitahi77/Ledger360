@@ -1,4 +1,3 @@
-/* eslint-disable */
 const ExcelJS = require('exceljs');
 const fs = require('fs');
 

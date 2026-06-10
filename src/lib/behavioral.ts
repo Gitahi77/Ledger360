@@ -125,7 +125,7 @@ export async function safeToSpend(userId: string, period: 'weekly' | 'monthly' |
     });
     const envelopeSpend = spendThisPeriodAgg._sum.baseAmountMinor ?? 0;
     
-    const envelopeEffectiveLimit = b.limitAmountMinor;
+    let envelopeEffectiveLimit = b.limitAmountMinor;
 
     if (b.rollover) {
       // For rollover=true, cumulative limit - cumulative spend since the budget was created

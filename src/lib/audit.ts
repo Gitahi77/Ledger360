@@ -10,7 +10,7 @@ export async function logActivity({
   userId: string;
   action: string;
   resource: string;
-  metadata?: ReturnType<typeof JSON.parse>;
+  metadata?: any;
   ipAddress?: string | null;
 }) {
   try {

@@ -42,7 +42,7 @@ function CategoryModal({ category, onClose }: { category?: Category, onClose: ()
       }
       startT(() => router.refresh());
       onClose();
-    } catch (err: ReturnType<typeof JSON.parse>) {
+    } catch (err: any) {
       setError(err.message ?? 'Something went wrong');
     } finally {
       setLoading(false);
@@ -116,7 +116,7 @@ export function CategoriesClient({ initialCategories, currency }: { initialCateg
     try {
       await deleteCategory(cat.id);
       startT(() => router.refresh());
-    } catch (e: ReturnType<typeof JSON.parse>) {
+    } catch (e: any) {
       setErrorMsg(e.message || 'Failed to delete category.');
     } finally {
       setDeletingId(null);

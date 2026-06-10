@@ -40,7 +40,7 @@ function AssetModal({ asset, onClose, currency }: { asset?: Asset; onClose: () =
       if (isEdit && asset) { await editAsset(asset.id, { name, category, valueMinor: toMinor(parseFloat(value)) }); }
       else { await addAsset({ name, category, valueMinor: toMinor(parseFloat(value)) }); }
       startT(() => router.refresh()); onClose();
-    } catch (err: ReturnType<typeof JSON.parse>) { setError(err.message ?? 'Something went wrong.'); }
+    } catch (err: any) { setError(err.message ?? 'Something went wrong.'); }
     finally { setLoading(false); }
   }
 
