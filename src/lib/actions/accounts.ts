@@ -2,7 +2,7 @@
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/actions/_auth';
 import { z } from 'zod';
-import { Account } from '@prisma/client';
+import { Account, Prisma } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 
 const AccountSchema = z.object({
@@ -67,7 +67,7 @@ export async function createAccount(data: z.infer<typeof AccountSchema>) {
   const user = await requireAuth();
   const valid = AccountSchema.parse(data);
 
-  const result = await prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const account = await tx.account.create({
       data: {
         ...valid,
@@ -95,7 +95,7 @@ export async function createAccount(data: z.infer<typeof AccountSchema>) {
 export async function updateAccount(id: string, data: Partial<z.infer<typeof AccountSchema>>) {
   const user = await requireAuth();
 
-  const result = await prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const { count } = await tx.account.updateMany({
       where: { id, userId: user.id },
       data,
@@ -134,7 +134,7 @@ export async function deleteAccount(id: string) {
     throw new Error('Cannot delete account with existing transactions or transfers. Please reassign them first.');
   }
 
-  const result = await prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const { count } = await tx.account.deleteMany({
       where: { id, userId: user.id }
     });

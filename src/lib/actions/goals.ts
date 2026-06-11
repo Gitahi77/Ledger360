@@ -17,7 +17,7 @@ export async function getGoals() {
 
   return goals.map(g => {
     const currentAmountMinor = g.transfers.reduce((sum, t) => sum + t.baseAmountMinor, 0);
-    const { transfers, ...rest } = g;
+    const { transfers: _transfers, ...rest } = g;
     return { ...rest, currentAmountMinor };
   });
 }

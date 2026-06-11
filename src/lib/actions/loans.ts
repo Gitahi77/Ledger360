@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { requireAuth } from './_auth';
 import { computeLoanBalance } from '@/lib/shared-computations';
-import type { Loan, Transfer } from '@prisma/client';
+import type { Loan } from '@prisma/client';
 
 export async function getLoansForUser(userId: string) {
   const today = new Date();
@@ -25,7 +25,7 @@ export async function getLoansForUser(userId: string) {
     const repaidAmount = l.transfers.reduce((s, t) => s + t.baseAmountMinor, 0);
     const currentBalanceMinor = computeLoanBalance(l.balanceMinor, repaidAmount);
     
-    const { transfers, ...rest } = l;
+    const { transfers: _transfers, ...rest } = l;
     return { ...rest, balanceMinor: currentBalanceMinor, daysOverdue: auto };
   });
 }

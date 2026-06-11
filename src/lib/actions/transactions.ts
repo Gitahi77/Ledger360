@@ -33,8 +33,6 @@ export async function getTransactionSummary(period = 'this-month') {
 
   const income   = await prisma.transaction.aggregate({ where: { userId: user.id, type: 'income',   date: { gte: from, lte: to } }, _sum: { baseAmountMinor: true } });
   const expenses = await prisma.transaction.aggregate({ where: { userId: user.id, type: 'expense',  date: { gte: from, lte: to } }, _sum: { baseAmountMinor: true } });
-  const prevInc  = await prisma.transaction.aggregate({ where: { userId: user.id, type: 'income',   date: { gte: prevFrom, lte: prevTo } }, _sum: { baseAmountMinor: true } });
-  const prevExp  = await prisma.transaction.aggregate({ where: { userId: user.id, type: 'expense',  date: { gte: prevFrom, lte: prevTo } }, _sum: { baseAmountMinor: true } });
 
   const inc = income._sum.baseAmountMinor ?? 0;
   const exp = expenses._sum.baseAmountMinor ?? 0;
@@ -109,8 +107,8 @@ export async function getCategoryBreakdown(period = 'this-month') {
   });
   const catMap = Object.fromEntries(categories.map(c => [c.id, c]));
 
-  const total = rows.reduce((s, r) => s + (r._sum.baseAmountMinor ?? 0), 0);
-  return rows.map(r => ({
+  const total = rows.reduce((s, r: AggRow) => s + (r._sum.baseAmountMinor ?? 0), 0);
+  return rows.map((r: AggRow) => ({
     name:  catMap[r.categoryId]?.name ?? r.categoryId,
     icon:  catMap[r.categoryId]?.icon ?? 'other',
     value: r._sum.baseAmountMinor ?? 0,

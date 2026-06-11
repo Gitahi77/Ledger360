@@ -11,7 +11,7 @@ import {
   startOfMonth, subMonths, getDate, getDaysInMonth,
 } from 'date-fns';
 import { toMajor } from '@/lib/money';
-import type { Transaction, Category, Goal, Transfer, Loan } from '@prisma/client';
+import type { Transaction, Category, Goal, Transfer } from '@prisma/client';
 
 export type Insight = {
   id: string;
