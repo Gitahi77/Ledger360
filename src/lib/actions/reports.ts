@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { requireAuth } from './_auth';
+import type { Category } from '@prisma/client';
 
 /* ── 6-month trend (single raw SQL) ──────────────────────── */
 export async function getMonthlyTrend() {
@@ -129,6 +130,7 @@ export async function getReportCategories(period: string) {
     to   = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
   }
 
+  type AggRow = { categoryId: string; _sum: { baseAmountMinor: number | null } };
   const rows = await prisma.transaction.groupBy({
     by: ['categoryId'],
     where: { userId: user.id, type: 'expense', date: { gte: from, lte: to } },
@@ -139,12 +141,12 @@ export async function getReportCategories(period: string) {
 
   if (rows.length === 0) return [];
 
-  const cats   = await prisma.category.findMany({ where: { id: { in: rows.map(r => r.categoryId) } } });
+  const cats: Category[] = await prisma.category.findMany({ where: { id: { in: rows.map((r: AggRow) => r.categoryId) } } });
   const catMap = Object.fromEntries(cats.map(c => [c.id, c]));
-  const total  = rows.reduce((s, r) => s + (r._sum.baseAmountMinor ?? 0), 0);
+  const total  = rows.reduce((s, r: AggRow) => s + (r._sum.baseAmountMinor ?? 0), 0);
 
   const PALETTE = ['#0070F3','#16A34A','#DC2626','#D97706','#7C3AED','#0F766E','#DB2777','#F97316'];
-  return rows.map((r, i) => ({
+  return rows.map((r: AggRow, i) => ({
     name:  catMap[r.categoryId]?.name ?? 'Other',
     value: r._sum.baseAmountMinor ?? 0,
     pct:   total > 0 ? Math.round(((r._sum.baseAmountMinor ?? 0) / total) * 100) : 0,

@@ -28,7 +28,7 @@ export async function getAccounts(): Promise<AccountWithBalance[]> {
 }
 
 export async function getAccountBalances(userId: string): Promise<AccountWithBalance[]> {
-  const accounts = await prisma.account.findMany({ 
+  const accounts: Account[] = await prisma.account.findMany({ 
     where: { userId },
     orderBy: { createdAt: 'asc' } 
   });

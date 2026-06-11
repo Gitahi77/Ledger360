@@ -10,7 +10,7 @@ export async function getNetWorth() {
   const user = await requireAuth();
 
   const accounts = await getAccountBalances(user.id);
-  const assets   = await prisma.asset.findMany({ where: { userId: user.id } });
+  const assets: import('@prisma/client').Asset[] = await prisma.asset.findMany({ where: { userId: user.id } });
   const loans    = await getLoansForUser(user.id);
 
   const cashAccounts = accounts.filter(a => a.type !== 'credit_card' || a.balanceMinor > 0);

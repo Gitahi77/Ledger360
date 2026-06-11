@@ -5,6 +5,7 @@ import { periodDates } from '@/lib/dateUtils';
 import { revalidatePath } from 'next/cache';
 import { requireAuth } from './_auth';
 import { getAccountBalances } from './accounts';
+import type { Category } from '@prisma/client';
 
 /* ── List ─────────────────────────────────────────────────── */
 export async function getTransactions(period = 'this-month', type?: string) {
@@ -95,6 +96,7 @@ export async function getCategoryBreakdown(period = 'this-month') {
   const user = await requireAuth();
   const { from, to } = periodDates(period);
 
+  type AggRow = { categoryId: string; _sum: { baseAmountMinor: number | null } };
   const rows = await prisma.transaction.groupBy({
     by: ['categoryId'],
     where: { userId: user.id, type: 'expense', date: { gte: from, lte: to } },
@@ -102,8 +104,8 @@ export async function getCategoryBreakdown(period = 'this-month') {
     orderBy: { _sum: { baseAmountMinor: 'desc' } },
   });
 
-  const categories = await prisma.category.findMany({
-    where: { id: { in: rows.map(r => r.categoryId) } },
+  const categories: Category[] = await prisma.category.findMany({
+    where: { id: { in: rows.map((r: AggRow) => r.categoryId) } },
   });
   const catMap = Object.fromEntries(categories.map(c => [c.id, c]));
 
@@ -206,7 +208,7 @@ export async function importTransactions(rows: {
 
   // Resolve or create categories dynamically based on the string provided by the user
   const categoryNames = [...new Set(rows.map(r => String(r.categoryName)))];
-  const existingCats  = await prisma.category.findMany({ where: { userId: user.id, name: { in: categoryNames } } });
+  const existingCats: Category[]  = await prisma.category.findMany({ where: { userId: user.id, name: { in: categoryNames } } });
   const catMap: Record<string, string> = Object.fromEntries(existingCats.map(c => [c.name, c.id]));
 
   for (const name of categoryNames) {

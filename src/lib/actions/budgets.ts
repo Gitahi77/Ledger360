@@ -9,11 +9,12 @@ export async function getBudgetsWithSpend(period = 'this-month') {
   const user = await requireAuth();
   const { from, to } = periodDates(period);
 
-  const budgets = await prisma.budget.findMany({
+  const budgets: (import('@prisma/client').Budget & { category: import('@prisma/client').Category })[] = await prisma.budget.findMany({
     where: { userId: user.id },
     include: { category: true },
   });
 
+  type AggRow = { categoryId: string; _sum: { baseAmountMinor: number | null } };
   const [spendThisPeriodRows, spendAllTimeRows] = await Promise.all([
     prisma.transaction.groupBy({
       by: ['categoryId'],
@@ -27,8 +28,8 @@ export async function getBudgetsWithSpend(period = 'this-month') {
     })
   ]);
 
-  const spendThisPeriodMap = Object.fromEntries(spendThisPeriodRows.map(r => [r.categoryId, r._sum.baseAmountMinor ?? 0]));
-  const spendAllTimeMap = Object.fromEntries(spendAllTimeRows.map(r => [r.categoryId, r._sum.baseAmountMinor ?? 0]));
+  const spendThisPeriodMap = Object.fromEntries(spendThisPeriodRows.map((r: AggRow) => [r.categoryId, r._sum.baseAmountMinor ?? 0]));
+  const spendAllTimeMap = Object.fromEntries(spendAllTimeRows.map((r: AggRow) => [r.categoryId, r._sum.baseAmountMinor ?? 0]));
 
   return budgets.map(b => {
     let effectiveLimit = b.limitAmountMinor;

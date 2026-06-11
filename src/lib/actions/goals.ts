@@ -3,10 +3,11 @@
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { requireAuth } from './_auth';
+import type { Goal } from '@prisma/client';
 
 export async function getGoals() {
   const user = await requireAuth();
-  const goals = await prisma.goal.findMany({
+  const goals: (Goal & { transfers: { baseAmountMinor: number }[] })[] = await prisma.goal.findMany({
     where: { userId: user.id },
     include: {
       transfers: { select: { baseAmountMinor: true } },
@@ -56,7 +57,7 @@ export async function editGoal(id: string, data: {
   const user = await requireAuth();
   if (!id) throw new Error('Missing id');
 
-  const updateData: any = { ...data };
+  const updateData: Record<string, unknown> = { ...data };
   if (data.deadline !== undefined) {
     updateData.deadline = data.deadline ? new Date(data.deadline) : null;
   }

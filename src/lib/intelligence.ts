@@ -11,6 +11,7 @@ import {
   startOfMonth, subMonths, getDate, getDaysInMonth,
 } from 'date-fns';
 import { toMajor } from '@/lib/money';
+import type { Transaction, Category, Goal, Transfer, Loan } from '@prisma/client';
 
 export type Insight = {
   id: string;
@@ -33,7 +34,7 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
   const threeMonthsAgo = subMonths(thisMonthStart, 3);
 
   // 1. Fetch last 3 months of transactions
-  const transactions = await prisma.transaction.findMany({
+  const transactions: (Transaction & { category: Category })[] = await prisma.transaction.findMany({
     where: { userId, date: { gte: threeMonthsAgo } },
     include: { category: true },
     orderBy: { date: 'asc' },
@@ -175,7 +176,7 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
 
   // ── GOAL PROGRESS ALERTS ───────────────────────────────────────────────────
   if (prefs?.notifGoals !== false) {
-    const activeGoals = await prisma.goal.findMany({ 
+    const activeGoals: (Goal & { transfers: Transfer[] })[] = await prisma.goal.findMany({ 
       where: { userId, targetAmountMinor: { gt: 0 } },
       include: { transfers: true } 
     });

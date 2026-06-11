@@ -1,6 +1,7 @@
 // src/lib/behavioral.ts
 import { prisma } from '@/lib/prisma';
 import { getLoansForUser } from './actions/loans';
+import type { Budget } from '@prisma/client';
 
 export async function safeToSpend(userId: string, period: 'weekly' | 'monthly' | 'yearly' = 'monthly'): Promise<{
   discretionaryMinor: number;
@@ -105,7 +106,7 @@ export async function safeToSpend(userId: string, period: 'weekly' | 'monthly' |
   }
 
   // 6. Envelopes (Budgets)
-  const budgets = await prisma.budget.findMany({
+  const budgets: Budget[] = await prisma.budget.findMany({
     where: { userId, period },
   });
   
@@ -125,7 +126,7 @@ export async function safeToSpend(userId: string, period: 'weekly' | 'monthly' |
     });
     const envelopeSpend = spendThisPeriodAgg._sum.baseAmountMinor ?? 0;
     
-    let envelopeEffectiveLimit = b.limitAmountMinor;
+    const envelopeEffectiveLimit = b.limitAmountMinor;
 
     if (b.rollover) {
       // For rollover=true, cumulative limit - cumulative spend since the budget was created

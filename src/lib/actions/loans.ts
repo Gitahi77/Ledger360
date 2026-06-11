@@ -4,11 +4,12 @@ import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { requireAuth } from './_auth';
 import { computeLoanBalance } from '@/lib/shared-computations';
+import type { Loan, Transfer } from '@prisma/client';
 
 export async function getLoansForUser(userId: string) {
   const today = new Date();
 
-  const loans = await prisma.loan.findMany({
+  const loans: (Loan & { transfers: { baseAmountMinor: number }[] })[] = await prisma.loan.findMany({
     where:   { userId: userId },
     include: {
       transfers: { select: { baseAmountMinor: true } }
@@ -72,7 +73,7 @@ export async function editLoan(id: string, data: {
   const user = await requireAuth();
   if (!id) throw new Error('Missing id');
 
-  const updateData: any = { ...data };
+  const updateData: Record<string, unknown> = { ...data };
   if (data.nextDue) updateData.nextDue = new Date(data.nextDue);
 
   const { count } = await prisma.loan.updateMany({
