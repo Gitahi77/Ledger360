@@ -39,7 +39,7 @@ export default async function Dashboard({
   searchParams: Promise<{ period?: string }>;
 }) {
   const { period: rawPeriod } = await searchParams;
-  const period = rawPeriod ?? 'this-month';
+  const period = (rawPeriod ?? 'this-month') as 'this-month' | 'this-week' | 'this-year' | 'all-time';
   const user = await requireAuth();
   const currency = user.currency;
 
@@ -54,7 +54,7 @@ export default async function Dashboard({
     // Pass user currency so insights use the right symbol (not hardcoded KES)
     import('@/lib/intelligence').then(m => m.generateInsights(user.id, user.currency)),
     prisma.userPreferences.findUnique({ where: { userId: user.id } }),
-    safeToSpend(user.id, period as any),
+    safeToSpend(user.id, period as Parameters<typeof safeToSpend>[1]),
   ]);
 
   const overdueLoanCount = loans.filter(l => l.daysOverdue > 0).length;

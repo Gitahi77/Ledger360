@@ -15,13 +15,13 @@ export default async function Transactions({
   searchParams: Promise<{ period?: string; type?: string }>;
 }) {
   const { period: rawPeriod, type: rawType } = await searchParams;
-  const period     = rawPeriod ?? 'this-month';
+  const period = (rawPeriod ?? 'this-month') as 'this-month' | 'this-week' | 'this-year' | 'all-time';
   const typeFilter = rawType   ?? 'all';
 
   const [user, transactions, transfers, categories, accounts, goals, loans] = await Promise.all([
     requireAuth(),
     getTransactions(period, typeFilter === 'all' || typeFilter === 'transfer' ? undefined : typeFilter),
-    typeFilter === 'all' || typeFilter === 'transfer' ? getTransfers(period as any) : Promise.resolve([]),
+    typeFilter === 'all' || typeFilter === 'transfer' ? getTransfers(period as Parameters<typeof getTransfers>[0]) : Promise.resolve([]),
     getCategories(),
     getAccounts(),
     getGoals(),
