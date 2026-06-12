@@ -66,6 +66,7 @@ import { getLoansForUser } from '../lib/actions/loans';
 import { prisma } from '../lib/prisma';
 import { createTransfer } from '../lib/actions/transfers';
 import { addTransaction, editTransaction, getTransactionSummary } from '../lib/actions/transactions';
+import { getReportSummary } from '../lib/actions/reports';
 import { generateInsights } from '../lib/intelligence';
 
 describe('Financial Logic and Validations', () => {
@@ -224,6 +225,55 @@ describe('Financial Logic and Validations', () => {
       const res = await getTransactionSummary('this-month');
       expect(res.savings).toBe(5000);
       expect(res.savingRate).toBe(0);
+    });
+  });
+
+  describe('getReportSummary — Cash Flow Validations (Phase 1)', () => {
+    beforeEach(() => {
+      // Mock aggregations to separate income and expenses
+      vi.mocked(prisma.transaction.aggregate).mockImplementation((async (args: { where?: { type?: string } }) => {
+        if (args.where?.type === 'income') return { _sum: { baseAmountMinor: 100000 } };
+        if (args.where?.type === 'expense') return { _sum: { baseAmountMinor: 30000 } };
+        return { _sum: { baseAmountMinor: 0 } };
+      }) as unknown as typeof prisma.transaction.aggregate);
+    });
+
+    it('sums loan repayments into DebtRepayment and NOT into expenses or savings', async () => {
+      // FindMany returns the separate lists based on loanId
+      vi.mocked(prisma.transfer.findMany).mockImplementation((async (args: any) => {
+        if (args.where?.loanId === null) return [{ baseAmountMinor: 5000 }]; // Savings
+        if (args.where?.loanId?.not === null) return [{ baseAmountMinor: 10000 }]; // Debt Repayment
+        return [];
+      }) as unknown as typeof prisma.transfer.findMany);
+
+      const res = await getReportSummary('this-month');
+      expect(res.income).toBe(100000);
+      expect(res.expenses).toBe(30000); // unaffected
+      expect(res.savings).toBe(5000); // only the null loanId transfer
+      expect(res.debtRepayment).toBe(10000); // only the not null loanId transfer
+      
+      // Net Cash Flow = Income - Spending - Savings - Debt Repayment
+      // 100000 - 30000 - 5000 - 10000 = 55000
+      expect(res.netCashFlow).toBe(55000);
+    });
+
+    it('reconciles Reports total outflow to Dashboard moneyOut', async () => {
+      vi.mocked(prisma.transfer.findMany).mockImplementation((async (args: any) => {
+        if (args.where?.loanId === null) return [{ baseAmountMinor: 5000 }]; // Savings
+        if (args.where?.loanId?.not === null) return [{ baseAmountMinor: 10000 }]; // Debt Repayment
+        return [];
+      }) as unknown as typeof prisma.transfer.findMany);
+
+      // Dashboard logic mock
+      vi.mocked(prisma.transfer.aggregate).mockResolvedValue({ _sum: { baseAmountMinor: 10000 } } as Awaited<ReturnType<typeof prisma.transfer.aggregate>>);
+
+      const dashboard = await getTransactionSummary('this-month');
+      const reports = await getReportSummary('this-month');
+
+      // Dashboard moneyOut = expenses (30000) + transfers out (10000 loan repayment) = 40000
+      const reportsTotalOutflow = reports.expenses + reports.debtRepayment;
+      expect(reportsTotalOutflow).toBe(dashboard.moneyOut);
+      expect(reportsTotalOutflow).toBe(40000);
     });
   });
 

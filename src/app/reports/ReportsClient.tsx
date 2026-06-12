@@ -9,20 +9,26 @@ import {
 import { Download, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { fmtAdaptive } from '@/lib/format';
 
-type TrendRow     = { label: string; Income: number; Expenses: number; Savings: number };
+type TrendRow     = { label: string; Income: number; Expenses: number; Savings: number; DebtRepayment?: number; };
 type Summary      = { 
   income: number; 
   expenses: number; 
   savings: number; 
+  debtRepayment: number;
+  netCashFlow: number;
   savingRate: number;
   previous: {
     income: number;
     expenses: number;
     savings: number;
+    debtRepayment: number;
+    netCashFlow: number;
     savingRate: number;
     incomeChange: number;
     expensesChange: number;
     savingsChange: number;
+    debtRepaymentChange: number;
+    netCashFlowChange: number;
     savingRateChange: number;
   }
 };
@@ -65,8 +71,8 @@ export function ReportsClient({
 
   function exportCSV() {
     const rows = [
-      ['Period', 'Income', 'Expenses', 'Savings'],
-      ...trend.map(r => [r.label, String(r.Income), String(r.Expenses), String(r.Savings)]),
+      ['Period', 'Income', 'Expenses', 'Savings', 'Debt Repayment'],
+      ...trend.map(r => [r.label, String(r.Income), String(r.Expenses), String(r.Savings), String(r.DebtRepayment ?? 0)]),
     ];
     const csv  = rows.map(r => r.join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -105,28 +111,28 @@ export function ReportsClient({
       <div className="dashboard-hero animate-in mb-5">
         <div className="dashboard-hero-grid">
           <div>
-            <p className="hero-label">Net Savings · {periodLabel}</p>
+            <p className="hero-label">Net Cash Flow · {periodLabel}</p>
             <p style={{
               fontFamily:'Space Grotesk,sans-serif',
-              fontSize: Math.abs(summary.savings) > 9_999_999 ? '1.6rem' : Math.abs(summary.savings) > 999_999 ? '1.9rem' : '2.25rem',
+              fontSize: Math.abs(summary.netCashFlow) > 9_999_999 ? '1.6rem' : Math.abs(summary.netCashFlow) > 999_999 ? '1.9rem' : '2.25rem',
               fontWeight:800, letterSpacing:'-0.04em', lineHeight:1,
-              color: summary.savings >= 0 ? 'var(--success)' : 'var(--danger)',
+              color: summary.netCashFlow >= 0 ? 'var(--success)' : 'var(--danger)',
               whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
             }}>
-              {summary.savings >= 0 ? '+' : '−'}{fmtAdaptive(Math.abs(summary.savings), currency)}
+              {summary.netCashFlow >= 0 ? '+' : '−'}{fmtAdaptive(Math.abs(summary.netCashFlow), currency)}
             </p>
             <p className="hero-sub" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
               Saving rate: {summary.savingRate}% of income
               <span style={{ 
-                color: summary.previous.savingsChange > 0 ? 'var(--success)' : summary.previous.savingsChange < 0 ? 'var(--danger)' : 'var(--text-muted)',
+                color: summary.previous.netCashFlowChange > 0 ? 'var(--success)' : summary.previous.netCashFlowChange < 0 ? 'var(--danger)' : 'var(--text-muted)',
                 fontSize: '0.68rem',
                 fontWeight: 600
               }}>
-                ({summary.previous.savingsChange > 0 ? '↑' : summary.previous.savingsChange < 0 ? '↓' : ''}{Math.abs(summary.previous.savingsChange)}% vs {prevLabel})
+                ({summary.previous.netCashFlowChange > 0 ? '↑' : summary.previous.netCashFlowChange < 0 ? '↓' : ''}{Math.abs(summary.previous.netCashFlowChange)}% vs {prevLabel})
               </span>
             </p>
           </div>
-          <div className="hero-stats-grid">
+          <div className="hero-stats-grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '1rem' }}>
             <div className="hero-stat-card">
               <p className="hero-label">{periodLabel} Income</p>
               <p className="hero-stat-value tabular" style={{ color:'var(--success)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>+{fmtAdaptive(summary.income, currency)}</p>
@@ -135,17 +141,24 @@ export function ReportsClient({
               </p>
             </div>
             <div className="hero-stat-card">
-              <p className="hero-label">{periodLabel} Expenses</p>
+              <p className="hero-label">{periodLabel} Spending</p>
               <p className="hero-stat-value tabular" style={{ color:'var(--danger)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>−{fmtAdaptive(summary.expenses, currency)}</p>
               <p className="hero-sub" style={{ color: summary.previous.expensesChange < 0 ? 'var(--success)' : summary.previous.expensesChange > 0 ? 'var(--danger)' : 'var(--text-muted)' }}>
                 {summary.previous.expensesChange > 0 ? '↑' : summary.previous.expensesChange < 0 ? '↓' : ''}{Math.abs(summary.previous.expensesChange)}% vs {prevLabel}
               </p>
             </div>
             <div className="hero-stat-card">
-              <p className="hero-label">Saving Rate</p>
-              <p className="hero-stat-value tabular" style={{ color: summary.savingRate >= 20 ? 'var(--success)' : summary.savingRate >= 10 ? 'var(--warning)' : 'var(--danger)' }}>{summary.savingRate}%</p>
-              <p className="hero-sub" style={{ color: summary.previous.savingRateChange > 0 ? 'var(--success)' : summary.previous.savingRateChange < 0 ? 'var(--danger)' : 'var(--text-muted)' }}>
-                {summary.previous.savingRateChange > 0 ? '↑' : summary.previous.savingRateChange < 0 ? '↓' : ''}{Math.abs(summary.previous.savingRateChange)}% vs {prevLabel}
+              <p className="hero-label">{periodLabel} Savings</p>
+              <p className="hero-stat-value tabular" style={{ color:'var(--brand)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{fmtAdaptive(summary.savings, currency)}</p>
+              <p className="hero-sub" style={{ color: summary.previous.savingsChange > 0 ? 'var(--brand)' : summary.previous.savingsChange < 0 ? 'var(--danger)' : 'var(--text-muted)' }}>
+                {summary.previous.savingsChange > 0 ? '↑' : summary.previous.savingsChange < 0 ? '↓' : ''}{Math.abs(summary.previous.savingsChange)}% vs {prevLabel}
+              </p>
+            </div>
+            <div className="hero-stat-card">
+              <p className="hero-label">{periodLabel} Debt Repayment</p>
+              <p className="hero-stat-value tabular" style={{ color:'#8b5cf6', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{fmtAdaptive(summary.debtRepayment, currency)}</p>
+              <p className="hero-sub" style={{ color: summary.previous.debtRepaymentChange > 0 ? '#8b5cf6' : summary.previous.debtRepaymentChange < 0 ? 'var(--success)' : 'var(--text-muted)' }}>
+                {summary.previous.debtRepaymentChange > 0 ? '↑' : summary.previous.debtRepaymentChange < 0 ? '↓' : ''}{Math.abs(summary.previous.debtRepaymentChange)}% vs {prevLabel}
               </p>
             </div>
           </div>
@@ -176,7 +189,8 @@ export function ReportsClient({
                   <Tooltip content={<Tip />} />
                   <Legend iconType="circle" iconSize={7} wrapperStyle={{ fontSize:'0.75rem' }} />
                   <Bar name="Income"   dataKey="Income"   fill="var(--chart-income)"  radius={[4,4,0,0]} />
-                  <Bar name="Expenses" dataKey="Expenses" fill="var(--chart-expense)" radius={[4,4,0,0]} />
+                  <Bar name="Spending" dataKey="Expenses" fill="var(--chart-expense)" radius={[4,4,0,0]} />
+                  <Bar name="Debt Repayment" dataKey="DebtRepayment" fill="#8b5cf6" radius={[4,4,0,0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
