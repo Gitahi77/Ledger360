@@ -386,7 +386,7 @@ describe('Financial Logic and Validations', () => {
     it('allocates interest to Spending and principal to Debt Repayment in reports, handling legacy payments correctly', async () => {
       vi.mocked(prisma.transaction.aggregate).mockResolvedValue({ _sum: { baseAmountMinor: 0 } } as any);
       
-      vi.mocked(prisma.transfer.findMany).mockImplementation(async (args: any) => {
+      vi.mocked(prisma.transfer.findMany).mockImplementation((async (args: any) => {
         if (args.where?.loanId === null) return [];
         if (args.where?.loanId?.not === null) {
           return [
@@ -395,7 +395,7 @@ describe('Financial Logic and Validations', () => {
           ];
         }
         return [];
-      });
+      }) as any);
 
       const reports = await getReportSummary('this-month');
       expect(reports.debtRepayment).toBe(6000); // (5000-1000) + 2000
