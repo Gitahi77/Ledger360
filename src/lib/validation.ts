@@ -80,7 +80,7 @@ export type AddLoanInput = z.infer<typeof AddLoanSchema>;
 /* ── Assets ───────────────────────────────────────────────── */
 export const AddAssetSchema = z.object({
   name:     z.string().min(1, 'Asset name is required').max(80),
-  category: z.string().min(1),
+  category: z.enum(['Property', 'Investment', 'Vehicle', 'Other']),
   valueMinor:    optKes('Asset value'),
 });
 export type AddAssetInput = z.infer<typeof AddAssetSchema>;

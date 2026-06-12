@@ -13,15 +13,12 @@ type Asset = { id: string; name: string; category: string; valueMinor: number };
 type Loan  = { id: string; name: string; balanceMinor: number; type: string };
 
 const ASSET_ICONS: Record<string, React.ReactNode> = {
-  property:    <Home size={16}/>,
-  vehicle:     <Car size={16}/>,
-  business:    <Briefcase size={16}/>,
-  savings:     <PiggyBank size={16}/>,
-  investments: <BarChart3 size={16}/>,
-  jewelry:     <Gem size={16}/>,
-  other:       <Gem size={16}/>,
+  Property:    <Home size={16}/>,
+  Vehicle:     <Car size={16}/>,
+  Investment:  <BarChart3 size={16}/>,
+  Other:       <Gem size={16}/>,
 };
-const ASSET_CATS = ['savings','property','vehicle','investments','business','jewelry','other'];
+const ASSET_CATS = ['Property', 'Investment', 'Vehicle', 'Other'];
 
 function AssetModal({ asset, onClose, currency }: { asset?: Asset; onClose: () => void; currency: string }) {
   const router     = useRouter();
@@ -29,7 +26,7 @@ function AssetModal({ asset, onClose, currency }: { asset?: Asset; onClose: () =
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
   const [name,     setName]     = useState(asset?.name     ?? '');
-  const [category, setCategory] = useState(asset?.category ?? 'savings');
+  const [category, setCategory] = useState(asset?.category ?? 'Other');
   const [value,    setValue]    = useState(asset ? String(toMajor(asset.valueMinor)) : '');
   const isEdit = Boolean(asset);
 
@@ -60,7 +57,7 @@ function AssetModal({ asset, onClose, currency }: { asset?: Asset; onClose: () =
           <div>
             <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Category</label>
             <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }} value={category} onChange={e => setCategory(e.target.value)}>
-              {ASSET_CATS.map(c => <option key={c} value={c}>{c.charAt(0).toUpperCase()+c.slice(1)}</option>)}
+              {ASSET_CATS.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div>
@@ -188,7 +185,7 @@ export function NetWorthClient({ assets, liabilities, totalAssetsMinor, totalLia
                   <div key={a.id} className={`card animate-in delay-${(i%4)+1}`}
                     style={{ padding:'0.875rem 1.125rem', borderLeft:'3px solid var(--success)', display:'flex', alignItems:'center', gap:'0.75rem' }}>
                     <div style={{ width:32, height:32, borderRadius:7, background:'var(--success-light)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, color:'var(--success)' }}>
-                      {ASSET_ICONS[a.category] ?? ASSET_ICONS.other}
+                      {ASSET_ICONS[a.category] ?? ASSET_ICONS.Other}
                     </div>
                     <div style={{ flex:1, minWidth:0 }}>
                       <div style={{ fontWeight:600, fontSize:'0.8125rem', color:'var(--text-primary)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{a.name}</div>
