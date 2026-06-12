@@ -46,7 +46,7 @@ const PERIOD_LABELS: Record<string, string> = {
   'this-year':  'This Year',
 };
 
-function TransactionModal({ tx, categories, accounts, goals, loans, currency, onClose }: { tx?: Tx; categories: Category[]; accounts: Account[]; goals: Goal[]; loans: Loan[]; currency: string; onClose: () => void }) {
+function TransactionModal({ tx, categories, accounts, goals, loans, currency, onClose }: { tx?: Tx; categories: Category[]; accounts: Account[]; goals: Goal[]; loans: Loan[]; currency: string; onClose: (warning?: string) => void }) {
   const router = useRouter();
   const [, startT] = useTransition();
   const [loading, setLoading] = useState(false);
@@ -66,7 +66,7 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
   const [note,       setNote]       = useState(tx?.note ?? '');
   const isEdit = Boolean(tx);
 
-  const filteredCats = categories.filter(c => c.type === type || c.type === 'savings');
+  const filteredCats = categories.filter(c => c.type === type);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -76,6 +76,7 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
 
     setLoading(true); setError('');
     try {
+      let warnMsg: string | undefined;
       if (type === 'transfer') {
         if (isEdit && tx) {
           await editTransfer(tx.id, { fromAccountId: accountId, toAccountId: loanId ? null : toAccountId, amountMinor: toMinor(parseFloat(amount)), date, note, goalId: goalId || null, loanId: loanId || null });
@@ -84,13 +85,15 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
         }
       } else {
         if (isEdit && tx) {
-          await editTransaction(tx.id, { name, baseAmountMinor: toMinor(parseFloat(amount)), type, categoryId, accountId, date: new Date(date), note });
+          const res = await editTransaction(tx.id, { name, baseAmountMinor: toMinor(parseFloat(amount)), type, categoryId, accountId, date: new Date(date), note });
+          warnMsg = res?.warning;
         } else {
-          await addTransaction({ name, baseAmountMinor: toMinor(parseFloat(amount)), type, categoryId, accountId, date, note });
+          const res = await addTransaction({ name, baseAmountMinor: toMinor(parseFloat(amount)), type, categoryId, accountId, date, note });
+          warnMsg = res?.warning;
         }
       }
       startT(() => router.refresh());
-      onClose();
+      onClose(warnMsg);
     } catch (err: any) {
       setError(err.message ?? 'Something went wrong.');
     } finally { setLoading(false); }
@@ -136,6 +139,9 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
                     value={categoryId} onChange={e => setCategoryId(e.target.value)} required>
                     <option value="">Select…</option>
                     {filteredCats.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    {categoryId && !filteredCats.find(c => c.id === categoryId) && categories.find(c => c.id === categoryId) && (
+                      <option value={categoryId}>{categories.find(c => c.id === categoryId)!.name}</option>
+                    )}
                   </select>
                 </div>
                 <div>
@@ -223,6 +229,7 @@ export function TransactionsClient({
   const [editTx,     setEditTx]     = useState<Tx | null>(null);
   const [showUpload, setShowUpload] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [pageWarning, setPageWarning] = useState<string>('');
 
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -276,9 +283,16 @@ export function TransactionsClient({
 
   return (
     <>
-      {showAdd && <TransactionModal categories={categories} accounts={accounts} goals={goals} loans={loans} currency={currency} onClose={() => setShowAdd(false)} />}
-      {editTx && <TransactionModal key={editTx.id} tx={editTx} categories={categories} accounts={accounts} goals={goals} loans={loans} currency={currency} onClose={() => setEditTx(null)} />}
+      {showAdd && <TransactionModal categories={categories} accounts={accounts} goals={goals} loans={loans} currency={currency} onClose={(w) => { setShowAdd(false); if(w) setPageWarning(w); }} />}
+      {editTx && <TransactionModal key={editTx.id} tx={editTx} categories={categories} accounts={accounts} goals={goals} loans={loans} currency={currency} onClose={(w) => { setEditTx(null); if(w) setPageWarning(w); }} />}
       {showUpload && <div className="card mb-5 animate-in"><SmartUpload /></div>}
+
+      {pageWarning && (
+        <div className="card animate-in mb-5 flex items-center justify-between" style={{ padding:'0.875rem 1.25rem', background:'var(--warning-light, #FFFBEB)', color:'var(--warning, #B45309)', border:'1px solid var(--warning-border, #FCD34D)' }}>
+          <span style={{ fontSize:'0.85rem', fontWeight:500 }}>{pageWarning}</span>
+          <button onClick={() => setPageWarning('')} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--warning, #B45309)', display:'flex' }}><X size={16}/></button>
+        </div>
+      )}
 
       {/* Toolbar */}
       <div className="flex items-center justify-between mb-5 flex-wrap gap-3 animate-in">

@@ -248,13 +248,14 @@ describe('Financial Logic and Validations', () => {
       })).resolves.not.toThrow();
     });
 
-    it('rejects account overdrafts for standard accounts in addTransaction', async () => {
+    it('returns an overdraft warning for standard accounts in addTransaction without throwing', async () => {
       vi.mocked(getAccountBalances).mockResolvedValue([{ id: 'acc-1', type: 'bank', balanceMinor: 500, userId: 'user-1', name: 'Bank', currency: 'KES', openingMinor: 0, archived: false, createdAt: new Date() }]);
       vi.mocked(prisma.category.findFirst).mockResolvedValue({ id: 'cat-1', userId: 'user-1', name: 'Food', type: 'expense', icon: null, createdAt: new Date() } as any);
 
-      await expect(addTransaction({
+      const res = await addTransaction({
         name: 'Lunch', type: 'expense', baseAmountMinor: 600, categoryId: 'cat-1', accountId: 'acc-1', date: '2023-10-10'
-      })).rejects.toThrow(/Not enough money in Bank/);
+      });
+      expect(res).toEqual({ warning: expect.stringMatching(/Not enough money in Bank/) });
     });
 
     it('allows overdrafts for credit_card accounts in addTransaction', async () => {
@@ -282,10 +283,11 @@ describe('Financial Logic and Validations', () => {
         baseAmountMinor: 700
       })).resolves.not.toThrow();
 
-      // Increasing expense to 900: 800 - 900 = -100 < 0 (Rejected)
-      await expect(editTransaction('tx-1', {
+      // Increasing expense to 900: 800 - 900 = -100 < 0 (Warning)
+      const res = await editTransaction('tx-1', {
         baseAmountMinor: 900
-      })).rejects.toThrow(/Not enough money in Bank/);
+      });
+      expect(res).toEqual({ warning: expect.stringMatching(/Not enough money in Bank/) });
     });
   });
 });

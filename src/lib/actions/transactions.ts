@@ -173,13 +173,15 @@ export async function addTransaction(raw: {
     }
   }
 
+  let warning: string | undefined;
+
   // Overdraft prevention
   if (data.type === 'expense' && accountId) {
     const { toMajor } = await import('@/lib/money');
     const balances = await getAccountBalances(user.id);
     const acc = balances.find(a => a.id === accountId);
     if (acc && acc.type !== 'credit_card' && acc.balanceMinor - data.baseAmountMinor < 0) {
-      throw new Error(`Not enough money in ${acc.name}. Available: ${acc.currency} ${toMajor(acc.balanceMinor)}.`);
+      warning = `Warning: Not enough money in ${acc.name}. Available: ${acc.currency} ${toMajor(acc.balanceMinor)}.`;
     }
   }
 
@@ -206,6 +208,7 @@ export async function addTransaction(raw: {
   });
   revalidatePath('/transactions');
   revalidatePath('/');
+  return { warning };
 }
 
 /* ── Bulk import (Smart Upload) ───────────────────────────── */
@@ -322,6 +325,8 @@ export async function editTransaction(id: string, data: {
   const newAmount = data.baseAmountMinor ?? oldTx.baseAmountMinor;
   const newAccountId = data.accountId ?? oldTx.accountId;
 
+  let warning: string | undefined;
+
   if (newType === 'expense' && newAccountId) {
     const { toMajor } = await import('@/lib/money');
     const balances = await getAccountBalances(user.id);
@@ -336,7 +341,7 @@ export async function editTransaction(id: string, data: {
       }
       
       if (effectiveBalance - newAmount < 0) {
-        throw new Error(`Not enough money in ${acc.name}. Available: ${acc.currency} ${toMajor(effectiveBalance)}.`);
+        warning = `Warning: Not enough money in ${acc.name}. Available: ${acc.currency} ${toMajor(effectiveBalance)}.`;
       }
     }
   }
@@ -357,4 +362,5 @@ export async function editTransaction(id: string, data: {
 
   revalidatePath('/transactions');
   revalidatePath('/');
+  return { warning };
 }

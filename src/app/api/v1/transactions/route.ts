@@ -25,7 +25,7 @@ export const GET = apiRoute(
 export const POST = apiRoute(
   AddTransactionSchema,
   async (req, { body }) => {
-    await addTransaction(body);
-    return { success: true };
+    const result = await addTransaction(body);
+    return { success: true, warning: result?.warning };
   }
 );

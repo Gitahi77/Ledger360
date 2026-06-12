@@ -27,6 +27,21 @@ export async function getMonthlyTrend() {
     ORDER BY yr, mo
   `;
 
+  const savingsRows: Row[] = await prisma.$queryRaw`
+    SELECT
+      EXTRACT(YEAR  FROM t.date)::int AS yr,
+      EXTRACT(MONTH FROM t.date)::int AS mo,
+      'savings' AS type,
+      SUM(t."baseAmountMinor")::float AS total
+    FROM "Transfer" t
+    LEFT JOIN "Account" a ON t."toAccountId" = a.id
+    WHERE t."userId" = ${user.id}
+      AND t."loanId" IS NULL
+      AND (t."goalId" IS NOT NULL OR a.type IN ('savings', 'investment'))
+      AND t.date >= ${start} AND t.date <= ${end}
+    GROUP BY yr, mo
+  `;
+
   const months: { label: string; yr: number; mo: number }[] = [];
   for (let i = 5; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
@@ -36,9 +51,11 @@ export async function getMonthlyTrend() {
   return months.map(m => {
     const inc = rows.find(r => r.yr === m.yr && r.mo === m.mo && r.type === 'income');
     const exp = rows.find(r => r.yr === m.yr && r.mo === m.mo && r.type === 'expense');
+    const sav = savingsRows.find(r => r.yr === m.yr && r.mo === m.mo);
     const income   = Math.round(inc?.total ?? 0);
     const expenses = Math.round(exp?.total ?? 0);
-    return { label: m.label, Income: income, Expenses: expenses, Savings: Math.max(0, income - expenses) };
+    const savings  = Math.round(sav?.total ?? 0);
+    return { label: m.label, Income: income, Expenses: expenses, Savings: savings };
   });
 }
 
@@ -51,43 +68,56 @@ export async function getReportSummary(period: string) {
   let prevFrom: Date, prevTo: Date;
 
   if (period === 'this-week') {
-    const d = new Date(now); d.setDate(d.getDate() - d.getDay());
-    from = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-    to   = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    const day = now.getDay() || 7;
+    from = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day + 1);
+    to   = new Date(now.getFullYear(), now.getMonth(), now.getDate() + (7 - day), 23, 59, 59, 999);
     
     const prevD = new Date(from); prevD.setDate(prevD.getDate() - 7);
     prevFrom = prevD;
     prevTo   = new Date(from.getTime() - 1);
   } else if (period === 'this-year') {
     from = new Date(now.getFullYear(), 0, 1);
-    to   = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    to   = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
     
     prevFrom = new Date(now.getFullYear() - 1, 0, 1);
-    prevTo   = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    prevTo   = new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59, 999);
   } else {
     from = new Date(now.getFullYear(), now.getMonth(), 1);
-    to   = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    to   = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
     
     prevFrom = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const lastDayPrevMonth = new Date(now.getFullYear(), now.getMonth(), 0);
-    prevTo = new Date(prevFrom.getFullYear(), prevFrom.getMonth(), Math.min(now.getDate(), lastDayPrevMonth.getDate()), 23, 59, 59, 999);
+    prevTo = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
   }
 
-  const [income, expenses, prevIncome, prevExpenses] = await Promise.all([
+  const [income, expenses, prevIncome, prevExpenses, currentSavingsTransfers, prevSavingsTransfers] = await Promise.all([
     prisma.transaction.aggregate({ where: { userId: user.id, type: 'income',  date: { gte: from, lte: to } }, _sum: { baseAmountMinor: true } }),
     prisma.transaction.aggregate({ where: { userId: user.id, type: 'expense', date: { gte: from, lte: to } }, _sum: { baseAmountMinor: true } }),
     prisma.transaction.aggregate({ where: { userId: user.id, type: 'income',  date: { gte: prevFrom, lte: prevTo } }, _sum: { baseAmountMinor: true } }),
     prisma.transaction.aggregate({ where: { userId: user.id, type: 'expense', date: { gte: prevFrom, lte: prevTo } }, _sum: { baseAmountMinor: true } }),
+    prisma.transfer.findMany({
+      where: {
+        userId: user.id, date: { gte: from, lte: to }, loanId: null,
+        OR: [{ goalId: { not: null } }, { toAccount: { type: { in: ['savings', 'investment'] } } }],
+      },
+      select: { baseAmountMinor: true },
+    }),
+    prisma.transfer.findMany({
+      where: {
+        userId: user.id, date: { gte: prevFrom, lte: prevTo }, loanId: null,
+        OR: [{ goalId: { not: null } }, { toAccount: { type: { in: ['savings', 'investment'] } } }],
+      },
+      select: { baseAmountMinor: true },
+    }),
   ]);
 
   const inc = income._sum.baseAmountMinor   ?? 0;
   const exp = expenses._sum.baseAmountMinor ?? 0;
-  const sav = inc - exp;
+  const sav = currentSavingsTransfers.reduce((sum, t) => sum + t.baseAmountMinor, 0);
   const sr  = inc > 0 ? Math.round((sav / inc) * 100) : 0;
 
   const pInc = prevIncome._sum.baseAmountMinor   ?? 0;
   const pExp = prevExpenses._sum.baseAmountMinor ?? 0;
-  const pSav = pInc - pExp;
+  const pSav = prevSavingsTransfers.reduce((sum, t) => sum + t.baseAmountMinor, 0);
   const pSr  = pInc > 0 ? Math.round((pSav / pInc) * 100) : 0;
 
   const calcPct = (curr: number, prev: number) => {
@@ -119,15 +149,15 @@ export async function getReportCategories(period: string) {
   const now  = new Date();
   let from: Date, to: Date;
   if (period === 'this-week') {
-    const d = new Date(now); d.setDate(d.getDate() - d.getDay());
-    from = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-    to   = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    const day = now.getDay() || 7;
+    from = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day + 1);
+    to   = new Date(now.getFullYear(), now.getMonth(), now.getDate() + (7 - day), 23, 59, 59, 999);
   } else if (period === 'this-year') {
     from = new Date(now.getFullYear(), 0, 1);
-    to   = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    to   = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
   } else {
     from = new Date(now.getFullYear(), now.getMonth(), 1);
-    to   = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    to   = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
   }
 
   type AggRow = { categoryId: string; _sum: { baseAmountMinor: number | null } };
