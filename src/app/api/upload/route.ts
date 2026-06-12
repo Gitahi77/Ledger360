@@ -28,7 +28,7 @@ const CATEGORY_RULES: { pattern: RegExp; category: string; type: 'income' | 'exp
   { pattern: /uber|bolt|little|matatu|bus|petrol|fuel|parking|ntsa/i, category: 'Transport', type: 'expense' },
   { pattern: /kplc|electricity|water|sewage|internet|zuku|safaricom home|faiba|wifi/i, category: 'Utilities', type: 'expense' },
   { pattern: /netflix|spotify|showmax|dstv|youtube|gaming|cinema|tickets/i, category: 'Entertainment', type: 'expense' },
-  { pattern: /hospital|clinic|pharmacy|doctor|dental|chemist|sha|aar/i, category: 'Health', type: 'expense' },
+  { pattern: /hospital|clinic|pharmacy|doctor|dental|chemist|\bsha\b|200222|aar/i, category: 'Health', type: 'expense' },
   { pattern: /rent|landlord|lease|bnb|airbnb/i,        category: 'Rent',             type: 'expense' },
   { pattern: /java|artcaffe|chicken inn|kfc|pizza|restaurant|cafe|coffee|hotel|steers/i, category: 'Food & Grocery', type: 'expense' },
   { pattern: /gym|fitness|spa|salon|haircut|barber/i,   category: 'Health',           type: 'expense' },
