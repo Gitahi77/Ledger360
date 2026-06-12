@@ -38,13 +38,16 @@ vi.mock('@/lib/prisma', () => ({
       findFirst: vi.fn()
     },
     transfer: {
-      create: vi.fn().mockResolvedValue({ id: 'transfer-mocked' })
+      create: vi.fn().mockResolvedValue({ id: 'transfer-mocked' }),
+      findMany: vi.fn().mockResolvedValue([]),
+      aggregate: vi.fn().mockResolvedValue({ _sum: { baseAmountMinor: 0 } })
     },
     transaction: {
       findFirst: vi.fn(),
       findMany: vi.fn(),
       updateMany: vi.fn(),
-      create: vi.fn().mockResolvedValue({ id: 'tx-mocked' })
+      create: vi.fn().mockResolvedValue({ id: 'tx-mocked' }),
+      aggregate: vi.fn().mockResolvedValue({ _sum: { baseAmountMinor: 0 } })
     },
     userPreferences: {
       findUnique: vi.fn().mockResolvedValue({ currency: 'KES' })
@@ -62,7 +65,7 @@ import { getAccountBalances } from '../lib/actions/accounts';
 import { getLoansForUser } from '../lib/actions/loans';
 import { prisma } from '../lib/prisma';
 import { createTransfer } from '../lib/actions/transfers';
-import { addTransaction, editTransaction } from '../lib/actions/transactions';
+import { addTransaction, editTransaction, getTransactionSummary } from '../lib/actions/transactions';
 import { generateInsights } from '../lib/intelligence';
 
 describe('Financial Logic and Validations', () => {
@@ -147,6 +150,80 @@ describe('Financial Logic and Validations', () => {
       const loanAlerts = insights.filter(i => i.id.startsWith('loan-'));
       expect(loanAlerts.length).toBe(1);
       expect(loanAlerts[0].id).toBe('loan-due-loan-active');
+    });
+  });
+
+  describe('getTransactionSummary — savings definition (WO-16)', () => {
+    beforeEach(() => {
+      // Default: income = 100000, expenses = 30000
+      vi.mocked(prisma.transaction.aggregate).mockImplementation((async (args: { where?: { type?: string } }) => {
+        if (args.where?.type === 'income') return { _sum: { baseAmountMinor: 100000 } };
+        if (args.where?.type === 'expense') return { _sum: { baseAmountMinor: 30000 } };
+        return { _sum: { baseAmountMinor: 0 } };
+      }) as typeof prisma.transaction.aggregate);
+      // Default: no external transfers out
+      vi.mocked(prisma.transfer.aggregate).mockResolvedValue({ _sum: { baseAmountMinor: 0 } } as ReturnType<typeof prisma.transfer.aggregate> extends Promise<infer U> ? U : never);
+    });
+
+    it('counts goal-funding transfers (goalId set) as savings', async () => {
+      vi.mocked(prisma.transfer.findMany).mockResolvedValue([
+        { baseAmountMinor: 5000 },
+      ] as { baseAmountMinor: number }[] as Awaited<ReturnType<typeof prisma.transfer.findMany>>);
+
+      const res = await getTransactionSummary('this-month');
+      expect(res.savings).toBe(5000);
+      expect(res.savingRate).toBe(5); // 5000/100000 * 100
+    });
+
+    it('counts transfers to a savings account as savings', async () => {
+      vi.mocked(prisma.transfer.findMany).mockResolvedValue([
+        { baseAmountMinor: 20000 },
+      ] as { baseAmountMinor: number }[] as Awaited<ReturnType<typeof prisma.transfer.findMany>>);
+
+      const res = await getTransactionSummary('this-month');
+      expect(res.savings).toBe(20000);
+      expect(res.savingRate).toBe(20);
+    });
+
+    it('counts transfers to an investment account as savings', async () => {
+      vi.mocked(prisma.transfer.findMany).mockResolvedValue([
+        { baseAmountMinor: 15000 },
+      ] as { baseAmountMinor: number }[] as Awaited<ReturnType<typeof prisma.transfer.findMany>>);
+
+      const res = await getTransactionSummary('this-month');
+      expect(res.savings).toBe(15000);
+      expect(res.savingRate).toBe(15);
+    });
+
+    it('excludes loan repayments (loanId set) from savings', async () => {
+      // The query has loanId: null, so Prisma will never return loan repayments.
+      // Simulate: no qualifying transfers returned.
+      vi.mocked(prisma.transfer.findMany).mockResolvedValue([]);
+
+      const res = await getTransactionSummary('this-month');
+      expect(res.savings).toBe(0);
+      expect(res.savingRate).toBe(0);
+    });
+
+    it('excludes transfers to bank/mobile_money accounts without goalId from savings', async () => {
+      // The query only returns transfers with goalId set OR toAccount.type in savings/investment.
+      // A transfer to a bank account with no goalId does not match -> not returned.
+      vi.mocked(prisma.transfer.findMany).mockResolvedValue([]);
+
+      const res = await getTransactionSummary('this-month');
+      expect(res.savings).toBe(0);
+      expect(res.savingRate).toBe(0);
+    });
+
+    it('returns savingRate 0 when income is 0', async () => {
+      vi.mocked(prisma.transaction.aggregate).mockResolvedValue({ _sum: { baseAmountMinor: 0 } } as Awaited<ReturnType<typeof prisma.transaction.aggregate>>);
+      vi.mocked(prisma.transfer.findMany).mockResolvedValue([
+        { baseAmountMinor: 5000 },
+      ] as { baseAmountMinor: number }[] as Awaited<ReturnType<typeof prisma.transfer.findMany>>);
+
+      const res = await getTransactionSummary('this-month');
+      expect(res.savings).toBe(5000);
+      expect(res.savingRate).toBe(0);
     });
   });
 

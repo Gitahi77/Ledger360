@@ -43,12 +43,31 @@ export async function getTransactionSummary(period = 'this-month') {
   });
   const moneyOut = exp + (transfersOut._sum.baseAmountMinor ?? 0);
 
+  // WO-16 / BUG-3: "savings" = sum of transfers that fund a goal OR go to a
+  // savings/investment account, EXCLUDING loan repayments. Each qualifying
+  // transfer is counted once even if it matches multiple conditions.
+  const savingsTransfers = await prisma.transfer.findMany({
+    where: {
+      userId: user.id,
+      date: { gte: from, lte: to },
+      loanId: null, // exclude loan repayments
+      OR: [
+        { goalId: { not: null } },
+        { toAccount: { type: { in: ['savings', 'investment'] } } },
+      ],
+    },
+    select: { baseAmountMinor: true },
+  });
+  const savings = savingsTransfers.reduce(
+    (sum, t) => sum + t.baseAmountMinor, 0
+  );
+
   return {
     income:     inc,
     expenses:   exp,
     moneyOut:   moneyOut,
-    savings:    inc - exp,
-    savingRate: inc > 0 ? Math.round(((inc - exp) / inc) * 100) : 0,
+    savings,
+    savingRate: inc > 0 ? Math.round((savings / inc) * 100) : 0,
   };
 }
 
