@@ -160,7 +160,7 @@ describe('Financial Logic and Validations', () => {
         if (args.where?.type === 'income') return { _sum: { baseAmountMinor: 100000 } };
         if (args.where?.type === 'expense') return { _sum: { baseAmountMinor: 30000 } };
         return { _sum: { baseAmountMinor: 0 } };
-      }) as typeof prisma.transaction.aggregate);
+      }) as unknown as typeof prisma.transaction.aggregate);
       // Default: no external transfers out
       vi.mocked(prisma.transfer.aggregate).mockResolvedValue({ _sum: { baseAmountMinor: 0 } } as ReturnType<typeof prisma.transfer.aggregate> extends Promise<infer U> ? U : never);
     });
