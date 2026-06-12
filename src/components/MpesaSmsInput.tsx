@@ -31,10 +31,12 @@ export function MpesaSmsInput({ onImport }: Props) {
     if (!sms.trim()) return;
     setState('parsing');
     try {
-      const res = await fetch('/api/sms-parse', {
+      const formData = new FormData();
+      formData.append('text', sms);
+
+      const res = await fetch('/api/upload', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sms }),
+        body: formData,
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'Parse failed');

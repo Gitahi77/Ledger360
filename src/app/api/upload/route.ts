@@ -291,6 +291,9 @@ const UploadRowSchema = z.object({
   note:      z.string().optional(),
 });
 
+import { parseMpesaSms as parseDeterministicSms, parseMpesaPdfStatement } from '@/lib/parsers/mpesa';
+import { redactForAI } from '@/lib/api/redact';
+
 /* ── Main route handler ──────────────────────────────────── */
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -311,19 +314,20 @@ export async function POST(request: Request) {
   try {
     const formData = await request.formData();
     const file     = formData.get('file') as File | null;
-    if (!file) return NextResponse.json({ error: 'No file provided.' }, { status: 400 });
+    const smsText  = formData.get('text') as string | null;
 
-    // ── File size limit ────────────────────────────────────────
-    if (file.size > MAX_FILE_SIZE) {
+    if (!file && !smsText) return NextResponse.json({ error: 'No file or text provided.' }, { status: 400 });
+
+    if (file && file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
         { error: `File too large. Maximum size is ${MAX_FILE_SIZE / 1024 / 1024} MB.` },
         { status: 413 }
       );
     }
 
-    const mimeType   = file.type || 'application/octet-stream';
-    const fileName   = file.name?.toLowerCase() ?? '';
-    const fileBuffer = await file.arrayBuffer();
+    const mimeType   = file ? (file.type || 'application/octet-stream') : 'text/plain';
+    const fileName   = file ? (file.name?.toLowerCase() ?? '') : 'sms.txt';
+    const fileBuffer = file ? await file.arrayBuffer() : null;
 
     type RowData = { category?: string; type?: string; importHash?: string; reference?: string; date?: string; amount?: number; name?: string; isDuplicate?: boolean; isTransfer?: boolean; categoryId?: string; note?: string };
     let transactions: RowData[] = [];
@@ -332,27 +336,73 @@ export async function POST(request: Request) {
     const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls') || mimeType.includes('spreadsheet') || mimeType.includes('excel');
     const isPDF   = fileName.endsWith('.pdf') || mimeType === 'application/pdf';
     const isImage = mimeType.startsWith('image/');
+    const isSMS   = !!smsText;
+
+    // 0. SMS Input
+    if (isSMS && smsText) {
+      if (smsText.length > 8000) {
+        return NextResponse.json({ error: 'SMS text is too long (max 8000 characters)' }, { status: 400 });
+      }
+
+      const deterministic = parseDeterministicSms(smsText);
+      if (deterministic.length > 0) {
+        transactions = deterministic;
+        method = 'sms';
+      } else {
+        // Fallback to AI with strict protections
+        const rlAi = await checkLimit('ai', `ai:${userId}`);
+        if (!rlAi.ok) {
+          return NextResponse.json(
+            { error: `AI rate limit reached. Try again in ${rlAi.retryAfter}s.` },
+            { status: 429, headers: { 'Retry-After': String(rlAi.retryAfter) } }
+          );
+        }
+        if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+          return NextResponse.json({ error: 'Gemini API key not configured' }, { status: 503 });
+        }
+        
+        const redactedSms = redactForAI(smsText);
+        const { parseMpesaSms: parseMpesaSmsWithAI } = await import('@/lib/api/gemini');
+        transactions = await parseMpesaSmsWithAI(redactedSms);
+        method = 'ai-sms';
+      }
+    }
 
     // 1. Excel → xlsx parser
-    if (isExcel) {
+    if (transactions.length === 0 && isExcel && fileBuffer) {
       transactions = (await parseExcel(fileBuffer)).map(rowToTransaction);
       method = 'xlsx';
     }
 
-    // 2. PDF → Gemini AI then M-Pesa pattern fallback
-    if (transactions.length === 0 && isPDF) {
-      const aiResult = await parseWithAI(fileBuffer, mimeType, userId);
-      if (aiResult?.length) {
-        transactions = aiResult;
-        method = 'ai';
-      } else {
-        transactions = (await parsePDF(fileBuffer)).map(rowToTransaction);
-        method = 'pdf';
+    // 2. PDF → Deterministic *334# then Gemini AI then M-Pesa pattern fallback
+    if (transactions.length === 0 && isPDF && fileBuffer) {
+      try {
+        const pdfParse = require('pdf-parse');
+        const { text: pdfExtractedText } = await pdfParse(Buffer.from(fileBuffer));
+        const deterministicPdf = parseMpesaPdfStatement(pdfExtractedText);
+        
+        if (deterministicPdf && deterministicPdf.length > 0) {
+           transactions = deterministicPdf;
+           method = 'pdf-334';
+        }
+      } catch (err) {
+        console.error('[SmartUpload PDF Preprocess]', err);
+      }
+
+      if (transactions.length === 0) {
+        const aiResult = await parseWithAI(fileBuffer, mimeType, userId);
+        if (aiResult?.length) {
+          transactions = aiResult;
+          method = 'ai';
+        } else {
+          transactions = (await parsePDF(fileBuffer)).map(rowToTransaction);
+          method = 'pdf';
+        }
       }
     }
 
     // 3. Image → Gemini Vision
-    if (transactions.length === 0 && isImage) {
+    if (transactions.length === 0 && isImage && fileBuffer) {
       if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
         return NextResponse.json({
           error: 'Image and receipt uploads require a configured Gemini AI API Key.'
@@ -363,7 +413,7 @@ export async function POST(request: Request) {
     }
 
     // 4. Fallback → CSV text parser (also catches .csv files)
-    if (transactions.length === 0) {
+    if (transactions.length === 0 && fileBuffer && !isSMS) {
       const text = Buffer.from(fileBuffer).toString('utf-8');
       transactions = parseCSVText(text).map(rowToTransaction);
       method = 'csv';
