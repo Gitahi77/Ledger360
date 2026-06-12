@@ -14,7 +14,7 @@ export interface ParsedMpesaTransaction {
 }
 
 const DICTIONARY: { pattern: RegExp; category: string; type: 'income' | 'expense' | 'transfer' }[] = [
-  // Health (SHA 200222, replacing NHIF)
+  // Health (SHA, Paybill 200222)
   { pattern: /\bSHA\b|200222/i, category: 'Health', type: 'expense' },
   // Government
   { pattern: /\b(KRA|eCitizen|NTSA|NSSF)\b/i, category: 'Government', type: 'expense' },

@@ -117,7 +117,7 @@ Kenya-specific rules:
 - KPLC / Zuku / Safaricom = Utilities
 - Naivas / Carrefour / Quickmart = Food & Grocery
 - Uber / Bolt / matatu = Transport
-- NHIF / hospital = Health
+- SHA / hospital = Health
 - Fuliza = Loan Repayment
 
 Return ONLY a valid JSON array. No markdown, no explanation. If no transactions found, return [].`;

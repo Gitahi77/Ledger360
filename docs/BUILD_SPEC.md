@@ -804,7 +804,7 @@ When a work order touches user-facing copy, defaults, or onboarding, align with 
 
 - **Identity:** *"The personal finance OS that actually speaks M-Pesa."* Built for how money moves in Kenya, not retrofitted from a US bank app.
 - **Magic moment:** upload/forward an M-Pesa statement → see your whole financial life in under a minute. Onboarding drives toward this, not manual entry.
-- **Native concepts are features, not edge cases:** M-Pesa, paybill/till, Fuliza, agent withdrawals, NSE, NHIF, chamas, informal loans. This is the moat.
+- **Native concepts are features, not edge cases:** M-Pesa, paybill/till, Fuliza, agent withdrawals, NSE, SHA, chamas, informal loans. This is the moat.
 - **Trust is the wedge:** the exactness, security, and AI-privacy work *is* the marketing. Pair it with an honest, in-product statement of what data leaves the app.
 - **Earn the claim:** "institutional-grade" becomes true once WO-3 ships. Use the phrase after, not before.
 
