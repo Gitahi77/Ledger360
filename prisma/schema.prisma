@@ -249,6 +249,7 @@ model Transfer {
   source          String   @default("MANUAL") // MANUAL, IMPORT, SYSTEM
   goalId          String?
   loanId          String?
+  interestMinor   Int      @default(0)
   createdAt       DateTime @default(now())
 
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)

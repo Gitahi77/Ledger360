@@ -239,10 +239,10 @@ describe('Financial Logic and Validations', () => {
     });
 
     it('sums loan repayments into DebtRepayment and NOT into expenses or savings', async () => {
-      // FindMany returns the separate lists based on loanId
+      // FindMany returns the separate      // Two transfers: one savings, one debt
       vi.mocked(prisma.transfer.findMany).mockImplementation((async (args: any) => {
-        if (args.where?.loanId === null) return [{ baseAmountMinor: 5000 }]; // Savings
-        if (args.where?.loanId?.not === null) return [{ baseAmountMinor: 10000 }]; // Debt Repayment
+        if (args.where?.loanId === null) return [{ baseAmountMinor: 5000, interestMinor: 0 }];
+        if (args.where?.loanId?.not === null) return [{ baseAmountMinor: 10000, interestMinor: 0 }];
         return [];
       }) as unknown as typeof prisma.transfer.findMany);
 
@@ -259,13 +259,13 @@ describe('Financial Logic and Validations', () => {
 
     it('reconciles Reports total outflow to Dashboard moneyOut', async () => {
       vi.mocked(prisma.transfer.findMany).mockImplementation((async (args: any) => {
-        if (args.where?.loanId === null) return [{ baseAmountMinor: 5000 }]; // Savings
-        if (args.where?.loanId?.not === null) return [{ baseAmountMinor: 10000 }]; // Debt Repayment
+        if (args.where?.loanId === null) return [{ baseAmountMinor: 5000, interestMinor: 0 }]; // Savings
+        if (args.where?.loanId?.not === null) return [{ baseAmountMinor: 10000, interestMinor: 0 }]; // Debt Repayment
         return [];
       }) as unknown as typeof prisma.transfer.findMany);
 
       // Dashboard logic mock
-      vi.mocked(prisma.transfer.aggregate).mockResolvedValue({ _sum: { baseAmountMinor: 10000 } } as Awaited<ReturnType<typeof prisma.transfer.aggregate>>);
+      vi.mocked(prisma.transfer.aggregate).mockResolvedValue({ _sum: { baseAmountMinor: 10000, interestMinor: 0 } } as Awaited<ReturnType<typeof prisma.transfer.aggregate>>);
 
       const dashboard = await getTransactionSummary('this-month');
       const reports = await getReportSummary('this-month');
@@ -338,6 +338,68 @@ describe('Financial Logic and Validations', () => {
         baseAmountMinor: 900
       });
       expect(res).toEqual({ warning: expect.stringMatching(/Not enough money in Bank/) });
+    });
+  });
+
+  describe('Loan Interest Split', () => {
+    it('splits loan payment into interest and principal correctly and caps interest', async () => {
+      vi.mocked(prisma.account.findFirst).mockResolvedValue({ id: 'acc-1', type: 'bank', currency: 'KES', userId: 'user-1', name: 'Bank' } as any);
+      vi.mocked(getAccountBalances).mockResolvedValue([{ id: 'acc-1', balanceMinor: 5000, type: 'bank', currency: 'KES', name: 'Bank', userId: 'user-1' } as any]);
+      
+      const mockLoan = { id: 'loan-1', balanceMinor: 120000, annualRate: 10, userId: 'user-1' };
+      vi.mocked(getLoansForUser).mockResolvedValue([mockLoan as any]);
+
+      // 120,000 * 10% / 12 = 1000 default interest
+      await createTransfer({ fromAccountId: 'acc-1', loanId: 'loan-1', amountMinor: 5000, date: '2023-10-10' });
+      expect(prisma.transfer.create).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({
+          amountMinor: 5000,
+          interestMinor: 1000,
+        })
+      }));
+
+      // Test cap: if payment is less than interest
+      await createTransfer({ fromAccountId: 'acc-1', loanId: 'loan-1', amountMinor: 500, date: '2023-10-10' });
+      expect(prisma.transfer.create).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({
+          amountMinor: 500,
+          interestMinor: 500,
+        })
+      }));
+    });
+
+    it('net worth drops by exactly the interest paid', async () => {
+      vi.mocked(getAccountBalances).mockResolvedValue([{ id: 'acc-1', balanceMinor: 5000, type: 'bank', currency: 'KES', name: 'Bank', userId: 'user-1', openingMinor: 0, archived: false, createdAt: new Date() }]);
+      vi.mocked(getLoansForUser).mockResolvedValue([{ id: 'loan-1', balanceMinor: 5000, userId: 'user-1', name: 'L', lender: 'B', type: 't', originalAmountMinor: 5000, annualRate: 0, monthlyPaymentMinor: 0, nextDue: new Date(), createdAt: new Date(), daysOverdue: 0 }]);
+      vi.mocked(prisma.asset.findMany).mockResolvedValue([]);
+      
+      const before = await getNetWorth();
+      expect(before.netWorthMinor).toBe(0);
+      
+      vi.mocked(getAccountBalances).mockResolvedValue([{ id: 'acc-1', balanceMinor: 4000, type: 'bank', currency: 'KES', name: 'Bank', userId: 'user-1', openingMinor: 0, archived: false, createdAt: new Date() }]);
+      vi.mocked(getLoansForUser).mockResolvedValue([{ id: 'loan-1', balanceMinor: 4200, userId: 'user-1', name: 'L', lender: 'B', type: 't', originalAmountMinor: 5000, annualRate: 0, monthlyPaymentMinor: 0, nextDue: new Date(), createdAt: new Date(), daysOverdue: 0 }]);
+      
+      const after = await getNetWorth();
+      expect(after.netWorthMinor).toBe(-200); 
+    });
+
+    it('allocates interest to Spending and principal to Debt Repayment in reports, handling legacy payments correctly', async () => {
+      vi.mocked(prisma.transaction.aggregate).mockResolvedValue({ _sum: { baseAmountMinor: 0 } } as any);
+      
+      vi.mocked(prisma.transfer.findMany).mockImplementation(async (args: any) => {
+        if (args.where?.loanId === null) return [];
+        if (args.where?.loanId?.not === null) {
+          return [
+            { baseAmountMinor: 5000, interestMinor: 1000 }, // New split payment
+            { baseAmountMinor: 2000, interestMinor: 0 }     // Legacy payment
+          ];
+        }
+        return [];
+      });
+
+      const reports = await getReportSummary('this-month');
+      expect(reports.debtRepayment).toBe(6000); // (5000-1000) + 2000
+      expect(reports.expenses).toBe(1000);      // 0 + 1000
     });
   });
 });

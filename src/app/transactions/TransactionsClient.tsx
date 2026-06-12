@@ -1,7 +1,7 @@
 'use client';
 // src/app/transactions/TransactionsClient.tsx
 // Copyright (c) 2024-present Eric Gitahi. All rights reserved.
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CategoryIcon } from '@/components/CategoryIcon';
 import { SmartUpload } from '@/components/SmartUpload';
@@ -20,11 +20,12 @@ type Tx = {
   toAccountId?: string | null;
   goalId?: string | null;
   loanId?: string | null;
+  interestMinor?: number;
 };
 type Category = { id: string; name: string; type: string; icon: string | null };
 type Account = { id: string; name: string };
 type Goal = { id: string; name: string };
-type Loan = { id: string; name: string };
+type Loan = { id: string; name: string; balanceMinor: number; annualRate: number };
 
 interface Props {
   transactions: Tx[];
@@ -62,11 +63,24 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
   const [toAccountId,setToAccountId]= useState(tx?.toAccountId ?? '');
   const [goalId,     setGoalId]     = useState(tx?.goalId ?? '');
   const [loanId,     setLoanId]     = useState(tx?.loanId ?? '');
+  const [interestAmount, setInterestAmount] = useState(tx && tx.interestMinor !== undefined && tx.interestMinor !== null ? (toMajor(tx.interestMinor)).toString() : '');
   const [date,       setDate]       = useState(tx ? new Date(tx.date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10));
   const [note,       setNote]       = useState(tx?.note ?? '');
   const isEdit = Boolean(tx);
 
   const filteredCats = categories.filter(c => c.type === type);
+
+  useEffect(() => {
+    if (loanId && !isEdit) {
+      const selectedLoan = loans.find(l => l.id === loanId);
+      if (selectedLoan) {
+        const autoInterestMinor = Math.round(selectedLoan.balanceMinor * (selectedLoan.annualRate / 100) / 12);
+        setInterestAmount((toMajor(autoInterestMinor)).toString());
+      }
+    } else if (!loanId) {
+      setInterestAmount('');
+    }
+  }, [loanId, loans, isEdit]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -78,10 +92,11 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
     try {
       let warnMsg: string | undefined;
       if (type === 'transfer') {
+        const intMinor = interestAmount !== '' ? toMinor(parseFloat(interestAmount)) : undefined;
         if (isEdit && tx) {
-          await editTransfer(tx.id, { fromAccountId: accountId, toAccountId: loanId ? null : toAccountId, amountMinor: toMinor(parseFloat(amount)), date, note, goalId: goalId || null, loanId: loanId || null });
+          await editTransfer(tx.id, { fromAccountId: accountId, toAccountId: loanId ? null : toAccountId, amountMinor: toMinor(parseFloat(amount)), date, note, goalId: goalId || null, loanId: loanId || null, interestMinor: intMinor });
         } else {
-          await createTransfer({ fromAccountId: accountId, toAccountId: loanId ? null : toAccountId, amountMinor: toMinor(parseFloat(amount)), date, note, goalId: goalId || null, loanId: loanId || null });
+          await createTransfer({ fromAccountId: accountId, toAccountId: loanId ? null : toAccountId, amountMinor: toMinor(parseFloat(amount)), date, note, goalId: goalId || null, loanId: loanId || null, interestMinor: intMinor });
         }
       } else {
         if (isEdit && tx) {
@@ -196,6 +211,13 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
               </>
             )}
           </div>
+          {type === 'transfer' && loanId && (
+            <div>
+              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Interest Portion ({currency})</label>
+              <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
+                type="number" min="0" step="0.01" value={interestAmount} onChange={e => setInterestAmount(e.target.value)} required placeholder="0.00" />
+            </div>
+          )}
           <div>
             <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Date</label>
             <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}

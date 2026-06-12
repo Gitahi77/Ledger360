@@ -42,12 +42,14 @@ export async function getMonthlyTrend() {
     GROUP BY yr, mo
   `;
 
-  const debtRows: Row[] = await prisma.$queryRaw`
+  type DebtRow = Row & { interest: number };
+  const debtRows: DebtRow[] = await prisma.$queryRaw`
     SELECT
       EXTRACT(YEAR  FROM date)::int AS yr,
       EXTRACT(MONTH FROM date)::int AS mo,
       'debt' AS type,
-      SUM("baseAmountMinor")::float AS total
+      SUM("baseAmountMinor" - "interestMinor")::float AS total,
+      SUM("interestMinor")::float AS interest
     FROM "Transfer"
     WHERE "userId" = ${user.id}
       AND "loanId" IS NOT NULL
@@ -67,7 +69,7 @@ export async function getMonthlyTrend() {
     const sav = savingsRows.find(r => r.yr === m.yr && r.mo === m.mo);
     const deb = debtRows.find(r => r.yr === m.yr && r.mo === m.mo);
     const income   = Math.round(inc?.total ?? 0);
-    const expenses = Math.round(exp?.total ?? 0);
+    const expenses = Math.round((exp?.total ?? 0) + (deb?.interest ?? 0));
     const savings  = Math.round(sav?.total ?? 0);
     const debtRepayment = Math.round(deb?.total ?? 0);
     return { label: m.label, Income: income, Expenses: expenses, Savings: savings, DebtRepayment: debtRepayment };
@@ -125,25 +127,39 @@ export async function getReportSummary(period: string) {
     }),
     prisma.transfer.findMany({
       where: { userId: user.id, date: { gte: from, lte: to }, loanId: { not: null } },
-      select: { baseAmountMinor: true },
+      select: { baseAmountMinor: true, interestMinor: true },
     }),
     prisma.transfer.findMany({
       where: { userId: user.id, date: { gte: prevFrom, lte: prevTo }, loanId: { not: null } },
-      select: { baseAmountMinor: true },
+      select: { baseAmountMinor: true, interestMinor: true },
     }),
   ]);
 
   const inc = income._sum.baseAmountMinor   ?? 0;
-  const exp = expenses._sum.baseAmountMinor ?? 0;
   const sav = currentSavingsTransfers.reduce((sum, t) => sum + t.baseAmountMinor, 0);
-  const deb = currentDebtTransfers.reduce((sum, t) => sum + t.baseAmountMinor, 0);
+  
+  const currentDebtInfo = currentDebtTransfers.reduce((acc, t) => {
+    acc.principal += (t.baseAmountMinor - t.interestMinor);
+    acc.interest += t.interestMinor;
+    return acc;
+  }, { principal: 0, interest: 0 });
+  const deb = currentDebtInfo.principal;
+  const exp = (expenses._sum.baseAmountMinor ?? 0) + currentDebtInfo.interest;
+
   const ncf = inc - exp - sav - deb;
   const sr  = inc > 0 ? Math.round((sav / inc) * 100) : 0;
 
   const pInc = prevIncome._sum.baseAmountMinor   ?? 0;
-  const pExp = prevExpenses._sum.baseAmountMinor ?? 0;
   const pSav = prevSavingsTransfers.reduce((sum, t) => sum + t.baseAmountMinor, 0);
-  const pDeb = prevDebtTransfers.reduce((sum, t) => sum + t.baseAmountMinor, 0);
+  
+  const prevDebtInfo = prevDebtTransfers.reduce((acc, t) => {
+    acc.principal += (t.baseAmountMinor - t.interestMinor);
+    acc.interest += t.interestMinor;
+    return acc;
+  }, { principal: 0, interest: 0 });
+  const pDeb = prevDebtInfo.principal;
+  const pExp = (prevExpenses._sum.baseAmountMinor ?? 0) + prevDebtInfo.interest;
+
   const pNcf = pInc - pExp - pSav - pDeb;
   const pSr  = pInc > 0 ? Math.round((pSav / pInc) * 100) : 0;
 

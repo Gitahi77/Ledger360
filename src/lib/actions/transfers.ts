@@ -42,6 +42,7 @@ export async function createTransfer(raw: {
   note?: string;
   goalId?: string | null;
   loanId?: string | null;
+  interestMinor?: number;
 }) {
   const { AddTransferSchema } = await import('@/lib/validation');
   const data = AddTransferSchema.parse(raw);
@@ -69,13 +70,23 @@ export async function createTransfer(raw: {
     if (!goal) throw new Error('Please choose a valid goal.');
   }
 
+  let finalInterestMinor = 0;
   if (data.loanId) {
     const { getLoansForUser } = await import('@/lib/actions/loans');
     const loans = await getLoansForUser(user.id);
     const loan = loans.find(l => l.id === data.loanId);
     if (!loan) throw new Error('Please choose a valid loan.');
     
-    if (data.amountMinor > loan.balanceMinor) {
+    // Auto-compute default interest
+    const autoInterest = Math.round(loan.balanceMinor * (loan.annualRate / 100) / 12);
+    finalInterestMinor = data.interestMinor ?? autoInterest;
+
+    // Server-side validation
+    if (finalInterestMinor < 0) finalInterestMinor = 0;
+    if (finalInterestMinor > data.amountMinor) finalInterestMinor = data.amountMinor;
+    
+    const principal = data.amountMinor - finalInterestMinor;
+    if (principal > loan.balanceMinor) {
       throw new Error(`You can't pay more than you owe. This loan's remaining balance is  ${toMajor(loan.balanceMinor)}.`);
     }
   }
@@ -103,6 +114,7 @@ export async function createTransfer(raw: {
       note: data.note,
       goalId: data.goalId || null,
       loanId: data.loanId || null,
+      interestMinor: finalInterestMinor,
       source: 'MANUAL',
     },
   });
@@ -129,6 +141,7 @@ export async function editTransfer(id: string, raw: {
   note?: string;
   goalId?: string | null;
   loanId?: string | null;
+  interestMinor?: number;
 }) {
   const { AddTransferSchema } = await import('@/lib/validation');
   const data = AddTransferSchema.parse(raw);
@@ -163,10 +176,18 @@ export async function editTransfer(id: string, raw: {
     
     // Headroom = outstanding + oldRepaymentAmount (if editing the SAME loan repayment)
     const isSameLoan = oldTransfer.loanId === data.loanId;
-    const oldRepaymentAmount = isSameLoan ? oldTransfer.amountMinor : 0;
-    const headroom = loan.balanceMinor + oldRepaymentAmount;
+    
+    let finalInterestMinor = 0;
+    const autoInterest = Math.round(loan.balanceMinor * (loan.annualRate / 100) / 12);
+    finalInterestMinor = data.interestMinor ?? autoInterest;
+    if (finalInterestMinor < 0) finalInterestMinor = 0;
+    if (finalInterestMinor > data.amountMinor) finalInterestMinor = data.amountMinor;
 
-    if (data.amountMinor > headroom) {
+    const principal = data.amountMinor - finalInterestMinor;
+    const oldRepaymentPrincipal = isSameLoan ? (oldTransfer.baseAmountMinor - oldTransfer.interestMinor) : 0;
+    const headroom = loan.balanceMinor + oldRepaymentPrincipal;
+
+    if (principal > headroom) {
       throw new Error(`You can't pay more than you owe. This loan's remaining balance is  ${toMajor(headroom)}.`);
     }
   }
@@ -186,6 +207,18 @@ export async function editTransfer(id: string, raw: {
       }
     }
   }
+  let finalInterestMinor = 0;
+  if (data.loanId) {
+    const { getLoansForUser } = await import('@/lib/actions/loans');
+    const loans = await getLoansForUser(user.id);
+    const loan = loans.find(l => l.id === data.loanId);
+    if (loan) {
+      const autoInterest = Math.round(loan.balanceMinor * (loan.annualRate / 100) / 12);
+      finalInterestMinor = data.interestMinor ?? autoInterest;
+      if (finalInterestMinor < 0) finalInterestMinor = 0;
+      if (finalInterestMinor > data.amountMinor) finalInterestMinor = data.amountMinor;
+    }
+  }
 
   // Atomic ownership update
   const { count } = await prisma.transfer.updateMany({
@@ -200,6 +233,7 @@ export async function editTransfer(id: string, raw: {
       note: data.note,
       goalId: data.goalId || null,
       loanId: data.loanId || null,
+      interestMinor: finalInterestMinor,
     },
   });
 

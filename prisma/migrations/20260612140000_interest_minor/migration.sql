@@ -1,0 +1,1 @@
+ALTER TABLE \" "Transfer\ ADD COLUMN \interestMinor\ INTEGER NOT NULL DEFAULT 0; 

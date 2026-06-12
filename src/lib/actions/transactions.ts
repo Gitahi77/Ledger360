@@ -35,13 +35,14 @@ export async function getTransactionSummary(period = 'this-month') {
   const expenses = await prisma.transaction.aggregate({ where: { userId: user.id, type: 'expense',  date: { gte: from, lte: to } }, _sum: { baseAmountMinor: true } });
 
   const inc = income._sum.baseAmountMinor ?? 0;
-  const exp = expenses._sum.baseAmountMinor ?? 0;
-
   const transfersOut = await prisma.transfer.aggregate({
     where: { userId: user.id, toAccountId: null, date: { gte: from, lte: to } },
-    _sum: { baseAmountMinor: true }
+    _sum: { baseAmountMinor: true, interestMinor: true }
   });
-  const moneyOut = exp + (transfersOut._sum.baseAmountMinor ?? 0);
+  
+  const totalLoanInterest = transfersOut._sum.interestMinor ?? 0;
+  const exp = (expenses._sum.baseAmountMinor ?? 0) + totalLoanInterest;
+  const moneyOut = exp + (transfersOut._sum.baseAmountMinor ?? 0) - totalLoanInterest;
 
   // WO-16 / BUG-3: "savings" = sum of transfers that fund a goal OR go to a
   // savings/investment account, EXCLUDING loan repayments. Each qualifying

@@ -9,10 +9,10 @@ import type { Loan } from '@prisma/client';
 export async function getLoansForUser(userId: string) {
   const today = new Date();
 
-  const loans: (Loan & { transfers: { baseAmountMinor: number }[] })[] = await prisma.loan.findMany({
+  const loans: (Loan & { transfers: { baseAmountMinor: number; interestMinor: number }[] })[] = await prisma.loan.findMany({
     where:   { userId: userId },
     include: {
-      transfers: { select: { baseAmountMinor: true } }
+      transfers: { select: { baseAmountMinor: true, interestMinor: true } }
     },
     orderBy: { annualRate: 'desc' },
   });
@@ -22,7 +22,7 @@ export async function getLoansForUser(userId: string) {
     const auto = due < today
       ? Math.floor((today.getTime() - due.getTime()) / 86_400_000)
       : 0;
-    const repaidAmount = l.transfers.reduce((s, t) => s + t.baseAmountMinor, 0);
+    const repaidAmount = l.transfers.reduce((s, t) => s + (t.baseAmountMinor - t.interestMinor), 0);
     const currentBalanceMinor = computeLoanBalance(l.balanceMinor, repaidAmount);
     
     const { transfers: _transfers, ...rest } = l;

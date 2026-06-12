@@ -44,6 +44,7 @@ export default async function Transactions({
     toAccountId: t.toAccountId,
     goalId: t.goalId,
     loanId: t.loanId,
+    interestMinor: t.interestMinor,
   }));
 
   const allItems = [...transactions, ...mappedTransfers]
