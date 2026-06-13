@@ -15,7 +15,7 @@ import type { Transaction, Category, Goal, Transfer } from '@prisma/client';
 
 export type Insight = {
   id: string;
-  type: 'anomaly' | 'recurring' | 'forecast' | 'achievement' | 'info';
+  type: 'anomaly' | 'recurring' | 'forecast' | 'achievement' | 'info' | 'endowment' | 'fresh-start';
   title: string;
   description: string;
   severity: 'info' | 'warning' | 'success' | 'danger';
@@ -53,6 +53,81 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
   const currentMonthTx = transactions.filter(t => t.date >= thisMonthStart);
   const pastMonthsTx   = transactions.filter(t => t.date <  thisMonthStart);
 
+  // ── ACTIVE GOALS (For Anomalies & Goal Progress) ───────────────────────────
+  let activeGoals: (Goal & { transfers: Transfer[] })[] = [];
+  if (prefs?.notifGoals !== false) {
+    activeGoals = await prisma.goal.findMany({ 
+      where: { userId, targetAmountMinor: { gt: 0 } },
+      include: { transfers: true } 
+    });
+  }
+  
+  const incompleteGoals = activeGoals.filter(g => {
+    const currentAmountMinor = g.transfers.reduce((sum, t) => sum + t.baseAmountMinor, 0);
+    return currentAmountMinor < g.targetAmountMinor;
+  });
+  const topGoal = incompleteGoals[0] || null;
+
+  // ── ENDOWMENT FRAMING (MONEY KEPT) ─────────────────────────────────────────
+  const transfersThisMonth = await prisma.transfer.findMany({
+    where: {
+      userId,
+      date: { gte: thisMonthStart },
+      loanId: null,
+      OR: [
+        { goalId: { not: null } },
+        { toAccount: { type: { in: ['savings', 'investment'] } } }
+      ]
+    },
+    include: { toAccount: true }
+  });
+  
+  const savedThisMonthMinor = transfersThisMonth.reduce((acc, t) => acc + t.baseAmountMinor, 0);
+  if (savedThisMonthMinor > 0) {
+    insights.push({
+      id: 'endowment-money-kept',
+      type: 'endowment',
+      title: 'Money kept this month',
+      description: `You've successfully secured ${currency} ${Math.round(toMajor(savedThisMonthMinor)).toLocaleString()} for yourself this month. That's real money kept for your future.`,
+      severity: 'success',
+    });
+  }
+
+  // ── FRESH START ────────────────────────────────────────────────────────────
+  if (getDate(now) <= 5) {
+    const previousMonthStart = subMonths(thisMonthStart, 1);
+    const lastMonthTx = pastMonthsTx.filter(t => t.date >= previousMonthStart && t.date < thisMonthStart);
+    
+    if (lastMonthTx.length > 0) {
+      const lastMonthByCategory: Record<string, { totalAmt: number; name: string }> = {};
+      lastMonthTx.filter(t => t.type === 'expense').forEach(t => {
+        if (!lastMonthByCategory[t.categoryId]) {
+          lastMonthByCategory[t.categoryId] = { totalAmt: 0, name: t.category.name };
+        }
+        lastMonthByCategory[t.categoryId].totalAmt += t.baseAmountMinor;
+      });
+
+      let topCat = null;
+      let maxAmt = 0;
+      for (const [catId, cat] of Object.entries(lastMonthByCategory)) {
+        if (cat.totalAmt > maxAmt) {
+          maxAmt = cat.totalAmt;
+          topCat = cat;
+        }
+      }
+
+      if (topCat && maxAmt > 0) {
+        insights.push({
+          id: 'fresh-start',
+          type: 'fresh-start',
+          title: 'A fresh start',
+          description: `It's a new month! Last month, your largest expense was ${topCat.name} at ${currency} ${Math.round(toMajor(maxAmt)).toLocaleString()}. Could you find a small way to reduce that this month?`,
+          severity: 'info',
+        });
+      }
+    }
+  }
+
   // ── ANOMALY DETECTION ──────────────────────────────────────────────────────
   // Key by categoryId (stable) instead of category name (can be renamed).
   // Track which months each category had spend so the average is per-month.
@@ -82,11 +157,19 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
       const ratio = current.totalAmt / avgMonthlySpend;
       if (ratio > 1.4) {
         const pct = Math.round((ratio - 1) * 100);
+        const overspend = current.totalAmt - avgMonthlySpend;
+        let description = `Your ${current.name} spending is ${pct}% above your typical monthly average.`;
+        
+        if (topGoal && overspend >= 0.01 * topGoal.targetAmountMinor) {
+          const goalPct = Math.round((overspend / topGoal.targetAmountMinor) * 100);
+          description += ` That difference is about ${goalPct}% of your ${topGoal.name} target.`;
+        }
+
         insights.push({
           id:          `anomaly-${catId}`,
           type:        'anomaly',
           title:       'Higher than usual',
-          description: `Your ${current.name} spending is ${pct}% above your typical monthly average.`,
+          description,
           severity:    'warning',
         });
       }
@@ -176,10 +259,6 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
 
   // ── GOAL PROGRESS ALERTS ───────────────────────────────────────────────────
   if (prefs?.notifGoals !== false) {
-    const activeGoals: (Goal & { transfers: Transfer[] })[] = await prisma.goal.findMany({ 
-      where: { userId, targetAmountMinor: { gt: 0 } },
-      include: { transfers: true } 
-    });
     for (const goal of activeGoals) {
       const currentAmountMinor = goal.transfers.reduce((sum, t) => sum + t.baseAmountMinor, 0);
       if (currentAmountMinor >= goal.targetAmountMinor) {

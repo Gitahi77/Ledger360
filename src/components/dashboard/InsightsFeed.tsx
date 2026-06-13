@@ -1,5 +1,5 @@
 'use client';
-import { AlertTriangle, TrendingUp, RefreshCw, Lightbulb, X } from 'lucide-react';
+import { AlertTriangle, TrendingUp, RefreshCw, Lightbulb, X, Shield, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import type { Insight } from '@/lib/intelligence';
 
@@ -16,7 +16,9 @@ export function InsightsFeed({ initialInsights }: { initialInsights: Insight[] }
     anomaly: <AlertTriangle size={18} />,
     recurring: <RefreshCw size={18} />,
     forecast: <TrendingUp size={18} />,
-    info: <Lightbulb size={18} />
+    info: <Lightbulb size={18} />,
+    endowment: <Shield size={18} />,
+    'fresh-start': <Sparkles size={18} />
   };
 
   const colorMap = {
