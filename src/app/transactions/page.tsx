@@ -37,7 +37,7 @@ export default async function Transactions({
     note: t.note,
     category: {
       id: 'transfer',
-      name: `${t.fromAccount.name} → ${t.toAccount ? t.toAccount.name : 'External'}`,
+      name: `${t.fromAccount ? t.fromAccount.name : 'External'} → ${t.toAccount ? t.toAccount.name : 'External'}`,
       icon: 'transfer',
     },
     fromAccountId: t.fromAccountId,
