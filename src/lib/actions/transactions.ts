@@ -63,12 +63,20 @@ export async function getTransactionSummary(period = 'this-month') {
     (sum, t) => sum + t.baseAmountMinor, 0
   );
 
+  const startOfToday = new Date(to.getFullYear(), to.getMonth(), to.getDate(), 0, 0, 0, 0);
+  const todaySpendAgg = await prisma.transaction.aggregate({
+    where: { userId: user.id, type: 'expense', date: { gte: startOfToday, lte: to } },
+    _sum: { baseAmountMinor: true }
+  });
+  const todaySpend = todaySpendAgg._sum.baseAmountMinor ?? 0;
+
   return {
     income:     inc,
     expenses:   exp,
     moneyOut:   moneyOut,
     savings,
     savingRate: inc > 0 ? Math.round((savings / inc) * 100) : 0,
+    todaySpend,
   };
 }
 

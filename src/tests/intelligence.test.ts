@@ -127,6 +127,32 @@ describe('generateInsights', () => {
     expect(freshStart?.description).not.toContain('Utilities');
   });
 
+  it('generates Small Leaks insight when there are many small expenses in a category', async () => {
+    vi.mocked(prisma.transaction.findMany).mockResolvedValue([
+      // 5 small txs in the same category (totaling 250,000 minor units -> 2,500 major units > 1500 limit)
+      { id: 'tx1', date: now, type: 'expense', categoryId: 'coffee', category: { name: 'Coffee' }, baseAmountMinor: 50000, name: 'C1' },
+      { id: 'tx2', date: now, type: 'expense', categoryId: 'coffee', category: { name: 'Coffee' }, baseAmountMinor: 50000, name: 'C2' },
+      { id: 'tx3', date: now, type: 'expense', categoryId: 'coffee', category: { name: 'Coffee' }, baseAmountMinor: 50000, name: 'C3' },
+      { id: 'tx4', date: now, type: 'expense', categoryId: 'coffee', category: { name: 'Coffee' }, baseAmountMinor: 50000, name: 'C4' },
+      { id: 'tx5', date: now, type: 'expense', categoryId: 'coffee', category: { name: 'Coffee' }, baseAmountMinor: 50000, name: 'C5' },
+      // 1 large tx (should not count as small leak)
+      { id: 'tx6', date: now, type: 'expense', categoryId: 'coffee', category: { name: 'Coffee' }, baseAmountMinor: 60000, name: 'C6' },
+      // 4 small txs in another category (not enough count)
+      { id: 'tx7', date: now, type: 'expense', categoryId: 'snack', category: { name: 'Snack' }, baseAmountMinor: 40000, name: 'S1' },
+      { id: 'tx8', date: now, type: 'expense', categoryId: 'snack', category: { name: 'Snack' }, baseAmountMinor: 40000, name: 'S2' },
+      { id: 'tx9', date: now, type: 'expense', categoryId: 'snack', category: { name: 'Snack' }, baseAmountMinor: 40000, name: 'S3' },
+      { id: 'tx10', date: now, type: 'expense', categoryId: 'snack', category: { name: 'Snack' }, baseAmountMinor: 40000, name: 'S4' },
+    ] as any);
+
+    const insights = await generateInsights(userId);
+    const smallLeaks = insights.filter(i => i.id.startsWith('small-leaks-'));
+    
+    expect(smallLeaks.length).toBe(1);
+    expect(smallLeaks[0].id).toBe('small-leaks-coffee');
+    expect(smallLeaks[0].title).toBe('Frequent small expenses');
+    expect(smallLeaks[0].description).toBe('You made 5 small Coffee purchases this month totaling KES 2,500.');
+  });
+
   it('respects the 4-insight cap and severity sorting', async () => {
     vi.mocked(prisma.goal.findMany).mockResolvedValue([
       { id: 'g1', name: 'Milestone Goal', targetAmountMinor: 100000, transfers: [{ baseAmountMinor: 50000 }] }

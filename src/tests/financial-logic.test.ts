@@ -228,6 +228,40 @@ describe('Financial Logic and Validations', () => {
     });
   });
 
+  describe('getTransactionSummary — todaySpend (WO-17)', () => {
+    beforeEach(() => {
+      vi.mocked(prisma.transaction.aggregate).mockImplementation((async (args: any) => {
+        // If date filter has both gte and lte, and they are the same day boundaries, we identify it as the todaySpend query.
+        // Actually, we can just check if args.where?.date exists since the other queries only have type: 'income'/'expense' or standard period boundaries.
+        // In the actual implementation, the first two aggregations use date from 'periodDates' (start of month),
+        // but the third one uses `startOfToday`.
+        if (args.where?.date?.gte?.getTime() === new Date(args.where.date.lte.getFullYear(), args.where.date.lte.getMonth(), args.where.date.lte.getDate()).getTime()) {
+          return { _sum: { baseAmountMinor: 1500 } };
+        }
+        if (args.where?.type === 'income') return { _sum: { baseAmountMinor: 100000 } };
+        if (args.where?.type === 'expense') return { _sum: { baseAmountMinor: 30000 } };
+        return { _sum: { baseAmountMinor: 0 } };
+      }) as any);
+      vi.mocked(prisma.transfer.aggregate).mockResolvedValue({ _sum: { baseAmountMinor: 0 } } as any);
+      vi.mocked(prisma.transfer.findMany).mockResolvedValue([] as any);
+    });
+
+    it('returns todaySpend summing only today expense transactions', async () => {
+      const res = await getTransactionSummary('this-month');
+      
+      expect(prisma.transaction.aggregate).toHaveBeenCalledWith(expect.objectContaining({
+        where: expect.objectContaining({
+          type: 'expense',
+          date: expect.objectContaining({
+            gte: expect.any(Date),
+            lte: expect.any(Date)
+          })
+        })
+      }));
+      expect(res.todaySpend).toBe(1500);
+    });
+  });
+
   describe('getReportSummary — Cash Flow Validations (Phase 1)', () => {
     beforeEach(() => {
       // Mock aggregations to separate income and expenses

@@ -138,6 +138,36 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
     }
   }
 
+  // ── SMALL LEAKS (WO-17) ────────────────────────────────────────────────────
+  const SMALL_LEAK_LIMIT_MINOR = 50000;      // Max 500 major units per tx
+  const SMALL_LEAK_MIN_COUNT = 5;            // At least 5 transactions
+  const SMALL_LEAK_MIN_TOTAL_MINOR = 150000; // Total must be >= 1500 major units
+
+  const currentMonthExpenses = currentMonthTx.filter(t => t.type === 'expense');
+  const smallTxByCategory: Record<string, { count: number; totalAmt: number; name: string }> = {};
+
+  currentMonthExpenses.forEach(t => {
+    if (t.baseAmountMinor <= SMALL_LEAK_LIMIT_MINOR) {
+      if (!smallTxByCategory[t.categoryId]) {
+        smallTxByCategory[t.categoryId] = { count: 0, totalAmt: 0, name: t.category.name };
+      }
+      smallTxByCategory[t.categoryId].count += 1;
+      smallTxByCategory[t.categoryId].totalAmt += t.baseAmountMinor;
+    }
+  });
+
+  for (const [catId, leak] of Object.entries(smallTxByCategory)) {
+    if (leak.count >= SMALL_LEAK_MIN_COUNT && leak.totalAmt >= SMALL_LEAK_MIN_TOTAL_MINOR) {
+      insights.push({
+        id: `small-leaks-${catId}`,
+        type: 'info',
+        title: 'Frequent small expenses',
+        description: `You made ${leak.count} small ${leak.name} purchases this month totaling ${currency} ${Math.round(toMajor(leak.totalAmt)).toLocaleString()}.`,
+        severity: 'info',
+      });
+    }
+  }
+
   // ── ANOMALY DETECTION ──────────────────────────────────────────────────────
   // Key by categoryId (stable) instead of category name (can be renamed).
   // Track which months each category had spend so the average is per-month.

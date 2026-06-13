@@ -103,6 +103,7 @@ export default async function Dashboard({
           <div className="hero-stats-grid">
             {[
               { label: 'Total Cash',             value: fmtAdaptive(netWorth.totalCashMinor, currency),  sub: 'Excludes credit card debt', color: 'var(--text-primary)' },
+              { label: `Today's Spend`,          value: fmtAdaptive(summary.todaySpend, currency), sub: 'Daily running total', color: 'var(--text-primary)' },
               { label: `${periodLabel} Income`,  value: fmtAdaptive(summary.income, currency),   sub: summary.income > 0 ? '+ Coming in' : 'No income yet',     color: 'var(--success)'      },
               { label: `${periodLabel} Money Out`,   value: fmtAdaptive(summary.moneyOut, currency), sub: summary.moneyOut > 0 ? '- Going out' : 'No money out yet', color: 'var(--text-primary)' },
               { label: 'Saving Rate',            value: `${summary.savingRate}%`,       sub: summary.savingRate >= targetRate ? `🎯 Target met (${targetRate}%)` : summary.savingRate >= halfTarget ? '📈 Getting there' : '⚠️ Needs attention', color: srColor },
