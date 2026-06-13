@@ -28,8 +28,18 @@ export async function getTransactionSummary(period = 'this-month') {
   const user = await requireAuth();
   const { from, to } = periodDates(period);
 
-  const prevFrom = new Date(from); prevFrom.setMonth(prevFrom.getMonth() - 1);
-  const prevTo = new Date(to); prevTo.setMonth(prevTo.getMonth() - 1);
+  let prevFrom: Date, prevTo: Date;
+  if (period === 'this-week') {
+    const prevD = new Date(from); prevD.setDate(prevD.getDate() - 7);
+    prevFrom = prevD;
+    prevTo = new Date(from.getTime() - 1);
+  } else if (period === 'this-year') {
+    prevFrom = new Date(from.getFullYear() - 1, 0, 1);
+    prevTo = new Date(from.getFullYear() - 1, 11, 31, 23, 59, 59, 999);
+  } else {
+    prevFrom = new Date(from.getFullYear(), from.getMonth() - 1, 1);
+    prevTo = new Date(from.getFullYear(), from.getMonth(), 0, 23, 59, 59, 999);
+  }
 
   const income   = await prisma.transaction.aggregate({ where: { userId: user.id, type: 'income',   date: { gte: from, lte: to } }, _sum: { baseAmountMinor: true } });
   const expenses = await prisma.transaction.aggregate({ where: { userId: user.id, type: 'expense',  date: { gte: from, lte: to } }, _sum: { baseAmountMinor: true } });
@@ -84,14 +94,20 @@ export async function getTransactionSummary(period = 'this-month') {
 export async function getMonthlyChartData() {
   const user  = await requireAuth();
   const now   = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth() - 5, 1);
-  const end   = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+
+  const nowNairobi = new Date(now.toLocaleString("en-US", { timeZone: "Africa/Nairobi" }));
+  const nYr = nowNairobi.getFullYear();
+  const nMo = nowNairobi.getMonth();
+
+  const start = new Date(Date.UTC(nYr, nMo - 5, 1, -3, 0, 0));
+  const end   = new Date(Date.UTC(nYr, nMo + 1, 0, 20, 59, 59, 999));
 
   type Row = { yr: number; mo: number; type: string; total: number };
+  // "AT TIME ZONE" correctly converts timestamptz to local wall-clock time.
   const rows: Row[] = await prisma.$queryRaw`
     SELECT
-      EXTRACT(YEAR  FROM date)::int  AS yr,
-      EXTRACT(MONTH FROM date)::int  AS mo,
+      EXTRACT(YEAR  FROM (date AT TIME ZONE 'Africa/Nairobi'))::int  AS yr,
+      EXTRACT(MONTH FROM (date AT TIME ZONE 'Africa/Nairobi'))::int  AS mo,
       type,
       SUM("baseAmountMinor")::float  AS total
     FROM "Transaction"
@@ -106,7 +122,7 @@ export async function getMonthlyChartData() {
 
   const months: { label: string; yr: number; mo: number }[] = [];
   for (let i = 5; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const d = new Date(nYr, nMo - i, 1);
     months.push({ label: d.toLocaleString('default', { month: 'short' }), yr: d.getFullYear(), mo: d.getMonth() + 1 });
   }
 

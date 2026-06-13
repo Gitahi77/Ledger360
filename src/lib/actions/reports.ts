@@ -9,14 +9,20 @@ import type { Category } from '@prisma/client';
 export async function getMonthlyTrend() {
   const user  = await requireAuth();
   const now   = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth() - 5, 1);
-  const end   = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+  
+  const nowNairobi = new Date(now.toLocaleString("en-US", { timeZone: "Africa/Nairobi" }));
+  const nYr = nowNairobi.getFullYear();
+  const nMo = nowNairobi.getMonth();
+
+  const start = new Date(Date.UTC(nYr, nMo - 5, 1, -3, 0, 0));
+  const end   = new Date(Date.UTC(nYr, nMo + 1, 0, 20, 59, 59, 999));
 
   type Row = { yr: number; mo: number; type: string; total: number };
+  // "AT TIME ZONE" correctly converts timestamptz to local wall-clock time.
   const rows: Row[] = await prisma.$queryRaw`
     SELECT
-      EXTRACT(YEAR  FROM date)::int AS yr,
-      EXTRACT(MONTH FROM date)::int AS mo,
+      EXTRACT(YEAR  FROM (date AT TIME ZONE 'Africa/Nairobi'))::int AS yr,
+      EXTRACT(MONTH FROM (date AT TIME ZONE 'Africa/Nairobi'))::int AS mo,
       type,
       SUM("baseAmountMinor")::float            AS total
     FROM "Transaction"
@@ -27,10 +33,11 @@ export async function getMonthlyTrend() {
     ORDER BY yr, mo
   `;
 
+  // "AT TIME ZONE" correctly converts timestamptz to local wall-clock time.
   const savingsRows: Row[] = await prisma.$queryRaw`
     SELECT
-      EXTRACT(YEAR  FROM t.date)::int AS yr,
-      EXTRACT(MONTH FROM t.date)::int AS mo,
+      EXTRACT(YEAR  FROM (t.date AT TIME ZONE 'Africa/Nairobi'))::int AS yr,
+      EXTRACT(MONTH FROM (t.date AT TIME ZONE 'Africa/Nairobi'))::int AS mo,
       'savings' AS type,
       SUM(t."baseAmountMinor")::float AS total
     FROM "Transfer" t
@@ -43,10 +50,11 @@ export async function getMonthlyTrend() {
   `;
 
   type DebtRow = Row & { interest: number };
+  // "AT TIME ZONE" correctly converts timestamptz to local wall-clock time.
   const debtRows: DebtRow[] = await prisma.$queryRaw`
     SELECT
-      EXTRACT(YEAR  FROM date)::int AS yr,
-      EXTRACT(MONTH FROM date)::int AS mo,
+      EXTRACT(YEAR  FROM (date AT TIME ZONE 'Africa/Nairobi'))::int AS yr,
+      EXTRACT(MONTH FROM (date AT TIME ZONE 'Africa/Nairobi'))::int AS mo,
       'debt' AS type,
       SUM("baseAmountMinor" - "interestMinor")::float AS total,
       SUM("interestMinor")::float AS interest
@@ -60,7 +68,7 @@ export async function getMonthlyTrend() {
 
   const months: { label: string; yr: number; mo: number }[] = [];
   for (let i = 5; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const d = new Date(nYr, nMo - i, 1);
     months.push({ label: d.toLocaleString('default', { month: 'short' }), yr: d.getFullYear(), mo: d.getMonth() + 1 });
   }
 

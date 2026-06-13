@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { computeLoanBalance } from '../lib/shared-computations';
 
 // Mock dependencies
@@ -20,6 +20,7 @@ vi.mock('next/cache', () => ({
 
 vi.mock('@/lib/prisma', () => ({
   prisma: {
+    $queryRaw: vi.fn(),
     account: {
       findFirst: vi.fn(),
       findMany: vi.fn()
@@ -65,8 +66,8 @@ import { getAccountBalances } from '../lib/actions/accounts';
 import { getLoansForUser } from '../lib/actions/loans';
 import { prisma } from '../lib/prisma';
 import { createTransfer } from '../lib/actions/transfers';
-import { addTransaction, editTransaction, getTransactionSummary } from '../lib/actions/transactions';
-import { getReportSummary } from '../lib/actions/reports';
+import { addTransaction, editTransaction, getTransactionSummary, getMonthlyChartData } from '../lib/actions/transactions';
+import { getReportSummary, getMonthlyTrend } from '../lib/actions/reports';
 import { generateInsights } from '../lib/intelligence';
 
 describe('Financial Logic and Validations', () => {
@@ -434,6 +435,68 @@ describe('Financial Logic and Validations', () => {
       const reports = await getReportSummary('this-month');
       expect(reports.debtRepayment).toBe(6000); // (5000-1000) + 2000
       expect(reports.expenses).toBe(1000);      // 0 + 1000
+    });
+  });
+
+  describe('Timezone Bucketing (Behavioral)', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+      // Set system time to an arbitrary date so we know what the last 6 months are.
+      // Let's use 2024-05-15T12:00:00Z as "now".
+      vi.setSystemTime(new Date('2024-05-15T12:00:00Z'));
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('getMonthlyChartData buckets a month-edge transaction into the correct local month', async () => {
+      // We simulate a transaction timestamped 2024-01-31T22:30:00Z.
+      // In Nairobi (UTC+3), this is 2024-02-01 01:30.
+      // With our fix, the SQL query "EXTRACT(MONTH FROM date AT TIME ZONE 'Africa/Nairobi')"
+      // will evaluate this to month 2 (February) instead of 1 (January).
+      // We mock the SQL response that represents this CORRECT evaluation:
+      vi.mocked(prisma.$queryRaw).mockResolvedValue([
+        { yr: 2024, mo: 2, type: 'income', total: 1000 }
+      ]);
+
+      const res = await getMonthlyChartData();
+
+      // The last 6 months from May 2024 are Dec, Jan, Feb, Mar, Apr, May.
+      // We assert that the returned JS array has mapped this SQL row (mo: 2) to the 'Feb' bucket.
+      const febBucket = res.find(m => m.month === 'Feb');
+      const janBucket = res.find(m => m.month === 'Jan');
+
+      expect(febBucket).toBeDefined();
+      expect(febBucket?.income).toBe(1000);
+      expect(janBucket?.income).toBe(0);
+    });
+
+    it('getMonthlyTrend buckets a month-edge transaction into the correct local month', async () => {
+      // Simulate the same month-edge transaction for getMonthlyTrend.
+      // getMonthlyTrend runs 3 queries (income/expense, savings, debt).
+      // We'll mock all three to return the same simulated February bucket.
+      vi.mocked(prisma.$queryRaw).mockImplementation(async (...args: any[]) => {
+        const sql = JSON.stringify(args);
+        if (sql.includes('savings')) {
+          return [{ yr: 2024, mo: 2, type: 'savings', total: 500 }];
+        }
+        if (sql.includes('debt')) {
+          return [{ yr: 2024, mo: 2, type: 'debt', total: 300, interest: 50 }];
+        }
+        return [{ yr: 2024, mo: 2, type: 'income', total: 1000 }];
+      });
+
+      const res = await getMonthlyTrend();
+
+      const febBucket = res.find(m => m.label === 'Feb');
+      const janBucket = res.find(m => m.label === 'Jan');
+
+      expect(febBucket).toBeDefined();
+      expect(febBucket?.Income).toBe(1000);
+      expect(febBucket?.Savings).toBe(500);
+      expect(febBucket?.DebtRepayment).toBe(300);
+      expect(janBucket?.Income).toBe(0);
     });
   });
 });
