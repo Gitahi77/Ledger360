@@ -81,17 +81,18 @@ describe('generateInsights', () => {
     expect(anomaly?.description).toContain('That difference is about 2% of your Emergency Fund target');
   });
 
-  it('generates Fresh Start insight on days 1-5', async () => {
+  it('generates Fresh Start targeting the largest discretionary category, ignoring essentials', async () => {
     const pastMonth = subMonths(thisMonthStart, 1);
     
     vi.mocked(prisma.transaction.findMany).mockResolvedValue([
-      // Last month max expense
-      { id: 'p1', date: pastMonth, type: 'expense', categoryId: 'shopping', category: { name: 'Shopping' }, baseAmountMinor: 15000, name: 'S1' },
+      // Essential but largest
+      { id: 'p1', date: pastMonth, type: 'expense', categoryId: 'rent', category: { name: 'Rent' }, baseAmountMinor: 50000, name: 'S1' },
+      // Discretionary and smaller
       { id: 'p2', date: pastMonth, type: 'expense', categoryId: 'dining', category: { name: 'Dining' }, baseAmountMinor: 5000, name: 'D1' },
       // Padding
-      { id: 'pad1', date: now, type: 'expense', categoryId: 'other', category: { name: 'O' }, baseAmountMinor: 10, name: 'P' },
-      { id: 'pad2', date: now, type: 'expense', categoryId: 'other', category: { name: 'O' }, baseAmountMinor: 10, name: 'P' },
-      { id: 'pad3', date: now, type: 'expense', categoryId: 'other', category: { name: 'O' }, baseAmountMinor: 10, name: 'P' },
+      { id: 'pad1', date: now, type: 'expense', categoryId: 'other', category: { name: 'Other' }, baseAmountMinor: 10, name: 'P' },
+      { id: 'pad2', date: now, type: 'expense', categoryId: 'other', category: { name: 'Other' }, baseAmountMinor: 10, name: 'P' },
+      { id: 'pad3', date: now, type: 'expense', categoryId: 'other', category: { name: 'Other' }, baseAmountMinor: 10, name: 'P' },
     ] as any);
 
     const insights = await generateInsights(userId);
@@ -99,7 +100,31 @@ describe('generateInsights', () => {
     
     expect(freshStart).toBeDefined();
     expect(freshStart?.title).toBe('A fresh start');
-    expect(freshStart?.description).toContain('Last month, your largest expense was Shopping');
+    expect(freshStart?.description).toContain('Last month, your largest expense was Dining');
+    expect(freshStart?.description).not.toContain('Rent');
+  });
+
+  it('generates Fresh Start soft message when only essential categories exist', async () => {
+    const pastMonth = subMonths(thisMonthStart, 1);
+    
+    vi.mocked(prisma.transaction.findMany).mockResolvedValue([
+      // Only essentials
+      { id: 'p1', date: pastMonth, type: 'expense', categoryId: 'rent', category: { name: 'Rent' }, baseAmountMinor: 50000, name: 'R1' },
+      { id: 'p2', date: pastMonth, type: 'expense', categoryId: 'utilities', category: { name: 'Utilities' }, baseAmountMinor: 5000, name: 'U1' },
+      // Padding
+      { id: 'pad1', date: now, type: 'expense', categoryId: 'other', category: { name: 'Other' }, baseAmountMinor: 10, name: 'P' },
+      { id: 'pad2', date: now, type: 'expense', categoryId: 'other', category: { name: 'Other' }, baseAmountMinor: 10, name: 'P' },
+      { id: 'pad3', date: now, type: 'expense', categoryId: 'other', category: { name: 'Other' }, baseAmountMinor: 10, name: 'P' },
+    ] as any);
+
+    const insights = await generateInsights(userId);
+    const freshStart = insights.find(i => i.id === 'fresh-start-soft');
+    
+    expect(freshStart).toBeDefined();
+    expect(freshStart?.title).toBe('A fresh start');
+    expect(freshStart?.description).toContain('A great time to review your upcoming expenses');
+    expect(freshStart?.description).not.toContain('Rent');
+    expect(freshStart?.description).not.toContain('Utilities');
   });
 
   it('respects the 4-insight cap and severity sorting', async () => {

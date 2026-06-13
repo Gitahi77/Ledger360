@@ -107,21 +107,31 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
         lastMonthByCategory[t.categoryId].totalAmt += t.baseAmountMinor;
       });
 
-      let topCat = null;
+      const essentialRegex = /\b(rent|housing|mortgage|utility|utilities|electricity|water|loan|debt|health|medical|hospital|education|school|tuition|fees|insurance|sha|nhif|nssf)\b/i;
+
+      let topDiscretionary = null;
       let maxAmt = 0;
       for (const [catId, cat] of Object.entries(lastMonthByCategory)) {
-        if (cat.totalAmt > maxAmt) {
+        if (!essentialRegex.test(cat.name) && cat.totalAmt > maxAmt) {
           maxAmt = cat.totalAmt;
-          topCat = cat;
+          topDiscretionary = cat;
         }
       }
 
-      if (topCat && maxAmt > 0) {
+      if (topDiscretionary && maxAmt > 0) {
         insights.push({
           id: 'fresh-start',
           type: 'fresh-start',
           title: 'A fresh start',
-          description: `It's a new month! Last month, your largest expense was ${topCat.name} at ${currency} ${Math.round(toMajor(maxAmt)).toLocaleString()}. Could you find a small way to reduce that this month?`,
+          description: `It's a new month! Last month, your largest expense was ${topDiscretionary.name} at ${currency} ${Math.round(toMajor(maxAmt)).toLocaleString()}. Could you find a small way to reduce that this month?`,
+          severity: 'info',
+        });
+      } else {
+        insights.push({
+          id: 'fresh-start-soft',
+          type: 'fresh-start',
+          title: 'A fresh start',
+          description: `It's a new month! A great time to review your upcoming expenses and stay on top of your financial goals.`,
           severity: 'info',
         });
       }
