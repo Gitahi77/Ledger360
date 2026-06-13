@@ -8,7 +8,6 @@ import { revalidatePath } from 'next/cache';
 const AccountSchema = z.object({
   name: z.string().min(1).max(100),
   type: z.enum(['mobile_money', 'bank', 'cash', 'credit_card', 'savings', 'investment']),
-  currency: z.string().length(3).optional(),
   openingMinor: z.number().int().default(0),
   archived: z.boolean().optional(),
 });
@@ -71,7 +70,7 @@ export async function createAccount(data: z.infer<typeof AccountSchema>) {
     const account = await tx.account.create({
       data: {
         ...valid,
-        currency: valid.currency || user.currency || 'KES',
+        currency: user.currency || 'KES',
         userId: user.id,
       },
     });

@@ -238,7 +238,7 @@ model AuditLog {
 model Transfer {
   id              String   @id @default(cuid())
   userId          String
-  fromAccountId   String
+  fromAccountId   String?
   toAccountId     String?
   amountMinor     Int
   currency        String
@@ -253,7 +253,7 @@ model Transfer {
   createdAt       DateTime @default(now())
 
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  fromAccount Account  @relation("TransferFrom", fields: [fromAccountId], references: [id], onDelete: Restrict)
+  fromAccount Account? @relation("TransferFrom", fields: [fromAccountId], references: [id], onDelete: Restrict)
   toAccount   Account? @relation("TransferTo", fields: [toAccountId], references: [id], onDelete: Restrict)
   goal        Goal?    @relation(fields: [goalId], references: [id], onDelete: SetNull)
   loan        Loan?    @relation(fields: [loanId], references: [id], onDelete: SetNull)

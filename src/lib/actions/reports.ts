@@ -53,6 +53,7 @@ export async function getMonthlyTrend() {
     FROM "Transfer"
     WHERE "userId" = ${user.id}
       AND "loanId" IS NOT NULL
+      AND "toAccountId" IS NULL
       AND date >= ${start} AND date <= ${end}
     GROUP BY yr, mo
   `;
@@ -126,11 +127,11 @@ export async function getReportSummary(period: string) {
       select: { baseAmountMinor: true },
     }),
     prisma.transfer.findMany({
-      where: { userId: user.id, date: { gte: from, lte: to }, loanId: { not: null } },
+      where: { userId: user.id, date: { gte: from, lte: to }, loanId: { not: null }, toAccountId: null },
       select: { baseAmountMinor: true, interestMinor: true },
     }),
     prisma.transfer.findMany({
-      where: { userId: user.id, date: { gte: prevFrom, lte: prevTo }, loanId: { not: null } },
+      where: { userId: user.id, date: { gte: prevFrom, lte: prevTo }, loanId: { not: null }, toAccountId: null },
       select: { baseAmountMinor: true, interestMinor: true },
     }),
   ]);

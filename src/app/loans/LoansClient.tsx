@@ -39,7 +39,7 @@ function loanStyle(l: Loan) {
 }
 
 /* ── Add Loan Modal ───────────────────────────────────────── */
-function LoanModal({ loan, onClose, currency }: { loan?: Loan; onClose: () => void; currency: string }) {
+function LoanModal({ loan, accounts, onClose, currency }: { loan?: Loan; accounts: {id: string, name: string}[]; onClose: () => void; currency: string }) {
   const router     = useRouter();
   const [, startT] = useTransition();
   const [loading, setLoading] = useState(false);
@@ -53,6 +53,8 @@ function LoanModal({ loan, onClose, currency }: { loan?: Loan; onClose: () => vo
   const [rate,       setRate]       = useState(loan ? String(loan.annualRate) : '');
   const [monthly,    setMonthly]    = useState(loan ? String(toMajor(loan.monthlyPaymentMinor)) : '');
   const [nextDue,    setNextDue]    = useState(loan?.nextDue ? new Date(loan.nextDue).toISOString().slice(0, 10) : '');
+  const [disbursementType, setDisbursementType] = useState<'existing_debt' | 'received_funds'>('existing_debt');
+  const [disbursementAccountId, setDisbursementAccountId] = useState(accounts[0]?.id || '');
   const isEdit = Boolean(loan);
 
   const LOAN_TYPES = ['personal','mortgage','car','student','business','credit card','other'];
@@ -78,6 +80,8 @@ function LoanModal({ loan, onClose, currency }: { loan?: Loan; onClose: () => vo
           annualRate:  parseFloat(rate),
           monthlyPaymentMinor:  toMinor(parseFloat(monthly)),
           nextDue,
+          disbursementType,
+          disbursementAccountId: disbursementType === 'received_funds' ? disbursementAccountId : undefined,
         });
       }
       startT(() => router.refresh());
@@ -147,6 +151,32 @@ function LoanModal({ loan, onClose, currency }: { loan?: Loan; onClose: () => vo
                 type="date" value={nextDue} onChange={e => setNextDue(e.target.value)} required />
             </div>
           </div>
+
+          {!isEdit && (
+            <div style={{ marginTop: '0.5rem', background: 'var(--bg-app)', padding: '0.875rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
+              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.5rem' }}>Disbursement Details</label>
+              <div className="segmented-control" style={{ width:'100%', marginBottom: disbursementType === 'received_funds' ? '0.75rem' : '0' }}>
+                <button type="button" onClick={() => setDisbursementType('existing_debt')}
+                  className={`segmented-btn ${disbursementType === 'existing_debt' ? 'active' : ''}`} style={{ flex:1, fontSize:'0.75rem', justifyContent:'center' }}>
+                  Existing Debt
+                </button>
+                <button type="button" onClick={() => setDisbursementType('received_funds')}
+                  className={`segmented-btn ${disbursementType === 'received_funds' ? 'active' : ''}`} style={{ flex:1, fontSize:'0.75rem', justifyContent:'center' }}>
+                  Funds Received
+                </button>
+              </div>
+              
+              {disbursementType === 'received_funds' && (
+                <div className="animate-in fade-in slide-in-from-top-2" style={{ marginTop: '0.5rem' }}>
+                  <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Receiving Account</label>
+                  <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
+                    value={disbursementAccountId} onChange={e => setDisbursementAccountId(e.target.value)} required>
+                    {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                  </select>
+                </div>
+              )}
+            </div>
+          )}
 
           <button type="submit" disabled={loading} className="btn btn-primary" style={{ width:'100%', justifyContent:'center', padding:'0.7rem', marginTop:'0.25rem' }}>
             {loading ? <><Loader2 size={14} style={{ animation:'spin 1s linear infinite' }}/> Saving…</> : (isEdit ? 'Save Changes' : 'Add Loan')}
@@ -236,7 +266,7 @@ function ExpandedForecast({ loan, monthsLeft, totalInterest, currency }: { loan:
 
 
 /* ── Main Client Component ────────────────────────────────── */
-export function LoansClient({ loans, currency, categories = [] }: { loans: Loan[], currency: string, categories?: { id: string; name: string }[] }) {
+export function LoansClient({ loans, currency, categories = [], accounts = [] }: { loans: Loan[], currency: string, categories?: { id: string; name: string }[], accounts?: {id: string, name: string}[] }) {
   const router     = useRouter();
   const [, startT] = useTransition();
   const [showAdd,     setShowAdd]     = useState(false);
@@ -263,8 +293,8 @@ export function LoansClient({ loans, currency, categories = [] }: { loans: Loan[
 
   return (
     <>
-      {showAdd    && <LoanModal onClose={() => setShowAdd(false)} currency={currency} />}
-      {editLoanObj && <LoanModal loan={editLoanObj} onClose={() => setEditLoanObj(null)} currency={currency} />}
+      {showAdd    && <LoanModal accounts={accounts} onClose={() => setShowAdd(false)} currency={currency} />}
+      {editLoanObj && <LoanModal loan={editLoanObj} accounts={accounts} onClose={() => setEditLoanObj(null)} currency={currency} />}
 
       {/* Toolbar */}
       <div className="flex items-center justify-between mb-5 animate-in flex-wrap gap-3">

@@ -75,6 +75,8 @@ export const AddLoanSchema = z.object({
   annualRate:  z.number().min(0).max(100),
   monthlyPaymentMinor:  kes('Monthly payment'),
   nextDue:     z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Next due date must be YYYY-MM-DD'),
+  disbursementType: z.enum(['existing_debt', 'received_funds']).optional(),
+  disbursementAccountId: z.string().optional(),
 });
 export type AddLoanInput = z.infer<typeof AddLoanSchema>;
 
@@ -89,6 +91,6 @@ export type AddAssetInput = z.infer<typeof AddAssetSchema>;
 /* ── Profile ──────────────────────────────────────────────── */
 export const UpdateProfileSchema = z.object({
   name:        z.string().min(1, 'Name is required').max(80),
-  currency:    z.enum(['KES', 'USD', 'EUR', 'GBP', 'UGX', 'TZS']),
+  currency:    z.enum(['KES']),
   accountType: z.enum(['individual', 'freelancer', 'small_business']),
 });

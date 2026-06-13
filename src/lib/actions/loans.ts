@@ -12,7 +12,10 @@ export async function getLoansForUser(userId: string) {
   const loans: (Loan & { transfers: { baseAmountMinor: number; interestMinor: number }[] })[] = await prisma.loan.findMany({
     where:   { userId: userId },
     include: {
-      transfers: { select: { baseAmountMinor: true, interestMinor: true } }
+      transfers: { 
+        where: { toAccountId: null },
+        select: { baseAmountMinor: true, interestMinor: true } 
+      }
     },
     orderBy: { annualRate: 'desc' },
   });
@@ -40,19 +43,43 @@ export async function addLoan(raw: {
   name: string; lender: string; type: string;
   originalAmountMinor: number; balanceMinor: number;
   annualRate: number; monthlyPaymentMinor: number; nextDue: string;
+  disbursementType?: string; disbursementAccountId?: string;
 }) {
   const { AddLoanSchema } = await import('@/lib/validation');
   const data = AddLoanSchema.parse(raw);
   const user = await requireAuth();
-  await prisma.loan.create({
-    data: {
-      ...data,
-      userId: user.id,
-      nextDue: new Date(data.nextDue),
-      originalAmountMinor: data.originalAmountMinor,
-      balanceMinor: data.balanceMinor,
-      monthlyPaymentMinor: data.monthlyPaymentMinor,
-    },
+  
+  await prisma.$transaction(async (tx) => {
+    const loan = await tx.loan.create({
+      data: {
+        name: data.name,
+        lender: data.lender,
+        type: data.type,
+        userId: user.id,
+        nextDue: new Date(data.nextDue),
+        originalAmountMinor: data.originalAmountMinor,
+        balanceMinor: data.balanceMinor,
+        monthlyPaymentMinor: data.monthlyPaymentMinor,
+        annualRate: data.annualRate,
+      },
+    });
+
+    if (data.disbursementType === 'received_funds' && data.disbursementAccountId) {
+      await tx.transfer.create({
+        data: {
+          userId: user.id,
+          fromAccountId: null,
+          toAccountId: data.disbursementAccountId,
+          amountMinor: data.balanceMinor,
+          currency: user.currency || 'KES',
+          baseAmountMinor: data.balanceMinor,
+          fxRate: 1,
+          date: new Date(),
+          source: 'loan_disbursement',
+          loanId: loan.id,
+        }
+      });
+    }
   });
   revalidatePath('/loans');
   revalidatePath('/');

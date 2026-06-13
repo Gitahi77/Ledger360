@@ -362,11 +362,7 @@ export function SettingsClient({
               </select>
             </Field>
             <Field label="Currency">
-              <select style={{ ...inputStyle, cursor:'pointer' }} value={currency} onChange={e => setCurrency(e.target.value)}>
-                {CURRENCIES.map(c => (
-                  <option key={c.code} value={c.code}>{c.code} — {c.name}</option>
-                ))}
-              </select>
+              <input style={{ ...inputStyle, opacity:0.7, cursor:'not-allowed' }} type="text" value="KES" disabled title="Base currency is locked to KES for now" />
             </Field>
             <SaveRow {...profileState} />
           </form>
