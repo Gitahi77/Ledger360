@@ -6,6 +6,8 @@ import { getUserPreferences } from '@/lib/actions/settings';
 import { requireAuth } from '@/lib/actions/_auth';
 import { prisma } from '@/lib/prisma';
 import { SettingsClient } from './SettingsClient';
+import { getSavingsPlan, getRecentAutoSaves } from '@/lib/actions/savings';
+import { getAccounts } from '@/lib/actions/accounts';
 
 export const metadata = {
   title: 'Settings — Ledger360',
@@ -15,7 +17,7 @@ export const metadata = {
 export default async function Settings() {
   const user = await requireAuth();
   
-  const [profile, prefs, logs] = await Promise.all([
+  const [profile, prefs, logs, savingsPlan, autoSaves, accounts, goals] = await Promise.all([
     getUserProfile(),
     getUserPreferences(),
     prisma.auditLog.findMany({
@@ -23,6 +25,10 @@ export default async function Settings() {
       orderBy: { createdAt: 'desc' },
       take: 25,
     }),
+    getSavingsPlan(),
+    getRecentAutoSaves(),
+    getAccounts(),
+    prisma.goal.findMany({ where: { userId: user.id }, select: { id: true, name: true } }),
   ]);
 
   return (
@@ -53,6 +59,13 @@ export default async function Settings() {
           metadata: l.metadata,
           createdAt: l.createdAt.toISOString()
         }))}
+        savingsPlan={savingsPlan}
+        autoSaves={autoSaves.map(s => ({
+          ...s,
+          date: s.date.toISOString(),
+        }))}
+        accounts={accounts.map(a => ({ id: a.id, name: a.name, type: a.type, currency: a.currency }))}
+        goals={goals}
       />
     </AppLayout>
   );

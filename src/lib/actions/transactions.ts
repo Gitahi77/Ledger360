@@ -207,9 +207,23 @@ export async function addTransaction(raw: {
     resource: 'Transaction',
     metadata: { txId: newTx.id, amount: data.baseAmountMinor, name: data.name },
   });
+
+  // WO-15: Save-More-Tomorrow auto-save trigger (design point 3, 5)
+  // Only fires for income; best-effort — failure never blocks the income.
+  let autoSaveWarning: string | null = null;
+  if (data.type === 'income') {
+    const { triggerAutoSave } = await import('@/lib/actions/savings');
+    autoSaveWarning = await triggerAutoSave(
+      user.id,
+      { id: newTx.id, baseAmountMinor: data.baseAmountMinor, date: new Date(data.date) },
+      user.currency || 'KES',
+    );
+  }
+
   revalidatePath('/transactions');
   revalidatePath('/');
-  return { warning };
+  const warnings = [warning, autoSaveWarning].filter(Boolean).join(' ');
+  return { warning: warnings || undefined };
 }
 
 /* ── Bulk import (Smart Upload) ───────────────────────────── */
@@ -282,6 +296,31 @@ export async function importTransactions(rows: {
     resource: 'Transactions',
     metadata: { rowCount: rows.length },
   });
+
+  // WO-15: Save-More-Tomorrow auto-save trigger for imported income rows.
+  // Each income row triggers independently; failures are best-effort.
+  const incomeRows = rows.filter(r => r.type === 'income');
+  if (incomeRows.length > 0) {
+    const { triggerAutoSave } = await import('@/lib/actions/savings');
+    // Fetch the created transactions to get their IDs for idempotency
+    const recentTxs = await prisma.transaction.findMany({
+      where: {
+        userId: user.id,
+        type: 'income',
+        importedAt: { not: null },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: incomeRows.length,
+      select: { id: true, baseAmountMinor: true, date: true },
+    });
+    for (const tx of recentTxs) {
+      await triggerAutoSave(
+        user.id,
+        { id: tx.id, baseAmountMinor: tx.baseAmountMinor, date: tx.date },
+        user.currency || 'KES',
+      );
+    }
+  }
 
   revalidatePath('/transactions');
   revalidatePath('/');

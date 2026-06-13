@@ -103,6 +103,7 @@ export async function exportUserData() {
 /* ── Delete all user financial data (keeps account) ─────── */
 export async function deleteAllUserData() {
   const user = await requireAuth();
+  await prisma.savingsPlan.deleteMany({ where: { userId: user.id } });
   await prisma.transfer.deleteMany({   where: { userId: user.id } });
   await prisma.transaction.deleteMany({ where: { userId: user.id } });
   await prisma.budget.deleteMany({     where: { userId: user.id } });

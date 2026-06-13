@@ -21,13 +21,15 @@ import {
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { CURRENCIES } from '@/lib/constants/currencies';
+import { SavingsAutomationSection } from './SavingsAutomationSection';
 
-type Section = 'profile' | 'appearance' | 'preferences' | 'notifications' | 'security' | 'data' | 'help';
+type Section = 'profile' | 'appearance' | 'preferences' | 'savings' | 'notifications' | 'security' | 'data' | 'help';
 
 const SECTIONS: { id: Section; label: string; Icon: React.ElementType; desc: string }[] = [
   { id: 'profile',       label: 'Profile',        Icon: User,        desc: 'Name, email, account type'     },
   { id: 'appearance',    label: 'Appearance',      Icon: Palette,     desc: 'Theme, accent color, display'  },
   { id: 'preferences',   label: 'Preferences',     Icon: Globe,       desc: 'Currency, date format'         },
+  { id: 'savings',       label: 'Save-More-Tomorrow', Icon: Globe,    desc: 'Auto-save automation (B-5)'    },
   { id: 'notifications', label: 'Notifications',   Icon: Bell,        desc: 'Alerts and reminders'          },
   { id: 'security',      label: 'Security & Activity', Icon: ShieldCheck, desc: 'Audit logs and sessions'   },
   { id: 'data',          label: 'Data & Privacy',  Icon: Database,    desc: 'Export, import, delete'        },
@@ -171,7 +173,7 @@ function AccordionPanel({ children }: { children: React.ReactNode }) {
 /* ── Main Settings Client ─────────────────────────────────── */
 export function SettingsClient({
   initialName, initialEmail, initialCurrency, initialAccountType,
-  initialPrefs, logs,
+  initialPrefs, logs, savingsPlan, autoSaves, accounts, goals,
 }: {
   initialName: string; initialEmail: string; initialCurrency: string; initialAccountType: string;
   initialPrefs: {
@@ -182,6 +184,10 @@ export function SettingsClient({
     expectedMonthlyIncomeMinor: number | null;
   } | null;
   logs: { id: string; action: string; resource: string; metadata: string | null; createdAt: string }[];
+  savingsPlan: any;
+  autoSaves: any[];
+  accounts: { id: string; name: string; type: string; currency: string }[];
+  goals: { id: string; name: string }[];
 }) {
   const router       = useRouter();
   const { update: updateSession } = useSession();
@@ -432,8 +438,22 @@ export function SettingsClient({
         </AccordionPanel>
       )}
 
+      {/* ── Save-More-Tomorrow (WO-15) ─────────────────────────── */}
+      <AccordionHeader section={SECTIONS[3]} isOpen={openSection === 'savings'} onClick={() => toggleSection('savings')} />
+      {openSection === 'savings' && (
+        <AccordionPanel>
+          <SavingsAutomationSection
+            plan={savingsPlan}
+            accounts={accounts}
+            goals={goals}
+            autoSaves={autoSaves}
+            currency={currency}
+          />
+        </AccordionPanel>
+      )}
+
       {/* ── Notifications ──────────────────────────────────────── */}
-      <AccordionHeader section={SECTIONS[3]} isOpen={openSection === 'notifications'} onClick={() => toggleSection('notifications')} />
+      <AccordionHeader section={SECTIONS[4]} isOpen={openSection === 'notifications'} onClick={() => toggleSection('notifications')} />
       {openSection === 'notifications' && (
         <AccordionPanel>
           <form onSubmit={handleSaveNotifs}>
@@ -653,7 +673,7 @@ export function SettingsClient({
       )}
 
       {/* ── Help & About ────────────────────────────────────────── */}
-      <AccordionHeader section={SECTIONS[5]} isOpen={openSection === 'help'} onClick={() => toggleSection('help')} />
+      <AccordionHeader section={SECTIONS[7]} isOpen={openSection === 'help'} onClick={() => toggleSection('help')} />
       {openSection === 'help' && (
         <AccordionPanel>
           <div style={{ display:'flex', flexDirection:'column', gap:'0.375rem', marginBottom:'1.25rem' }}>

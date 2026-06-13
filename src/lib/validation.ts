@@ -94,3 +94,21 @@ export const UpdateProfileSchema = z.object({
   currency:    z.enum(['KES']),
   accountType: z.enum(['individual', 'freelancer', 'small_business']),
 });
+
+/* ── Savings Plan (WO-15) ─────────────────────────────────── */
+export const UpsertSavingsPlanSchema = z.object({
+  fromAccountId: z.string().min(1, 'Source account is required'),
+  toAccountId:   z.string().min(1, 'Destination account is required'),
+  goalId:        z.string().optional().nullable(),
+  baseRatePct:   z.number().int().min(1).max(80),
+  escalationPct: z.number().int().min(0).max(20),
+  maxRatePct:    z.number().int().min(1).max(80),
+  active:        z.boolean(),
+}).refine(data => data.maxRatePct >= data.baseRatePct, {
+  message: 'Max rate must be ≥ base rate',
+  path: ['maxRatePct'],
+}).refine(data => data.fromAccountId !== data.toAccountId, {
+  message: 'Source and destination must be different accounts',
+  path: ['toAccountId'],
+});
+export type UpsertSavingsPlanInput = z.infer<typeof UpsertSavingsPlanSchema>;

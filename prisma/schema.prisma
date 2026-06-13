@@ -36,6 +36,7 @@ model User {
   auditLogs     AuditLog[]
   preferences   UserPreferences?
   transfers     Transfer[]
+  savingsPlan   SavingsPlan?
 }
 
 // ── User Preferences (persisted settings) ────────────────────
@@ -98,6 +99,8 @@ model Account {
   transactions Transaction[]
   transfersFrom Transfer[]   @relation("TransferFrom")
   transfersTo   Transfer[]   @relation("TransferTo")
+  savingsPlanFrom SavingsPlan[] @relation("SavingsPlanFrom")
+  savingsPlanTo   SavingsPlan[] @relation("SavingsPlanTo")
   createdAt    DateTime      @default(now())
 
   @@index([userId])
@@ -185,6 +188,7 @@ model Goal {
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime   @default(now())
   transfers Transfer[]
+  savingsPlans SavingsPlan[]
 }
 
 model Loan {
@@ -246,8 +250,9 @@ model Transfer {
   fxRate          Decimal  @db.Decimal(10, 6)
   date            DateTime
   note            String?
-  source          String   @default("MANUAL") // MANUAL, IMPORT, SYSTEM
+  source          String   @default("MANUAL") // MANUAL, IMPORT, SYSTEM, SAVE_MORE_TOMORROW
   goalId          String?
+  sourceTransactionId String? @unique          // WO-15: idempotency — links auto-save to the income that triggered it
   loanId          String?
   interestMinor   Int      @default(0)
   createdAt       DateTime @default(now())
@@ -261,4 +266,25 @@ model Transfer {
   @@index([userId, date])
   @@index([fromAccountId])
   @@index([toAccountId])
+}
+
+// ── SavingsPlan: Save-More-Tomorrow commitment device (B-5, WO-15) ──
+model SavingsPlan {
+  id             String   @id @default(cuid())
+  userId         String   @unique              // one plan per user
+  fromAccountId  String                        // source (e.g. M-Pesa, salary account)
+  toAccountId    String                        // destination — must be savings/investment type, OR goalId must be set
+  goalId         String?                       // optional: auto-save funds this goal
+  baseRatePct    Int      @default(10)         // initial rate (seeded from UserPreferences.savingRate)
+  escalationPct  Int      @default(1)          // bump per period (percentage points)
+  maxRatePct     Int      @default(30)         // ceiling
+  currentRatePct Int      @default(10)         // active rate (seeded from UserPreferences.savingRate)
+  nextEscalation DateTime                      // when the next bump happens
+  active         Boolean  @default(true)       // pause toggle
+  createdAt      DateTime @default(now())
+
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fromAccount Account @relation("SavingsPlanFrom", fields: [fromAccountId], references: [id], onDelete: Restrict)
+  toAccount   Account @relation("SavingsPlanTo", fields: [toAccountId], references: [id], onDelete: Restrict)
+  goal        Goal?   @relation(fields: [goalId], references: [id], onDelete: SetNull)
 }

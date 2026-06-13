@@ -1,0 +1,292 @@
+// src/lib/actions/savings.ts
+// Save-More-Tomorrow commitment device (B-5, WO-15).
+// Manages SavingsPlan CRUD, lazy rate escalation, and auto-save trigger.
+// Every auto-save is a Transfer with source='SAVE_MORE_TOMORROW' —
+// transparent and reversible (B-0). In-app modelling only.
+'use server';
+
+import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/actions/_auth';
+import { revalidatePath } from 'next/cache';
+import { logActivity } from '@/lib/audit';
+import { UpsertSavingsPlanSchema, UpsertSavingsPlanInput } from '@/lib/validation';
+
+/* ── Lazy escalation (no cron — B-5, design point 6) ──────── */
+// Advances nextEscalation in a loop until it is in the future,
+// bumping currentRatePct by escalationPct each elapsed period,
+// capped at maxRatePct.
+function advanceEscalation(plan: {
+  currentRatePct: number;
+  escalationPct: number;
+  maxRatePct: number;
+  nextEscalation: Date;
+}): { currentRatePct: number; nextEscalation: Date; changed: boolean } {
+  let rate = plan.currentRatePct;
+  const next = new Date(plan.nextEscalation);
+  const now = new Date();
+  let changed = false;
+
+  while (next <= now) {
+    rate = Math.min(rate + plan.escalationPct, plan.maxRatePct);
+    next.setMonth(next.getMonth() + 1);
+    changed = true;
+  }
+
+  return { currentRatePct: rate, nextEscalation: next, changed };
+}
+
+/* ── Get plan (with lazy escalation applied) ──────────────── */
+export async function getSavingsPlan() {
+  const user = await requireAuth();
+
+  const plan = await prisma.savingsPlan.findUnique({
+    where: { userId: user.id },
+    include: {
+      fromAccount: { select: { id: true, name: true, type: true, currency: true } },
+      toAccount:   { select: { id: true, name: true, type: true, currency: true } },
+      goal:        { select: { id: true, name: true } },
+    },
+  });
+
+  if (!plan) return null;
+
+  // Lazy escalation: advance rate if nextEscalation is past
+  const esc = advanceEscalation(plan);
+  if (esc.changed) {
+    await prisma.savingsPlan.updateMany({
+      where: { id: plan.id, userId: user.id },
+      data: { currentRatePct: esc.currentRatePct, nextEscalation: esc.nextEscalation },
+    });
+    return { ...plan, currentRatePct: esc.currentRatePct, nextEscalation: esc.nextEscalation };
+  }
+
+  return plan;
+}
+
+/* ── Upsert plan ──────────────────────────────────────────── */
+export async function upsertSavingsPlan(raw: UpsertSavingsPlanInput) {
+  const data = UpsertSavingsPlanSchema.parse(raw);
+  const user = await requireAuth();
+
+  // Validate accounts belong to user
+  const [fromAccount, toAccount] = await Promise.all([
+    prisma.account.findFirst({ where: { id: data.fromAccountId, userId: user.id } }),
+    prisma.account.findFirst({ where: { id: data.toAccountId, userId: user.id } }),
+  ]);
+  if (!fromAccount) throw new Error('Please choose a valid source account.');
+  if (!toAccount) throw new Error('Please choose a valid destination account.');
+
+  // Destination enforcement (design point 2):
+  // toAccount must be savings/investment OR goalId must be set
+  const isSavingsAccount = toAccount.type === 'savings' || toAccount.type === 'investment';
+  if (!isSavingsAccount && !data.goalId) {
+    throw new Error(
+      'The destination must be a savings or investment account, or you must select a goal.'
+    );
+  }
+
+  // Validate goal belongs to user if provided
+  if (data.goalId) {
+    const goal = await prisma.goal.findFirst({ where: { id: data.goalId, userId: user.id } });
+    if (!goal) throw new Error('Please choose a valid goal.');
+  }
+
+  // Seed currentRatePct from UserPreferences.savingRate on first create
+  const existing = await prisma.savingsPlan.findUnique({ where: { userId: user.id } });
+
+  if (existing) {
+    // Update existing plan
+    const { count } = await prisma.savingsPlan.updateMany({
+      where: { id: existing.id, userId: user.id },
+      data: {
+        fromAccountId:  data.fromAccountId,
+        toAccountId:    data.toAccountId,
+        goalId:         data.goalId || null,
+        baseRatePct:    data.baseRatePct,
+        escalationPct:  data.escalationPct,
+        maxRatePct:     data.maxRatePct,
+        active:         data.active,
+        // Don't touch currentRatePct or nextEscalation on update
+      },
+    });
+    if (count === 0) throw new Error('Plan not found or unauthorized');
+  } else {
+    // Create new plan — seed currentRatePct from UserPreferences.savingRate
+    const prefs = await prisma.userPreferences.findUnique({ where: { userId: user.id } });
+    const seedRate = prefs?.savingRate ?? data.baseRatePct;
+
+    const nextEsc = new Date();
+    nextEsc.setMonth(nextEsc.getMonth() + 1);
+
+    await prisma.savingsPlan.create({
+      data: {
+        userId:         user.id,
+        fromAccountId:  data.fromAccountId,
+        toAccountId:    data.toAccountId,
+        goalId:         data.goalId || null,
+        baseRatePct:    data.baseRatePct,
+        escalationPct:  data.escalationPct,
+        maxRatePct:     data.maxRatePct,
+        currentRatePct: Math.min(seedRate, data.maxRatePct),
+        nextEscalation: nextEsc,
+        active:         data.active,
+      },
+    });
+  }
+
+  await logActivity({
+    userId: user.id,
+    action: existing ? 'UPDATE' : 'CREATE',
+    resource: 'SavingsPlan',
+  });
+
+  revalidatePath('/settings');
+  revalidatePath('/');
+}
+
+/* ── Toggle active ────────────────────────────────────────── */
+export async function toggleSavingsPlan(active: boolean) {
+  const user = await requireAuth();
+  const { count } = await prisma.savingsPlan.updateMany({
+    where: { userId: user.id },
+    data: { active },
+  });
+  if (count === 0) throw new Error('No savings plan found.');
+
+  await logActivity({
+    userId: user.id,
+    action: 'UPDATE',
+    resource: 'SavingsPlan',
+    metadata: { active },
+  });
+
+  revalidatePath('/settings');
+}
+
+/* ── Get recent auto-saves for UI ─────────────────────────── */
+export async function getRecentAutoSaves() {
+  const user = await requireAuth();
+  return prisma.transfer.findMany({
+    where: { userId: user.id, source: 'SAVE_MORE_TOMORROW' },
+    include: {
+      fromAccount: { select: { name: true, currency: true } },
+      toAccount:   { select: { name: true, currency: true } },
+    },
+    orderBy: { date: 'desc' },
+    take: 20,
+  });
+}
+
+/* ── Delete plan ──────────────────────────────────────────── */
+export async function deleteSavingsPlan() {
+  const user = await requireAuth();
+  const { count } = await prisma.savingsPlan.deleteMany({
+    where: { userId: user.id },
+  });
+  if (count === 0) throw new Error('No savings plan found.');
+
+  await logActivity({
+    userId: user.id,
+    action: 'DELETE',
+    resource: 'SavingsPlan',
+  });
+
+  revalidatePath('/settings');
+  revalidatePath('/');
+}
+
+/* ── Auto-save trigger (called from addTransaction / importTransactions) ── */
+// Design point 3: self-contained prisma.transfer.create (like loan disbursement).
+// Design point 4: idempotency via unique sourceTransactionId.
+// Design point 5: failure isolation — never throws; returns warning string or null.
+// Design point 6: lazy escalation applied before computing amount.
+// REQUIRED ADDITION: only fires when income date >= plan.createdAt.
+// SAFETY: skips if source account has insufficient funds.
+export async function triggerAutoSave(
+  userId: string,
+  incomeTransaction: { id: string; baseAmountMinor: number; date: Date },
+  userCurrency: string,
+): Promise<string | null> {
+  try {
+    // 1. Get the plan
+    const plan = await prisma.savingsPlan.findUnique({
+      where: { userId },
+      include: {
+        fromAccount: { select: { id: true, type: true, currency: true } },
+      },
+    });
+
+    // Guard: no plan, or inactive
+    if (!plan || !plan.active) return null;
+
+    // Guard: income date must be on/after plan.createdAt (prevents retroactive auto-saves)
+    const incomeDate = new Date(incomeTransaction.date);
+    if (incomeDate < plan.createdAt) return null;
+
+    // 2. Lazy escalation
+    const esc = advanceEscalation(plan);
+    if (esc.changed) {
+      await prisma.savingsPlan.updateMany({
+        where: { id: plan.id, userId },
+        data: { currentRatePct: esc.currentRatePct, nextEscalation: esc.nextEscalation },
+      });
+    }
+
+    // 3. Compute amount
+    const rate = esc.currentRatePct;
+    const autoSaveMinor = Math.round(incomeTransaction.baseAmountMinor * rate / 100);
+    if (autoSaveMinor <= 0) return null;
+
+    // 4. Balance check — skip if insufficient funds (SAFETY)
+    const { getAccountBalances } = await import('@/lib/actions/accounts');
+    const balances = await getAccountBalances(userId);
+    const sourceAcc = balances.find(a => a.id === plan.fromAccountId);
+    if (sourceAcc && sourceAcc.type !== 'credit_card' && sourceAcc.balanceMinor < autoSaveMinor) {
+      return `Auto-save skipped: not enough funds in ${sourceAcc.name ?? 'source account'} (available: ${sourceAcc.currency} ${(sourceAcc.balanceMinor / 100).toFixed(2)}, needed: ${(autoSaveMinor / 100).toFixed(2)}).`;
+    }
+
+    // 5. Create the transfer (self-contained, idempotent via unique sourceTransactionId)
+    const currency = plan.fromAccount?.currency || userCurrency || 'KES';
+    await prisma.transfer.create({
+      data: {
+        userId,
+        fromAccountId:       plan.fromAccountId,
+        toAccountId:         plan.toAccountId,
+        amountMinor:         autoSaveMinor,
+        currency,
+        baseAmountMinor:     autoSaveMinor,
+        fxRate:              1,
+        date:                incomeDate,
+        source:              'SAVE_MORE_TOMORROW',
+        goalId:              plan.goalId || null,
+        loanId:              null,
+        sourceTransactionId: incomeTransaction.id, // idempotency key
+      },
+    });
+
+    await logActivity({
+      userId,
+      action: 'CREATE',
+      resource: 'Transfer',
+      metadata: {
+        source: 'SAVE_MORE_TOMORROW',
+        amount: autoSaveMinor,
+        rate,
+        triggeredBy: incomeTransaction.id,
+      },
+    });
+
+    return null; // success, no warning
+  } catch (err: unknown) {
+    // Design point 4 — idempotency: unique constraint violation = already saved
+    const message = err instanceof Error ? err.message : String(err);
+    if (message.includes('Unique constraint') && message.includes('sourceTransactionId')) {
+      // Already created — idempotent, no error
+      return null;
+    }
+
+    // Design point 5 — failure isolation: log and return warning, never throw
+    console.error('[SaveMoreTomorrow] Auto-save failed (non-blocking):', message);
+    return `Auto-save failed: ${message}`;
+  }
+}
