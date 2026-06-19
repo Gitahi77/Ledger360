@@ -189,7 +189,10 @@ export async function addTransaction(raw: {
 
   // Find a default account if not provided
   let accountId = data.accountId;
-  if (!accountId) {
+  if (accountId) {
+    const acc = await prisma.account.findFirst({ where: { id: accountId, userId: user.id } });
+    if (!acc) throw new Error('Target account not found or access denied.');
+  } else {
     const firstAccount = await prisma.account.findFirst({ where: { userId: user.id }, orderBy: { createdAt: 'asc' }});
     if (firstAccount) accountId = firstAccount.id;
     else {
@@ -388,6 +391,16 @@ export async function editTransaction(id: string, data: {
   const newType = data.type ?? oldTx.type;
   const newAmount = data.baseAmountMinor ?? oldTx.baseAmountMinor;
   const newAccountId = data.accountId ?? oldTx.accountId;
+
+  if (newAccountId !== oldTx.accountId) {
+    const acc = await prisma.account.findFirst({ where: { id: newAccountId, userId: user.id } });
+    if (!acc) throw new Error('Target account not found or access denied.');
+  }
+
+  if (data.categoryId && data.categoryId !== oldTx.categoryId) {
+    const cat = await prisma.category.findFirst({ where: { id: data.categoryId, userId: user.id } });
+    if (!cat) throw new Error('Category not found or access denied.');
+  }
 
   let warning: string | undefined;
 
