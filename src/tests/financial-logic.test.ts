@@ -456,7 +456,7 @@ describe('Financial Logic and Validations', () => {
       // With our fix, the SQL query "EXTRACT(MONTH FROM date AT TIME ZONE 'Africa/Nairobi')"
       // will evaluate this to month 2 (February) instead of 1 (January).
       // We mock the SQL response that represents this CORRECT evaluation:
-      vi.mocked(prisma.$queryRaw).mockResolvedValue([
+      vi.mocked(prisma.$queryRaw as any).mockResolvedValue([
         { yr: 2024, mo: 2, type: 'income', total: 1000 }
       ]);
 
@@ -476,7 +476,7 @@ describe('Financial Logic and Validations', () => {
       // Simulate the same month-edge transaction for getMonthlyTrend.
       // getMonthlyTrend runs 3 queries (income/expense, savings, debt).
       // We'll mock all three to return the same simulated February bucket.
-      vi.mocked(prisma.$queryRaw).mockImplementation(async (...args: any[]) => {
+      vi.mocked(prisma.$queryRaw as any).mockImplementation(async (...args: any[]) => {
         const sql = JSON.stringify(args);
         if (sql.includes('savings')) {
           return [{ yr: 2024, mo: 2, type: 'savings', total: 500 }];
