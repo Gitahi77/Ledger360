@@ -114,13 +114,13 @@ function LoanModal({ loan, accounts, onClose, currency }: { loan?: Loan; account
         </div>
         {error && <div style={{ padding:'0.625rem', borderRadius:7, background:'var(--danger-light)', color:'var(--danger)', fontSize:'0.8rem', marginBottom:'1rem' }}>{error}</div>}
         <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:'0.875rem' }}>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(180px, 1fr))', gap:'0.75rem' }}>
-            <div>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:'0.75rem' }}>
+            <div style={{ flex: '1 1 180px' }}>
               <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Loan Name</label>
               <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                 value={name} onChange={e => setName(e.target.value)} required placeholder="e.g. KCB Personal Loan" />
             </div>
-            <div>
+            <div style={{ flex: '1 1 180px' }}>
               <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Lender</label>
               <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                 value={lender} onChange={e => setLender(e.target.value)} required placeholder="e.g. KCB Bank" />
@@ -135,31 +135,31 @@ function LoanModal({ loan, accounts, onClose, currency }: { loan?: Loan; account
             </select>
           </div>
 
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(180px, 1fr))', gap:'0.75rem' }}>
-            <div>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:'0.75rem' }}>
+            <div style={{ flex: '1 1 180px' }}>
               <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Original Amount ({currency})</label>
               <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                 type="number" min="1" step="1" value={origAmt} onChange={e => setOrigAmt(e.target.value)} required placeholder="500000" />
             </div>
-            <div>
+            <div style={{ flex: '1 1 180px' }}>
               <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Current Balance ({currency})</label>
               <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                 type="number" min="0" step="1" value={balance} onChange={e => setBalance(e.target.value)} placeholder="Leave blank = same as original" />
             </div>
           </div>
 
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(130px, 1fr))', gap:'0.75rem' }}>
-            <div>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:'0.75rem' }}>
+            <div style={{ flex: '1 1 180px' }}>
               <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Annual Rate (%)</label>
               <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                 type="number" min="0" step="0.1" value={rate} onChange={e => setRate(e.target.value)} required placeholder="14.5" />
             </div>
-            <div>
+            <div style={{ flex: '1 1 180px' }}>
               <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Monthly Payment</label>
               <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                 type="number" min="1" step="1" value={monthly} onChange={e => setMonthly(e.target.value)} required placeholder="15000" />
             </div>
-            <div>
+            <div style={{ flex: '1 1 180px' }}>
               <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Next Due Date</label>
               <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                 type="date" value={nextDue} onChange={e => setNextDue(e.target.value)} required />
@@ -192,7 +192,7 @@ function LoanModal({ loan, accounts, onClose, currency }: { loan?: Loan; account
             </div>
           )}
 
-          <button type="submit" disabled={loading} className="btn btn-primary" style={{ width:'100%', justifyContent:'center', padding:'0.7rem', marginTop:'0.25rem' }}>
+          <button type="submit" disabled={loading} className="btn btn-primary" style={{ width:'100%', justifyContent:'center', padding:'1.25rem', marginTop:'0.25rem' }}>
             {loading ? <><Loader2 size={14} style={{ animation:'spin 1s linear infinite' }}/> Saving…</> : (isEdit ? 'Save Changes' : 'Add Loan')}
           </button>
         </form>
@@ -229,7 +229,7 @@ function ExpandedForecast({ loan, monthsLeft, totalInterest, currency }: { loan:
       <div style={{ fontSize:'0.72rem', fontWeight:700, color:'var(--text-secondary)', marginBottom:'0.75rem', textTransform:'uppercase', letterSpacing:'0.06em' }}>Repayment Forecast</div>
 
       {/* Base forecast */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(120px, 1fr))', gap:'0.75rem', marginBottom:'1rem' }}>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(150px, 1fr))', gap:'0.75rem', marginBottom:'1rem' }}>
         {[
           { label:'Months Left',    value: isFinite(monthsLeft) ? `~${monthsLeft}` : '⚠ Check payment', sub:'at current pace' },
           { label:'Total Interest', value: fmtAdaptive(totalInterest, currency), sub:'estimated remaining' },
@@ -259,7 +259,7 @@ function ExpandedForecast({ loan, monthsLeft, totalInterest, currency }: { loan:
           <span style={{ fontSize:'0.8rem', color:'var(--text-secondary)', whiteSpace:'nowrap' }}>per month</span>
         </div>
         {extraPayment > 0 && isFinite(newMonths) && (
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(100px, 1fr))', gap:'0.5rem' }}>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(150px, 1fr))', gap:'0.5rem' }}>
             {[
               { label:'New payoff', value: payoffDate(newMonths), color:'var(--success)' },
               { label:'Months saved', value:`${monthsSaved} mo`, color:'var(--success)' },
@@ -438,7 +438,7 @@ export function LoansClient({ loans, currency, categories = [], accounts = [] }:
                 </div>
 
                 <div className="flex items-center justify-between flex-wrap gap-2">
-                  <div style={{ display:'flex', gap:'1rem', flexWrap:'wrap' }}>
+                  <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(150px, 1fr))', gap:'1rem', flexWrap:'wrap', flex:'1 1 100%' }}>
                     <div>
                       <div style={{ fontSize:'0.65rem', color:'var(--text-muted)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em' }}>Monthly</div>
                       <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, fontSize:'0.85rem', color:'var(--text-primary)', whiteSpace:'nowrap' }}>{fmtAdaptive(l.monthlyPaymentMinor, currency)}</div>

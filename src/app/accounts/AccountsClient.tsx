@@ -218,7 +218,7 @@ export function AccountsClient({ accounts, currency }: { accounts: Account[], cu
                 </p>
               </div>
 
-              <button type="submit" disabled={loading} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '1rem', marginTop: '0.5rem' }}>
+              <button type="submit" disabled={loading} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '1.25rem', marginTop: '0.5rem' }}>
                 {loading ? <Loader2 size={16} className="animate-spin" /> : 'Save Account'}
               </button>
             </form>

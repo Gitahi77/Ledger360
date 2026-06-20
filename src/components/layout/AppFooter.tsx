@@ -13,10 +13,6 @@ export function AppFooter() {
       </span>
       <span className="app-footer-sep" aria-hidden="true">·</span>
       <span className="app-footer-rights">All rights reserved</span>
-      <span className="app-footer-sep" aria-hidden="true">·</span>
-      <a href="/privacy" style={{ color: 'inherit', textDecoration: 'none' }}>Privacy Policy</a>
-      <span className="app-footer-sep" aria-hidden="true">·</span>
-      <a href="/tos" style={{ color: 'inherit', textDecoration: 'none' }}>Terms of Service</a>
     </footer>
   );
 }

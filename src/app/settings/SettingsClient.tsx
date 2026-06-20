@@ -65,11 +65,11 @@ function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (
       disabled={disabled}
       aria-pressed={checked}
       style={{
-        width: 60, height: 48,
+        width: 64, height: 52,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         background: 'transparent', border: 'none',
         cursor: disabled ? 'not-allowed' : 'pointer',
-        padding: '0.5rem',
+        padding: '0.75rem',
       }}
     >
       <div style={{

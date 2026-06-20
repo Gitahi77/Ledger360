@@ -143,24 +143,24 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
               </button>
             ))}
           </div>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(180px, 1fr))', gap:'0.75rem' }}>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:'0.75rem' }}>
             {type !== 'transfer' && (
-              <div>
+              <div style={{ flex: '1 1 180px' }}>
                 <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Description</label>
                 <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                   value={name} onChange={e => setName(e.target.value)} required placeholder="e.g. Naivas Grocery" />
               </div>
             )}
-            <div style={{ gridColumn: type === 'transfer' ? '1 / -1' : 'auto' }}>
+            <div style={{ flex: type === 'transfer' ? '1 1 100%' : '1 1 180px' }}>
               <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Amount ({currency})</label>
               <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                 type="number" inputMode="decimal" min="1" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} required placeholder="0.00" />
             </div>
           </div>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(180px, 1fr))', gap:'0.75rem' }}>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:'0.75rem' }}>
             {type !== 'transfer' ? (
               <>
-                <div>
+                <div style={{ flex: '1 1 180px' }}>
                   <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Category</label>
                   <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                     value={categoryId} onChange={e => setCategoryId(e.target.value)} required>
@@ -171,7 +171,7 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
                     )}
                   </select>
                 </div>
-                <div>
+                <div style={{ flex: '1 1 180px' }}>
                   <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Account</label>
                   <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                     value={accountId} onChange={e => setAccountId(e.target.value)} required>
@@ -182,7 +182,7 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
               </>
             ) : (
               <>
-                <div>
+                <div style={{ flex: '1 1 180px' }}>
                   <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>From Account</label>
                   <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                     value={accountId} onChange={e => setAccountId(e.target.value)} required>
@@ -191,7 +191,7 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
                   </select>
                 </div>
                 {!loanId && (
-                  <div>
+                  <div style={{ flex: '1 1 180px' }}>
                     <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>To Account</label>
                     <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                       value={toAccountId} onChange={e => setToAccountId(e.target.value)} required>
@@ -201,7 +201,7 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
                   </div>
                 )}
                 {goals.length > 0 && !loanId && (
-                  <div>
+                  <div style={{ flex: '1 1 180px' }}>
                     <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Goal to Fund (Optional)</label>
                     <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                       value={goalId} onChange={e => setGoalId(e.target.value)}>
@@ -211,7 +211,7 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
                   </div>
                 )}
                 {loans.length > 0 && !goalId && (
-                  <div>
+                  <div style={{ flex: '1 1 180px' }}>
                     <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Loan to Repay (Optional)</label>
                     <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                       value={loanId} onChange={e => setLoanId(e.target.value)}>
@@ -240,7 +240,7 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
             <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
               value={note} onChange={e => setNote(e.target.value)} placeholder="e.g. May salary" />
           </div>
-          <button type="submit" disabled={loading} className="btn btn-primary" style={{ width:'100%', justifyContent:'center', padding:'1rem', marginTop:'0.25rem' }}>
+          <button type="submit" disabled={loading} className="btn btn-primary" style={{ width:'100%', justifyContent:'center', padding:'1.25rem', marginTop:'0.25rem' }}>
             {loading ? <><Loader2 size={14} style={{ animation:'spin 1s linear infinite' }}/> Saving…</> : (isEdit ? 'Save Changes' : `Save ${type === 'income' ? 'Income' : type === 'expense' ? 'Expense' : 'Transfer'}`)}
           </button>
         </form>

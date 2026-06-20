@@ -1212,3 +1212,17 @@ select, input { font-family: inherit; }
     grid-template-columns: 1fr;
   }
 }
+
+/* Phase 3 UX Audit: Mobile Touch Target Enforcements */
+@media (max-width: 768px) {
+  .btn,
+  .input-field,
+  .sidebar-link,
+  .segmented-btn,
+  .transaction-row,
+  button {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+}
