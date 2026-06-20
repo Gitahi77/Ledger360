@@ -437,9 +437,8 @@ export function LoansClient({ loans, currency, categories = [], accounts = [] }:
                   <div className="progress-fill" style={{ width:`${st.paidPct}%`, background:st.barGrad, boxShadow:`0 0 10px ${st.glow}` }} />
                 </div>
 
-                {/* Footer */}
                 <div className="flex items-center justify-between flex-wrap gap-2">
-                  <div style={{ display:'flex', gap:'1rem' }}>
+                  <div style={{ display:'flex', gap:'1rem', flexWrap:'wrap' }}>
                     <div>
                       <div style={{ fontSize:'0.65rem', color:'var(--text-muted)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em' }}>Monthly</div>
                       <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, fontSize:'0.85rem', color:'var(--text-primary)', whiteSpace:'nowrap' }}>{fmtAdaptive(l.monthlyPaymentMinor, currency)}</div>

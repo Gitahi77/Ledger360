@@ -65,21 +65,20 @@ function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (
       disabled={disabled}
       aria-pressed={checked}
       style={{
-        width: 44, height: 44,
+        width: 60, height: 48,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         background: 'transparent', border: 'none',
         cursor: disabled ? 'not-allowed' : 'pointer',
-        padding: 0,
+        padding: '0.5rem',
       }}
     >
       <div style={{
         width: 42, height: 24, borderRadius: 999,
-        background: checked ? 'linear-gradient(90deg,#27AE60,#1E8449)' : 'var(--border)',
+        background: checked ? 'var(--primary)' : 'var(--border)',
         position: 'relative', transition: 'background 0.2s',
-        boxShadow: checked ? '0 2px 6px rgba(39,174,96,0.35)' : 'inset 0 1px 3px rgba(0,0,0,0.15)',
         opacity: disabled ? 0.5 : 1,
       }}>
-        <div style={{ position: 'absolute', top: 3, left: checked ? 21 : 3, width: 18, height: 18, borderRadius: '50%', background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.25)', transition: 'left 0.2s' }} />
+        <div style={{ position: 'absolute', top: 3, left: checked ? 21 : 3, width: 18, height: 18, borderRadius: '50%', background: 'white', transition: 'left 0.2s' }} />
       </div>
     </button>
   );
@@ -608,9 +607,9 @@ export function SettingsClient({
           </div>
 
           {/* Danger zone */}
-          <div style={{ padding:'1rem', background:'var(--danger-light)', borderRadius:8, border:'1px solid rgba(192,57,43,0.15)' }}>
-            <div style={{ fontSize:'0.8125rem', fontWeight:700, color:'var(--danger)', marginBottom:'0.35rem' }}>Danger Zone</div>
-            <div style={{ fontSize:'0.72rem', color:'var(--text-secondary)', marginBottom:'0.875rem' }}>
+          <div style={{ padding:'1.5rem', background:'var(--danger)', color: 'white', borderRadius:8, border:'1px solid rgba(0,0,0,0.1)' }}>
+            <div style={{ fontSize:'0.9rem', fontWeight:700, color:'white', marginBottom:'0.35rem' }}>Danger Zone</div>
+            <div style={{ fontSize:'0.75rem', color:'rgba(255,255,255,0.9)', marginBottom:'0.875rem' }}>
               Deleting your data is permanent and cannot be undone. Please export your data first.
             </div>
             {deleteConfirm ? (
@@ -621,59 +620,59 @@ export function SettingsClient({
                   value={deleteAllText}
                   onChange={(e) => setDeleteAllText(e.target.value)}
                   placeholder="DELETE"
-                  style={{ width: 80, padding: '0.375rem 0.5rem', borderRadius: 6, border: '1px solid var(--danger)', background: 'var(--bg-card)', color: 'var(--danger)', fontSize: '0.8rem', textAlign: 'center', fontWeight: 700, textTransform: 'uppercase' }}
+                  style={{ width: 80, padding: '0.375rem 0.5rem', borderRadius: 6, border: '1px solid white', background: 'transparent', color: 'white', fontSize: '0.8rem', textAlign: 'center', fontWeight: 700, textTransform: 'uppercase' }}
                 />
                 <button
                   type="button"
                   onClick={handleDeleteAll}
                   disabled={dataState.saving || deleteAllText !== 'DELETE'}
                   className="btn"
-                  style={{ background:'var(--danger-grad)', color:'white', display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.78rem', opacity: deleteAllText === 'DELETE' ? 1 : 0.5 }}
+                  style={{ background:'white', color:'var(--danger)', display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.78rem', opacity: deleteAllText === 'DELETE' ? 1 : 0.5 }}
                 >
                   {dataState.saving ? <Loader2 size={12} style={{ animation:'spin 1s linear infinite' }}/> : <Trash2 size={12}/>}
                   Yes, Delete Everything
                 </button>
-                <button type="button" onClick={() => { setDeleteConfirm(false); setDeleteAllText(''); }} className="btn btn-outline" style={{ fontSize:'0.78rem' }}>
+                <button type="button" onClick={() => { setDeleteConfirm(false); setDeleteAllText(''); }} className="btn btn-outline" style={{ fontSize:'0.78rem', color: 'white', borderColor: 'white', background: 'transparent' }}>
                   Cancel
                 </button>
               </div>
             ) : (
               <button
                 type="button"
-                onClick={handleDeleteAll}
+                onClick={() => setDeleteConfirm(true)}
                 className="btn"
-                style={{ background:'var(--danger-grad)', color:'white', display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.78rem' }}
+                style={{ background:'white', color:'var(--danger)', display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.78rem' }}
               >
                 <Trash2 size={12}/> Delete All Data
               </button>
             )}
 
-            <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid rgba(192,57,43,0.15)' }}>
-              <div style={{ fontSize:'0.8125rem', fontWeight:700, color:'var(--danger)', marginBottom:'0.35rem' }}>Delete Account</div>
-              <div style={{ fontSize:'0.72rem', color:'var(--text-secondary)', marginBottom:'0.875rem' }}>
+            <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.2)' }}>
+              <div style={{ fontSize:'0.9rem', fontWeight:700, color:'white', marginBottom:'0.35rem' }}>Delete Account</div>
+              <div style={{ fontSize:'0.75rem', color:'rgba(255,255,255,0.9)', marginBottom:'0.875rem' }}>
                 Permanently delete your account and all associated data. This action is irreversible.
               </div>
               {deleteAcctConfirm ? (
                 <div style={{ display:'flex', gap:'0.5rem', alignItems:'center', flexWrap:'wrap' }}>
-                  <span style={{ fontSize:'0.78rem', color:'var(--danger)', fontWeight:600 }}>Type "DELETE" to confirm:</span>
+                  <span style={{ fontSize:'0.78rem', color:'white', fontWeight:600 }}>Type "DELETE" to confirm:</span>
                   <input
                     type="text"
                     value={deleteAcctText}
                     onChange={(e) => setDeleteAcctText(e.target.value)}
                     placeholder="DELETE"
-                    style={{ width: 80, padding: '0.375rem 0.5rem', borderRadius: 6, border: '1px solid var(--danger)', background: 'var(--bg-card)', color: 'var(--danger)', fontSize: '0.8rem', textAlign: 'center', fontWeight: 700, textTransform: 'uppercase' }}
+                    style={{ width: 80, padding: '0.375rem 0.5rem', borderRadius: 6, border: '1px solid white', background: 'transparent', color: 'white', fontSize: '0.8rem', textAlign: 'center', fontWeight: 700, textTransform: 'uppercase' }}
                   />
                   <button
                     type="button"
                     onClick={handleDeleteAccount}
                     disabled={dataState.saving || deleteAcctText !== 'DELETE'}
                     className="btn"
-                    style={{ background:'var(--danger)', color:'white', display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.78rem', opacity: deleteAcctText === 'DELETE' ? 1 : 0.5 }}
+                    style={{ background:'white', color:'var(--danger)', display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.78rem', opacity: deleteAcctText === 'DELETE' ? 1 : 0.5 }}
                   >
                     {dataState.saving ? <Loader2 size={12} style={{ animation:'spin 1s linear infinite' }}/> : <Trash2 size={12}/>}
                     Yes, Delete My Account
                   </button>
-                  <button type="button" onClick={() => { setDeleteAcctConfirm(false); setDeleteAcctText(''); }} className="btn btn-outline" style={{ fontSize:'0.78rem' }}>
+                  <button type="button" onClick={() => { setDeleteAcctConfirm(false); setDeleteAcctText(''); }} className="btn btn-outline" style={{ fontSize:'0.78rem', color: 'white', borderColor: 'white', background: 'transparent' }}>
                     Cancel
                   </button>
                 </div>
@@ -682,7 +681,7 @@ export function SettingsClient({
                   type="button"
                   onClick={() => setDeleteAcctConfirm(true)}
                   className="btn"
-                  style={{ background:'var(--danger)', color:'white', display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.78rem' }}
+                  style={{ background:'white', color:'var(--danger)', display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.78rem' }}
                 >
                   <Trash2 size={12}/> Delete Account
                 </button>
@@ -690,7 +689,7 @@ export function SettingsClient({
             </div>
 
             {dataState.error && (
-              <div style={{ marginTop:'0.5rem', fontSize:'0.78rem', color:'var(--danger)' }}>{dataState.error}</div>
+              <div style={{ marginTop:'0.5rem', fontSize:'0.78rem', color:'white' }}>{dataState.error}</div>
             )}
           </div>
         </AccordionPanel>
@@ -702,20 +701,17 @@ export function SettingsClient({
         <AccordionPanel>
           <div style={{ display:'flex', flexDirection:'column', gap:'0.375rem', marginBottom:'1.25rem' }}>
             {[
-              { title:'Getting Started Guide',    desc:'Step-by-step intro to tracking your finances'   },
-              { title:'How Budgets Work',          desc:'Set monthly spending limits per category'       },
-              { title:'Snowball vs Avalanche',     desc:'Choosing the right debt payoff strategy'        },
-              { title:'Smart Upload / AI Import',  desc:'Auto-import your bank statement with AI'        },
-              { title:'Understanding Net Worth',   desc:'How assets, liabilities, and NW are calculated' },
-              { title:'Keyboard Shortcuts',        desc:'Navigate Ledger360 faster with shortcuts'       },
+              { title:'Privacy Policy',    desc:'How we handle your data', href: '/privacy'   },
+              { title:'Terms of Service',  desc:'Rules and agreements', href: '/tos'       },
+              { title:'Contact Support',     desc:'Email our support team', href: 'mailto:support@ledger360.com'        },
             ].map(h => (
-              <div key={h.title} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0.75rem 0.875rem', background:'var(--bg-app)', borderRadius:7, cursor:'pointer', gap:'0.5rem' }}>
+              <a href={h.href} key={h.title} style={{ textDecoration: 'none', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0.75rem 0.875rem', background:'var(--bg-app)', borderRadius:7, cursor:'pointer', gap:'0.5rem' }}>
                 <div style={{ minWidth:0, flex:1 }}>
                   <div style={{ fontSize:'0.8125rem', fontWeight:600, color:'var(--text-primary)' }}>{h.title}</div>
                   <div style={{ fontSize:'0.7rem', color:'var(--text-muted)', marginTop:'0.1rem' }}>{h.desc}</div>
                 </div>
                 <ExternalLink size={13} color="var(--text-muted)" style={{ flexShrink:0 }} />
-              </div>
+              </a>
             ))}
           </div>
           <div style={{ padding:'0.875rem 1rem', background:'var(--bg-app)', borderRadius:8 }}>

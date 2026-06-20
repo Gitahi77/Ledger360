@@ -32,6 +32,8 @@ export function SafeToSpendCard({
   return (
     <div 
       className="card animate-in mb-5" 
+      role="button"
+      tabIndex={0}
       style={{ 
         background: isSafe ? 'var(--primary-grad)' : 'var(--danger-grad)', 
         color: 'white', 
@@ -42,6 +44,12 @@ export function SafeToSpendCard({
         boxShadow: isSafe ? '0 8px 30px rgba(37,99,235,0.2)' : '0 8px 30px rgba(220,38,38,0.2)'
       }}
       onClick={() => setExpanded(!expanded)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          setExpanded(!expanded);
+        }
+      }}
     >
       <div style={{ padding: '1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>

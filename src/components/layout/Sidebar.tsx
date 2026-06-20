@@ -78,6 +78,10 @@ export function Sidebar() {
       </nav>
 
       <div className="sidebar-footer">
+        <div style={{ display: 'flex', gap: '1rem', padding: '0 0.625rem 0.75rem', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+          <Link href="/privacy" style={{ transition: 'color 0.15s' }} onMouseOver={e => e.currentTarget.style.color = 'var(--text-primary)'} onMouseOut={e => e.currentTarget.style.color = 'var(--text-muted)'}>Privacy</Link>
+          <Link href="/tos" style={{ transition: 'color 0.15s' }} onMouseOver={e => e.currentTarget.style.color = 'var(--text-primary)'} onMouseOut={e => e.currentTarget.style.color = 'var(--text-muted)'}>Terms</Link>
+        </div>
         <div className="sidebar-user">
           <div className="sidebar-avatar">{initials}</div>
           <div style={{ minWidth: 0, flex: 1 }}>
