@@ -32,10 +32,15 @@ function AssetModal({ asset, onClose, currency }: { asset?: Asset; onClose: () =
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    // Finance app invariant: an asset with NaN or zero value silently corrupts net worth.
+    const parsedValue = parseFloat(value);
+    if (!value || !isFinite(parsedValue) || parsedValue <= 0) {
+      setError('Please enter a valid positive asset value.'); return;
+    }
     setLoading(true); setError('');
     try {
-      if (isEdit && asset) { await editAsset(asset.id, { name, category, valueMinor: toMinor(parseFloat(value)) }); }
-      else { await addAsset({ name, category, valueMinor: toMinor(parseFloat(value)) }); }
+      if (isEdit && asset) { await editAsset(asset.id, { name, category, valueMinor: toMinor(parsedValue) }); }
+      else { await addAsset({ name, category, valueMinor: toMinor(parsedValue) }); }
       startT(() => router.refresh()); onClose();
     } catch (err: any) { setError(err.message ?? 'Something went wrong.'); }
     finally { setLoading(false); }

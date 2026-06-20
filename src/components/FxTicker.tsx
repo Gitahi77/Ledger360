@@ -24,13 +24,26 @@ export function FxTicker({ currency }: { currency: string }) {
   async function load() {
     setLoading(true); setError(false);
     try {
-      let res = await fetch(`/api/fx-rates?base=${currency}`);
-      if (!res.ok) {
-        // Fallback to USD if the user's currency is unsupported (e.g. KES)
-        res = await fetch(`/api/fx-rates?base=USD`);
-        if (!res.ok) throw new Error();
+      // Phase 1 wrapped /api/fx-rates with apiRoute, so the response is now
+      // { data: FxRates, error: null, meta: {...} } — unwrap the envelope.
+      const fetchRates = async (base: string): Promise<Rates | null> => {
+        const res = await fetch(`/api/fx-rates?base=${base}`);
+        if (res.status === 401) return null; // Session not yet established — fail gracefully
+        if (!res.ok) return null;
+        const envelope = await res.json();
+        // Support both old raw shape and new apiRoute envelope
+        return envelope?.data ?? (envelope?.rates ? envelope : null);
+      };
+
+      let data = await fetchRates(currency);
+      // Fallback to USD-base if user currency is unsupported (e.g. KES base not available)
+      if (!data?.rates) data = await fetchRates('USD');
+
+      if (data?.rates) {
+        setRates(data);
+      } else {
+        setError(true);
       }
-      setRates(await res.json());
     } catch {
       setError(true);
     } finally {
