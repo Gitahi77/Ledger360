@@ -299,10 +299,9 @@ select, input { font-family: inherit; }
 
 .sidebar-logo-icon {
   width: 30px; height: 30px; border-radius: 7px;
-  background: var(--primary-grad);
+  background: var(--primary);
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(26,115,232,0.4);
 }
 
 .sidebar-logo-text {
@@ -335,14 +334,14 @@ select, input { font-family: inherit; }
 .sidebar-link:hover { background: var(--bg-hover); color: var(--text-primary); }
 
 .sidebar-link.active {
-  background: var(--primary-light);
+  background: var(--bg-hover);
   color: var(--primary); font-weight: 600;
 }
 
 .sidebar-link.active::before {
   content: '';
-  position: absolute; left: 0; top: 20%; bottom: 20%;
-  width: 3px; background: var(--primary-grad);
+  position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px; background: var(--primary);
   border-radius: 0 3px 3px 0;
 }
 
@@ -357,7 +356,7 @@ select, input { font-family: inherit; }
 
 .sidebar-avatar {
   width: 28px; height: 28px; border-radius: 50%;
-  background: var(--primary-grad);
+  background: var(--primary);
   color: white; font-weight: 700; font-size: 0.68rem;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
