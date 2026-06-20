@@ -7,6 +7,7 @@ vi.mock('@/lib/actions/_auth', () => ({
 
 vi.mock('@/lib/prisma', () => ({
   prisma: {
+    $transaction: vi.fn(async (cb: any) => cb(prisma)),
     account: {
       findMany: vi.fn()
     },
@@ -18,11 +19,13 @@ vi.mock('@/lib/prisma', () => ({
     },
     transfer: {
       aggregate: vi.fn(),
-      findMany: vi.fn()
+      findMany: vi.fn(),
+      groupBy: vi.fn().mockResolvedValue([])
     },
     transaction: {
       aggregate: vi.fn().mockResolvedValue({ _sum: { baseAmountMinor: 0 } }),
-      findMany: vi.fn().mockResolvedValue([])
+      findMany: vi.fn().mockResolvedValue([]),
+      groupBy: vi.fn().mockResolvedValue([])
     }
   }
 }));
@@ -36,6 +39,7 @@ import { getLoansForUser } from '../lib/actions/loans';
 describe('Loan Disbursement (Received Funds)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(prisma.transaction.groupBy).mockResolvedValue([] as any);
   });
 
   it('increases account balance, leaves net worth neutral, does not count in reports, does not reduce loan balance', async () => {
@@ -48,10 +52,10 @@ describe('Loan Disbursement (Received Funds)', () => {
     ]);
 
     // Mock transfers for getAccountBalances
-    vi.mocked(prisma.transfer.aggregate).mockImplementation((async (args: any) => {
-      if (args.where?.toAccountId === 'acc-1') return { _sum: { amountMinor: LOAN_AMOUNT } };
-      if (args.where?.fromAccountId === 'acc-1') return { _sum: { amountMinor: 0 } };
-      return { _sum: { amountMinor: 0 } };
+    vi.mocked(prisma.transfer.groupBy).mockImplementation((async (args: any) => {
+      if (args.by?.includes('toAccountId')) return [{ toAccountId: 'acc-1', _sum: { amountMinor: LOAN_AMOUNT } }];
+      if (args.by?.includes('fromAccountId')) return [];
+      return [];
     }) as any);
 
     // Mock transfers for reports (both previous and current period)

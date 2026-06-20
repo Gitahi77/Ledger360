@@ -5,8 +5,9 @@ import { getLoansForUser } from '@/lib/actions/loans';
 
 vi.mock('@/lib/prisma', () => ({
   prisma: {
+    $transaction: vi.fn(async (cb: any) => cb(prisma)),
     userPreferences: { findUnique: vi.fn() },
-    transaction: { aggregate: vi.fn(), findFirst: vi.fn() },
+    transaction: { aggregate: vi.fn(), findFirst: vi.fn(), groupBy: vi.fn().mockResolvedValue([]) },
     budget: { findMany: vi.fn() },
   }
 }));
@@ -19,7 +20,7 @@ describe('safeToSpend', () => {
   const userId = 'user-1';
 
   beforeEach(() => {
-    vi.resetAllMocks();
+    vi.clearAllMocks();
     vi.setSystemTime(new Date(2026, 5, 8)); // June 8, 2026
     
     // Default mocks
@@ -28,6 +29,7 @@ describe('safeToSpend', () => {
     vi.mocked(prisma.budget.findMany).mockResolvedValue([]);
     vi.mocked(prisma.transaction.aggregate).mockResolvedValue({ _sum: { baseAmountMinor: 0 } } as any);
     vi.mocked(prisma.transaction.findFirst).mockResolvedValue(null);
+    vi.mocked(prisma.transaction.groupBy).mockResolvedValue([] as any);
   });
 
   it('calculates discretionary and remaining correctly with basic inputs', async () => {

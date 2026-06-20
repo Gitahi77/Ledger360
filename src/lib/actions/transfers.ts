@@ -83,7 +83,9 @@ export async function createTransfer(raw: {
 
     // Server-side validation
     if (finalInterestMinor < 0) finalInterestMinor = 0;
-    // Allow finalInterestMinor > data.amountMinor for negative amortization
+    if (finalInterestMinor > data.amountMinor) {
+      finalInterestMinor = data.amountMinor;
+    }
     
     const principal = data.amountMinor - finalInterestMinor;
     if (principal > loan.balanceMinor) {
