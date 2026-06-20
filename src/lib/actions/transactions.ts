@@ -252,8 +252,6 @@ export async function addTransaction(raw: {
   const warnings = [warning, autoSaveWarning].filter(Boolean).join(' ');
   return { warning: warnings || undefined };
 }
-
-/* ── Bulk import (Smart Upload) ───────────────────────────── */
 export async function importTransactions(rows: {
   name: string; baseAmountMinor: number; type: string;
   categoryName: string; date: string; note?: string;
@@ -268,51 +266,65 @@ export async function importTransactions(rows: {
   const account = await prisma.account.findFirst({ where: { id: targetAccountId, userId: user.id } });
   if (!account) throw new Error('Selected account not found');
 
-  // Resolve or create categories dynamically based on the string provided by the user
-  const categoryNames = [...new Set(rows.map(r => String(r.categoryName)))];
-  const existingCats: Category[]  = await prisma.category.findMany({ where: { userId: user.id, name: { in: categoryNames } } });
-  const catMap: Record<string, string> = Object.fromEntries(existingCats.map(c => [c.name, c.id]));
-
-  for (const name of categoryNames) {
-    if (!catMap[name]) {
-      const typeHint = rows.find(r => r.categoryName === name)?.type === 'income' ? 'income' : 'expense';
-      const cat = await prisma.category.create({
-        data: { name, type: typeHint, userId: user.id },
-      });
-      catMap[name] = cat.id;
+  // Pre-validate every row BEFORE touching the DB.
+  // Reject any row with a non-finite or non-positive amount to prevent NaN/Infinity
+  // reaching the database from malformed import files.
+  const validRows = rows.filter(r => {
+    if (r.type !== 'income' && r.type !== 'expense') {
+      console.warn('[importTransactions] Dropping non-income/expense row:', r.name, r.type);
+      return false;
     }
-  }
+    const d = new Date(r.date);
+    if (isNaN(d.getTime())) {
+      console.warn('[importTransactions] Skipping row with invalid date:', r.date, r.name);
+      return false;
+    }
+    const amt = Math.abs(Number(r.baseAmountMinor));
+    if (!isFinite(amt) || amt <= 0) {
+      console.warn('[importTransactions] Skipping row with invalid amount:', r.baseAmountMinor, r.name);
+      return false;
+    }
+    return true;
+  });
+  if (validRows.length === 0) throw new Error('No valid rows to import after filtering');
 
-  await prisma.transaction.createMany({
-    data: rows
-      .filter(r => {
-        // Drop anything that isn't strictly income or expense (e.g. transfers)
-        if (r.type !== 'income' && r.type !== 'expense') {
-          console.warn('[importTransactions] Dropping non-income/expense row:', r.name, r.type);
-          return false;
-        }
-        // Validate date before new Date() — NaN dates crash Prisma
-        const d = new Date(r.date);
-        if (isNaN(d.getTime())) {
-          console.warn('[importTransactions] Skipping row with invalid date:', r.date, r.name);
-          return false;
-        }
-        return true;
-      })
-      .map(r => ({
-        name:       String(r.name).slice(0, 120),
+  // Use an interactive transaction so category resolution + bulk insert are atomic.
+  // If the createMany fails, no orphaned categories are left behind.
+  const createdIds = await prisma.$transaction(async (tx) => {
+    // Resolve or create categories
+    const categoryNames = [...new Set(validRows.map(r => String(r.categoryName)))];
+    const existingCats = await tx.category.findMany({ where: { userId: user.id, name: { in: categoryNames } } });
+    const catMap: Record<string, string> = Object.fromEntries(existingCats.map(c => [c.name, c.id]));
+
+    for (const name of categoryNames) {
+      if (!catMap[name]) {
+        const typeHint = validRows.find(r => r.categoryName === name)?.type === 'income' ? 'income' : 'expense';
+        const cat = await tx.category.create({
+          data: { name, type: typeHint, userId: user.id },
+        });
+        catMap[name] = cat.id;
+      }
+    }
+
+    // Bulk insert — all rows are already validated above
+    await tx.transaction.createMany({
+      data: validRows.map(r => ({
+        name:            String(r.name).slice(0, 120),
         baseAmountMinor: Math.abs(Number(r.baseAmountMinor)),
-        type:       r.type as 'income' | 'expense',
-        categoryId: catMap[String(r.categoryName)],
-        accountId:  targetAccountId,
-        date:       new Date(r.date),
-        note:       r.note ? String(r.note).slice(0, 500) : undefined,
-        userId:     user.id,
-        importedAt: new Date(),
-        importHash: r.importHash || null,
-        reference:  r.reference || null,
+        type:            r.type as 'income' | 'expense',
+        categoryId:      catMap[String(r.categoryName)],
+        accountId:       targetAccountId,
+        date:            new Date(r.date),
+        note:            r.note ? String(r.note).slice(0, 500) : undefined,
+        userId:          user.id,
+        importedAt:      new Date(),
+        importHash:      r.importHash || null,
+        reference:       r.reference || null,
       })),
-    // Deduplication is enforced via UI previews and importHash checks, not DB constraints
+    });
+
+    // Return income rows to trigger auto-save outside the transaction
+    return validRows.filter(r => r.type === 'income');
   });
 
   // Security Audit
@@ -321,15 +333,13 @@ export async function importTransactions(rows: {
     userId: user.id,
     action: 'IMPORT',
     resource: 'Transactions',
-    metadata: { rowCount: rows.length },
+    metadata: { rowCount: validRows.length },
   });
 
   // WO-15: Save-More-Tomorrow auto-save trigger for imported income rows.
-  // Each income row triggers independently; failures are best-effort.
-  const incomeRows = rows.filter(r => r.type === 'income');
+  const incomeRows = createdIds;
   if (incomeRows.length > 0) {
     const { triggerAutoSave } = await import('@/lib/actions/savings');
-    // Fetch the created transactions to get their IDs for idempotency
     const recentTxs = await prisma.transaction.findMany({
       where: {
         userId: user.id,

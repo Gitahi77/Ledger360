@@ -90,6 +90,18 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
 
     setLoading(true); setError('');
     try {
+      // Finance app invariant: NEVER store NaN or zero amounts.
+      // parseFloat on an empty string yields NaN which silently corrupts the ledger.
+      const parsedAmount = parseFloat(amount);
+      if (!amount || !isFinite(parsedAmount) || parsedAmount <= 0) {
+        setError('Please enter a valid positive amount.'); setLoading(false); return;
+      }
+      if (type === 'transfer' && loanId && interestAmount !== '') {
+        const parsedInterest = parseFloat(interestAmount);
+        if (!isFinite(parsedInterest) || parsedInterest < 0) {
+          setError('Interest amount must be a valid number (0 or greater).'); setLoading(false); return;
+        }
+      }
       let warnMsg: string | undefined;
       if (type === 'transfer') {
         const intMinor = interestAmount !== '' ? toMinor(parseFloat(interestAmount)) : undefined;

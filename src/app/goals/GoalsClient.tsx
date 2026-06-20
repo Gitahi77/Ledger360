@@ -72,6 +72,11 @@ function GoalModal({ goal, onClose, currency }: { goal?: Goal; onClose: () => vo
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    // Finance app invariant: a goal with a NaN or zero target is unmeasurable.
+    const parsedTarget = parseFloat(targetAmount);
+    if (!targetAmount || !isFinite(parsedTarget) || parsedTarget <= 0) {
+      setError('Please enter a valid positive target amount.'); return;
+    }
     setLoading(true); setError('');
     try {
       if (isEdit && goal) {

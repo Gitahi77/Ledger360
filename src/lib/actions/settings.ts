@@ -103,16 +103,27 @@ export async function exportUserData() {
 /* ── Delete all user financial data (keeps account) ─────── */
 export async function deleteAllUserData() {
   const user = await requireAuth();
-  await prisma.savingsPlan.deleteMany({ where: { userId: user.id } });
-  await prisma.transfer.deleteMany({   where: { userId: user.id } });
-  await prisma.transaction.deleteMany({ where: { userId: user.id } });
-  await prisma.budget.deleteMany({     where: { userId: user.id } });
-  await prisma.goal.deleteMany({       where: { userId: user.id } });
-  await prisma.loan.deleteMany({       where: { userId: user.id } });
-  await prisma.asset.deleteMany({      where: { userId: user.id } });
-  await prisma.account.deleteMany({    where: { userId: user.id } });
-  await prisma.category.deleteMany({   where: { userId: user.id } });
-  await prisma.userPreferences.deleteMany({ where: { userId: user.id } });
+
+  // Wrap every delete in a single transaction so the wipe is all-or-nothing.
+  // A partial wipe (e.g., transfers deleted but loans fail) leaves the ledger
+  // in an irrecoverably inconsistent state — unacceptable for a finance app.
+  //
+  // Delete order respects FK dependencies:
+  //   Transfer & Transaction reference Account/Category → delete those first.
+  //   SavingsPlan has no hard FKs to the others → safe to delete early.
+  await prisma.$transaction([
+    prisma.savingsPlan.deleteMany({ where: { userId: user.id } }),
+    prisma.transfer.deleteMany({    where: { userId: user.id } }),
+    prisma.transaction.deleteMany({ where: { userId: user.id } }),
+    prisma.budget.deleteMany({      where: { userId: user.id } }),
+    prisma.goal.deleteMany({        where: { userId: user.id } }),
+    prisma.loan.deleteMany({        where: { userId: user.id } }),
+    prisma.asset.deleteMany({       where: { userId: user.id } }),
+    prisma.account.deleteMany({     where: { userId: user.id } }),
+    prisma.category.deleteMany({    where: { userId: user.id } }),
+    prisma.userPreferences.deleteMany({ where: { userId: user.id } }),
+  ]);
+
   revalidatePath('/');
   revalidatePath('/transactions');
   revalidatePath('/budgets');

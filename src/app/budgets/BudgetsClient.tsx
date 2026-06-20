@@ -43,6 +43,11 @@ function BudgetModal({ budget, categories, currency, onClose }: { budget?: Budge
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!categoryId) { setError('Please select a category.'); return; }
+    // Finance app invariant: a budget with a NaN or zero limit is meaningless and misleading.
+    const parsedLimit = parseFloat(limitAmt);
+    if (!limitAmt || !isFinite(parsedLimit) || parsedLimit <= 0) {
+      setError('Please enter a valid positive budget limit.'); return;
+    }
     setLoading(true); setError('');
     try {
       if (isEdit && budget) {

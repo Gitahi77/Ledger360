@@ -61,6 +61,20 @@ function LoanModal({ loan, accounts, onClose, currency }: { loan?: Loan; account
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    // Finance app invariant: loans with NaN amounts, rates, or payments produce
+    // catastrophically wrong amortization forecasts.
+    const parsedOrig = parseFloat(origAmt);
+    if (!origAmt || !isFinite(parsedOrig) || parsedOrig <= 0) {
+      setError('Please enter a valid positive original loan amount.'); return;
+    }
+    const parsedRate = parseFloat(rate);
+    if (rate === '' || !isFinite(parsedRate) || parsedRate < 0) {
+      setError('Please enter a valid annual interest rate (0 or greater).'); return;
+    }
+    const parsedMonthly = parseFloat(monthly);
+    if (!monthly || !isFinite(parsedMonthly) || parsedMonthly <= 0) {
+      setError('Please enter a valid positive monthly payment amount.'); return;
+    }
     setLoading(true); setError('');
     try {
       if (isEdit && loan) {

@@ -15,8 +15,19 @@ export default async function Transactions({
   searchParams: Promise<{ period?: string; type?: string }>;
 }) {
   const { period: rawPeriod, type: rawType } = await searchParams;
-  const period = (rawPeriod ?? 'this-month') as 'this-month' | 'this-week' | 'this-year' | 'all-time';
-  const typeFilter = rawType   ?? 'all';
+  // Strict allowlist: never trust URL query params. Unknown values could corrupt
+  // date range calculations or be passed unsanitised into Prisma filter clauses.
+  const ALLOWED_PERIODS = ['this-month', 'this-week', 'this-year', 'all-time'] as const;
+  type AllowedPeriod = typeof ALLOWED_PERIODS[number];
+  const period: AllowedPeriod = ALLOWED_PERIODS.includes(rawPeriod as AllowedPeriod)
+    ? (rawPeriod as AllowedPeriod)
+    : 'this-month';
+
+  const ALLOWED_TYPES = ['all', 'income', 'expense', 'transfer'] as const;
+  type AllowedType = typeof ALLOWED_TYPES[number];
+  const typeFilter: AllowedType = ALLOWED_TYPES.includes(rawType as AllowedType)
+    ? (rawType as AllowedType)
+    : 'all';
 
   const [user, transactions, transfers, categories, accounts, goals, loans] = await Promise.all([
     requireAuth(),

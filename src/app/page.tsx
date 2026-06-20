@@ -39,7 +39,13 @@ export default async function Dashboard({
   searchParams: Promise<{ period?: string }>;
 }) {
   const { period: rawPeriod } = await searchParams;
-  const period = (rawPeriod ?? 'this-month') as 'this-month' | 'this-week' | 'this-year' | 'all-time';
+  // Strict allowlist: never trust URL params. An unknown period value would
+  // cause periodDates() to return undefined ranges, corrupting all queries.
+  const ALLOWED_PERIODS = ['this-month', 'this-week', 'this-year', 'all-time'] as const;
+  type AllowedPeriod = typeof ALLOWED_PERIODS[number];
+  const period: AllowedPeriod = ALLOWED_PERIODS.includes(rawPeriod as AllowedPeriod)
+    ? (rawPeriod as AllowedPeriod)
+    : 'this-month';
   const user = await requireAuth();
   const currency = user.currency;
 
