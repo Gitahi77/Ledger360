@@ -15,7 +15,7 @@ export default async function Loans() {
   ]);
   return (
     <AppLayout>
-      <LoansClient loans={loans} currency={user.currency} categories={categories as any} accounts={accounts as any} />
+      <LoansClient loans={loans} currency={user.currency} categories={categories} accounts={accounts} />
     </AppLayout>
   );
 }

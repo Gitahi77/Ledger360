@@ -54,10 +54,10 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
   const [error, setError]     = useState('');
   const [name,       setName]       = useState(tx?.name ?? '');
   const [amount,     setAmount]     = useState(tx ? (toMajor(tx.baseAmountMinor)).toString() : '');
-  const [type,       setType]       = useState<'income' | 'expense' | 'transfer'>(tx ? (tx.type as any) : 'expense');
+  const [type,       setType]       = useState<'income' | 'expense' | 'transfer'>(tx ? (tx.type as 'income' | 'expense' | 'transfer') : 'expense');
   const [categoryId, setCategoryId] = useState(tx?.category.id ?? '');
   
-  const initialAccountId = tx?.type === 'transfer' ? (tx.fromAccountId ?? accounts[0]?.id ?? '') : ((tx as any)?.accountId ?? accounts[0]?.id ?? '');
+  const initialAccountId = tx?.type === 'transfer' ? (tx.fromAccountId ?? accounts[0]?.id ?? '') : (('accountId' in (tx || {}) ? (tx as unknown as { accountId: string }).accountId : null) ?? accounts[0]?.id ?? '');
   const [accountId,  setAccountId]  = useState(initialAccountId);
   
   const [toAccountId,setToAccountId]= useState(tx?.toAccountId ?? '');

@@ -39,7 +39,7 @@ const navItems = [
 export function Sidebar() {
   const pathname          = usePathname() ?? '/';
   const { data: session } = useSession();
-  const user              = session?.user as any;
+  const user              = session?.user;
 
   // Derive initials from name
   const initials = user?.name

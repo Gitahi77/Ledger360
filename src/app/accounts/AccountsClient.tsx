@@ -68,14 +68,14 @@ export function AccountsClient({ accounts, currency }: { accounts: Account[], cu
     try {
       const data = {
         name,
-        type: type as any,
+        type: type as 'bank' | 'mobile_money' | 'cash' | 'credit',
         openingMinor: toMinor(parseFloat(opening || '0')),
       };
       
       if (editingAcc) {
         await updateAccount(editingAcc.id, data);
       } else {
-        await createAccount(data as any);
+        await createAccount(data);
       }
       
       setShowModal(false);

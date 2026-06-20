@@ -13,7 +13,12 @@ export const GET = apiRoute(
     const url = new URL(req.url);
     const query = GetTransfersQuerySchema.safeParse(Object.fromEntries(url.searchParams));
     
-    const period = query.success && query.data.period ? query.data.period : undefined;
+    if (!query.success) {
+      const { NextResponse } = await import('next/server');
+      return NextResponse.json({ error: 'Invalid query parameters', details: query.error.flatten() }, { status: 400 });
+    }
+    
+    const period = query.data.period;
     
     return getTransfers(period);
   }

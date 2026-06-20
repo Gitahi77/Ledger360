@@ -31,35 +31,47 @@ export async function getAccountBalances(userId: string): Promise<AccountWithBal
     where: { userId },
     orderBy: { createdAt: 'asc' } 
   });
-  
-  return Promise.all(accounts.map(async (acc) => {
-    const [inc, exp, transfersOut, transfersIn] = await Promise.all([
-      prisma.transaction.aggregate({ 
-        _sum: { baseAmountMinor: true }, 
-        where: { userId, accountId: acc.id, type: 'income' } 
-      }),
-      prisma.transaction.aggregate({ 
-        _sum: { baseAmountMinor: true }, 
-        where: { userId, accountId: acc.id, type: 'expense' } 
-      }),
-      prisma.transfer.aggregate({
-        _sum: { amountMinor: true },
-        where: { userId, fromAccountId: acc.id }
-      }),
-      prisma.transfer.aggregate({
-        _sum: { amountMinor: true },
-        where: { userId, toAccountId: acc.id }
-      })
-    ]);
 
-    const balanceMinor = acc.openingMinor
-      + (inc._sum.baseAmountMinor ?? 0) 
-      - (exp._sum.baseAmountMinor ?? 0)
-      - (transfersOut._sum.amountMinor ?? 0)
-      + (transfersIn._sum.amountMinor ?? 0);
+  if (accounts.length === 0) return [];
+
+  const [incGroup, expGroup, txOutGroup, txInGroup] = await Promise.all([
+    prisma.transaction.groupBy({
+      by: ['accountId'],
+      where: { userId, type: 'income' },
+      _sum: { baseAmountMinor: true }
+    }),
+    prisma.transaction.groupBy({
+      by: ['accountId'],
+      where: { userId, type: 'expense' },
+      _sum: { baseAmountMinor: true }
+    }),
+    prisma.transfer.groupBy({
+      by: ['fromAccountId'],
+      where: { userId },
+      _sum: { amountMinor: true }
+    }),
+    prisma.transfer.groupBy({
+      by: ['toAccountId'],
+      where: { userId },
+      _sum: { amountMinor: true }
+    })
+  ]);
+
+  const incMap = new Map(incGroup.map(g => [g.accountId, g._sum.baseAmountMinor ?? 0]));
+  const expMap = new Map(expGroup.map(g => [g.accountId, g._sum.baseAmountMinor ?? 0]));
+  const txOutMap = new Map(txOutGroup.map(g => [g.fromAccountId, g._sum.amountMinor ?? 0]));
+  const txInMap = new Map(txInGroup.map(g => [g.toAccountId, g._sum.amountMinor ?? 0]));
+
+  return accounts.map(acc => {
+    const inc = incMap.get(acc.id) ?? 0;
+    const exp = expMap.get(acc.id) ?? 0;
+    const txOut = txOutMap.get(acc.id) ?? 0;
+    const txIn = txInMap.get(acc.id) ?? 0;
+
+    const balanceMinor = acc.openingMinor + inc - exp - txOut + txIn;
       
     return { ...acc, balanceMinor };
-  }));
+  });
 }
 
 export async function createAccount(data: z.infer<typeof AccountSchema>) {

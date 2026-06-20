@@ -26,18 +26,9 @@ export default async function CategoriesPage() {
 
   return (
     <AppLayout>
-      <div className="animate-in">
-        <div style={{ marginBottom: '2rem' }}>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-0.03em', marginBottom: '0.25rem' }}>
-            Categories
-          </h1>
-          <p style={{ color: 'var(--text-secondary)' }}>
-            Manage your transaction and budget categories.
-          </p>
-        </div>
-        
+      <div className="animate-in" style={{ padding: '1.25rem', maxWidth: 800, margin: '0 auto', width: '100%' }}>
         <CategoriesClient 
-          initialCategories={categories as any} 
+          initialCategories={categories} 
           currency={dbUser?.currency ?? 'KES'} 
         />
       </div>

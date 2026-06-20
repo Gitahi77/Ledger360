@@ -115,25 +115,43 @@ export async function safeToSpend(userId: string, period: 'weekly' | 'monthly' |
   let baseEnvelopeLimits = 0;
   let envelopeOverspendPenalty = 0;
 
-  // We need to fetch spending per budget category
+  // Fetch spend for all budgeted categories this period in ONE query
+  const spendThisPeriodGroups = await prisma.transaction.groupBy({
+    by: ['categoryId'],
+    where: { userId, type: 'expense', categoryId: { in: Array.from(budgetedCategoryIds) }, date: { gte: from, lte: to } },
+    _sum: { baseAmountMinor: true }
+  });
+  
+  const spendThisPeriodMap = new Map(spendThisPeriodGroups.map(g => [g.categoryId, g._sum.baseAmountMinor ?? 0]));
+
+  // Fetch unbudgeted spend in parallel with rollover queries
+  const unbudgetedPromise = prisma.transaction.aggregate({
+    where: { 
+      userId, 
+      type: 'expense', 
+      date: { gte: from, lte: to },
+      categoryId: { notIn: Array.from(budgetedCategoryIds) } 
+    },
+    _sum: { baseAmountMinor: true }
+  });
+
+  // Calculate limits and execute rollover queries concurrently
+  const rolloverBudgets = budgets.filter(b => b.rollover);
+  const rolloverSpends = await Promise.all(rolloverBudgets.map(b => 
+    prisma.transaction.aggregate({
+      where: { userId, categoryId: b.categoryId, type: 'expense', date: { gte: b.createdAt, lte: to } },
+      _sum: { baseAmountMinor: true }
+    })
+  ));
+  
+  const rolloverSpendMap = new Map(rolloverBudgets.map((b, i) => [b.id, rolloverSpends[i]._sum.baseAmountMinor ?? 0]));
+
   for (const b of budgets) {
     baseEnvelopeLimits += b.limitAmountMinor;
-    
-    // Spend this period
-    const spendThisPeriodAgg = await prisma.transaction.aggregate({
-      where: { userId, categoryId: b.categoryId, type: 'expense', date: { gte: from, lte: to } },
-      _sum: { baseAmountMinor: true }
-    });
-    const envelopeSpend = spendThisPeriodAgg._sum.baseAmountMinor ?? 0;
-    
+    const envelopeSpend = spendThisPeriodMap.get(b.categoryId) ?? 0;
     const envelopeEffectiveLimit = b.limitAmountMinor;
 
     if (b.rollover) {
-      // For rollover=true, cumulative limit - cumulative spend since the budget was created
-      // Note: we assume the budget limits were the same historically. To be perfectly accurate, 
-      // we sum historical periods. But since we don't have historical budget limits stored, 
-      // we approximate cumulative limit by: limit * (months since budget createdAt)
-      // Wait, let's look at the exact budget creation date to find how many periods existed.
       let periodsExisted = 1;
       if (b.createdAt < from) {
         if (period === 'monthly') {
@@ -148,32 +166,16 @@ export async function safeToSpend(userId: string, period: 'weekly' | 'monthly' |
       }
       
       const cumulativeLimit = b.limitAmountMinor * periodsExisted;
+      const cumulativeSpend = rolloverSpendMap.get(b.id) ?? 0;
       
-      // Cumulative spend (from createdAt to this period's end)
-      const cumulativeSpendAgg = await prisma.transaction.aggregate({
-        where: { userId, categoryId: b.categoryId, type: 'expense', date: { gte: b.createdAt, lte: to } },
-        _sum: { baseAmountMinor: true }
-      });
-      const cumulativeSpend = cumulativeSpendAgg._sum.baseAmountMinor ?? 0;
-      
-      // Overspend is max(0, cumulativeSpend - cumulativeLimit)
       envelopeOverspendPenalty += Math.max(0, cumulativeSpend - cumulativeLimit);
     } else {
-      // Overspend is just this period
       envelopeOverspendPenalty += Math.max(0, envelopeSpend - envelopeEffectiveLimit);
     }
   }
 
   // 7. Unbudgeted Spend
-  const unbudgetedAgg = await prisma.transaction.aggregate({
-    where: { 
-      userId, 
-      type: 'expense', 
-      date: { gte: from, lte: to },
-      categoryId: { notIn: Array.from(budgetedCategoryIds) } 
-    },
-    _sum: { baseAmountMinor: true }
-  });
+  const unbudgetedAgg = await unbudgetedPromise;
   const unbudgetedSpendThisPeriod = unbudgetedAgg._sum.baseAmountMinor ?? 0;
 
   // 8. Final Math

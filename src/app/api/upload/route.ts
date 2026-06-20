@@ -15,6 +15,26 @@ export const maxDuration = 60; // allow up to 60s for AI processing
 // 10 MB hard limit — prevents OOM on serverless functions
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
+/**
+ * Extracts magic number from file buffer to prevent MIME spoofing attacks.
+ * Relies on the actual binary signature, not the user-provided MIME type.
+ */
+function getActualMimeType(buffer: ArrayBuffer | null, fallbackMime: string, filename: string): string {
+  if (!buffer || buffer.byteLength < 4) return fallbackMime;
+  
+  const arr = new Uint8Array(buffer).subarray(0, 4);
+  const hex = Array.from(arr).map(b => b.toString(16).padStart(2, '0')).toUpperCase().join('');
+
+  if (hex.startsWith('89504E47')) return 'image/png';
+  if (hex.startsWith('FFD8FF')) return 'image/jpeg';
+  if (hex.startsWith('25504446')) return 'application/pdf';
+  if (hex.startsWith('504B0304')) return 'application/zip'; // Excel/docx are ZIPs
+  if (hex.startsWith('D0CF11E0')) return 'application/vnd.ms-excel'; // Legacy .xls
+  
+  // For text/csv where magic numbers don't exist, we fallback to the provided mime/filename
+  return fallbackMime;
+}
+
 /* ── Category keyword map ────────────────────────────────── */
 const CATEGORY_RULES: { pattern: RegExp; category: string; type: 'income' | 'expense' | 'transfer' }[] = [
   // Income
@@ -325,16 +345,19 @@ export async function POST(request: Request) {
       );
     }
 
-    const mimeType   = file ? (file.type || 'application/octet-stream') : 'text/plain';
-    const fileName   = file ? (file.name?.toLowerCase() ?? '') : 'sms.txt';
-    const fileBuffer = file ? await file.arrayBuffer() : null;
+    const clientMimeType = file ? (file.type || 'application/octet-stream') : 'text/plain';
+    const fileName       = file ? (file.name?.toLowerCase() ?? '') : 'sms.txt';
+    const fileBuffer     = file ? await file.arrayBuffer() : null;
+    
+    // Security: Derive MIME type from magic numbers to prevent spoofing
+    const mimeType = getActualMimeType(fileBuffer, clientMimeType, fileName);
 
     type RowData = { category?: string; type?: string; importHash?: string; reference?: string; date?: string; amount?: number; name?: string; isDuplicate?: boolean; isTransfer?: boolean; categoryId?: string; note?: string };
     let transactions: RowData[] = [];
     let method = 'csv';
 
-    const isExcel = fileName.endsWith('.xlsx') || fileName.endsWith('.xls') || mimeType.includes('spreadsheet') || mimeType.includes('excel');
-    const isPDF   = fileName.endsWith('.pdf') || mimeType === 'application/pdf';
+    const isExcel = mimeType === 'application/vnd.ms-excel' || (mimeType === 'application/zip' && (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')));
+    const isPDF   = mimeType === 'application/pdf';
     const isImage = mimeType.startsWith('image/');
     const isSMS   = !!smsText;
 

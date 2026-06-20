@@ -4,7 +4,7 @@
 import { apiRoute } from '@/lib/api/respond';
 import { getNseStocks } from '@/lib/api/nse';
 
-export const revalidate = 900; // 15 minutes
+export const dynamic = 'force-dynamic';
 
 export const GET = apiRoute(
   null,
