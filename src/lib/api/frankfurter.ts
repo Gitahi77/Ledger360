@@ -17,10 +17,13 @@ export async function getRates(base: string = 'USD'): Promise<FxRates | null> {
   if (_cache && _cache.base === base && Date.now() - _cache.updatedAt < CACHE_TTL) return _cache;
   try {
     const toCurrencies = ['USD', 'EUR', 'GBP', 'ZAR', 'CHF', 'JPY', 'KES'].filter(c => c !== base).join(',');
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
     const res = await fetch(
       `https://api.frankfurter.app/latest?from=${base}&to=${toCurrencies}`,
-      { next: { revalidate: 3600 } }
+      { next: { revalidate: 3600 }, signal: controller.signal }
     );
+    clearTimeout(timeoutId);
     if (!res.ok) throw new Error(`Frankfurter ${res.status}`);
     const data = await res.json();
     _cache = { ...data, base, updatedAt: Date.now() };

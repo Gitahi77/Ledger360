@@ -101,30 +101,35 @@ export async function createTransfer(raw: {
     }
   }
 
-  const newTransfer = await prisma.transfer.create({
-    data: {
-      userId: user.id,
-      fromAccountId: data.fromAccountId,
-      toAccountId: data.toAccountId || null,
-      amountMinor: data.amountMinor,
-      currency: fromAccount.currency,
-      baseAmountMinor: data.amountMinor, // fxRate = 1
-      fxRate: 1,
-      date: new Date(data.date),
-      note: data.note,
-      goalId: data.goalId || null,
-      loanId: data.loanId || null,
-      interestMinor: finalInterestMinor,
-      source: 'MANUAL',
-    },
-  });
+  const newTransfer = await prisma.$transaction(async (tx) => {
+    const createdTransfer = await tx.transfer.create({
+      data: {
+        userId: user.id,
+        fromAccountId: data.fromAccountId,
+        toAccountId: data.toAccountId || null,
+        amountMinor: data.amountMinor,
+        currency: fromAccount.currency,
+        baseAmountMinor: data.amountMinor, // fxRate = 1
+        fxRate: 1,
+        date: new Date(data.date),
+        note: data.note,
+        goalId: data.goalId || null,
+        loanId: data.loanId || null,
+        interestMinor: finalInterestMinor,
+        source: 'MANUAL',
+      },
+    });
 
-  // Security Audit
-  await logActivity({
-    userId: user.id,
-    action: 'CREATE',
-    resource: 'Transfer',
-    metadata: { transferId: newTransfer.id, amount: data.amountMinor, from: data.fromAccountId, to: data.toAccountId ?? undefined, goal: data.goalId ?? undefined, loan: data.loanId ?? undefined },
+    await tx.auditLog.create({
+      data: {
+        userId: user.id,
+        action: 'CREATE',
+        resource: 'Transfer',
+        metadata: JSON.stringify({ transferId: createdTransfer.id, amount: data.amountMinor, from: data.fromAccountId, to: data.toAccountId ?? undefined, goal: data.goalId ?? undefined, loan: data.loanId ?? undefined }),
+      }
+    });
+
+    return createdTransfer;
   });
 
   revalidatePath('/transactions');

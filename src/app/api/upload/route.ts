@@ -347,10 +347,18 @@ export async function POST(request: Request) {
 
     const clientMimeType = file ? (file.type || 'application/octet-stream') : 'text/plain';
     const fileName       = file ? (file.name?.toLowerCase() ?? '') : 'sms.txt';
-    const fileBuffer     = file ? await file.arrayBuffer() : null;
+    const magicBuffer    = file ? await file.slice(0, 100).arrayBuffer() : null;
     
     // Security: Derive MIME type from magic numbers to prevent spoofing
-    const mimeType = getActualMimeType(fileBuffer, clientMimeType, fileName);
+    const mimeType = getActualMimeType(magicBuffer, clientMimeType, fileName);
+    
+    let cachedFileBuffer: ArrayBuffer | null = null;
+    const getFileBuffer = async () => {
+      if (!cachedFileBuffer && file) {
+        cachedFileBuffer = await file.arrayBuffer();
+      }
+      return cachedFileBuffer;
+    };
 
     type RowData = { category?: string; type?: string; importHash?: string; reference?: string; date?: string; amount?: number; name?: string; isDuplicate?: boolean; isTransfer?: boolean; categoryId?: string; note?: string };
     let transactions: RowData[] = [];
@@ -392,16 +400,21 @@ export async function POST(request: Request) {
     }
 
     // 1. Excel → xlsx parser
-    if (transactions.length === 0 && isExcel && fileBuffer) {
-      transactions = (await parseExcel(fileBuffer)).map(rowToTransaction);
-      method = 'xlsx';
+    if (transactions.length === 0 && isExcel && file) {
+      const fb = await getFileBuffer();
+      if (fb) {
+        transactions = (await parseExcel(fb)).map(rowToTransaction);
+        method = 'xlsx';
+      }
     }
 
     // 2. PDF → Deterministic *334# then Gemini AI then M-Pesa pattern fallback
-    if (transactions.length === 0 && isPDF && fileBuffer) {
-      try {
+    if (transactions.length === 0 && isPDF && file) {
+      const fb = await getFileBuffer();
+      if (fb) {
+        try {
         const pdfParse = require('pdf-parse');
-        const { text: pdfExtractedText } = await pdfParse(Buffer.from(fileBuffer));
+        const { text: pdfExtractedText } = await pdfParse(Buffer.from(fb));
         const deterministicPdf = parseMpesaPdfStatement(pdfExtractedText);
         
         if (deterministicPdf && deterministicPdf.length > 0) {
@@ -412,34 +425,41 @@ export async function POST(request: Request) {
         console.error('[SmartUpload PDF Preprocess]', err);
       }
 
-      if (transactions.length === 0) {
-        const aiResult = await parseWithAI(fileBuffer, mimeType, userId);
-        if (aiResult?.length) {
-          transactions = aiResult;
-          method = 'ai';
-        } else {
-          transactions = (await parsePDF(fileBuffer)).map(rowToTransaction);
-          method = 'pdf';
+        if (transactions.length === 0) {
+          const aiResult = await parseWithAI(fb, mimeType, userId);
+          if (aiResult?.length) {
+            transactions = aiResult;
+            method = 'ai';
+          } else {
+            transactions = (await parsePDF(fb)).map(rowToTransaction);
+            method = 'pdf';
+          }
         }
       }
     }
 
     // 3. Image → Gemini Vision
-    if (transactions.length === 0 && isImage && fileBuffer) {
+    if (transactions.length === 0 && isImage && file) {
       if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
         return NextResponse.json({
           error: 'Image and receipt uploads require a configured Gemini AI API Key.'
         }, { status: 422 });
       }
-      const aiResult = await parseWithAI(fileBuffer, mimeType, userId);
-      if (aiResult?.length) { transactions = aiResult; method = 'ai'; }
+      const fb = await getFileBuffer();
+      if (fb) {
+        const aiResult = await parseWithAI(fb, mimeType, userId);
+        if (aiResult?.length) { transactions = aiResult; method = 'ai'; }
+      }
     }
 
     // 4. Fallback → CSV text parser (also catches .csv files)
-    if (transactions.length === 0 && fileBuffer && !isSMS) {
-      const text = Buffer.from(fileBuffer).toString('utf-8');
-      transactions = parseCSVText(text).map(rowToTransaction);
-      method = 'csv';
+    if (transactions.length === 0 && file && !isSMS) {
+      const fb = await getFileBuffer();
+      if (fb) {
+        const text = Buffer.from(fb).toString('utf-8');
+        transactions = parseCSVText(text).map(rowToTransaction);
+        method = 'csv';
+      }
     }
 
     if (transactions.length === 0) {

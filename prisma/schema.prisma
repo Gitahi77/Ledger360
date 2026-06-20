@@ -158,6 +158,8 @@ model Transaction {
   createdAt DateTime @default(now())
 
   @@index([userId, date(sort: Desc)])
+  @@index([accountId])
+  @@index([categoryId])
 }
 
 model Budget {
@@ -266,6 +268,8 @@ model Transfer {
   @@index([userId, date])
   @@index([fromAccountId])
   @@index([toAccountId])
+  @@index([goalId])
+  @@index([loanId])
 }
 
 // ── SavingsPlan: Save-More-Tomorrow commitment device (B-5, WO-15) ──

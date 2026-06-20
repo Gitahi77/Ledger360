@@ -204,9 +204,10 @@ export async function deleteSavingsPlan() {
 // SAFETY: skips if source account has insufficient funds.
 export async function triggerAutoSave(
   userId: string,
-  incomeTransaction: { id: string; baseAmountMinor: number; date: Date },
+  incomeTransactions: { id: string; baseAmountMinor: number; date: Date }[],
   userCurrency: string,
 ): Promise<string | null> {
+  if (!incomeTransactions.length) return null;
   try {
     // 1. Get the plan
     const plan = await prisma.savingsPlan.findUnique({
@@ -219,9 +220,9 @@ export async function triggerAutoSave(
     // Guard: no plan, or inactive
     if (!plan || !plan.active) return null;
 
-    // Guard: income date must be on/after plan.createdAt (prevents retroactive auto-saves)
-    const incomeDate = new Date(incomeTransaction.date);
-    if (incomeDate < plan.createdAt) return null;
+    // Filter to valid transactions on/after plan.createdAt
+    const validIncomes = incomeTransactions.filter(tx => new Date(tx.date) >= plan.createdAt);
+    if (validIncomes.length === 0) return null;
 
     // 2. Lazy escalation
     const esc = advanceEscalation(plan);
@@ -232,49 +233,64 @@ export async function triggerAutoSave(
       });
     }
 
-    // 3. Compute amount
     const rate = esc.currentRatePct;
-    const autoSaveMinor = Math.round(incomeTransaction.baseAmountMinor * rate / 100);
-    if (autoSaveMinor <= 0) return null;
 
-    // 4. Balance check — skip if insufficient funds (SAFETY)
+    // 3. Compute amounts
+    const transfersToCreate = [];
+    const logEntries = [];
+    let totalNeeded = 0;
+
+    for (const tx of validIncomes) {
+      const autoSaveMinor = Math.round(tx.baseAmountMinor * rate / 100);
+      if (autoSaveMinor > 0) {
+        transfersToCreate.push({
+          userId,
+          fromAccountId: plan.fromAccountId,
+          toAccountId: plan.toAccountId,
+          amountMinor: autoSaveMinor,
+          currency: plan.fromAccount?.currency || userCurrency || 'KES',
+          baseAmountMinor: autoSaveMinor,
+          fxRate: 1,
+          date: new Date(tx.date),
+          source: 'SAVE_MORE_TOMORROW',
+          goalId: plan.goalId || null,
+          loanId: null,
+          sourceTransactionId: tx.id,
+        });
+        logEntries.push({
+          source: 'SAVE_MORE_TOMORROW',
+          amount: autoSaveMinor,
+          rate,
+          triggeredBy: tx.id,
+        });
+        totalNeeded += autoSaveMinor;
+      }
+    }
+
+    if (transfersToCreate.length === 0) return null;
+
+    // 4. Balance check
     const { getAccountBalances } = await import('@/lib/actions/accounts');
     const balances = await getAccountBalances(userId);
     const sourceAcc = balances.find(a => a.id === plan.fromAccountId);
-    if (sourceAcc && sourceAcc.type !== 'credit_card' && sourceAcc.balanceMinor < autoSaveMinor) {
-      return `Auto-save skipped: not enough funds in ${sourceAcc.name ?? 'source account'} (available: ${sourceAcc.currency} ${(sourceAcc.balanceMinor / 100).toFixed(2)}, needed: ${(autoSaveMinor / 100).toFixed(2)}).`;
+    if (sourceAcc && sourceAcc.type !== 'credit_card' && sourceAcc.balanceMinor < totalNeeded) {
+      return `Auto-save skipped: not enough funds in ${sourceAcc.name ?? 'source account'} (available: ${sourceAcc.currency} ${(sourceAcc.balanceMinor / 100).toFixed(2)}, needed: ${(totalNeeded / 100).toFixed(2)}).`;
     }
 
-    // 5. Create the transfer (self-contained, idempotent via unique sourceTransactionId)
-    const currency = plan.fromAccount?.currency || userCurrency || 'KES';
-    await prisma.transfer.create({
-      data: {
-        userId,
-        fromAccountId:       plan.fromAccountId,
-        toAccountId:         plan.toAccountId,
-        amountMinor:         autoSaveMinor,
-        currency,
-        baseAmountMinor:     autoSaveMinor,
-        fxRate:              1,
-        date:                incomeDate,
-        source:              'SAVE_MORE_TOMORROW',
-        goalId:              plan.goalId || null,
-        loanId:              null,
-        sourceTransactionId: incomeTransaction.id, // idempotency key
-      },
+    // 5. Create transfers in bulk, ignoring conflicts for idempotency
+    await prisma.transfer.createMany({
+      data: transfersToCreate,
+      skipDuplicates: true,
     });
 
-    await logActivity({
-      userId,
-      action: 'CREATE',
-      resource: 'Transfer',
-      metadata: {
-        source: 'SAVE_MORE_TOMORROW',
-        amount: autoSaveMinor,
-        rate,
-        triggeredBy: incomeTransaction.id,
-      },
-    });
+    for (const log of logEntries) {
+      await logActivity({
+        userId,
+        action: 'CREATE',
+        resource: 'Transfer',
+        metadata: log,
+      });
+    }
 
     return null; // success, no warning
   } catch (err: unknown) {

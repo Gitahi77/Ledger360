@@ -86,8 +86,12 @@ export const limiters = {
 export async function checkLimit(name: keyof typeof limiters, key: string) {
   const rl = limiters[name];
   if (rl) {
-    const r = await rl.limit(key);
-    return { ok: r.success, retryAfter: r.success ? 0 : Math.ceil((r.reset - Date.now()) / 1000) };
+    try {
+      const r = await rl.limit(key);
+      return { ok: r.success, retryAfter: r.success ? 0 : Math.ceil((r.reset - Date.now()) / 1000) };
+    } catch (err) {
+      console.warn('[RateLimit] Redis failed, using memory fallback:', err);
+    }
   }
   
   // Dev fallback using in-memory

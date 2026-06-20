@@ -34,10 +34,13 @@ export async function getNseStocks(): Promise<{ stocks: NseStock[]; isLive: bool
     return { stocks: _cache.stocks, isLive: true };
   }
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
     const res = await fetch('https://nse-api-eight.vercel.app/api/stocks', {
       next: { revalidate: 900 },
-      signal: AbortSignal.timeout(5000), // 5s timeout
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
     if (!res.ok) throw new Error(`NSE API ${res.status}`);
     const raw = await res.json();
 

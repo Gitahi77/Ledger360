@@ -38,6 +38,7 @@ vi.mock('@/lib/prisma', () => ({
     },
     transfer: {
       create: vi.fn().mockResolvedValue({ id: 'transfer-auto-1' }),
+      createMany: vi.fn().mockResolvedValue({ count: 1 }),
       findMany: vi.fn().mockResolvedValue([]),
       deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
     },
@@ -112,18 +113,20 @@ describe('Save-More-Tomorrow (WO-15)', () => {
 
       await triggerAutoSave(
         'user-1',
-        { id: 'tx-1', baseAmountMinor: 100000, date: new Date() },
+        [{ id: 'tx-1', baseAmountMinor: 100000, date: new Date() }],
         'KES',
       );
 
       // After 4 elapsed periods (3 past, 1 due today): 10 + 4*2 = 18%
       // Transfer amount = round(100000 * 18 / 100) = 18000
-      expect(prisma.transfer.create).toHaveBeenCalledWith(
+      expect(prisma.transfer.createMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
-            amountMinor: 18000,
-            source: 'SAVE_MORE_TOMORROW',
-          }),
+          data: expect.arrayContaining([
+            expect.objectContaining({
+              amountMinor: 18000,
+              source: 'SAVE_MORE_TOMORROW',
+            }),
+          ]),
         }),
       );
 
@@ -157,17 +160,19 @@ describe('Save-More-Tomorrow (WO-15)', () => {
 
       await triggerAutoSave(
         'user-1',
-        { id: 'tx-2', baseAmountMinor: 100000, date: new Date() },
+        [{ id: 'tx-2', baseAmountMinor: 100000, date: new Date() }],
         'KES',
       );
 
       // 10 + 10*2 = 30, but capped at 20
       // Amount = round(100000 * 20 / 100) = 20000
-      expect(prisma.transfer.create).toHaveBeenCalledWith(
+      expect(prisma.transfer.createMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
-            amountMinor: 20000,
-          }),
+          data: expect.arrayContaining([
+            expect.objectContaining({
+              amountMinor: 20000,
+            }),
+          ]),
         }),
       );
 
@@ -188,12 +193,12 @@ describe('Save-More-Tomorrow (WO-15)', () => {
 
     const result = await triggerAutoSave(
       'user-1',
-      { id: 'tx-3', baseAmountMinor: 100000, date: new Date() },
+      [{ id: 'tx-3', baseAmountMinor: 100000, date: new Date() }],
       'KES',
     );
 
     expect(result).toBeNull();
-    expect(prisma.transfer.create).not.toHaveBeenCalled();
+    expect(prisma.transfer.createMany).not.toHaveBeenCalled();
   });
 
   /* ── Test 4: One income = one auto-save (idempotent) ──── */
@@ -207,19 +212,19 @@ describe('Save-More-Tomorrow (WO-15)', () => {
     // First call succeeds
     await triggerAutoSave(
       'user-1',
-      { id: 'tx-dup', baseAmountMinor: 100000, date: new Date() },
+      [{ id: 'tx-dup', baseAmountMinor: 100000, date: new Date() }],
       'KES',
     );
-    expect(prisma.transfer.create).toHaveBeenCalledTimes(1);
+    expect(prisma.transfer.createMany).toHaveBeenCalledTimes(1);
 
     // Second call: simulate unique constraint violation
-    vi.mocked(prisma.transfer.create).mockRejectedValueOnce(
+    vi.mocked(prisma.transfer.createMany).mockRejectedValueOnce(
       new Error('Unique constraint failed on the fields: (`sourceTransactionId`)'),
     );
 
     const result = await triggerAutoSave(
       'user-1',
-      { id: 'tx-dup', baseAmountMinor: 100000, date: new Date() },
+      [{ id: 'tx-dup', baseAmountMinor: 100000, date: new Date() }],
       'KES',
     );
 
@@ -236,14 +241,14 @@ describe('Save-More-Tomorrow (WO-15)', () => {
     ]);
 
     // Simulate a random DB error
-    vi.mocked(prisma.transfer.create).mockRejectedValueOnce(
+    vi.mocked(prisma.transfer.createMany).mockRejectedValueOnce(
       new Error('Database connection lost'),
     );
 
     // Should NOT throw — returns a warning string
     const result = await triggerAutoSave(
       'user-1',
-      { id: 'tx-fail', baseAmountMinor: 100000, date: new Date() },
+      [{ id: 'tx-fail', baseAmountMinor: 100000, date: new Date() }],
       'KES',
     );
 
@@ -261,7 +266,7 @@ describe('Save-More-Tomorrow (WO-15)', () => {
 
     await triggerAutoSave(
       'user-1',
-      { id: 'tx-sav', baseAmountMinor: 100000, date: new Date() },
+      [{ id: 'tx-sav', baseAmountMinor: 100000, date: new Date() }],
       'KES',
     );
 
@@ -271,13 +276,15 @@ describe('Save-More-Tomorrow (WO-15)', () => {
     // - toAccountId: acc-savings (a savings account)
     // This means the existing savings query (loanId IS NULL AND toAccount.type IN savings/investment)
     // will automatically include it.
-    expect(prisma.transfer.create).toHaveBeenCalledWith(
+    expect(prisma.transfer.createMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
-          source: 'SAVE_MORE_TOMORROW',
-          loanId: null,
-          toAccountId: 'acc-savings',
-        }),
+        data: expect.arrayContaining([
+          expect.objectContaining({
+            source: 'SAVE_MORE_TOMORROW',
+            loanId: null,
+            toAccountId: 'acc-savings',
+          }),
+        ]),
       }),
     );
   });
@@ -295,18 +302,20 @@ describe('Save-More-Tomorrow (WO-15)', () => {
 
     await triggerAutoSave(
       'user-1',
-      { id: 'tx-report', baseAmountMinor: 50000, date: new Date() },
+      [{ id: 'tx-report', baseAmountMinor: 50000, date: new Date() }],
       'KES',
     );
 
     // With a goalId set, the transfer has both goalId != null AND toAccountId = savings
     // Either condition satisfies the reports query
-    expect(prisma.transfer.create).toHaveBeenCalledWith(
+    expect(prisma.transfer.createMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
-          goalId: 'goal-1',
-          loanId: null,
-        }),
+        data: expect.arrayContaining([
+          expect.objectContaining({
+            goalId: 'goal-1',
+            loanId: null,
+          }),
+        ]),
       }),
     );
   });
@@ -342,12 +351,12 @@ describe('Save-More-Tomorrow (WO-15)', () => {
     // Income date is BEFORE plan creation
     const result = await triggerAutoSave(
       'user-1',
-      { id: 'tx-old', baseAmountMinor: 100000, date: new Date('2026-05-15') },
+      [{ id: 'tx-old', baseAmountMinor: 100000, date: new Date('2026-05-15') }],
       'KES',
     );
 
     expect(result).toBeNull();
-    expect(prisma.transfer.create).not.toHaveBeenCalled();
+    expect(prisma.transfer.createMany).not.toHaveBeenCalled();
   });
 
   /* ── Test 10: Insufficient funds skips gracefully ──────── */
@@ -362,11 +371,11 @@ describe('Save-More-Tomorrow (WO-15)', () => {
 
     const result = await triggerAutoSave(
       'user-1',
-      { id: 'tx-broke', baseAmountMinor: 100000, date: new Date() },
+      [{ id: 'tx-broke', baseAmountMinor: 100000, date: new Date() }],
       'KES',
     );
 
     expect(result).toContain('not enough funds');
-    expect(prisma.transfer.create).not.toHaveBeenCalled();
+    expect(prisma.transfer.createMany).not.toHaveBeenCalled();
   });
 });

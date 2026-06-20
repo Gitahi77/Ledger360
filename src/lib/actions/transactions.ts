@@ -57,7 +57,7 @@ export async function getTransactionSummary(period = 'this-month') {
   // WO-16 / BUG-3: "savings" = sum of transfers that fund a goal OR go to a
   // savings/investment account, EXCLUDING loan repayments. Each qualifying
   // transfer is counted once even if it matches multiple conditions.
-  const savingsTransfers = await prisma.transfer.findMany({
+  const savingsTransfers = await prisma.transfer.aggregate({
     where: {
       userId: user.id,
       date: { gte: from, lte: to },
@@ -67,11 +67,9 @@ export async function getTransactionSummary(period = 'this-month') {
         { toAccount: { type: { in: ['savings', 'investment'] } } },
       ],
     },
-    select: { baseAmountMinor: true },
+    _sum: { baseAmountMinor: true },
   });
-  const savings = savingsTransfers.reduce(
-    (sum, t) => sum + t.baseAmountMinor, 0
-  );
+  const savings = savingsTransfers._sum.baseAmountMinor ?? 0;
 
   const startOfToday = new Date(to.getFullYear(), to.getMonth(), to.getDate(), 0, 0, 0, 0);
   const todaySpendAgg = await prisma.transaction.aggregate({
@@ -213,26 +211,33 @@ export async function addTransaction(raw: {
     }
   }
 
-  const newTx = await prisma.transaction.create({
-    data: { 
-      name: data.name,
-      baseAmountMinor: data.baseAmountMinor,
-      type: data.type === 'income' ? 'income' : 'expense',
-      categoryId: data.categoryId,
-      accountId: accountId,
-      note: data.note,
-      date: new Date(data.date), 
-      userId: user.id 
-    },
-  });
-
   // Security Audit
   const { logActivity } = await import('@/lib/audit');
-  await logActivity({
-    userId: user.id,
-    action: 'CREATE',
-    resource: 'Transaction',
-    metadata: { txId: newTx.id, amount: data.baseAmountMinor, name: data.name },
+
+  const newTx = await prisma.$transaction(async (tx) => {
+    const createdTx = await tx.transaction.create({
+      data: { 
+        name: data.name,
+        baseAmountMinor: data.baseAmountMinor,
+        type: data.type === 'income' ? 'income' : 'expense',
+        categoryId: data.categoryId,
+        accountId: accountId,
+        note: data.note,
+        date: new Date(data.date), 
+        userId: user.id 
+      },
+    });
+
+    await tx.auditLog.create({
+      data: {
+        userId: user.id,
+        action: 'CREATE',
+        resource: 'Transaction',
+        metadata: JSON.stringify({ txId: createdTx.id, amount: data.baseAmountMinor, name: data.name }),
+      }
+    });
+
+    return createdTx;
   });
 
   // WO-15: Save-More-Tomorrow auto-save trigger (design point 3, 5)
@@ -242,7 +247,7 @@ export async function addTransaction(raw: {
     const { triggerAutoSave } = await import('@/lib/actions/savings');
     autoSaveWarning = await triggerAutoSave(
       user.id,
-      { id: newTx.id, baseAmountMinor: data.baseAmountMinor, date: new Date(data.date) },
+      [{ id: newTx.id, baseAmountMinor: data.baseAmountMinor, date: new Date(data.date) }],
       user.currency || 'KES',
     );
   }
@@ -350,10 +355,11 @@ export async function importTransactions(rows: {
       take: incomeRows.length,
       select: { id: true, baseAmountMinor: true, date: true },
     });
-    for (const tx of recentTxs) {
+    
+    if (recentTxs.length > 0) {
       await triggerAutoSave(
         user.id,
-        { id: tx.id, baseAmountMinor: tx.baseAmountMinor, date: tx.date },
+        recentTxs.map(tx => ({ id: tx.id, baseAmountMinor: tx.baseAmountMinor, date: tx.date })),
         user.currency || 'KES',
       );
     }
