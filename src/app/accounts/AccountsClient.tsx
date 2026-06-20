@@ -68,7 +68,7 @@ export function AccountsClient({ accounts, currency }: { accounts: Account[], cu
     try {
       const data = {
         name,
-        type: type as 'bank' | 'mobile_money' | 'cash' | 'credit',
+        type: type as 'mobile_money' | 'bank' | 'cash' | 'credit_card' | 'savings' | 'investment',
         openingMinor: toMinor(parseFloat(opening || '0')),
       };
       
