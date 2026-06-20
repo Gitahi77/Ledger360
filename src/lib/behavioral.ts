@@ -100,7 +100,7 @@ export async function safeToSpend(userId: string, period: 'weekly' | 'monthly' |
   const loans = await getLoansForUser(userId);
   let loanDue = 0;
   for (const l of loans) {
-    if (l.nextDue >= from && l.nextDue <= to) {
+    if (l.nextDue <= to) {
       loanDue += l.monthlyPaymentMinor;
     }
   }

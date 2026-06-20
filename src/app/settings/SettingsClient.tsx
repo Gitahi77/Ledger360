@@ -65,14 +65,22 @@ function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (
       disabled={disabled}
       aria-pressed={checked}
       style={{
-        width:42, height:24, borderRadius:999, border:'none', cursor: disabled ? 'not-allowed' : 'pointer',
-        background: checked ? 'linear-gradient(90deg,#27AE60,#1E8449)' : 'var(--border)',
-        position:'relative', transition:'background 0.2s',
-        boxShadow: checked ? '0 2px 6px rgba(39,174,96,0.35)' : 'inset 0 1px 3px rgba(0,0,0,0.15)',
-        opacity: disabled ? 0.5 : 1,
+        width: 44, height: 44,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'transparent', border: 'none',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        padding: 0,
       }}
     >
-      <div style={{ position:'absolute', top:3, left: checked ? 21 : 3, width:18, height:18, borderRadius:'50%', background:'white', boxShadow:'0 1px 3px rgba(0,0,0,0.25)', transition:'left 0.2s' }} />
+      <div style={{
+        width: 42, height: 24, borderRadius: 999,
+        background: checked ? 'linear-gradient(90deg,#27AE60,#1E8449)' : 'var(--border)',
+        position: 'relative', transition: 'background 0.2s',
+        boxShadow: checked ? '0 2px 6px rgba(39,174,96,0.35)' : 'inset 0 1px 3px rgba(0,0,0,0.15)',
+        opacity: disabled ? 0.5 : 1,
+      }}>
+        <div style={{ position: 'absolute', top: 3, left: checked ? 21 : 3, width: 18, height: 18, borderRadius: '50%', background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.25)', transition: 'left 0.2s' }} />
+      </div>
     </button>
   );
 }

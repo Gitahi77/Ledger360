@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { requireAuth } from './_auth';
 import { getAccountBalances } from './accounts';
 import { getLoansForUser } from './loans';
+import { getRates } from '@/lib/api/frankfurter';
 
 export async function getNetWorth() {
   const user = await requireAuth();
@@ -13,11 +14,20 @@ export async function getNetWorth() {
   const assets: import('@prisma/client').Asset[] = await prisma.asset.findMany({ where: { userId: user.id } });
   const loans    = await getLoansForUser(user.id);
 
-  const cashAccounts = accounts.filter(a => a.type !== 'credit_card' || a.balanceMinor > 0);
-  const debtAccounts = accounts.filter(a => a.type === 'credit_card' && a.balanceMinor < 0);
+  const cashAccounts = accounts.filter(a => a.type !== 'credit_card' && a.balanceMinor >= 0);
+  const debtAccounts = accounts.filter(a => a.type === 'credit_card' || a.balanceMinor < 0);
 
-  const totalCashMinor        = cashAccounts.reduce((s, a) => s + a.balanceMinor, 0);
-  const totalCardDebtMinor    = debtAccounts.reduce((s, a) => s + Math.abs(a.balanceMinor), 0);
+  const userCurrency = user.currency || 'KES';
+  const rates = await getRates(userCurrency);
+
+  const convert = (amount: number, currency?: string | null) => {
+    const c = currency || userCurrency;
+    if (c === userCurrency || !rates || !rates.rates[c]) return amount;
+    return Math.round(amount / rates.rates[c]);
+  };
+
+  const totalCashMinor        = cashAccounts.reduce((s, a) => s + convert(a.balanceMinor, a.currency), 0);
+  const totalCardDebtMinor    = debtAccounts.reduce((s, a) => s + Math.abs(convert(a.balanceMinor, a.currency)), 0);
   
   const totalAssetsMinor      = assets.reduce((s, a) => s + a.valueMinor, 0) + totalCashMinor;
   const totalLiabilitiesMinor = loans.reduce((s, l) => s + l.balanceMinor, 0) + totalCardDebtMinor;

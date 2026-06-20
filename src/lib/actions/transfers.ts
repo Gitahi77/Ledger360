@@ -77,13 +77,13 @@ export async function createTransfer(raw: {
     const loan = loans.find(l => l.id === data.loanId);
     if (!loan) throw new Error('Please choose a valid loan.');
     
-    // Auto-compute default interest
-    const autoInterest = Math.round(loan.balanceMinor * (loan.annualRate / 100) / 12);
+    // Auto-compute default interest (multiply before divide to prevent FP drift)
+    const autoInterest = Math.round((loan.balanceMinor * loan.annualRate) / 1200);
     finalInterestMinor = data.interestMinor ?? autoInterest;
 
     // Server-side validation
     if (finalInterestMinor < 0) finalInterestMinor = 0;
-    if (finalInterestMinor > data.amountMinor) finalInterestMinor = data.amountMinor;
+    // Allow finalInterestMinor > data.amountMinor for negative amortization
     
     const principal = data.amountMinor - finalInterestMinor;
     if (principal > loan.balanceMinor) {
@@ -178,10 +178,9 @@ export async function editTransfer(id: string, raw: {
     const isSameLoan = oldTransfer.loanId === data.loanId;
     
     let finalInterestMinor = 0;
-    const autoInterest = Math.round(loan.balanceMinor * (loan.annualRate / 100) / 12);
+    const autoInterest = Math.round((loan.balanceMinor * loan.annualRate) / 1200);
     finalInterestMinor = data.interestMinor ?? autoInterest;
     if (finalInterestMinor < 0) finalInterestMinor = 0;
-    if (finalInterestMinor > data.amountMinor) finalInterestMinor = data.amountMinor;
 
     const principal = data.amountMinor - finalInterestMinor;
     const oldRepaymentPrincipal = isSameLoan ? (oldTransfer.baseAmountMinor - oldTransfer.interestMinor) : 0;
@@ -213,10 +212,9 @@ export async function editTransfer(id: string, raw: {
     const loans = await getLoansForUser(user.id);
     const loan = loans.find(l => l.id === data.loanId);
     if (loan) {
-      const autoInterest = Math.round(loan.balanceMinor * (loan.annualRate / 100) / 12);
+      const autoInterest = Math.round((loan.balanceMinor * loan.annualRate) / 1200);
       finalInterestMinor = data.interestMinor ?? autoInterest;
       if (finalInterestMinor < 0) finalInterestMinor = 0;
-      if (finalInterestMinor > data.amountMinor) finalInterestMinor = data.amountMinor;
     }
   }
 

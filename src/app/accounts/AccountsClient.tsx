@@ -186,7 +186,7 @@ export function AccountsClient({ accounts, currency }: { accounts: Account[], cu
       {/* Modal */}
       {showModal && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }} onClick={() => setShowModal(false)}>
-          <div className="card animate-in" style={{ width: '100%', maxWidth: 400, padding: '1.5rem' }} onClick={e => e.stopPropagation()}>
+          <div className="card animate-in" style={{ width: '100%', maxWidth: 400, padding: '1.5rem', maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
               <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600 }}>{editingAcc ? 'Edit Account' : 'New Account'}</h2>
               <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={18} /></button>
@@ -211,14 +211,14 @@ export function AccountsClient({ accounts, currency }: { accounts: Account[], cu
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>Opening Balance ({currency})</label>
-                <input type="number" step="0.01" className="input-field" style={{ width: '100%', padding: '0.55rem 0.75rem', fontSize: '0.85rem' }}
+                <input type="number" step="0.01" inputMode="decimal" className="input-field" style={{ width: '100%', padding: '0.55rem 0.75rem', fontSize: '0.85rem' }}
                   value={opening} onChange={e => setOpening(e.target.value)} placeholder="0.00" />
                 <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.3rem' }}>
                   Set the starting balance before adding transactions in Ledger360.
                 </p>
               </div>
 
-              <button type="submit" disabled={loading} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: '0.5rem' }}>
+              <button type="submit" disabled={loading} className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '1rem', marginTop: '0.5rem' }}>
                 {loading ? <Loader2 size={16} className="animate-spin" /> : 'Save Account'}
               </button>
             </form>
