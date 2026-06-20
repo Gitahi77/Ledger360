@@ -23,7 +23,7 @@ function getActualMimeType(buffer: ArrayBuffer | null, fallbackMime: string, fil
   if (!buffer || buffer.byteLength < 4) return fallbackMime;
   
   const arr = new Uint8Array(buffer).subarray(0, 4);
-  const hex = Array.from(arr).map(b => b.toString(16).padStart(2, '0')).toUpperCase().join('');
+  const hex = Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
 
   if (hex.startsWith('89504E47')) return 'image/png';
   if (hex.startsWith('FFD8FF')) return 'image/jpeg';
