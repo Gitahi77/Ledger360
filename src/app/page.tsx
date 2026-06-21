@@ -1,4 +1,4 @@
-// src/app/page.tsx — FULLY LIVE Server Component Dashboard
+// src/app/page.tsx — Monarch-inspired premium dashboard layout
 export const metadata = {
   title: 'Dashboard — Ledger360',
   description: 'Your personal financial overview: net worth, income, spending, budgets and insights.',
@@ -13,43 +13,55 @@ import { getBudgetsWithSpend } from '@/lib/actions/budgets';
 import { getLoans } from '@/lib/actions/loans';
 import { getNetWorth } from '@/lib/actions/networth';
 import { safeToSpend } from '@/lib/behavioral';
-import { ArrowRight, AlertTriangle } from 'lucide-react';
+import { TrendingUp, TrendingDown, ArrowRight, AlertTriangle, Wallet, Target, PiggyBank, CreditCard } from 'lucide-react';
 import Link from 'next/link';
 import { requireAuth } from '@/lib/actions/_auth';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { InsightsFeed } from '@/components/dashboard/InsightsFeed';
 import { SafeToSpendCard } from '@/components/dashboard/SafeToSpendCard';
-import { BalanceText } from '@/components/typography/BalanceText';
 import { FxTicker } from '@/components/FxTicker';
-import { fmtAdaptive, fmtFull } from '@/lib/format';
+import { fmtAdaptive } from '@/lib/format';
 import { prisma } from '@/lib/prisma';
 
-
-
 function budgetStatus(limit: number, spent: number) {
-  const p = Math.min(100, (spent / limit) * 100);
+  const p = limit > 0 ? Math.min(100, (spent / limit) * 100) : (spent > 0 ? 100 : 0);
   if (p >= 100) return { bar: 'var(--danger)',  badge: 'badge-danger',  label: 'Over',    pct: 100 };
   if (p >= 80)  return { bar: 'var(--warning)', badge: 'badge-warning', label: 'Warning', pct: p   };
   return              { bar: 'var(--success)', badge: 'badge-success', label: 'Good',    pct: p   };
 }
 
-/* ── Main page ────────────────────────────────────────────── */
+function DeltaChip({ value, suffix = '' }: { value: number; suffix?: string }) {
+  const up = value >= 0;
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: '0.2rem',
+      fontSize: '0.72rem', fontWeight: 700,
+      color: up ? 'var(--success)' : 'var(--danger)',
+    }}>
+      {up ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+      {up ? '+' : ''}{value.toFixed(1)}{suffix}
+    </span>
+  );
+}
+
 export default async function Dashboard({
   searchParams,
 }: {
   searchParams: Promise<{ period?: string }>;
 }) {
   const { period: rawPeriod } = await searchParams;
-  // Strict allowlist: never trust URL params. An unknown period value would
-  // cause periodDates() to return undefined ranges, corrupting all queries.
   const ALLOWED_PERIODS = ['this-month', 'this-week', 'this-year', 'all-time'] as const;
   type AllowedPeriod = typeof ALLOWED_PERIODS[number];
   const period: AllowedPeriod = ALLOWED_PERIODS.includes(rawPeriod as AllowedPeriod)
     ? (rawPeriod as AllowedPeriod)
     : 'this-month';
-  const user = await requireAuth();
-  const currency = user.currency;
 
-  // Parallel fetches for production speed (Neon connection poolers support this well).
+  const user = await requireAuth();
+  const session = await getServerSession(authOptions);
+  const currency = user.currency;
+  const firstName = (session?.user?.name ?? '').split(' ')[0] || 'there';
+
   const [summary, budgets, loans, netWorth, chartData, donutData, insights, prefs, safeToSpendData] = await Promise.all([
     getTransactionSummary(period),
     getBudgetsWithSpend(period),
@@ -57,143 +69,186 @@ export default async function Dashboard({
     getNetWorth(),
     getMonthlyChartData(),
     getCategoryBreakdown(period),
-    // Pass user currency so insights use the right symbol (not hardcoded KES)
     import('@/lib/intelligence').then(m => m.generateInsights(user.id, user.currency)),
     prisma.userPreferences.findUnique({ where: { userId: user.id } }),
     safeToSpend(user.id, period as Parameters<typeof safeToSpend>[1]),
   ]);
 
   const overdueLoanCount = loans.filter(l => l.daysOverdue > 0).length;
-  // monthsLeft: how many full months remain AFTER the current one
-  // e.g. if it's June (month 5, 0-indexed), monthsLeft = 12 - 6 = 6 (Jul–Dec)
   const now          = new Date();
-  const monthsLeft   = Math.max(0, 11 - now.getMonth()); // 0 in December
+  const monthsLeft   = Math.max(0, 11 - now.getMonth());
   const projected    = Math.max(0, summary.savings * monthsLeft + netWorth.netWorthMinor);
   const periodLabel  = period === 'this-week' ? 'This Week' : period === 'this-year' ? 'This Year' : 'This Month';
-  
-  const targetRate = prefs?.savingRate ?? 20;
-  const halfTarget = targetRate / 2;
-  // Saving rate colour: green ≥ target, amber ≥ half target, red below
-  const srColor = summary.savingRate >= targetRate ? 'var(--success)' : summary.savingRate >= halfTarget ? 'var(--warning)' : 'var(--danger)';
+  const targetRate   = prefs?.savingRate ?? 20;
+  const srColor      = summary.savingRate >= targetRate ? 'var(--success)' : summary.savingRate >= targetRate / 2 ? 'var(--warning)' : 'var(--danger)';
+
+
+  const hour = now.getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
   return (
     <AppLayout>
-      {/* Header row */}
-      <div className="flex items-center justify-between mb-5 animate-in flex-wrap gap-3">
-        <Suspense fallback={<div className="skeleton" style={{ width: 180, height: 34, borderRadius: 8 }} />}>
-          <PeriodSelectorClient current={period} />
-        </Suspense>
-        <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-          {period === 'this-week' ? 'This week' : period === 'this-year' ? 'This year' : 'This month'}
-        </span>
+
+      {/* ── Page Header ──────────────────────────────────────── */}
+      <div className="dash-page-header animate-in">
+        <div>
+          <h1 className="dash-greeting">{greeting}, {firstName} 👋</h1>
+          <p className="dash-greeting-sub">Here&apos;s your financial snapshot</p>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <Suspense fallback={<div className="skeleton" style={{ width: 180, height: 36, borderRadius: 8 }} />}>
+            <PeriodSelectorClient current={period} />
+          </Suspense>
+        </div>
       </div>
 
-      {/* Intelligence Engine Insights */}
-      <InsightsFeed initialInsights={insights} />
+      {/* ── AI Insights Strip ─────────────────────────────────── */}
+      <div className="animate-in delay-1" style={{ marginBottom: '1.5rem' }}>
+        <InsightsFeed initialInsights={insights} />
+      </div>
 
-      <SafeToSpendCard data={safeToSpendData} currency={currency} />
+      {/* ── Safe to Spend Banner ──────────────────────────────── */}
+      <div className="animate-in delay-1" style={{ marginBottom: '1.5rem' }}>
+        <SafeToSpendCard data={safeToSpendData} currency={currency} />
+      </div>
 
-      {/* Protective Dashboard Hero — Grounded and Stable */}
-      <div className="dashboard-hero animate-in">
-        <div className="dashboard-hero-grid">
-          {/* Primary stat — Net Worth */}
+      {/* ── Net Worth Hero ────────────────────────────────────── */}
+      <div className="dashboard-hero animate-in delay-2" style={{ marginBottom: '1.5rem' }}>
+        {/* Decorative background circle */}
+        <div aria-hidden className="hero-bg-circle" />
+        <div className="hero-content">
           <div>
-            <p className="hero-label">Net Worth</p>
-            <BalanceText value={fmtAdaptive(netWorth.netWorthMinor, currency)} />
-            <p className="hero-sub" style={{ whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-              Assets {fmtAdaptive(netWorth.totalAssetsMinor, currency)} · Debt {fmtAdaptive(netWorth.totalLiabilitiesMinor, currency)}
+            <p className="hero-eyebrow">Total Net Worth</p>
+            <p className="hero-net-worth tabular">{fmtAdaptive(netWorth.netWorthMinor, currency)}</p>
+            <p className="hero-net-worth-sub">
+              Assets&nbsp;{fmtAdaptive(netWorth.totalAssetsMinor, currency)}
+              &nbsp;·&nbsp;
+              Debt&nbsp;{fmtAdaptive(netWorth.totalLiabilitiesMinor, currency)}
             </p>
           </div>
-
-          {/* Operational stat boxes */}
-          <div className="hero-stats-grid">
-            {[
-              { label: 'Total Cash',             value: fmtAdaptive(netWorth.totalCashMinor, currency),  sub: 'Excludes credit card debt', color: 'var(--text-primary)' },
-              { label: `Today's Spend`,          value: fmtAdaptive(summary.todaySpend, currency), sub: 'Daily running total', color: 'var(--text-primary)' },
-              { label: `${periodLabel} Income`,  value: fmtAdaptive(summary.income, currency),   sub: summary.income > 0 ? '+ Coming in' : 'No income yet',     color: 'var(--success)'      },
-              { label: `${periodLabel} Money Out`,   value: fmtAdaptive(summary.moneyOut, currency), sub: summary.moneyOut > 0 ? '- Going out' : 'No money out yet', color: 'var(--text-primary)' },
-              { label: 'Saving Rate',            value: `${summary.savingRate}%`,       sub: summary.savingRate >= targetRate ? `🎯 Target met (${targetRate}%)` : summary.savingRate >= halfTarget ? '📈 Getting there' : '⚠️ Needs attention', color: srColor },
-            ].map(s => (
-              <div key={s.label} className="hero-stat-card">
-                <p className="hero-label">{s.label}</p>
-                <p className="hero-stat-value tabular" style={{ color: s.color, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{s.value}</p>
-                <p className="hero-sub">{s.sub}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Saving rate progress bar */}
-        <div className="hero-progress-wrap">
-          <div className="hero-progress-labels">
-            <span className="hero-progress-label">Saving rate progress</span>
-            <span className="hero-progress-val tabular">{summary.savingRate}% of income saved</span>
-          </div>
-          <div className="hero-progress-track">
-            <div
-              className="hero-progress-bar"
-              style={{ width: `${Math.min(100, summary.savingRate)}%` }}
-            />
+          {/* Saving rate badge */}
+          <div className="hero-rate-badge">
+            <p className="hero-rate-label">Saving Rate</p>
+            <p className="hero-rate-value tabular" style={{ color: summary.savingRate >= targetRate ? '#4ade80' : summary.savingRate >= targetRate / 2 ? '#fbbf24' : '#f87171' }}>
+              {summary.savingRate}%
+            </p>
+            <div className="hero-rate-bar-track">
+              <div className="hero-rate-bar-fill" style={{ width: `${Math.min(100, summary.savingRate)}%` }} />
+            </div>
+            <p className="hero-rate-sub">
+              {summary.savingRate >= targetRate ? `🎯 Target ${targetRate}% met` : `Target: ${targetRate}%`}
+            </p>
           </div>
         </div>
       </div>
 
-      {/* Charts row */}
-      <div className="dashboard-charts-row" style={{ marginBottom: '1rem' }}>
-        <div className="card animate-in delay-2" style={{ minWidth: 0 }}>
+      {/* ── 4-KPI Strip ───────────────────────────────────────── */}
+      <div className="kpi-grid animate-in delay-2" style={{ marginBottom: '1.5rem' }}>
+        {[
+          {
+            icon: <Wallet size={18} />,
+            label: `${periodLabel} Income`,
+            value: fmtAdaptive(summary.income, currency),
+            sub: summary.income > 0 ? 'Money received' : 'No income yet',
+            iconBg: 'var(--success-light)',
+            iconColor: 'var(--success)',
+            delta: null,
+          },
+          {
+            icon: <CreditCard size={18} />,
+            label: `${periodLabel} Spent`,
+            value: fmtAdaptive(summary.moneyOut, currency),
+            sub: summary.moneyOut > 0 ? 'Money out' : 'No spend yet',
+            iconBg: 'var(--danger-light)',
+            iconColor: 'var(--danger)',
+            delta: null,
+          },
+          {
+            icon: <PiggyBank size={18} />,
+            label: 'Total Cash',
+            value: fmtAdaptive(netWorth.totalCashMinor, currency),
+            sub: 'Liquid assets',
+            iconBg: 'var(--primary-light)',
+            iconColor: 'var(--primary)',
+            delta: null,
+          },
+          {
+            icon: <Target size={18} />,
+            label: "Today's Spend",
+            value: fmtAdaptive(summary.todaySpend, currency),
+            sub: 'Running daily total',
+            iconBg: 'var(--warning-light)',
+            iconColor: 'var(--warning)',
+            delta: null,
+          },
+        ].map((kpi, i) => (
+          <div key={i} className="kpi-card" style={{ animationDelay: `${i * 50}ms` }}>
+            <div className="kpi-icon" style={{ background: kpi.iconBg, color: kpi.iconColor }}>
+              {kpi.icon}
+            </div>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <p className="kpi-label">{kpi.label}</p>
+              <p className="kpi-value tabular">{kpi.value}</p>
+              <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>{kpi.sub}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Charts Row ────────────────────────────────────────── */}
+      <div className="dashboard-charts-row animate-in delay-3">
+        <div className="card" style={{ minWidth: 0 }}>
           <div className="section-header">
-            <h2 className="card-title" style={{ marginBottom: 0 }}>Income vs Expenses</h2>
+            <h2 className="card-title" style={{ marginBottom: 0 }}>Cash Flow</h2>
             <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Last 6 months</span>
           </div>
           <CashFlowChart data={chartData} />
         </div>
 
-        <div className="card animate-in delay-3" style={{ minWidth: 0, overflow: 'visible' }}>
+        <div className="card" style={{ minWidth: 0, overflow: 'visible' }}>
           <div className="section-header">
-            <h2 className="card-title" style={{ marginBottom: 0 }}>Where Money Goes</h2>
+            <h2 className="card-title" style={{ marginBottom: 0 }}>Spending Breakdown</h2>
+            <Link href="/transactions" className="section-link">Details <ArrowRight size={12} /></Link>
           </div>
           <SpendingDonutChart data={donutData} />
         </div>
       </div>
 
-      {/* Live KES Exchange Rates */}
-      <FxTicker currency={currency} />
+      {/* ── Budgets + Loans + Forecast ────────────────────────── */}
+      <div className="dashboard-charts-row animate-in delay-4">
 
-      {/* Bottom row */}
-      <div className="dashboard-charts-row">
-        {/* Budget status */}
-        <div className="card animate-in delay-3">
+        {/* Budget Status */}
+        <div className="card">
           <div className="section-header">
             <h2 className="card-title" style={{ marginBottom: 0 }}>Budget Status</h2>
             <Link href="/budgets" className="section-link">Manage <ArrowRight size={12} /></Link>
           </div>
-
           {budgets.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-              <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>📊</div>
-              <div style={{ fontSize: '0.8rem' }}>No budgets set up yet</div>
-              <Link href="/budgets" className="btn btn-outline" style={{ marginTop: '0.75rem', display: 'inline-flex', fontSize: '0.78rem' }}>Create a budget</Link>
+            <div style={{ textAlign: 'center', padding: '2.5rem 1rem', color: 'var(--text-muted)' }}>
+              <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>📊</div>
+              <p style={{ fontSize: '0.875rem', marginBottom: '0.75rem' }}>No budgets set up yet</p>
+              <Link href="/budgets" className="btn btn-primary" style={{ fontSize: '0.8rem' }}>Create a budget</Link>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
-              {budgets.slice(0, 4).map(b => {
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {budgets.slice(0, 5).map(b => {
                 const st  = budgetStatus(b.limit, b.spent);
                 const over = b.spent - b.limit;
                 return (
                   <div key={b.id}>
                     <div className="flex items-center justify-between mb-1">
-                      <span style={{ fontSize:'0.8125rem', fontWeight:600 }}>{b.name}</span>
+                      <span style={{ fontSize: '0.8125rem', fontWeight: 600 }}>{b.name}</span>
                       <div className="flex items-center gap-2">
-                        {over > 0 && <span style={{ fontSize:'0.68rem', color:'var(--danger)', fontWeight:700 }}>+{fmtAdaptive(over, currency)}</span>}
+                        {over > 0 && <span style={{ fontSize: '0.68rem', color: 'var(--danger)', fontWeight: 700 }}>+{fmtAdaptive(over, currency)}</span>}
                         <span className={`badge ${st.badge}`}>{st.label}</span>
                       </div>
                     </div>
                     <div className="progress-track">
-                      <div className="progress-fill" style={{ width:`${st.pct}%`, background:st.bar }} />
+                      <div className="progress-fill" style={{ width: `${st.pct}%`, background: st.bar }} />
                     </div>
                     <div className="flex items-center justify-between mt-1">
-                      <span className="text-xs text-muted">{fmtAdaptive(b.spent, currency)}</span>
-                      <span className="text-xs text-muted">Limit: {fmtAdaptive(b.limit, currency)}</span>
+                      <span className="text-xs text-muted">{fmtAdaptive(b.spent, currency)} spent</span>
+                      <span className="text-xs text-muted">of {fmtAdaptive(b.limit, currency)}</span>
                     </div>
                   </div>
                 );
@@ -202,56 +257,58 @@ export default async function Dashboard({
           )}
         </div>
 
-        {/* Forecast + Loans snapshot */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        {/* Right column: Loans + Year-End Forecast */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+
           {/* Loans snapshot */}
           {loans.length > 0 && (
-            <div className="card animate-in delay-3" style={{ padding: '1rem' }}>
-              <div className="section-header" style={{ marginBottom: '0.75rem' }}>
-                <h2 className="card-title" style={{ marginBottom: 0, fontSize: '0.875rem' }}>Loans</h2>
+            <div className="card" style={{ padding: '1.125rem' }}>
+              <div className="section-header" style={{ marginBottom: '0.875rem' }}>
+                <h2 className="card-title" style={{ marginBottom: 0 }}>Active Loans</h2>
                 <Link href="/loans" className="section-link">View all <ArrowRight size={12} /></Link>
               </div>
               {overdueLoanCount > 0 && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.72rem', fontWeight: 600, color: 'var(--danger)', marginBottom: '0.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.72rem', fontWeight: 700, color: 'var(--danger)', marginBottom: '0.625rem', padding: '0.4rem 0.6rem', background: 'var(--danger-light)', borderRadius: 8 }}>
                   <AlertTriangle size={11} /> {overdueLoanCount} overdue
                 </div>
               )}
-              {loans.slice(0, 3).map(l => (
-                <div key={l.id} className="flex items-center justify-between" style={{ fontSize:'0.78rem', marginBottom:'0.375rem' }}>
-                  <span style={{ color:'var(--text-secondary)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'55%' }}>{l.name}</span>
-                  <span style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, color: l.daysOverdue > 0 ? 'var(--danger)' : 'var(--text-primary)', whiteSpace:'nowrap' }}>
-                    {fmtAdaptive(l.balanceMinor, currency)}
-                  </span>
-                </div>
-              ))}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {loans.slice(0, 3).map(l => (
+                  <div key={l.id} className="flex items-center justify-between" style={{ fontSize: '0.8125rem' }}>
+                    <span style={{ color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '58%' }}>{l.name}</span>
+                    <span style={{ fontWeight: 700, color: l.daysOverdue > 0 ? 'var(--danger)' : 'var(--text-primary)', whiteSpace: 'nowrap' }}>
+                      {fmtAdaptive(l.balanceMinor, currency)}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
-          {/* Year-End Forecast */}
-          <div className="hero-card animate-in delay-4" style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-            <div>
-              <p style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,255,255,0.6)', marginBottom: '0.5rem' }}>Year-End Forecast</p>
-              <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.75)', marginBottom: '0.625rem' }}>At your current pace you will save:</p>
-              <p style={{ fontFamily:'Space Grotesk,sans-serif',
-                fontSize: projected > 99_999_999 ? '1.4rem' : projected > 9_999_999 ? '1.6rem' : '1.8rem',
-                fontWeight:700, letterSpacing:'-0.04em', color:'white', lineHeight:1,
-                whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                {fmtAdaptive(projected, currency)}
-              </p>
-              <p style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.25rem' }}>by December {new Date().getFullYear()}</p>
-            </div>
-            <div style={{ marginTop: '1rem', background: 'rgba(255,255,255,0.12)', borderRadius: 8, padding: '0.75rem' }}>
+          {/* Year-End Forecast card */}
+          <div className="card dash-forecast-card" style={{ flex: 1 }}>
+            <p className="dash-forecast-eyebrow">Year-End Forecast</p>
+            <p className="dash-forecast-sub">At your current pace you&apos;ll save:</p>
+            <p className="dash-forecast-value tabular">{fmtAdaptive(projected, currency)}</p>
+            <p className="dash-forecast-year">by December {new Date().getFullYear()}</p>
+            <div className="dash-forecast-bar-wrap">
               <div className="flex items-center justify-between mb-2">
-                <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.8)', fontWeight: 600 }}>Saving Rate</span>
-                <span style={{ fontSize: '0.72rem', color: 'white', fontWeight: 700, fontFamily: 'Space Grotesk,sans-serif' }}>{summary.savingRate}%</span>
+                <span style={{ fontSize: '0.72rem', fontWeight: 600, opacity: 0.8 }}>Saving Rate</span>
+                <span style={{ fontSize: '0.72rem', fontWeight: 700 }}>{summary.savingRate}%</span>
               </div>
-              <div style={{ height: 4, background: 'rgba(255,255,255,0.2)', borderRadius: 999, overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${Math.min(100, summary.savingRate)}%`, background: 'white', borderRadius: 999 }} />
+              <div className="dash-forecast-bar-track">
+                <div className="dash-forecast-bar-fill" style={{ width: `${Math.min(100, summary.savingRate)}%` }} />
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* ── Live FX Rates ─────────────────────────────────────── */}
+      <div className="animate-in delay-5" style={{ marginTop: '1.5rem' }}>
+        <FxTicker currency={currency} />
+      </div>
+
     </AppLayout>
   );
 }
