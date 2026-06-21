@@ -3,7 +3,6 @@
 // the module is resolved before the config object is evaluated by the build
 // toolchain — placing it at the bottom is an ES module anti-pattern.
 import type { NextConfig } from "next";
-import { withSentryConfig } from "@sentry/nextjs";
 
 // 'unsafe-eval' is required by Next.js during development (eval-source-maps)
 // but meaningfully widens the XSS surface in production. Restrict it to dev.
@@ -64,11 +63,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withSentryConfig(nextConfig, {
-  org: process.env.SENTRY_ORG || "ledger360",
-  project: process.env.SENTRY_PROJECT || "ledger360",
-  // Only print Sentry upload progress in CI; suppress locally to reduce noise.
-  silent: !process.env.CI,
-  // Disable Sentry build telemetry.
-  telemetry: false,
-});
+export default nextConfig;
