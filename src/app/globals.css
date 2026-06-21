@@ -109,11 +109,11 @@
   --text-secondary: hsl(215, 25%, 35%);
   --text-muted:     hsl(215, 16%, 52%);
 
-  /* Brand blue */
-  --primary:       hsl(213, 94%, 48%);
-  --primary-grad:  hsl(213, 94%, 48%);
-  --primary-light: hsl(213, 90%, 94%);
-  --primary-dark:  hsl(213, 90%, 36%);
+  /* Brand — Midnight Green (#0F4C5C) */
+  --primary:       hsl(192, 72%, 21%);
+  --primary-grad:  hsl(192, 72%, 21%);
+  --primary-light: hsl(192, 30%, 94%);
+  --primary-dark:  hsl(192, 72%, 14%);
 
   /* Success — Monzo-teal warmth */
   --success:       hsl(152, 55%, 38%);
@@ -127,11 +127,11 @@
   --danger-light:  hsl(0, 86%, 96%);
   --danger-text:   hsl(0, 72%, 30%);
 
-  /* Warning — calm amber */
-  --warning:       hsl(38, 92%, 44%);
-  --warning-grad:  hsl(38, 92%, 44%);
-  --warning-light: hsl(38, 95%, 94%);
-  --warning-text:  hsl(38, 85%, 28%);
+  /* Accent — Sunrise Orange (#F58220) */
+  --warning:       hsl(28, 93%, 54%);
+  --warning-grad:  hsl(28, 93%, 54%);
+  --warning-light: hsl(28, 95%, 94%);
+  --warning-text:  hsl(28, 85%, 28%);
 
   /* Accent palette */
   --purple:        hsl(258, 60%, 55%);
@@ -156,17 +156,17 @@
   --border:       hsl(215, 20%, 84%);
   --border-light: hsl(215, 20%, 90%);
 
-  /* Shadows — purely functional, no glow */
-  --shadow-sm: 0 1px 2px rgba(15,23,42,0.05);
-  --shadow-md: 0 4px 6px rgba(15,23,42,0.05);
-  --shadow-lg: 0 10px 15px rgba(15,23,42,0.05);
+  /* Shadows — Soft elevated shadows */
+  --shadow-sm: 0 2px 4px rgba(15,23,42,0.04);
+  --shadow-md: 0 8px 16px rgba(15,23,42,0.06);
+  --shadow-lg: 0 16px 32px rgba(15,23,42,0.08);
   --btn-shadow: none;
 
   /* Layout */
   --sidebar-width: 232px;
   --header-height: 52px;
-  --radius:    4px;
-  --radius-sm: 2px;
+  --radius:    16px;
+  --radius-sm: 8px;
 
   /* Card surface tokens */
   --card-bg:      hsl(0, 0%, 100%);
@@ -260,7 +260,7 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+  font-family: var(--font-inter), 'Inter', -apple-system, system-ui, sans-serif;
   font-size: 14px;
   line-height: 1.55;
   background-color: var(--bg-app);
@@ -270,9 +270,9 @@ body {
   transition: background-color 0.25s, color 0.25s;
 }
 
-/* Space Grotesk for numbers, KPI values, headings */
+/* Inter for numbers, KPI values, headings */
 .kpi-value, .card-title, h1, h2, h3,
-[class*="value-"], .mono { font-family: 'Space Grotesk', 'DM Sans', sans-serif; }
+[class*="value-"], .mono { font-family: var(--font-inter), 'Inter', -apple-system, system-ui, sans-serif; font-weight: 700; }
 
 a { color: inherit; text-decoration: none; }
 button { background: none; border: none; cursor: pointer; font-family: inherit; }

@@ -23,8 +23,6 @@ const MORE_ITEMS = [
   { href: '/loans',        icon: CreditCard,      label: 'Loans'        },
   { href: '/reports',      icon: BarChart2,       label: 'Reports'      },
   { href: '/settings',     icon: Settings,        label: 'Settings'     },
-  { href: '/privacy',      icon: Shield,          label: 'Privacy'      },
-  { href: '/tos',          icon: FileText,        label: 'Terms'        },
 ];
 
 export function MobileNav() {
