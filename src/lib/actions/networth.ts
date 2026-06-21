@@ -18,12 +18,18 @@ export async function getNetWorth() {
   const debtAccounts = accounts.filter(a => a.type === 'credit_card' || a.balanceMinor < 0);
 
   const userCurrency = user.currency || 'KES';
-  const rates = await getRates(userCurrency);
+  const rates = await getRates('USD');
 
   const convert = (amount: number, currency?: string | null) => {
     const c = currency || userCurrency;
-    if (c === userCurrency || !rates || !rates.rates[c]) return amount;
-    return Math.round(amount / rates.rates[c]);
+    if (c === userCurrency || !rates) return amount;
+    
+    const rateC = c === 'USD' ? 1 : rates.rates[c];
+    const rateUser = userCurrency === 'USD' ? 1 : rates.rates[userCurrency];
+    
+    if (!rateC || !rateUser) return amount;
+    
+    return Math.round(amount * (rateUser / rateC));
   };
 
   const totalCashMinor        = cashAccounts.reduce((s, a) => s + convert(a.balanceMinor, a.currency), 0);

@@ -34,15 +34,23 @@ export async function getAccountBalances(userId: string): Promise<AccountWithBal
 
   if (accounts.length === 0) return [];
 
+  const txWhere = {
+    userId,
+    NOT: [
+      { name: { contains: 'VOIDED', mode: 'insensitive' as const } },
+      { name: { contains: 'pending', mode: 'insensitive' as const } }
+    ]
+  };
+
   const [incGroup, expGroup, txOutGroup, txInGroup] = await Promise.all([
     prisma.transaction.groupBy({
       by: ['accountId'],
-      where: { userId, type: 'income' },
+      where: { ...txWhere, type: 'income' },
       _sum: { baseAmountMinor: true }
     }),
     prisma.transaction.groupBy({
       by: ['accountId'],
-      where: { userId, type: 'expense' },
+      where: { ...txWhere, type: 'expense' },
       _sum: { baseAmountMinor: true }
     }),
     prisma.transfer.groupBy({
@@ -57,10 +65,10 @@ export async function getAccountBalances(userId: string): Promise<AccountWithBal
     })
   ]);
 
-  const incMap = new Map(incGroup.map(g => [g.accountId, g._sum.baseAmountMinor ?? 0]));
-  const expMap = new Map(expGroup.map(g => [g.accountId, g._sum.baseAmountMinor ?? 0]));
-  const txOutMap = new Map(txOutGroup.map(g => [g.fromAccountId, g._sum.amountMinor ?? 0]));
-  const txInMap = new Map(txInGroup.map(g => [g.toAccountId, g._sum.amountMinor ?? 0]));
+  const incMap = new Map(incGroup.map(g => [g.accountId, g._sum?.baseAmountMinor ?? 0]));
+  const expMap = new Map(expGroup.map(g => [g.accountId, g._sum?.baseAmountMinor ?? 0]));
+  const txOutMap = new Map(txOutGroup.map(g => [g.fromAccountId, g._sum?.amountMinor ?? 0]));
+  const txInMap = new Map(txInGroup.map(g => [g.toAccountId, g._sum?.amountMinor ?? 0]));
 
   return accounts.map(acc => {
     const inc = incMap.get(acc.id) ?? 0;

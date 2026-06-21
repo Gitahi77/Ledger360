@@ -14,34 +14,38 @@ export async function getBudgetsWithSpend(period = 'this-month') {
     include: { category: true },
   });
 
-  type AggRow = { categoryId: string; _sum: { baseAmountMinor: number | null } };
-  const [spendThisPeriodRows, spendAllTimeRows] = await Promise.all([
-    prisma.transaction.groupBy({
-      by: ['categoryId'],
-      where: { userId: user.id, type: 'expense', date: { gte: from, lte: to } },
-      _sum: { baseAmountMinor: true },
-    }),
-    prisma.transaction.groupBy({
-      by: ['categoryId'],
-      where: { userId: user.id, type: 'expense', date: { lte: to } },
-      _sum: { baseAmountMinor: true },
-    })
-  ]);
+  const allExpenses = await prisma.transaction.findMany({
+    where: { 
+      userId: user.id, 
+      type: 'expense', 
+      date: { lte: to },
+      NOT: [
+        { name: { contains: 'VOIDED', mode: 'insensitive' } },
+        { name: { contains: 'pending', mode: 'insensitive' } }
+      ]
+    },
+    select: { categoryId: true, baseAmountMinor: true, date: true }
+  });
 
-  const spendThisPeriodMap = Object.fromEntries(spendThisPeriodRows.map((r: AggRow) => [r.categoryId, r._sum.baseAmountMinor ?? 0]));
-  
-  // We will fetch spendSinceCreatedAt per budget below
-  // to avoid spend before createdAt inflating the total.
+  const spendThisPeriodMap: Record<string, number> = {};
+  const rolloverSpendMap = new Map<string, number>();
 
-  // Fetch spend >= createdAt for rollover budgets to strictly scope spend
+  for (const tx of allExpenses) {
+    if (tx.date >= from && tx.date <= to) {
+      spendThisPeriodMap[tx.categoryId] = (spendThisPeriodMap[tx.categoryId] || 0) + tx.baseAmountMinor;
+    }
+  }
+
   const rolloverBudgets = budgets.filter(b => b.rollover);
-  const rolloverSpends = await Promise.all(rolloverBudgets.map(b => 
-    prisma.transaction.aggregate({
-      where: { userId: user.id, categoryId: b.categoryId, type: 'expense', date: { gte: b.createdAt, lte: to } },
-      _sum: { baseAmountMinor: true }
-    })
-  ));
-  const rolloverSpendMap = new Map(rolloverBudgets.map((b, i) => [b.id, rolloverSpends[i]._sum.baseAmountMinor ?? 0]));
+  for (const b of rolloverBudgets) {
+    let sum = 0;
+    for (const tx of allExpenses) {
+      if (tx.categoryId === b.categoryId && tx.date >= b.createdAt && tx.date <= to) {
+        sum += tx.baseAmountMinor;
+      }
+    }
+    rolloverSpendMap.set(b.id, sum);
+  }
 
   return budgets.map(b => {
     let effectiveLimit = b.limitAmountMinor;
