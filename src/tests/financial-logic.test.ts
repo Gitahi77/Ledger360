@@ -415,14 +415,14 @@ describe('Financial Logic and Validations', () => {
 
     it('net worth drops by exactly the interest paid', async () => {
       vi.mocked(getAccountBalances).mockResolvedValue([{ id: 'acc-1', balanceMinor: 5000, type: 'CHECKING', currency: 'KES', name: 'Bank', userId: 'user-1', openingMinor: 0, archived: false, createdAt: new Date() }]);
-      vi.mocked(getLoansForUser).mockResolvedValue([{ id: 'l1', balanceMinor: 10000, userId: 'u1', name: 'L1', lender: 'B1', type: 'student', amortization: 'REDUCING_BALANCE', originalAmountMinor: 10000, annualRate: 10, monthlyPaymentMinor: 500, nextDue: new Date(), createdAt: new Date(), daysOverdue: 0 }]);
+      vi.mocked(getLoansForUser).mockResolvedValue([{ id: 'l1', balanceMinor: 5000, userId: 'u1', name: 'L1', lender: 'B1', type: 'student', amortization: 'REDUCING_BALANCE', originalAmountMinor: 5000, annualRate: 10, monthlyPaymentMinor: 500, nextDue: new Date(), createdAt: new Date(), daysOverdue: 0 }]);
       vi.mocked(prisma.asset.findMany).mockResolvedValue([]);
       
       const before = await getNetWorth();
       expect(before.netWorthMinor).toBe(0);
       
       vi.mocked(getAccountBalances).mockResolvedValue([{ id: 'acc-1', balanceMinor: 4000, type: 'CHECKING', currency: 'KES', name: 'Bank', userId: 'user-1', openingMinor: 0, archived: false, createdAt: new Date() }]);
-      vi.mocked(getLoansForUser).mockResolvedValue([{ id: 'loan-1', balanceMinor: 4200, userId: 'user-1', name: 'L', lender: 'B', type: 't', originalAmountMinor: 5000, annualRate: 0, monthlyPaymentMinor: 0, nextDue: new Date(), createdAt: new Date(), daysOverdue: 0 }]);
+      vi.mocked(getLoansForUser).mockResolvedValue([{ id: 'loan-1', balanceMinor: 4200, userId: 'user-1', name: 'L', lender: 'B', type: 't', amortization: 'REDUCING_BALANCE', originalAmountMinor: 5000, annualRate: 0, monthlyPaymentMinor: 0, nextDue: new Date(), createdAt: new Date(), daysOverdue: 0 }]);
       
       const after = await getNetWorth();
       expect(after.netWorthMinor).toBe(-200); 
