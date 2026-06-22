@@ -80,7 +80,7 @@ export default async function Dashboard({
   const projected    = Math.max(0, summary.savings * monthsLeft + netWorth.netWorthMinor);
   const periodLabel  = period === 'this-week' ? 'This Week' : period === 'this-year' ? 'This Year' : 'This Month';
   const targetRate   = prefs?.savingRate ?? 20;
-  const srColor      = summary.savingRate >= targetRate ? 'var(--success)' : summary.savingRate >= targetRate / 2 ? 'var(--warning)' : 'var(--danger)';
+
 
 
   const hour = now.getHours();
@@ -133,7 +133,7 @@ export default async function Dashboard({
               {summary.savingRate}%
             </p>
             <div className="hero-rate-bar-track">
-              <div className="hero-rate-bar-fill" style={{ width: `${Math.min(100, summary.savingRate)}%` }} />
+              <div className="hero-rate-bar-fill" style={{ width: `${Math.max(0, Math.min(100, summary.savingRate))}%` }} />
             </div>
             <p className="hero-rate-sub">
               {summary.savingRate >= targetRate ? `🎯 Target ${targetRate}% met` : `Target: ${targetRate}%`}
@@ -297,7 +297,7 @@ export default async function Dashboard({
                 <span style={{ fontSize: '0.72rem', fontWeight: 700 }}>{summary.savingRate}%</span>
               </div>
               <div className="dash-forecast-bar-track">
-                <div className="dash-forecast-bar-fill" style={{ width: `${Math.min(100, summary.savingRate)}%` }} />
+                <div className="dash-forecast-bar-fill" style={{ width: `${Math.max(0, Math.min(100, summary.savingRate))}%` }} />
               </div>
             </div>
           </div>
