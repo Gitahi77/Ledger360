@@ -3,9 +3,9 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { createAccount, updateAccount, deleteAccount } from '@/lib/actions/accounts';
-import { Plus, Edit2, Trash2, Loader2, X, Archive, Landmark, Wallet, CreditCard, Banknote } from 'lucide-react';
+import { Plus, Edit2, Trash2, Loader2, X, Archive, Landmark, Wallet, CreditCard, Banknote, Smartphone } from 'lucide-react';
 import { toMinor, toMajor } from '@/lib/money';
-import { fmtAdaptive } from '@/lib/format';
+import { fmtAdaptive, formatKES } from '@/lib/format';
 
 type Account = {
   id: string; name: string; type: string; currency: string;
@@ -13,12 +13,26 @@ type Account = {
 };
 
 const ACCOUNT_TYPES = [
-  { id: 'mobile_money', label: 'Mobile Money', icon: Wallet },
-  { id: 'bank',         label: 'Bank Account', icon: Landmark },
-  { id: 'cash',         label: 'Cash',         icon: Banknote },
-  { id: 'credit_card',  label: 'Credit Card',  icon: CreditCard },
-  { id: 'savings',      label: 'Savings',      icon: Landmark },
-  { id: 'investment',   label: 'Investment',   icon: TrendingUpIcon },
+  { id: 'CHECKING',       label: 'Checking',      icon: Landmark,  color: 'var(--text-primary)' },
+  { id: 'SAVINGS',        label: 'Savings',       icon: Landmark,  color: 'var(--text-primary)' },
+  { id: 'MPESA',          label: 'M-Pesa',        icon: Smartphone, color: 'var(--color-mpesa)' },
+  { id: 'AIRTEL_MONEY',   label: 'Airtel Money',  icon: Smartphone, color: 'var(--danger)' },
+  { id: 'CREDIT_CARD',    label: 'Credit Card',   icon: CreditCard, color: 'var(--warning)' },
+  { id: 'SACCO_DEPOSIT',  label: 'SACCO Deposit', icon: Landmark,  color: 'var(--success)' },
+  { id: 'SACCO_LOAN',     label: 'SACCO Loan',    icon: Landmark,  color: 'var(--warning)' },
+  { id: 'CHAMA',          label: 'Chama',         icon: Wallet,    color: 'var(--purple)' },
+  { id: 'BROKERAGE',      label: 'Brokerage',     icon: TrendingUpIcon, color: 'var(--teal)' },
+  { id: 'MORTGAGE',       label: 'Mortgage',      icon: Landmark,  color: 'var(--warning)' },
+  { id: 'AUTO_LOAN',      label: 'Auto Loan',     icon: Landmark,  color: 'var(--warning)' },
+  { id: 'CRYPTO',         label: 'Crypto',        icon: Wallet,    color: 'var(--purple)' },
+];
+
+const ACCOUNT_GROUPS = [
+  { label: 'Mobile Money', types: ['MPESA', 'AIRTEL_MONEY'] },
+  { label: 'Bank & Cash',  types: ['CHECKING', 'SAVINGS'] },
+  { label: 'SACCOs & Chamas', types: ['SACCO_DEPOSIT', 'CHAMA'] },
+  { label: 'Loans',        types: ['CREDIT_CARD', 'SACCO_LOAN', 'MORTGAGE', 'AUTO_LOAN'] },
+  { label: 'Investments',  types: ['BROKERAGE', 'CRYPTO'] },
 ];
 
 // Helper to get an icon
@@ -34,7 +48,7 @@ export function AccountsClient({ accounts, currency }: { accounts: Account[], cu
   const [editingAcc, setEditingAcc] = useState<Account | null>(null);
 
   const [name, setName] = useState('');
-  const [type, setType] = useState('bank');
+  const [type, setType] = useState('CHECKING');
   const [opening, setOpening] = useState('');
   
   const [loading, setLoading] = useState(false);
@@ -47,7 +61,7 @@ export function AccountsClient({ accounts, currency }: { accounts: Account[], cu
   function openNew() {
     setEditingAcc(null);
     setName('');
-    setType('bank');
+    setType('CHECKING');
     setOpening('');
     setError('');
     setShowModal(true);
@@ -68,7 +82,7 @@ export function AccountsClient({ accounts, currency }: { accounts: Account[], cu
     try {
       const data = {
         name,
-        type: type as 'mobile_money' | 'bank' | 'cash' | 'credit_card' | 'savings' | 'investment',
+        type: type as any,
         openingMinor: toMinor(parseFloat(opening || '0')),
       };
       
@@ -136,7 +150,7 @@ export function AccountsClient({ accounts, currency }: { accounts: Account[], cu
                 <div style={{ textAlign: 'right' }}>
                   <p style={{ margin: 0, fontSize: '0.7rem', color: 'var(--text-muted)' }}>Balance</p>
                   <p style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600, color: acc.balanceMinor < 0 ? 'var(--danger)' : 'var(--text-primary)' }}>
-                    {fmtAdaptive(acc.balanceMinor, acc.currency)}
+                    {formatKES(acc.balanceMinor)}
                   </p>
                 </div>
                 
@@ -159,6 +173,44 @@ export function AccountsClient({ accounts, currency }: { accounts: Account[], cu
     );
   }
 
+  function renderGroupedList(list: Account[], isArchivedList = false) {
+    if (list.length === 0) {
+      return <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', padding: '1rem' }}>No accounts found.</div>;
+    }
+    
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        {ACCOUNT_GROUPS.map(group => {
+          const groupAccounts = list.filter(acc => group.types.includes(acc.type));
+          if (groupAccounts.length === 0) return null;
+          
+          return (
+            <div key={group.label}>
+              <h3 style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                {group.label}
+              </h3>
+              {renderList(groupAccounts, isArchivedList)}
+            </div>
+          );
+        })}
+        {/* Render any accounts that don't fit into defined groups */}
+        {(() => {
+          const groupedTypes = ACCOUNT_GROUPS.flatMap(g => g.types);
+          const otherAccounts = list.filter(acc => !groupedTypes.includes(acc.type));
+          if (otherAccounts.length === 0) return null;
+          return (
+            <div key="Other">
+              <h3 style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Other
+              </h3>
+              {renderList(otherAccounts, isArchivedList)}
+            </div>
+          );
+        })()}
+      </div>
+    );
+  }
+
   return (
     <div style={{ maxWidth: 800, margin: '0 auto', paddingBottom: '3rem' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
@@ -170,7 +222,7 @@ export function AccountsClient({ accounts, currency }: { accounts: Account[], cu
 
       <div style={{ marginBottom: '2rem' }}>
         <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1rem', color: 'var(--text-secondary)' }}>Active Accounts</h2>
-        {renderList(activeAccounts, false)}
+        {renderGroupedList(activeAccounts, false)}
       </div>
 
       {archivedAccounts.length > 0 && (
@@ -179,7 +231,7 @@ export function AccountsClient({ accounts, currency }: { accounts: Account[], cu
           <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
             Archived accounts do not appear in dropdowns, but their balances still count toward your Net Worth.
           </p>
-          {renderList(archivedAccounts, true)}
+          {renderGroupedList(archivedAccounts, true)}
         </div>
       )}
 

@@ -76,7 +76,7 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
       loanId: null,
       OR: [
         { goalId: { not: null } },
-        { toAccount: { type: { in: ['savings', 'investment'] } } }
+        { toAccount: { type: { in: ['SAVINGS', 'BROKERAGE', 'CRYPTO', 'SACCO_DEPOSIT'] } } }
       ]
     },
     include: { toAccount: true }

@@ -85,8 +85,8 @@ export async function POST(req: Request) {
     // Seed default accounts
     await prisma.account.createMany({
       data: [
-        { name: 'M-Pesa', type: 'mobile_money', currency, userId: user.id },
-        { name: 'Cash', type: 'cash', currency, userId: user.id },
+          { name: 'M-Pesa', type: 'MPESA', currency: 'KES', openingMinor: 0, userId: user.id },
+          { name: 'Cash/Checking', type: 'CHECKING', currency: 'KES', openingMinor: 0, userId: user.id },
       ],
       skipDuplicates: true,
     });

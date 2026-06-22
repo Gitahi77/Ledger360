@@ -82,7 +82,7 @@ function makePlan(overrides: Record<string, unknown> = {}) {
     nextEscalation: future,
     active: true,
     createdAt: new Date('2026-01-01'),
-    fromAccount: { id: 'acc-mpesa', type: 'mobile_money', currency: 'KES' },
+    fromAccount: { id: 'acc-mpesa', type: 'MPESA', currency: 'KES' },
     ...overrides,
   };
 }
@@ -108,7 +108,7 @@ describe('Save-More-Tomorrow (WO-15)', () => {
 
       vi.mocked(prisma.savingsPlan.findUnique).mockResolvedValue(plan as any);
       vi.mocked(getAccountBalances).mockResolvedValue([
-        { id: 'acc-mpesa', type: 'mobile_money', balanceMinor: 1000000, userId: 'user-1', name: 'M-Pesa', currency: 'KES', openingMinor: 0, archived: false, createdAt: new Date() },
+        { id: 'acc-mpesa', type: 'MPESA', balanceMinor: 1000000, userId: 'user-1', name: 'M-Pesa', currency: 'KES', openingMinor: 0, archived: false, createdAt: new Date() },
       ]);
 
       await triggerAutoSave(
@@ -155,7 +155,7 @@ describe('Save-More-Tomorrow (WO-15)', () => {
 
       vi.mocked(prisma.savingsPlan.findUnique).mockResolvedValue(plan as any);
       vi.mocked(getAccountBalances).mockResolvedValue([
-        { id: 'acc-mpesa', type: 'mobile_money', balanceMinor: 1000000, userId: 'user-1', name: 'M-Pesa', currency: 'KES', openingMinor: 0, archived: false, createdAt: new Date() },
+        { id: 'acc-mpesa', type: 'MPESA', balanceMinor: 1000000, userId: 'user-1', name: 'M-Pesa', currency: 'KES', openingMinor: 0, archived: false, createdAt: new Date() },
       ]);
 
       await triggerAutoSave(
@@ -206,7 +206,7 @@ describe('Save-More-Tomorrow (WO-15)', () => {
     const plan = makePlan();
     vi.mocked(prisma.savingsPlan.findUnique).mockResolvedValue(plan as any);
     vi.mocked(getAccountBalances).mockResolvedValue([
-      { id: 'acc-mpesa', type: 'mobile_money', balanceMinor: 1000000, userId: 'user-1', name: 'M-Pesa', currency: 'KES', openingMinor: 0, archived: false, createdAt: new Date() },
+      { id: 'acc-mpesa', type: 'MPESA', balanceMinor: 1000000, userId: 'user-1', name: 'M-Pesa', currency: 'KES', openingMinor: 0, archived: false, createdAt: new Date() },
     ]);
 
     // First call succeeds
@@ -237,7 +237,7 @@ describe('Save-More-Tomorrow (WO-15)', () => {
     const plan = makePlan();
     vi.mocked(prisma.savingsPlan.findUnique).mockResolvedValue(plan as any);
     vi.mocked(getAccountBalances).mockResolvedValue([
-      { id: 'acc-mpesa', type: 'mobile_money', balanceMinor: 1000000, userId: 'user-1', name: 'M-Pesa', currency: 'KES', openingMinor: 0, archived: false, createdAt: new Date() },
+      { id: 'acc-mpesa', type: 'MPESA', balanceMinor: 1000000, userId: 'user-1', name: 'M-Pesa', currency: 'KES', openingMinor: 0, archived: false, createdAt: new Date() },
     ]);
 
     // Simulate a random DB error
@@ -261,7 +261,7 @@ describe('Save-More-Tomorrow (WO-15)', () => {
     const plan = makePlan();
     vi.mocked(prisma.savingsPlan.findUnique).mockResolvedValue(plan as any);
     vi.mocked(getAccountBalances).mockResolvedValue([
-      { id: 'acc-mpesa', type: 'mobile_money', balanceMinor: 1000000, userId: 'user-1', name: 'M-Pesa', currency: 'KES', openingMinor: 0, archived: false, createdAt: new Date() },
+      { id: 'acc-mpesa', type: 'MPESA', balanceMinor: 1000000, userId: 'user-1', name: 'M-Pesa', currency: 'KES', openingMinor: 0, archived: false, createdAt: new Date() },
     ]);
 
     await triggerAutoSave(
@@ -297,7 +297,7 @@ describe('Save-More-Tomorrow (WO-15)', () => {
     const planWithGoal = makePlan({ goalId: 'goal-1' });
     vi.mocked(prisma.savingsPlan.findUnique).mockResolvedValue(planWithGoal as any);
     vi.mocked(getAccountBalances).mockResolvedValue([
-      { id: 'acc-mpesa', type: 'mobile_money', balanceMinor: 1000000, userId: 'user-1', name: 'M-Pesa', currency: 'KES', openingMinor: 0, archived: false, createdAt: new Date() },
+      { id: 'acc-mpesa', type: 'MPESA', balanceMinor: 1000000, userId: 'user-1', name: 'M-Pesa', currency: 'KES', openingMinor: 0, archived: false, createdAt: new Date() },
     ]);
 
     await triggerAutoSave(
@@ -366,7 +366,7 @@ describe('Save-More-Tomorrow (WO-15)', () => {
 
     // Source account has only 500 minor units, but 10% of 100000 = 10000
     vi.mocked(getAccountBalances).mockResolvedValue([
-      { id: 'acc-mpesa', type: 'mobile_money', balanceMinor: 500, userId: 'user-1', name: 'M-Pesa', currency: 'KES', openingMinor: 0, archived: false, createdAt: new Date() },
+      { id: 'acc-mpesa', type: 'MPESA', balanceMinor: 500, userId: 'user-1', name: 'M-Pesa', currency: 'KES', openingMinor: 0, archived: false, createdAt: new Date() },
     ]);
 
     const result = await triggerAutoSave(

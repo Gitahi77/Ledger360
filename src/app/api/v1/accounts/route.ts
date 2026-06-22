@@ -1,10 +1,11 @@
 import { apiRoute } from '@/lib/api/respond';
 import { getAccounts, createAccount } from '@/lib/actions/accounts';
+import { AccountType } from '@prisma/client';
 import { z } from 'zod';
 
 const AccountSchema = z.object({
   name: z.string().min(1).max(100),
-  type: z.enum(['mobile_money', 'bank', 'cash', 'credit_card', 'savings', 'investment']),
+  type: z.nativeEnum(AccountType),
   currency: z.string().length(3).optional(),
   openingMinor: z.number().int().default(0),
   archived: z.boolean().optional(),

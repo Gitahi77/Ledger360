@@ -59,17 +59,13 @@ export async function getTransactionSummary(period = 'this-month') {
   // transfer is counted once even if it matches multiple conditions.
   const savingsTransfers = await prisma.transfer.aggregate({
     where: {
-      userId: user.id,
-      date: { gte: from, lte: to },
-      loanId: null, // exclude loan repayments
-      OR: [
-        { goalId: { not: null } },
-        { toAccount: { type: { in: ['savings', 'investment'] } } },
-      ],
+      userId: user.id, date: { gte: from, lte: to }, loanId: null,
+      OR: [{ goalId: { not: null } }, { toAccount: { type: { in: ['SAVINGS', 'BROKERAGE', 'CRYPTO', 'SACCO_DEPOSIT'] } } }],
     },
     _sum: { baseAmountMinor: true },
   });
-  const savings = savingsTransfers._sum.baseAmountMinor ?? 0;
+
+  const savings = savingsTransfers._sum?.baseAmountMinor ?? 0;
 
   const startOfToday = new Date(to.getFullYear(), to.getMonth(), to.getDate(), 0, 0, 0, 0);
   const todaySpendAgg = await prisma.transaction.aggregate({
@@ -194,7 +190,7 @@ export async function addTransaction(raw: {
     const firstAccount = await prisma.account.findFirst({ where: { userId: user.id }, orderBy: { createdAt: 'asc' }});
     if (firstAccount) accountId = firstAccount.id;
     else {
-      const fallback = await prisma.account.create({ data: { userId: user.id, name: 'Default Account', type: 'bank', currency: 'KES' }});
+      const fallback = await prisma.account.create({ data: { userId: user.id, name: 'Default Account', type: 'CHECKING', currency: 'KES' }});
       accountId = fallback.id;
     }
   }
@@ -206,7 +202,7 @@ export async function addTransaction(raw: {
     const { toMajor } = await import('@/lib/money');
     const balances = await getAccountBalances(user.id);
     const acc = balances.find(a => a.id === accountId);
-    if (acc && acc.type !== 'credit_card' && acc.balanceMinor - data.baseAmountMinor < 0) {
+    if (acc && acc.type !== 'CREDIT_CARD' && acc.balanceMinor - data.baseAmountMinor < 0) {
       warning = `Warning: Not enough money in ${acc.name}. Available: ${acc.currency} ${toMajor(acc.balanceMinor)}.`;
     }
   }
@@ -425,7 +421,7 @@ export async function editTransaction(id: string, data: {
     const balances = await getAccountBalances(user.id);
     const acc = balances.find(a => a.id === newAccountId);
     
-    if (acc && acc.type !== 'credit_card') {
+    if (acc && acc.type !== 'CREDIT_CARD') {
       let effectiveBalance = acc.balanceMinor;
       if (oldTx.type === 'expense' && oldTx.accountId === newAccountId) {
         effectiveBalance += oldTx.baseAmountMinor; // restore old amount

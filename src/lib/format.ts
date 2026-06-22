@@ -101,3 +101,23 @@ export function fmtPct(numerator: number, denominator: number): string {
   if (!denominator) return '0%';
   return `${Math.min(100, Math.round((numerator / denominator) * 100))}%`;
 }
+
+/**
+ * Phase 6: Strict KES Formatting
+ * Single source of truth for all Kenyan Shilling currency rendering.
+ */
+export function formatKES(amountCents: number): string {
+  return new Intl.NumberFormat('en-KE', {
+    style: 'currency',
+    currency: 'KES',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amountCents / 100);
+}
+
+export function formatKESCompact(amountCents: number): string {
+  const amount = amountCents / 100;
+  if (amount >= 1_000_000) return `KES ${(amount / 1_000_000).toFixed(1)}M`;
+  if (amount >= 1_000) return `KES ${(amount / 1_000).toFixed(0)}K`;
+  return `KES ${amount.toFixed(0)}`;
+}

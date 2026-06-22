@@ -4,13 +4,14 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { addLoan, editLoan, deleteLoan } from '@/lib/actions/loans';
-import { fmtAdaptive } from '@/lib/format';
+import { fmtAdaptive, formatKES } from '@/lib/format';
 import { Plus, Trash2, Loader2, X, CreditCard, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
 import { toMinor, toMajor } from '@/lib/money';
 
 type Loan = {
   id: string; name: string; lender: string; type: string;
   originalAmountMinor: number; balanceMinor: number; annualRate: number;
+  amortization: string;
   monthlyPaymentMinor: number; nextDue: Date; daysOverdue: number;
 };
 
@@ -52,12 +53,13 @@ function LoanModal({ loan, accounts, onClose, currency }: { loan?: Loan; account
   const [balance,    setBalance]    = useState(loan ? String(toMajor(loan.balanceMinor)) : '');
   const [rate,       setRate]       = useState(loan ? String(loan.annualRate) : '');
   const [monthly,    setMonthly]    = useState(loan ? String(toMajor(loan.monthlyPaymentMinor)) : '');
+  const [amortization,setAmortization]= useState(loan?.amortization ?? 'REDUCING_BALANCE');
   const [nextDue,    setNextDue]    = useState(loan?.nextDue ? new Date(loan.nextDue).toISOString().slice(0, 10) : '');
   const [disbursementType, setDisbursementType] = useState<'existing_debt' | 'received_funds'>('existing_debt');
   const [disbursementAccountId, setDisbursementAccountId] = useState(accounts[0]?.id || '');
   const isEdit = Boolean(loan);
 
-  const LOAN_TYPES = ['personal','mortgage','car','student','business','credit card','other'];
+  const LOAN_TYPES = ['personal','mortgage','car','student','business','credit card','sacco loan','other'];
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -83,6 +85,7 @@ function LoanModal({ loan, accounts, onClose, currency }: { loan?: Loan; account
           originalAmountMinor: toMinor(parseFloat(origAmt)),
           balanceMinor:     toMinor(parseFloat(balance || origAmt)),
           annualRate:  parseFloat(rate),
+          amortization,
           monthlyPaymentMinor:  toMinor(parseFloat(monthly)),
           nextDue,
         });
@@ -92,6 +95,7 @@ function LoanModal({ loan, accounts, onClose, currency }: { loan?: Loan; account
           originalAmountMinor: toMinor(parseFloat(origAmt)),
           balanceMinor:     toMinor(parseFloat(balance || origAmt)),
           annualRate:  parseFloat(rate),
+          amortization,
           monthlyPaymentMinor:  toMinor(parseFloat(monthly)),
           nextDue,
           disbursementType,
@@ -137,12 +141,12 @@ function LoanModal({ loan, accounts, onClose, currency }: { loan?: Loan; account
 
           <div style={{ display:'flex', flexWrap:'wrap', gap:'0.75rem' }}>
             <div style={{ flex: '1 1 180px' }}>
-              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Original Amount ({currency})</label>
+              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Original Amount</label>
               <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                 type="number" min="1" step="1" value={origAmt} onChange={e => setOrigAmt(e.target.value)} required placeholder="500000" />
             </div>
             <div style={{ flex: '1 1 180px' }}>
-              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Current Balance ({currency})</label>
+              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Current Balance</label>
               <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                 type="number" min="0" step="1" value={balance} onChange={e => setBalance(e.target.value)} placeholder="Leave blank = same as original" />
             </div>
@@ -158,6 +162,16 @@ function LoanModal({ loan, accounts, onClose, currency }: { loan?: Loan; account
               <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Monthly Payment</label>
               <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                 type="number" min="1" step="1" value={monthly} onChange={e => setMonthly(e.target.value)} required placeholder="15000" />
+            </div>
+          </div>
+          <div style={{ display:'flex', flexWrap:'wrap', gap:'0.75rem' }}>
+            <div style={{ flex: '1 1 180px' }}>
+              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Amortization</label>
+              <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
+                value={amortization} onChange={e => setAmortization(e.target.value)}>
+                <option value="REDUCING_BALANCE">Reducing Balance</option>
+                <option value="FLAT_RATE">Flat Rate (Straight Line)</option>
+              </select>
             </div>
             <div style={{ flex: '1 1 180px' }}>
               <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Next Due Date</label>
@@ -207,13 +221,18 @@ function ExpandedForecast({ loan, monthsLeft, totalInterest, currency }: { loan:
 
   const monthlyRate = loan.annualRate / 100 / 12;
   const totalPmtMinor    = loan.monthlyPaymentMinor + toMinor(extraPayment);
-  const minPmtMinor      = monthlyRate > 0 ? loan.balanceMinor * monthlyRate : 0;
+  const isFlat = loan.amortization === 'FLAT_RATE';
+  const minPmtMinor      = isFlat ? 0 : (monthlyRate > 0 ? loan.balanceMinor * monthlyRate : 0);
   const newMonths   = totalPmtMinor <= minPmtMinor
     ? Infinity
-    : monthlyRate > 0
-      ? Math.ceil(Math.log(totalPmtMinor / (totalPmtMinor - loan.balanceMinor * monthlyRate)) / Math.log(1 + monthlyRate))
-      : Math.ceil(loan.balanceMinor / totalPmtMinor);
-  const newInterestMinor = isFinite(newMonths) ? Math.round(Math.max(0, (totalPmtMinor * newMonths) - loan.balanceMinor)) : 0;
+    : isFlat
+      ? Math.ceil(loan.balanceMinor / (totalPmtMinor - (loan.originalAmountMinor * monthlyRate)))
+      : monthlyRate > 0
+        ? Math.ceil(Math.log(totalPmtMinor / (totalPmtMinor - loan.balanceMinor * monthlyRate)) / Math.log(1 + monthlyRate))
+        : Math.ceil(loan.balanceMinor / totalPmtMinor);
+  const newInterestMinor = isFinite(newMonths) 
+    ? Math.round(Math.max(0, isFlat ? (loan.originalAmountMinor * monthlyRate * newMonths) : (totalPmtMinor * newMonths) - loan.balanceMinor)) 
+    : 0;
   const monthsSaved = isFinite(monthsLeft) && isFinite(newMonths) ? Math.max(0, monthsLeft - newMonths) : 0;
   const interestSavedMinor = totalInterest - newInterestMinor;
 
@@ -232,7 +251,7 @@ function ExpandedForecast({ loan, monthsLeft, totalInterest, currency }: { loan:
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(150px, 1fr))', gap:'0.75rem', marginBottom:'1rem' }}>
         {[
           { label:'Months Left',    value: isFinite(monthsLeft) ? `~${monthsLeft}` : '⚠ Check payment', sub:'at current pace' },
-          { label:'Total Interest', value: fmtAdaptive(totalInterest, currency), sub:'estimated remaining' },
+          { label:'Total Interest', value: formatKES(totalInterest), sub:'estimated remaining' },
           { label:'Payoff Date',    value: payoffDate(monthsLeft), sub:'projected' },
         ].map(f => (
           <div key={f.label} style={{ background:'var(--bg-app)', borderRadius:8, padding:'0.625rem 0.875rem', border:'1px solid var(--border)' }}>
@@ -263,7 +282,7 @@ function ExpandedForecast({ loan, monthsLeft, totalInterest, currency }: { loan:
             {[
               { label:'New payoff', value: payoffDate(newMonths), color:'var(--success)' },
               { label:'Months saved', value:`${monthsSaved} mo`, color:'var(--success)' },
-              { label:'Interest saved', value: fmtAdaptive(interestSavedMinor, currency), color:'var(--success)' },
+              { label:'Interest saved', value: formatKES(interestSavedMinor), color:'var(--success)' },
             ].map(r => (
               <div key={r.label} style={{ background:'var(--success-light)', borderRadius:7, padding:'0.5rem 0.625rem', border:'1px solid var(--success)' }}>
                 <div style={{ fontSize:'0.58rem', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', color:'var(--text-muted)', marginBottom:'0.15rem' }}>{r.label}</div>
@@ -326,8 +345,8 @@ export function LoansClient({ loans, currency, categories = [], accounts = [] }:
               fontSize: totalDebtMinor > 9_999_99900 ? '1.6rem' : totalDebtMinor > 999_99900 ? '1.9rem' : '2.25rem',
               fontWeight:800, letterSpacing:'-0.04em', lineHeight:1,
               color:'var(--danger)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
-            }}>{fmtAdaptive(totalDebtMinor, currency)}</p>
-            <p className="hero-sub">of {fmtAdaptive(totalOriginalMinor, currency)} original · {paidPct}% paid</p>
+            }}>{formatKES(totalDebtMinor)}</p>
+            <p className="hero-sub">of {formatKES(totalOriginalMinor)} original · {paidPct}% paid</p>
             <div className="hero-progress-wrap" style={{ marginTop:'0.75rem', paddingTop:'0.75rem' }}>
               <div className="hero-progress-labels">
                 <span className="hero-progress-label">Repayment progress</span>
@@ -346,7 +365,7 @@ export function LoansClient({ loans, currency, categories = [], accounts = [] }:
             </div>
             <div className="hero-stat-card">
               <p className="hero-label">Monthly Pmts</p>
-              <p className="hero-stat-value tabular" style={{ color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{fmtAdaptive(totalMonthlyMinor, currency)}</p>
+              <p className="hero-stat-value tabular" style={{ color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{formatKES(totalMonthlyMinor)}</p>
               <p className="hero-sub">per month</p>
             </div>
             <div className="hero-stat-card">
@@ -373,16 +392,19 @@ export function LoansClient({ loans, currency, categories = [], accounts = [] }:
             const isExpanded = expanded === l.id;
 
             // Amortization calculator with safety guards
+            const isFlat = l.amortization === 'FLAT_RATE';
             const monthlyRate   = l.annualRate / 100 / 12;
-            const minPaymentMinor    = monthlyRate > 0 ? l.balanceMinor * monthlyRate : 0; // payment must exceed this
+            const minPaymentMinor    = isFlat ? 0 : (monthlyRate > 0 ? l.balanceMinor * monthlyRate : 0); // payment must exceed this
             const paymentValid  = l.monthlyPaymentMinor > minPaymentMinor;
             const monthsLeft    = !paymentValid
               ? Infinity
-              : monthlyRate > 0
-                ? Math.ceil(Math.log(l.monthlyPaymentMinor / (l.monthlyPaymentMinor - l.balanceMinor * monthlyRate)) / Math.log(1 + monthlyRate))
-                : Math.ceil(l.balanceMinor / l.monthlyPaymentMinor);
+              : isFlat
+                ? Math.ceil(l.balanceMinor / (l.monthlyPaymentMinor - (l.originalAmountMinor * monthlyRate)))
+                : monthlyRate > 0
+                  ? Math.ceil(Math.log(l.monthlyPaymentMinor / (l.monthlyPaymentMinor - l.balanceMinor * monthlyRate)) / Math.log(1 + monthlyRate))
+                  : Math.ceil(l.balanceMinor / l.monthlyPaymentMinor);
             const totalInterestMinor = isFinite(monthsLeft)
-              ? Math.round(Math.max(0, (l.monthlyPaymentMinor * monthsLeft) - l.balanceMinor))
+              ? Math.round(Math.max(0, isFlat ? (l.originalAmountMinor * monthlyRate * monthsLeft) : (l.monthlyPaymentMinor * monthsLeft) - l.balanceMinor))
               : 0;
 
             return (
@@ -423,9 +445,9 @@ export function LoansClient({ loans, currency, categories = [], accounts = [] }:
                       fontWeight:800, color:st.color, letterSpacing:'-0.04em', lineHeight:1.1,
                       whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
                     }}>
-                      {fmtAdaptive(l.balanceMinor, currency)}
+                      {formatKES(l.balanceMinor)}
                     </div>
-                    <div style={{ fontSize:'0.7rem', color:'var(--text-secondary)', marginTop:'0.2rem', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>of {fmtAdaptive(l.originalAmountMinor, currency)} original</div>
+                    <div style={{ fontSize:'0.7rem', color:'var(--text-secondary)', marginTop:'0.2rem', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>of {formatKES(l.originalAmountMinor)} original</div>
                   </div>
                   <div style={{ textAlign:'right', flexShrink:0 }}>
                     <div style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'1.5rem', fontWeight:800, color:st.color, lineHeight:1, opacity:0.88 }}>{st.paidPct}%</div>
@@ -441,7 +463,7 @@ export function LoansClient({ loans, currency, categories = [], accounts = [] }:
                   <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(150px, 1fr))', gap:'1rem', flexWrap:'wrap', flex:'1 1 100%' }}>
                     <div>
                       <div style={{ fontSize:'0.65rem', color:'var(--text-muted)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em' }}>Monthly</div>
-                      <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, fontSize:'0.85rem', color:'var(--text-primary)', whiteSpace:'nowrap' }}>{fmtAdaptive(l.monthlyPaymentMinor, currency)}</div>
+                      <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, fontSize:'0.85rem', color:'var(--text-primary)', whiteSpace:'nowrap' }}>{formatKES(l.monthlyPaymentMinor)}</div>
                     </div>
                     <div>
                       <div style={{ fontSize:'0.65rem', color:'var(--text-muted)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em' }}>Next Due</div>

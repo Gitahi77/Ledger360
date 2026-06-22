@@ -42,7 +42,7 @@ export async function getLoans() {
 export async function addLoan(raw: {
   name: string; lender: string; type: string;
   originalAmountMinor: number; balanceMinor: number;
-  annualRate: number; monthlyPaymentMinor: number; nextDue: string;
+  annualRate: number; amortization: string; monthlyPaymentMinor: number; nextDue: string;
   disbursementType?: string; disbursementAccountId?: string;
 }) {
   const { AddLoanSchema } = await import('@/lib/validation');
@@ -61,6 +61,7 @@ export async function addLoan(raw: {
         balanceMinor: data.balanceMinor,
         monthlyPaymentMinor: data.monthlyPaymentMinor,
         annualRate: data.annualRate,
+        amortization: data.amortization,
       },
     });
 
@@ -95,7 +96,7 @@ export async function deleteLoan(id: string) {
 
 export async function editLoan(id: string, data: {
   name?: string; lender?: string; type?: string; originalAmountMinor?: number; balanceMinor?: number;
-  annualRate?: number; monthlyPaymentMinor?: number; nextDue?: string;
+  annualRate?: number; amortization?: string; monthlyPaymentMinor?: number; nextDue?: string;
 }) {
   const user = await requireAuth();
   if (!id) throw new Error('Missing id');

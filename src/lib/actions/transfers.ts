@@ -94,7 +94,7 @@ export async function createTransfer(raw: {
   }
 
   // Overdraft prevention
-  if (fromAccount.type !== 'credit_card') {
+  if (fromAccount.type !== 'CREDIT_CARD') {
     const { getAccountBalances } = await import('@/lib/actions/accounts');
     const balances = await getAccountBalances(user.id);
     const acc = balances.find(a => a.id === fromAccount.id);
@@ -198,7 +198,7 @@ export async function editTransfer(id: string, raw: {
     }
   }
 
-  if (fromAccount.type !== 'credit_card') {
+  if (fromAccount.type !== 'CREDIT_CARD') {
     const { getAccountBalances } = await import('@/lib/actions/accounts');
     const balances = await getAccountBalances(user.id);
     const acc = balances.find(a => a.id === fromAccount.id);

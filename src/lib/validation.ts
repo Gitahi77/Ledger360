@@ -73,6 +73,7 @@ export const AddLoanSchema = z.object({
   originalAmountMinor: kes('Original amount'),
   balanceMinor:     optKes('Current balance'),
   annualRate:  z.number().min(0).max(100),
+  amortization: z.enum(['REDUCING_BALANCE', 'FLAT_RATE']),
   monthlyPaymentMinor:  kes('Monthly payment'),
   nextDue:     z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Next due date must be YYYY-MM-DD'),
   disbursementType: z.enum(['existing_debt', 'received_funds']).optional(),

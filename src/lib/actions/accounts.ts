@@ -5,9 +5,11 @@ import { z } from 'zod';
 import { Account, Prisma } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 
+import { AccountType } from '@prisma/client';
+
 const AccountSchema = z.object({
   name: z.string().min(1).max(100),
-  type: z.enum(['mobile_money', 'bank', 'cash', 'credit_card', 'savings', 'investment']),
+  type: z.nativeEnum(AccountType),
   openingMinor: z.number().int().default(0),
   archived: z.boolean().optional(),
 });

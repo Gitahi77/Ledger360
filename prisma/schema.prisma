@@ -6,6 +6,21 @@ datasource db {
   provider = "postgresql"
 }
 
+enum AccountType {
+  CHECKING
+  SAVINGS
+  MPESA
+  AIRTEL_MONEY
+  CREDIT_CARD
+  SACCO_DEPOSIT
+  SACCO_LOAN
+  CHAMA
+  MORTGAGE
+  AUTO_LOAN
+  BROKERAGE
+  CRYPTO
+}
+
 // ── Auth ────────────────────────────────────────────────────
 model User {
   id            String    @id @default(cuid())
@@ -91,7 +106,7 @@ model Account {
   id           String        @id @default(cuid())
   userId       String
   name         String
-  type         String
+  type         AccountType   @default(CHECKING)
   currency     String
   openingMinor Int           @default(0)
   archived     Boolean       @default(false)
@@ -101,6 +116,7 @@ model Account {
   transfersTo   Transfer[]   @relation("TransferTo")
   savingsPlanFrom SavingsPlan[] @relation("SavingsPlanFrom")
   savingsPlanTo   SavingsPlan[] @relation("SavingsPlanTo")
+  chamaDetails ChamaDetails?
   createdAt    DateTime      @default(now())
 
   @@index([userId])
@@ -201,6 +217,7 @@ model Loan {
   originalAmountMinor Int // stored as integer minor units (cents)
   balanceMinor        Int
   annualRate          Float    @default(0) // percentage, NOT money
+  amortization        String   @default("REDUCING_BALANCE") // "REDUCING_BALANCE" | "FLAT_RATE"
   monthlyPaymentMinor Int
   nextDue             DateTime
   userId              String
@@ -291,4 +308,15 @@ model SavingsPlan {
   fromAccount Account @relation("SavingsPlanFrom", fields: [fromAccountId], references: [id], onDelete: Restrict)
   toAccount   Account @relation("SavingsPlanTo", fields: [toAccountId], references: [id], onDelete: Restrict)
   goal        Goal?   @relation(fields: [goalId], references: [id], onDelete: SetNull)
+}
+
+model ChamaDetails {
+  id                 String   @id @default(cuid())
+  accountId          String   @unique
+  account            Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  monthlyContrib     Int      // KES cents
+  totalMembers       Int
+  yourPayoutPosition Int      // e.g. position 3 of 12
+  cycleStartDate     DateTime
+  meetingDay         Int      // day of month, e.g. 15
 }

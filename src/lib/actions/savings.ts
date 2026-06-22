@@ -78,7 +78,7 @@ export async function upsertSavingsPlan(raw: UpsertSavingsPlanInput) {
 
   // Destination enforcement (design point 2):
   // toAccount must be savings/investment OR goalId must be set
-  const isSavingsAccount = toAccount.type === 'savings' || toAccount.type === 'investment';
+  const isSavingsAccount = ['SAVINGS', 'BROKERAGE', 'CRYPTO', 'SACCO_DEPOSIT'].includes(toAccount.type);
   if (!isSavingsAccount && !data.goalId) {
     throw new Error(
       'The destination must be a savings or investment account, or you must select a goal.'
@@ -273,7 +273,7 @@ export async function triggerAutoSave(
     const { getAccountBalances } = await import('@/lib/actions/accounts');
     const balances = await getAccountBalances(userId);
     const sourceAcc = balances.find(a => a.id === plan.fromAccountId);
-    if (sourceAcc && sourceAcc.type !== 'credit_card' && sourceAcc.balanceMinor < totalNeeded) {
+    if (sourceAcc && sourceAcc.type !== 'CREDIT_CARD' && sourceAcc.balanceMinor < totalNeeded) {
       return `Auto-save skipped: not enough funds in ${sourceAcc.name ?? 'source account'} (available: ${sourceAcc.currency} ${(sourceAcc.balanceMinor / 100).toFixed(2)}, needed: ${(totalNeeded / 100).toFixed(2)}).`;
     }
 

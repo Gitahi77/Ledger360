@@ -23,6 +23,8 @@ import { SafeToSpendCard } from '@/components/dashboard/SafeToSpendCard';
 import { FxTicker } from '@/components/FxTicker';
 import { fmtAdaptive } from '@/lib/format';
 import { prisma } from '@/lib/prisma';
+import { NsePortfolioBoard } from '@/components/dashboard/NsePortfolioBoard';
+import { ChamaBoard } from '@/components/dashboard/ChamaBoard';
 
 function budgetStatus(limit: number, spent: number) {
   const p = limit > 0 ? Math.min(100, (spent / limit) * 100) : (spent > 0 ? 100 : 0);
@@ -302,6 +304,14 @@ export default async function Dashboard({
             </div>
           </div>
         </div>
+      </div>
+
+      {/* ── Investments & Chamas Row ──────────────────────────── */}
+      <div className="dashboard-charts-row animate-in delay-5" style={{ marginTop: '1.5rem' }}>
+        <NsePortfolioBoard />
+        <Suspense fallback={<div className="skeleton" style={{ height: 200, borderRadius: 8 }} />}>
+          <ChamaBoard />
+        </Suspense>
       </div>
 
       {/* ── Live FX Rates ─────────────────────────────────────── */}

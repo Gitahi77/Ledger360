@@ -123,14 +123,14 @@ export async function getReportSummary(period: string) {
     prisma.transfer.findMany({
       where: {
         userId: user.id, date: { gte: from, lte: to }, loanId: null,
-        OR: [{ goalId: { not: null } }, { toAccount: { type: { in: ['savings', 'investment'] } } }],
+        OR: [{ goalId: { not: null } }, { toAccount: { type: { in: ['SAVINGS', 'BROKERAGE', 'CRYPTO', 'SACCO_DEPOSIT'] } } }],
       },
       select: { baseAmountMinor: true },
     }),
     prisma.transfer.findMany({
       where: {
         userId: user.id, date: { gte: prevFrom, lte: prevTo }, loanId: null,
-        OR: [{ goalId: { not: null } }, { toAccount: { type: { in: ['savings', 'investment'] } } }],
+        OR: [{ goalId: { not: null } }, { toAccount: { type: { in: ['SAVINGS', 'BROKERAGE', 'CRYPTO', 'SACCO_DEPOSIT'] } } }],
       },
       select: { baseAmountMinor: true },
     }),
