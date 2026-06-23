@@ -37,12 +37,12 @@ const SECTIONS: { id: Section; label: string; Icon: React.ElementType; desc: str
 ];
 
 const ACCENTS = [
-  { label: 'Royal Blue', value: '#1A73E8' },
-  { label: 'Emerald',    value: '#1E8449' },
-  { label: 'Teal',       value: '#0E6655' },
-  { label: 'Purple',     value: '#6C3483' },
-  { label: 'Rose',       value: '#C0392B' },
-  { label: 'Amber',      value: '#D35400' },
+  { label: 'Royal Blue', value: 'rgb(26, 115, 232)' },
+  { label: 'Emerald',    value: 'rgb(30, 132, 73)' },
+  { label: 'Teal',       value: 'rgb(14, 102, 85)' },
+  { label: 'Purple',     value: 'rgb(108, 52, 131)' },
+  { label: 'Rose',       value: 'rgb(192, 57, 43)' },
+  { label: 'Amber',      value: 'rgb(211, 84, 0)' },
 ];
 
 /* ── Shared sub-components ────────────────────────────────── */
@@ -50,8 +50,8 @@ function Row({ label, desc, children }: { label: string; desc?: string; children
   return (
     <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0.875rem 0', borderBottom:'1px solid var(--border-light)', gap:'1rem', flexWrap:'wrap' }}>
       <div style={{ flex:1, minWidth:0 }}>
-        <div style={{ fontSize:'0.8125rem', fontWeight:600, color:'var(--text-primary)' }}>{label}</div>
-        {desc && <div style={{ fontSize:'0.72rem', color:'var(--text-muted)', marginTop:'0.15rem' }}>{desc}</div>}
+        <div style={{ fontSize:'0.8125rem', fontWeight:600, color:'var(--color-text-primary)' }}>{label}</div>
+        {desc && <div style={{ fontSize:'0.72rem', color:'var(--color-text-secondary)', marginTop:'0.15rem' }}>{desc}</div>}
       </div>
       <div style={{ flexShrink:0 }}>{children}</div>
     </div>
@@ -74,7 +74,7 @@ function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (
     >
       <div style={{
         width: 42, height: 24, borderRadius: 999,
-        background: checked ? 'var(--primary)' : 'var(--border)',
+        background: checked ? 'var(--color-brand)' : 'var(--border)',
         position: 'relative', transition: 'background 0.2s',
         opacity: disabled ? 0.5 : 1,
       }}>
@@ -86,7 +86,7 @@ function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (
 
 function SettingSelect({ value, onChange, children }: { value: string; onChange: (v: string) => void; children: React.ReactNode }) {
   return (
-    <select value={value} onChange={e => onChange(e.target.value)} style={{ padding:'0.375rem 0.625rem', borderRadius:6, border:'1px solid var(--border)', background:'var(--bg-card)', color:'var(--text-primary)', fontSize:'0.8rem', fontFamily:'inherit', outline:'none', cursor:'pointer', maxWidth:'100%' }}>
+    <select value={value} onChange={e => onChange(e.target.value)} style={{ padding:'0.375rem 0.625rem', borderRadius:6, border:'1px solid var(--border)', background:'var(--surface-card)', color:'var(--color-text-primary)', fontSize:'0.8rem', fontFamily:'inherit', outline:'none', cursor:'pointer', maxWidth:'100%' }}>
       {children}
     </select>
   );
@@ -95,7 +95,7 @@ function SettingSelect({ value, onChange, children }: { value: string; onChange:
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div style={{ marginBottom:'1.125rem' }}>
-      <label style={{ display:'block', fontSize:'0.7rem', fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:'0.375rem' }}>{label}</label>
+      <label style={{ display:'block', fontSize:'0.7rem', fontWeight:700, color:'var(--color-text-secondary)', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:'0.375rem' }}>{label}</label>
       {children}
     </div>
   );
@@ -109,12 +109,12 @@ function SaveRow({ saving, saved, error }: { saving: boolean; saved: boolean; er
         {saving ? 'Saving…' : 'Save Changes'}
       </button>
       {saved && (
-        <div className="animate-in" style={{ display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.78rem', color:'var(--success)', fontWeight:600 }}>
+        <div className="animate-in" style={{ display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.78rem', color:'var(--color-income)', fontWeight:600 }}>
           <CheckCircle2 size={14}/> Saved!
         </div>
       )}
       {error && (
-        <div style={{ display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.78rem', color:'var(--danger)', fontWeight:600 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.78rem', color:'var(--color-expense)', fontWeight:600 }}>
           <AlertTriangle size={14}/> {error}
         </div>
       )}
@@ -134,30 +134,30 @@ function AccordionHeader({ section, isOpen, onClick }: {
       style={{
         display:'flex', alignItems:'center', gap:'0.75rem',
         width:'100%', padding:'1rem', borderRadius: isOpen ? '0.75rem 0.75rem 0 0' : '0.75rem',
-        background: isOpen ? 'var(--primary-light)' : 'var(--bg-card)',
-        border:`1px solid ${isOpen ? 'var(--primary)' : 'var(--border)'}`,
+        background: isOpen ? 'var(--color-brand-light)' : 'var(--surface-card)',
+        border:`1px solid ${isOpen ? 'var(--color-brand)' : 'var(--border)'}`,
         borderBottom: isOpen ? 'none' : `1px solid var(--border)`,
-        color: isOpen ? 'var(--primary)' : 'var(--text-secondary)',
+        color: isOpen ? 'var(--color-brand)' : 'var(--text-secondary)',
         textAlign:'left', cursor:'pointer',
         transition:'all 0.2s', marginBottom: isOpen ? 0 : '0.5rem',
       }}
     >
       <div style={{
         width:36, height:36, borderRadius:8, flexShrink:0,
-        background: isOpen ? 'var(--primary)' : 'var(--bg-hover)',
+        background: isOpen ? 'var(--color-brand)' : 'var(--bg-hover)',
         display:'flex', alignItems:'center', justifyContent:'center',
-        color: isOpen ? 'white' : 'var(--text-muted)',
+        color: isOpen ? 'white' : 'var(--color-text-secondary)',
         transition:'all 0.2s',
       }}>
         <Icon size={16} strokeWidth={isOpen ? 2.5 : 2} />
       </div>
       <div style={{ flex:1, minWidth:0 }}>
-        <div style={{ fontWeight:700, fontSize:'0.875rem', color: isOpen ? 'var(--primary)' : 'var(--text-primary)' }}>{section.label}</div>
-        <div style={{ fontSize:'0.7rem', color: isOpen ? 'var(--primary)' : 'var(--text-muted)', opacity:0.8, marginTop:'0.1rem' }}>{section.desc}</div>
+        <div style={{ fontWeight:700, fontSize:'0.875rem', color: isOpen ? 'var(--color-brand)' : 'var(--color-text-primary)' }}>{section.label}</div>
+        <div style={{ fontSize:'0.7rem', color: isOpen ? 'var(--color-brand)' : 'var(--color-text-secondary)', opacity:0.8, marginTop:'0.1rem' }}>{section.desc}</div>
       </div>
       {isOpen
-        ? <ChevronDown size={16} style={{ flexShrink:0, color:'var(--primary)' }} />
-        : <ChevronRight size={16} style={{ flexShrink:0, color:'var(--text-muted)' }} />
+        ? <ChevronDown size={16} style={{ flexShrink:0, color:'var(--color-brand)' }} />
+        : <ChevronRight size={16} style={{ flexShrink:0, color:'var(--color-text-secondary)' }} />
       }
     </button>
   );
@@ -166,10 +166,10 @@ function AccordionHeader({ section, isOpen, onClick }: {
 function AccordionPanel({ children }: { children: React.ReactNode }) {
   return (
     <div className="animate-in" style={{
-      border:'1px solid var(--primary)', borderTop:'none',
+      border:'1px solid var(--color-brand)', borderTop:'none',
       borderRadius:'0 0 0.75rem 0.75rem',
       padding:'1.25rem',
-      background:'var(--bg-card)',
+      background:'var(--surface-card)',
       marginBottom:'0.5rem',
     }}>
       {children}
@@ -215,7 +215,7 @@ export function SettingsClient({
   const [accountType, setAccountType] = useState(initialAccountType);
 
   // Appearance fields (from DB prefs or defaults)
-  const [accent,       setAccent]      = useState(initialPrefs?.accentColor  ?? '#1A73E8');
+  const [accent,       setAccent]      = useState(initialPrefs?.accentColor  ?? 'rgb(26, 115, 232)');
   const [compactMode,  setCompactMode] = useState(initialPrefs?.compactMode  ?? false);
   const [smoothAnims,  setSmoothAnims] = useState(initialPrefs?.smoothAnims  ?? true);
 
@@ -242,8 +242,8 @@ export function SettingsClient({
 
   const inputStyle: React.CSSProperties = {
     width:'100%', padding:'0.5rem 0.75rem', borderRadius:6,
-    border:'1px solid var(--border)', background:'var(--bg-card)',
-    color:'var(--text-primary)', fontSize:'0.8rem', fontFamily:'inherit',
+    border:'1px solid var(--border)', background:'var(--surface-card)',
+    color:'var(--color-text-primary)', fontSize:'0.8rem', fontFamily:'inherit',
     outline:'none', boxShadow:'0 1px 2px rgba(0,0,0,0.05)',
   };
 
@@ -283,7 +283,7 @@ export function SettingsClient({
     await withSave(setAppearState, async () => {
       await saveAppearance({ accentColor: accent, compactMode, smoothAnims });
       // Apply accent immediately via CSS variable
-      document.documentElement.style.setProperty('--primary', accent);
+      document.documentElement.style.setProperty('--color-brand', accent);
     });
   }
 
@@ -354,12 +354,12 @@ export function SettingsClient({
         <AccordionPanel>
           {/* Avatar banner */}
           <div style={{ display:'flex', alignItems:'center', gap:'0.875rem', padding:'0.875rem', background:'var(--bg-app)', borderRadius:8, marginBottom:'1.25rem' }}>
-            <div style={{ width:48, height:48, borderRadius:'50%', background:'linear-gradient(135deg,#2B7DE9,#1A6FD4)', display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontFamily:'Space Grotesk,sans-serif', fontWeight:700, fontSize:'1.1rem', flexShrink:0 }}>
+            <div style={{ width:48, height:48, borderRadius:'50%', background:'linear-gradient(135deg,rgb(43, 125, 233),rgb(26, 111, 212))', display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontFamily:'Space Grotesk,sans-serif', fontWeight:700, fontSize:'1.1rem', flexShrink:0 }}>
               {initials}
             </div>
             <div style={{ minWidth:0 }}>
-              <div style={{ fontWeight:700, fontSize:'0.875rem', color:'var(--text-primary)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{name || '—'}</div>
-              <div style={{ fontSize:'0.7rem', color:'var(--text-muted)', marginTop:'0.1rem', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{initialEmail} · {accountType}</div>
+              <div style={{ fontWeight:700, fontSize:'0.875rem', color:'var(--color-text-primary)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{name || '—'}</div>
+              <div style={{ fontSize:'0.7rem', color:'var(--color-text-secondary)', marginTop:'0.1rem', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{initialEmail} · {accountType}</div>
             </div>
           </div>
           <form onSubmit={handleSaveProfile}>
@@ -393,8 +393,8 @@ export function SettingsClient({
               <ThemeToggle />
             </Row>
             <div style={{ padding:'0.875rem 0', borderBottom:'1px solid var(--border-light)' }}>
-              <div style={{ fontSize:'0.8125rem', fontWeight:600, color:'var(--text-primary)', marginBottom:'0.2rem' }}>Accent Color</div>
-              <div style={{ fontSize:'0.72rem', color:'var(--text-muted)', marginBottom:'0.75rem' }}>Choose your brand accent color</div>
+              <div style={{ fontSize:'0.8125rem', fontWeight:600, color:'var(--color-text-primary)', marginBottom:'0.2rem' }}>Accent Color</div>
+              <div style={{ fontSize:'0.72rem', color:'var(--color-text-secondary)', marginBottom:'0.75rem' }}>Choose your brand accent color</div>
               <div style={{ display:'flex', gap:'0.625rem', flexWrap:'wrap' }}>
                 {ACCENTS.map(a => (
                   <button key={a.value} type="button" onClick={() => setAccent(a.value)} title={a.label}
@@ -426,15 +426,15 @@ export function SettingsClient({
             <Row label="Target Saving Rate" desc="Your personal monthly savings goal">
               <div style={{ display:'flex', alignItems:'center', gap:'0.4rem' }}>
                 <input type="number" value={savingRate} min={1} max={80} onChange={e => setSavingRate(e.target.value)}
-                  style={{ width:60, padding:'0.375rem 0.5rem', borderRadius:6, border:'1px solid var(--border)', background:'var(--bg-card)', color:'var(--text-primary)', fontSize:'0.8rem', textAlign:'center', fontFamily:'Space Grotesk,sans-serif', fontWeight:700 }} />
-                <span style={{ fontSize:'0.8rem', color:'var(--text-muted)' }}>% of income</span>
+                  style={{ width:60, padding:'0.375rem 0.5rem', borderRadius:6, border:'1px solid var(--border)', background:'var(--surface-card)', color:'var(--color-text-primary)', fontSize:'0.8rem', textAlign:'center', fontFamily:'Space Grotesk,sans-serif', fontWeight:700 }} />
+                <span style={{ fontSize:'0.8rem', color:'var(--color-text-secondary)' }}>% of income</span>
               </div>
             </Row>
             <Row label="Expected Monthly Income" desc="Optional. Overrides actual income for Safe-to-Spend calculations.">
               <div style={{ display:'flex', alignItems:'center', gap:'0.4rem' }}>
-                <span style={{ fontSize:'0.8rem', color:'var(--text-muted)' }}>{initialCurrency}</span>
+                <span style={{ fontSize:'0.8rem', color:'var(--color-text-secondary)' }}>{initialCurrency}</span>
                 <input type="number" value={expectedMonthlyIncome} onChange={e => setExpectedMonthlyIncome(e.target.value)} placeholder="Auto"
-                  style={{ width:100, padding:'0.375rem 0.5rem', borderRadius:6, border:'1px solid var(--border)', background:'var(--bg-card)', color:'var(--text-primary)', fontSize:'0.8rem', textAlign:'right', fontFamily:'Space Grotesk,sans-serif', fontWeight:700 }} />
+                  style={{ width:100, padding:'0.375rem 0.5rem', borderRadius:6, border:'1px solid var(--border)', background:'var(--surface-card)', color:'var(--color-text-primary)', fontSize:'0.8rem', textAlign:'right', fontFamily:'Space Grotesk,sans-serif', fontWeight:700 }} />
               </div>
             </Row>
             <Row label="Week Start Day" desc="First day shown in calendar views">
@@ -483,7 +483,7 @@ export function SettingsClient({
             </Row>
             <SaveRow {...notifState} />
             <div style={{ marginTop:'1rem', padding:'0.75rem', background:'var(--bg-app)', borderRadius:8, display:'flex', gap:'0.5rem' }}>
-              <Info size={14} color="var(--text-muted)" style={{ flexShrink:0, marginTop:1 }} />
+              <Info size={14} color="var(--color-text-secondary)" style={{ flexShrink:0, marginTop:1 }} />
               <p style={{ fontSize:'0.72rem', color:'var(--text-secondary)' }}>Notifications are in-app only. Email and push notifications coming soon.</p>
             </div>
           </form>
@@ -494,11 +494,11 @@ export function SettingsClient({
       <AccordionHeader section={SECTIONS.find(s => s.id === 'security')!} isOpen={openSection === 'security'} onClick={() => toggleSection('security')} />
       {openSection === 'security' && (
         <AccordionPanel>
-          <div style={{ marginBottom: '1rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+          <div style={{ marginBottom: '1rem', color: 'var(--color-text-secondary)', fontSize: '0.8rem' }}>
             Recent security events and account actions.
           </div>
           {logs.length === 0 ? (
-            <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem' }}>No activity logged yet.</p>
+            <p style={{ textAlign: 'center', color: 'var(--color-text-secondary)', padding: '2rem' }}>No activity logged yet.</p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: 400, overflowY: 'auto', paddingRight: '0.5rem' }}>
               {logs.map(log => {
@@ -549,17 +549,17 @@ export function SettingsClient({
                   <div key={log.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.875rem', background: 'var(--bg-app)', borderRadius: 8, border: '1px solid var(--border)' }}>
                     <div style={{ flex: 1, minWidth: 0, marginRight: '1rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                        <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.85rem' }}>
+                        <span style={{ fontWeight: 600, color: 'var(--color-text-primary)', fontSize: '0.85rem' }}>
                           You {verb} a {resourceNoun}
                         </span>
                       </div>
                       {details && (
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {details}
                         </div>
                       )}
                     </div>
-                    <div style={{ textAlign: 'right', fontSize: '0.75rem', color: 'var(--text-muted)', flexShrink: 0 }}>
+                    <div style={{ textAlign: 'right', fontSize: '0.75rem', color: 'var(--color-text-secondary)', flexShrink: 0 }}>
                       {date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                       <div style={{ fontSize: '0.7rem' }}>{date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}</div>
                     </div>
@@ -579,8 +579,8 @@ export function SettingsClient({
             {/* Export JSON */}
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0.875rem 1rem', background:'var(--bg-app)', borderRadius:8, gap:'0.75rem' }}>
               <div style={{ minWidth:0, flex:1 }}>
-                <div style={{ fontSize:'0.8125rem', fontWeight:600, color:'var(--text-primary)' }}>Export All Data</div>
-                <div style={{ fontSize:'0.72rem', color:'var(--text-muted)' }}>Download all your financial data as JSON</div>
+                <div style={{ fontSize:'0.8125rem', fontWeight:600, color:'var(--color-text-primary)' }}>Export All Data</div>
+                <div style={{ fontSize:'0.72rem', color:'var(--color-text-secondary)' }}>Download all your financial data as JSON</div>
               </div>
               <button
                 type="button"
@@ -597,8 +597,8 @@ export function SettingsClient({
             {/* Import link */}
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0.875rem 1rem', background:'var(--bg-app)', borderRadius:8, gap:'0.75rem' }}>
               <div style={{ minWidth:0, flex:1 }}>
-                <div style={{ fontSize:'0.8125rem', fontWeight:600, color:'var(--text-primary)' }}>Import Bank Statement</div>
-                <div style={{ fontSize:'0.72rem', color:'var(--text-muted)' }}>Upload M-Pesa or bank CSV/Excel/PDF</div>
+                <div style={{ fontSize:'0.8125rem', fontWeight:600, color:'var(--color-text-primary)' }}>Import Bank Statement</div>
+                <div style={{ fontSize:'0.72rem', color:'var(--color-text-secondary)' }}>Upload M-Pesa or bank CSV/Excel/PDF</div>
               </div>
               <a href="/transactions" className="btn btn-outline" style={{ display:'flex', alignItems:'center', gap:'0.3rem', fontSize:'0.78rem', flexShrink:0, textDecoration:'none' }}>
                 <Database size={12}/> Go
@@ -607,14 +607,14 @@ export function SettingsClient({
           </div>
 
           {/* Danger zone */}
-          <div style={{ padding:'1.5rem', background:'var(--danger)', color: 'white', borderRadius:8, border:'1px solid rgba(0,0,0,0.1)' }}>
+          <div style={{ padding:'1.5rem', background:'var(--color-expense)', color: 'white', borderRadius:8, border:'1px solid rgba(0,0,0,0.1)' }}>
             <div style={{ fontSize:'0.9rem', fontWeight:700, color:'white', marginBottom:'0.35rem' }}>Danger Zone</div>
             <div style={{ fontSize:'0.75rem', color:'rgba(255,255,255,0.9)', marginBottom:'0.875rem' }}>
               Deleting your data is permanent and cannot be undone. Please export your data first.
             </div>
             {deleteConfirm ? (
               <div style={{ display:'flex', gap:'0.5rem', alignItems:'center', flexWrap:'wrap' }}>
-                <span style={{ fontSize:'0.78rem', color:'var(--danger)', fontWeight:600 }}>Type "DELETE" to confirm:</span>
+                <span style={{ fontSize:'0.78rem', color:'var(--color-expense)', fontWeight:600 }}>Type "DELETE" to confirm:</span>
                 <input
                   type="text"
                   value={deleteAllText}
@@ -627,7 +627,7 @@ export function SettingsClient({
                   onClick={handleDeleteAll}
                   disabled={dataState.saving || deleteAllText !== 'DELETE'}
                   className="btn"
-                  style={{ background:'white', color:'var(--danger)', display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.78rem', opacity: deleteAllText === 'DELETE' ? 1 : 0.5 }}
+                  style={{ background:'white', color:'var(--color-expense)', display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.78rem', opacity: deleteAllText === 'DELETE' ? 1 : 0.5 }}
                 >
                   {dataState.saving ? <Loader2 size={12} style={{ animation:'spin 1s linear infinite' }}/> : <Trash2 size={12}/>}
                   Yes, Delete Everything
@@ -641,7 +641,7 @@ export function SettingsClient({
                 type="button"
                 onClick={() => setDeleteConfirm(true)}
                 className="btn"
-                style={{ background:'white', color:'var(--danger)', display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.78rem' }}
+                style={{ background:'white', color:'var(--color-expense)', display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.78rem' }}
               >
                 <Trash2 size={12}/> Delete All Data
               </button>
@@ -667,7 +667,7 @@ export function SettingsClient({
                     onClick={handleDeleteAccount}
                     disabled={dataState.saving || deleteAcctText !== 'DELETE'}
                     className="btn"
-                    style={{ background:'white', color:'var(--danger)', display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.78rem', opacity: deleteAcctText === 'DELETE' ? 1 : 0.5 }}
+                    style={{ background:'white', color:'var(--color-expense)', display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.78rem', opacity: deleteAcctText === 'DELETE' ? 1 : 0.5 }}
                   >
                     {dataState.saving ? <Loader2 size={12} style={{ animation:'spin 1s linear infinite' }}/> : <Trash2 size={12}/>}
                     Yes, Delete My Account
@@ -681,7 +681,7 @@ export function SettingsClient({
                   type="button"
                   onClick={() => setDeleteAcctConfirm(true)}
                   className="btn"
-                  style={{ background:'white', color:'var(--danger)', display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.78rem' }}
+                  style={{ background:'white', color:'var(--color-expense)', display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.78rem' }}
                 >
                   <Trash2 size={12}/> Delete Account
                 </button>
@@ -707,10 +707,10 @@ export function SettingsClient({
             ].map(h => (
               <a href={h.href} key={h.title} style={{ textDecoration: 'none', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0.75rem 0.875rem', background:'var(--bg-app)', borderRadius:7, cursor:'pointer', gap:'0.5rem' }}>
                 <div style={{ minWidth:0, flex:1 }}>
-                  <div style={{ fontSize:'0.8125rem', fontWeight:600, color:'var(--text-primary)' }}>{h.title}</div>
-                  <div style={{ fontSize:'0.7rem', color:'var(--text-muted)', marginTop:'0.1rem' }}>{h.desc}</div>
+                  <div style={{ fontSize:'0.8125rem', fontWeight:600, color:'var(--color-text-primary)' }}>{h.title}</div>
+                  <div style={{ fontSize:'0.7rem', color:'var(--color-text-secondary)', marginTop:'0.1rem' }}>{h.desc}</div>
                 </div>
-                <ExternalLink size={13} color="var(--text-muted)" style={{ flexShrink:0 }} />
+                <ExternalLink size={13} color="var(--color-text-secondary)" style={{ flexShrink:0 }} />
               </a>
             ))}
           </div>
@@ -720,8 +720,8 @@ export function SettingsClient({
               { label:'Stack',       val:'Next.js 16 · Prisma 7 · Neon' },
             ].map(r => (
               <div key={r.label} style={{ display:'flex', justifyContent:'space-between', marginBottom:'0.375rem' }}>
-                <span style={{ fontSize:'0.72rem', color:'var(--text-muted)' }}>{r.label}</span>
-                <span style={{ fontSize:'0.72rem', fontWeight:600, fontFamily:'Space Grotesk,sans-serif', color:'var(--text-primary)' }}>{r.val}</span>
+                <span style={{ fontSize:'0.72rem', color:'var(--color-text-secondary)' }}>{r.label}</span>
+                <span style={{ fontSize:'0.72rem', fontWeight:600, fontFamily:'Space Grotesk,sans-serif', color:'var(--color-text-primary)' }}>{r.val}</span>
               </div>
             ))}
           </div>

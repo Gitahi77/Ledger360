@@ -5,6 +5,10 @@
 
 /* ── Phase 0A: Immutable Foundations (HSL Tokens) ────────── */
 :root {
+  --color-mpesa: #1E8449;
+
+  --color-brand: #1D9E75;
+
   /* =========================
      CORE SURFACES
   ========================== */
@@ -100,32 +104,32 @@
 :root {
   /* Surfaces — near-white with subtle blue tint, airy and clean */
   --bg-app:     hsl(220, 33%, 97%);
-  --bg-card:    hsl(0, 0%, 100%);
+  --surface-card:    hsl(0, 0%, 100%);
   --bg-sidebar: hsl(0, 0%, 100%);
   --bg-hover:   hsl(220, 20%, 94%);
 
   /* Text */
-  --text-primary:   hsl(222, 47%, 11%);
+  --color-text-primary:   hsl(222, 47%, 11%);
   --text-secondary: hsl(215, 25%, 35%);
-  --text-muted:     hsl(215, 16%, 52%);
+  --color-text-secondary:     hsl(215, 16%, 52%);
 
   /* Brand — Midnight Green (#0F4C5C) */
-  --primary:       hsl(192, 72%, 21%);
-  --primary-grad:  hsl(192, 72%, 21%);
-  --primary-light: hsl(192, 30%, 94%);
-  --primary-dark:  hsl(192, 72%, 14%);
+  --color-brand:       hsl(192, 72%, 21%);
+  --color-brand-grad:  hsl(192, 72%, 21%);
+  --color-brand-light: hsl(192, 30%, 94%);
+  --color-brand-dark:  hsl(192, 72%, 14%);
 
   /* Success — Monzo-teal warmth */
-  --success:       hsl(152, 55%, 38%);
-  --success-grad:  hsl(152, 55%, 38%);
-  --success-light: hsl(152, 60%, 94%);
-  --success-text:  hsl(152, 55%, 22%);
+  --color-income:       hsl(152, 55%, 38%);
+  --color-income-grad:  hsl(152, 55%, 38%);
+  --color-income-light: hsl(152, 60%, 94%);
+  --color-income-text:  hsl(152, 55%, 22%);
 
   /* Danger — Copilot red */
-  --danger:        hsl(0, 72%, 50%);
-  --danger-grad:   hsl(0, 72%, 50%);
-  --danger-light:  hsl(0, 86%, 96%);
-  --danger-text:   hsl(0, 72%, 30%);
+  --color-expense:        hsl(0, 72%, 50%);
+  --color-expense-grad:   hsl(0, 72%, 50%);
+  --color-expense-light:  hsl(0, 86%, 96%);
+  --color-expense-text:   hsl(0, 72%, 30%);
 
   /* Accent — Sunrise Orange (#F58220) */
   --warning:       hsl(28, 93%, 54%);
@@ -177,42 +181,42 @@
 
   /* Semantic aliases */
   --background: var(--bg-app);
-  --foreground: var(--text-primary);
-  --secondary:  var(--bg-card);
+  --foreground: var(--color-text-primary);
+  --secondary:  var(--surface-card);
   --secondary-foreground: var(--text-secondary);
-  --success-light-bg: var(--success-light);
+  --color-income-light-bg: var(--color-income-light);
 }
 
 /* ── Dark Mode — Mercury-inspired deep blue-grey palette ─── */
 [data-theme="dark"] {
   /* Surfaces — deep blue-grey, calm and professional */
   --bg-app:     hsl(222, 47%, 8%);
-  --bg-card:    hsl(222, 38%, 12%);
+  --surface-card:    hsl(222, 38%, 12%);
   --bg-sidebar: hsl(222, 42%, 10%);
   --bg-hover:   hsl(215, 30%, 16%);
 
   /* Text hierarchy — high contrast, not blinding */
-  --text-primary:   hsl(210, 40%, 96%);
+  --color-text-primary:   hsl(210, 40%, 96%);
   --text-secondary: hsl(215, 20%, 68%);
-  --text-muted:     hsl(215, 16%, 50%);
+  --color-text-secondary:     hsl(215, 16%, 50%);
 
   /* Brand blue — lighter on dark for readability */
-  --primary:       hsl(213, 94%, 60%);
-  --primary-grad:  hsl(213, 94%, 60%);
-  --primary-light: hsl(213, 60%, 16%);
-  --primary-dark:  hsl(213, 90%, 44%);
+  --color-brand:       hsl(213, 94%, 60%);
+  --color-brand-grad:  hsl(213, 94%, 60%);
+  --color-brand-light: hsl(213, 60%, 16%);
+  --color-brand-dark:  hsl(213, 90%, 44%);
 
   /* Success — Monzo-teal, vibrant on dark */
-  --success:       hsl(152, 60%, 45%);
-  --success-grad:  hsl(152, 60%, 45%);
-  --success-light: hsl(152, 40%, 10%);
-  --success-text:  hsl(152, 65%, 72%);
+  --color-income:       hsl(152, 60%, 45%);
+  --color-income-grad:  hsl(152, 60%, 45%);
+  --color-income-light: hsl(152, 40%, 10%);
+  --color-income-text:  hsl(152, 65%, 72%);
 
   /* Danger — readable on dark backgrounds */
-  --danger:        hsl(0, 78%, 62%);
-  --danger-grad:   hsl(0, 78%, 62%);
-  --danger-light:  hsl(0, 50%, 12%);
-  --danger-text:   hsl(0, 82%, 80%);
+  --color-expense:        hsl(0, 78%, 62%);
+  --color-expense-grad:   hsl(0, 78%, 62%);
+  --color-expense-light:  hsl(0, 50%, 12%);
+  --color-expense-text:   hsl(0, 82%, 80%);
 
   /* Warning — warm amber, never anxiety-inducing */
   --warning:       hsl(38, 88%, 56%);
@@ -250,10 +254,10 @@
   --btn-shadow: none;
 
   --background: var(--bg-app);
-  --foreground: var(--text-primary);
-  --secondary:  var(--bg-card);
+  --foreground: var(--color-text-primary);
+  --secondary:  var(--surface-card);
   --secondary-foreground: var(--text-secondary);
-  --success-light-bg: var(--success-light);
+  --color-income-light-bg: var(--color-income-light);
 }
 
 
@@ -265,7 +269,7 @@ body {
   font-size: 14px;
   line-height: 1.55;
   background-color: var(--bg-app);
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   transition: background-color 0.25s, color 0.25s;
@@ -315,10 +319,10 @@ select, input { font-family: inherit; }
   font-size: 1.05rem;
   font-weight: 800;
   letter-spacing: -0.04em;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
 }
 
-.sidebar-logo-text span { color: var(--primary); }
+.sidebar-logo-text span { color: var(--color-brand); }
 
 .sidebar-nav { flex: 1; padding: 0.5rem 0.625rem; }
 
@@ -327,7 +331,7 @@ select, input { font-family: inherit; }
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: var(--text-muted);
+  color: var(--color-text-secondary);
   padding: 1rem 0.75rem 0.35rem;
   opacity: 0.6;
 }
@@ -347,11 +351,11 @@ select, input { font-family: inherit; }
 }
 .sidebar-link:hover {
   background: var(--bg-hover);
-  color: var(--text-primary);
+  color: var(--color-text-primary);
 }
 .sidebar-link.active {
-  background: var(--primary-light);
-  color: var(--primary);
+  background: var(--color-brand-light);
+  color: var(--color-brand);
   font-weight: 600;
 }
 .sidebar-link.active::before {
@@ -362,7 +366,7 @@ select, input { font-family: inherit; }
   transform: translateY(-50%);
   height: 60%;
   width: 3px;
-  background: var(--primary);
+  background: var(--color-brand);
   border-radius: 0 3px 3px 0;
 }
 
@@ -390,8 +394,8 @@ select, input { font-family: inherit; }
   box-shadow: 0 2px 6px rgba(15, 76, 92, 0.3);
 }
 
-.sidebar-user-name { font-size: 0.78rem; font-weight: 600; color: var(--text-primary); }
-.sidebar-user-plan { font-size: 0.65rem; color: var(--text-muted); }
+.sidebar-user-name { font-size: 0.78rem; font-weight: 600; color: var(--color-text-primary); }
+.sidebar-user-plan { font-size: 0.65rem; color: var(--color-text-secondary); }
 
 /* ── Layout ───────────────────────────────────────────── */
 .main-content {
@@ -405,7 +409,7 @@ select, input { font-family: inherit; }
 
 .top-header {
   height: var(--header-height);
-  background: var(--bg-card);
+  background: var(--surface-card);
   border-bottom: 1px solid var(--border);
   padding: 0 1.75rem;
   display: flex; align-items: center; justify-content: space-between;
@@ -415,7 +419,7 @@ select, input { font-family: inherit; }
 .top-header-title {
   font-family: 'Space Grotesk', sans-serif;
   font-size: 0.9375rem; font-weight: 700;
-  letter-spacing: -0.02em; color: var(--text-primary);
+  letter-spacing: -0.02em; color: var(--color-text-primary);
 }
 
 .top-header-right { display: flex; align-items: center; gap: 0.625rem; }
@@ -423,7 +427,7 @@ select, input { font-family: inherit; }
 
 /* ── Cards ───────────────────────────────────────────── */
 .card {
-  background: var(--bg-card);
+  background: var(--surface-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 1.25rem 1.375rem;
@@ -439,12 +443,12 @@ select, input { font-family: inherit; }
   font-family: 'Space Grotesk', sans-serif;
   font-size: 0.8125rem; font-weight: 700;
   letter-spacing: -0.01em;
-  color: var(--text-primary); margin-bottom: 1rem;
+  color: var(--color-text-primary); margin-bottom: 1rem;
 }
 
 /* ── KPI Cards ───────────────────────────────────────────── */
 .kpi-card {
-  background: var(--bg-card);
+  background: var(--surface-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 1rem 1.125rem;
@@ -462,7 +466,7 @@ select, input { font-family: inherit; }
 .kpi-label {
   font-size: 0.63rem; font-weight: 700;
   text-transform: uppercase; letter-spacing: 0.07em;
-  color: var(--text-muted); margin-bottom: 0.2rem;
+  color: var(--color-text-secondary); margin-bottom: 0.2rem;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
@@ -471,7 +475,7 @@ select, input { font-family: inherit; }
   /* Fluid: shrinks from 1.35rem to 1rem as container narrows */
   font-size: clamp(0.95rem, 2.5cqi, 1.35rem);
   font-weight: 700;
-  color: var(--text-primary); letter-spacing: -0.03em; line-height: 1.15;
+  color: var(--color-text-primary); letter-spacing: -0.03em; line-height: 1.15;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
@@ -482,7 +486,7 @@ select, input { font-family: inherit; }
 
 /* ── Hero Card ───────────────────────────────────────────── */
 .hero-card {
-  background: var(--primary);
+  background: var(--color-brand);
   border-radius: var(--radius); padding: 1.375rem; border: none;
   position: relative; overflow: hidden;
 }
@@ -494,11 +498,11 @@ select, input { font-family: inherit; }
   font-size: 0.65rem; font-weight: 700;
   text-transform: uppercase; letter-spacing: 0.05em;
 }
-.badge-success { background: var(--success-light); color: var(--success); }
+.badge-success { background: var(--color-income-light); color: var(--color-income); }
 .badge-warning { background: var(--warning-light); color: var(--warning); }
-.badge-danger  { background: var(--danger-light);  color: var(--danger);  }
+.badge-danger  { background: var(--color-expense-light);  color: var(--color-expense);  }
 .badge-purple  { background: var(--purple-light);  color: var(--purple);  }
-.badge-blue    { background: var(--primary-light); color: var(--primary); }
+.badge-blue    { background: var(--color-brand-light); color: var(--color-brand); }
 .badge-sky     { background: var(--sky-light);     color: var(--sky);     }
 
 /* ── Progress ────────────────────────────────────────────── */
@@ -528,12 +532,12 @@ select, input { font-family: inherit; }
   transition: all 0.15s; white-space: nowrap;
 }
 
-.segmented-btn:hover:not(.active) { color: var(--text-primary); }
+.segmented-btn:hover:not(.active) { color: var(--color-text-primary); }
 
 /* Active: raised 3D look */
 .segmented-btn.active {
-  background: var(--bg-card);
-  color: var(--primary);
+  background: var(--surface-card);
+  color: var(--color-brand);
   font-weight: 700;
   border-radius: 4px;
 }
@@ -543,7 +547,7 @@ select, input { font-family: inherit; }
 .data-table th {
   font-size: 0.65rem; font-weight: 700;
   text-transform: uppercase; letter-spacing: 0.08em;
-  color: var(--text-muted); padding-bottom: 0.625rem;
+  color: var(--color-text-secondary); padding-bottom: 0.625rem;
   border-bottom: 1px solid var(--border); text-align: left;
 }
 .data-table td {
@@ -562,11 +566,11 @@ select, input { font-family: inherit; }
 }
 
 .btn-primary {
-  background: var(--primary);
+  background: var(--color-brand);
   color: white; border: none;
 }
 .btn-primary:hover {
-  background: var(--primary-dark);
+  background: var(--color-brand-dark);
   transform: translateY(-1px);
 }
 .btn-primary:active {
@@ -580,32 +584,32 @@ select, input { font-family: inherit; }
 }
 .btn-outline:hover {
   background: var(--bg-hover);
-  color: var(--text-primary); border-color: var(--text-muted);
+  color: var(--color-text-primary); border-color: var(--color-text-secondary);
 }
 
 /* ── Inputs ──────────────────────────────────────────────── */
 .input-field {
   padding: 0.4rem 0.625rem; border-radius: var(--radius-sm);
   border: 1px solid var(--border);
-  background: var(--bg-card); color: var(--text-primary);
+  background: var(--surface-card); color: var(--color-text-primary);
   font-size: 0.8rem; font-family: inherit; outline: none;
   transition: border-color 0.15s;
 }
-.input-field:focus { border-color: var(--primary); }
+.input-field:focus { border-color: var(--color-brand); }
 
 /* ── Theme Toggle ────────────────────────────────────────── */
 .theme-toggle {
   width: 30px; height: 30px; border-radius: var(--radius-sm);
   border: 1px solid var(--border);
-  background: var(--bg-card); color: var(--text-secondary);
+  background: var(--surface-card); color: var(--text-secondary);
   display: flex; align-items: center; justify-content: center;
   transition: all 0.15s;
 }
-.theme-toggle:hover { border-color: var(--primary); color: var(--primary); }
+.theme-toggle:hover { border-color: var(--color-brand); color: var(--color-brand); }
 
 /* ── Section Header ──────────────────────────────────────── */
 .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
-.section-link { font-size: 0.75rem; font-weight: 600; color: var(--primary); display: flex; align-items: center; gap: 0.2rem; }
+.section-link { font-size: 0.75rem; font-weight: 600; color: var(--color-brand); display: flex; align-items: center; gap: 0.2rem; }
 .section-link:hover { opacity: 0.8; }
 
 /* ── Animations ──────────────────────────────────────────── */
@@ -660,11 +664,11 @@ select, input { font-family: inherit; }
 
 /* ── Color text ──────────────────────────────────────────── */
 .text-secondary { color:var(--text-secondary); }
-.text-muted     { color:var(--text-muted); }
-.text-success   { color:var(--success); }
-.text-danger    { color:var(--danger); }
+.text-muted     { color:var(--color-text-secondary); }
+.text-success   { color:var(--color-income); }
+.text-danger    { color:var(--color-expense); }
 .text-warning   { color:var(--warning); }
-.text-brand     { color:var(--primary); }
+.text-brand     { color:var(--color-brand); }
 
 /* ── Misc ────────────────────────────────────────────────── */
 .w-full{width:100%;} .min-w-0{min-width:0;} .cursor-pointer{cursor:pointer;}
@@ -785,7 +789,7 @@ select, input { font-family: inherit; }
   letter-spacing: -0.045em;
   line-height: 0.95;
   font-size: var(--font-balance);
-  color: var(--text-primary);
+  color: var(--color-text-primary);
 }
 /* Force white inside the dark hero card regardless of theme */
 .dashboard-hero .balance-text,
@@ -801,10 +805,10 @@ select, input { font-family: inherit; }
 }
 .ledger-amount.positive {
   /* Use the semantic token — properly overridden in dark mode */
-  color: var(--success);
+  color: var(--color-income);
 }
 .ledger-amount.negative {
-  color: var(--danger);
+  color: var(--color-expense);
 }
 
 /* TransactionRow */
@@ -816,7 +820,7 @@ select, input { font-family: inherit; }
   border-radius: var(--radius-row);
   padding: var(--row-padding) 1rem;
   min-height: var(--row-height);
-  background-color: var(--bg-card);
+  background-color: var(--surface-card);
   text-align: left;
   border: none;
   cursor: pointer;
@@ -844,7 +848,7 @@ select, input { font-family: inherit; }
   overflow: hidden;
   text-overflow: ellipsis;
   font-weight: 500;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   margin: 0;
 }
 .transaction-row-subtitle {
@@ -852,7 +856,7 @@ select, input { font-family: inherit; }
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: var(--font-caption);
-  color: var(--text-muted);
+  color: var(--color-text-secondary);
   margin: 0;
   margin-top: 0.125rem;
 }
@@ -863,7 +867,7 @@ select, input { font-family: inherit; }
 }
 .transaction-row-delete {
   padding: 0.375rem;
-  color: var(--text-muted);
+  color: var(--color-text-secondary);
   border-radius: 0.375rem;
   background: transparent;
   border: none;
@@ -916,7 +920,7 @@ select, input { font-family: inherit; }
   align-items: center;
   justify-content: space-around;
   border-top: 1px solid var(--border);
-  background-color: var(--bg-card);
+  background-color: var(--surface-card);
   padding-bottom: max(env(safe-area-inset-bottom), 0.5rem);
   padding-top: 0.625rem;
   backdrop-filter: blur(12px);
@@ -935,15 +939,15 @@ select, input { font-family: inherit; }
   padding: 0.5rem;
   border-radius: 0.75rem;
   text-decoration: none;
-  color: var(--text-muted);
+  color: var(--color-text-secondary);
   transition: color 0.2s;
 }
 .mobile-nav-item:hover {
-  color: var(--text-primary);
+  color: var(--color-text-primary);
 }
 .mobile-nav-item.active {
-  /* Use var(--primary) — correctly themed, --primary-hsl was never defined */
-  color: var(--primary);
+  /* Use var(--color-brand) — correctly themed */
+  color: var(--color-brand);
 }
 .mobile-nav-label {
   font-size: 0.625rem;
@@ -1133,7 +1137,7 @@ select, input { font-family: inherit; }
   padding: 0.75rem 1.5rem;
   border-top: 1px solid var(--border-light);
   font-size: 0.68rem;
-  color: var(--text-muted);
+  color: var(--color-text-secondary);
   letter-spacing: 0.02em;
   user-select: none;
 }
@@ -1161,9 +1165,9 @@ select, input { font-family: inherit; }
   flex-shrink: 0;
 }
 .health-badge.on-track {
-  background-color: var(--success-light);
-  color: var(--success-text);
-  border: 1px solid var(--success);
+  background-color: var(--color-income-light);
+  color: var(--color-income-text);
+  border: 1px solid var(--color-income);
 }
 .health-badge.needs-attention {
   background-color: var(--warning-light);
@@ -1171,16 +1175,16 @@ select, input { font-family: inherit; }
   border: 1px solid var(--warning);
 }
 .health-badge.recovering {
-  background-color: var(--primary-light);
-  color: var(--primary);
-  border: 1px solid var(--primary-dark);
+  background-color: var(--color-brand-light);
+  color: var(--color-brand);
+  border: 1px solid var(--color-brand-dark);
 }
 
 /* ── SafeToSpend Card ─────────────────────────────────────── */
 .safe-to-spend {
   border-radius: 0.875rem;
   border: 1px solid var(--border);
-  background-color: var(--bg-card);
+  background-color: var(--surface-card);
   padding: 1rem 1.25rem;
   display: flex;
   align-items: center;
@@ -1192,7 +1196,7 @@ select, input { font-family: inherit; }
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--text-muted);
+  color: var(--color-text-secondary);
   margin-bottom: 0.25rem;
 }
 .safe-to-spend-value {
@@ -1201,22 +1205,22 @@ select, input { font-family: inherit; }
   font-size: 1.5rem;
   letter-spacing: -0.04em;
   line-height: 1;
-  color: var(--success);
+  color: var(--color-income);
 }
 .safe-to-spend-sub {
   font-size: var(--font-caption);
-  color: var(--text-muted);
+  color: var(--color-text-secondary);
   margin-top: 0.25rem;
 }
 .safe-to-spend-icon {
   width: 2.75rem;
   height: 2.75rem;
   border-radius: 50%;
-  background-color: var(--success-light);
+  background-color: var(--color-income-light);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--success);
+  color: var(--color-income);
   flex-shrink: 0;
 }
 
@@ -1224,7 +1228,7 @@ select, input { font-family: inherit; }
 .insight-card {
   border-radius: 0.875rem;
   border: 1px solid var(--border);
-  background-color: var(--bg-card);
+  background-color: var(--surface-card);
   padding: 0.875rem 1rem;
   display: flex;
   align-items: flex-start;
@@ -1240,14 +1244,14 @@ select, input { font-family: inherit; }
   flex-shrink: 0;
   font-size: 1rem;
 }
-.insight-card.info    .insight-card-icon { background: var(--primary-light); color: var(--primary); }
-.insight-card.success .insight-card-icon { background: var(--success-light); color: var(--success); }
+.insight-card.info    .insight-card-icon { background: var(--color-brand-light); color: var(--color-brand); }
+.insight-card.success .insight-card-icon { background: var(--color-income-light); color: var(--color-income); }
 .insight-card.warning .insight-card-icon { background: var(--warning-light); color: var(--warning); }
-.insight-card.danger  .insight-card-icon { background: var(--danger-light);  color: var(--danger); }
+.insight-card.danger  .insight-card-icon { background: var(--color-expense-light);  color: var(--color-expense); }
 .insight-card-title {
   font-weight: 600;
   font-size: 0.82rem;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   margin-bottom: 0.2rem;
 }
 .insight-card-desc {
@@ -1313,13 +1317,13 @@ select, input { font-family: inherit; }
   font-size: 1.35rem;
   font-weight: 700;
   letter-spacing: -0.025em;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   margin: 0;
   line-height: 1.2;
 }
 .dash-greeting-sub {
   font-size: 0.82rem;
-  color: var(--text-muted);
+  color: var(--color-text-secondary);
   margin: 0.2rem 0 0;
 }
 
@@ -1432,7 +1436,7 @@ select, input { font-family: inherit; }
 
 /* Year-End Forecast card */
 .dash-forecast-card {
-  background: var(--primary);
+  background: var(--color-brand);
   color: white;
   border: none;
 }

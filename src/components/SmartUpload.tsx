@@ -139,7 +139,7 @@ export function SmartUpload({ onDone }: { onDone?: () => void }) {
             style={{
               flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.375rem',
               padding: '0.6rem 0.5rem', border: 'none', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600,
-              background: tab === t.key ? 'var(--primary)' : 'transparent',
+              background: tab === t.key ? 'var(--color-brand)' : 'transparent',
               color:      tab === t.key ? 'white' : 'var(--text-secondary)',
               transition: 'all 0.15s',
             }}
@@ -150,15 +150,15 @@ export function SmartUpload({ onDone }: { onDone?: () => void }) {
       </div>
 
       {state === 'error' && (
-        <div style={{ marginBottom: '0.875rem', padding: '0.75rem 1rem', borderRadius: 8, background: 'var(--danger-light)', border: '1px solid rgba(220,38,38,0.2)', fontSize: '0.8rem', color: 'var(--danger)', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+        <div style={{ marginBottom: '0.875rem', padding: '0.75rem 1rem', borderRadius: 8, background: 'var(--color-expense-light)', border: '1px solid rgba(220,38,38,0.2)', fontSize: '0.8rem', color: 'var(--color-expense)', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           <AlertCircle size={14} /> {errMsg}
-          <button onClick={() => setState('idle')} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)' }}><X size={14} /></button>
+          <button onClick={() => setState('idle')} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-expense)' }}><X size={14} /></button>
         </div>
       )}
 
       {/* Account Selector */}
       <div style={{ marginBottom: '1.25rem', textAlign: 'left' }}>
-        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.4rem' }}>Import into Account</label>
+        <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: '0.4rem' }}>Import into Account</label>
         <select
           value={accountId}
           onChange={e => setAccountId(e.target.value)}
@@ -192,17 +192,17 @@ export function SmartUpload({ onDone }: { onDone?: () => void }) {
             document.getElementById('smart-upload-input')?.click();
           }}
           style={{
-            border: `2px dashed ${isDragging ? 'var(--primary)' : 'var(--border)'}`,
+            border: `2px dashed ${isDragging ? 'var(--color-brand)' : 'var(--border)'}`,
             borderRadius: 12, padding: '2.5rem 2rem', textAlign: 'center', cursor: 'pointer',
-            background: isDragging ? 'var(--primary-light)' : 'var(--bg-app)',
+            background: isDragging ? 'var(--color-brand-light)' : 'var(--bg-app)',
             transition: 'all 0.15s',
           }}
         >
           <input id="smart-upload-input" type="file" accept=".pdf,.csv,.xlsx,.xls,.png,.jpg,.jpeg" style={{ display: 'none' }}
             onChange={e => { const f = e.target.files?.[0]; if (f) processFile(f); }} />
-          <UploadCloud size={40} color="var(--primary)" style={{ margin: '0 auto 0.875rem' }} />
-          <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)', marginBottom: '0.3rem' }}>AI Smart Upload</div>
-          <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+          <UploadCloud size={40} color="var(--color-brand)" style={{ margin: '0 auto 0.875rem' }} />
+          <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--color-text-primary)', marginBottom: '0.3rem' }}>AI Smart Upload</div>
+          <p style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)', marginBottom: '1rem' }}>
             Drop your bank statement here — PDF, CSV, Excel or screenshot.<br />
             Gemini AI will auto-detect and categorise every transaction.
           </p>
@@ -219,7 +219,7 @@ export function SmartUpload({ onDone }: { onDone?: () => void }) {
             <button className="btn btn-primary" style={{ pointerEvents: 'none' }}>Browse Files</button>
           </div>
 
-          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center', fontSize: '0.75rem', color: 'var(--text-muted)', cursor: 'pointer', textAlign: 'left', maxWidth: 400, margin: '0 auto' }} onClick={e => e.stopPropagation()}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center', fontSize: '0.75rem', color: 'var(--color-text-secondary)', cursor: 'pointer', textAlign: 'left', maxWidth: 400, margin: '0 auto' }} onClick={e => e.stopPropagation()}>
             <input type="checkbox" checked={aiConsent} onChange={e => setAiConsent(e.target.checked)} />
             <span>I consent to having my document securely parsed by Google Gemini AI. Note: PDFs and images are sent in full (no redaction). Data is NOT used to train models.</span>
           </label>
@@ -237,16 +237,16 @@ export function SmartUpload({ onDone }: { onDone?: () => void }) {
   /* ── Uploading ───────────────────────────────────────────── */
   if (state === 'uploading') return (
     <div style={{ textAlign: 'center', padding: '2rem' }}>
-      <Loader2 size={40} color="var(--primary)" style={{ margin: '0 auto 1rem', animation: 'spin 1s linear infinite' }} />
-      <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
+      <Loader2 size={40} color="var(--color-brand)" style={{ margin: '0 auto 1rem', animation: 'spin 1s linear infinite' }} />
+      <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-text-primary)', marginBottom: '0.5rem' }}>
         AI is reading your statement…
       </div>
-      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>Extracting and categorising transactions</p>
+      <p style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginBottom: '1rem' }}>Extracting and categorising transactions</p>
       <div style={{ maxWidth: 260, margin: '0 auto' }}>
         <div className="progress-track" style={{ height: 6 }}>
-          <div className="progress-fill" style={{ width: `${progress}%`, background: 'var(--primary-grad)', boxShadow: '0 0 10px rgba(0,112,243,0.45)', transition: 'width 0.35s ease' }} />
+          <div className="progress-fill" style={{ width: `${progress}%`, background: 'var(--color-brand-grad)', boxShadow: '0 0 10px rgba(0,112,243,0.45)', transition: 'width 0.35s ease' }} />
         </div>
-        <div style={{ marginTop: '0.35rem', fontSize: '0.7rem', color: 'var(--text-muted)', textAlign: 'right' }}>{progress}%</div>
+        <div style={{ marginTop: '0.35rem', fontSize: '0.7rem', color: 'var(--color-text-secondary)', textAlign: 'right' }}>{progress}%</div>
       </div>
     </div>
   );
@@ -256,10 +256,10 @@ export function SmartUpload({ onDone }: { onDone?: () => void }) {
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.875rem', flexWrap: 'wrap', gap: '0.5rem' }}>
         <div>
-          <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+          <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-text-primary)' }}>
             {rows.length} transactions found
           </div>
-          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
+          <div style={{ fontSize: '0.72rem', color: 'var(--color-text-secondary)', marginTop: '0.1rem' }}>
             {method === 'ai' ? '✨ Parsed by GPT-4o Vision' : '📄 Parsed from CSV'}
             {' · '}{selected.size} selected for import
           </div>
@@ -289,8 +289,8 @@ export function SmartUpload({ onDone }: { onDone?: () => void }) {
           <tbody>
             {rows.map((r, i) => {
               const rowStyle = r.isTransfer 
-                ? { opacity: 0.5, background: 'var(--bg-card-hover)', cursor: 'not-allowed' }
-                : { cursor: 'pointer', opacity: selected.has(i) ? 1 : 0.5, background: r.isDuplicate ? 'var(--danger-light)' : 'transparent' };
+                ? { opacity: 0.5, background: 'var(--surface-card-hover)', cursor: 'not-allowed' }
+                : { cursor: 'pointer', opacity: selected.has(i) ? 1 : 0.5, background: r.isDuplicate ? 'var(--color-expense-light)' : 'transparent' };
               
               return (
                 <tr key={i} onClick={() => toggleRow(i)} style={rowStyle}>
@@ -299,9 +299,9 @@ export function SmartUpload({ onDone }: { onDone?: () => void }) {
                   </td>
                   <td style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     <div style={{ fontWeight: 600 }}>{r.name}</div>
-                    {r.reference && <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Ref: {r.reference}</div>}
-                    {r.isDuplicate && <div style={{ fontSize: '0.65rem', color: 'var(--danger)', fontWeight: 600 }}>Duplicate Warning</div>}
-                    {r.isTransfer && <div style={{ fontSize: '0.65rem', color: 'var(--primary)', fontWeight: 600 }}>Suggested Transfer (Skipped)</div>}
+                    {r.reference && <div style={{ fontSize: '0.65rem', color: 'var(--color-text-secondary)' }}>Ref: {r.reference}</div>}
+                    {r.isDuplicate && <div style={{ fontSize: '0.65rem', color: 'var(--color-expense)', fontWeight: 600 }}>Duplicate Warning</div>}
+                    {r.isTransfer && <div style={{ fontSize: '0.65rem', color: 'var(--color-text-primary)', fontWeight: 600 }}>Suggested Transfer (Skipped)</div>}
                   </td>
                   <td>{r.date}</td>
                   <td>
@@ -316,11 +316,11 @@ export function SmartUpload({ onDone }: { onDone?: () => void }) {
                       }}
                       style={{
                         background: 'transparent', border: '1px solid var(--border)', borderRadius: 4,
-                        padding: '2px 6px', fontSize: '0.72rem', width: 110, color: 'var(--text-primary)'
+                        padding: '2px 6px', fontSize: '0.72rem', width: 110, color: 'var(--color-text-primary)'
                       }}
                     />
                   </td>
-                  <td style={{ textAlign: 'right', fontFamily: 'Space Grotesk,sans-serif', fontWeight: 700, color: r.type === 'income' ? 'var(--success)' : (r.isTransfer ? 'var(--primary)' : 'var(--text-primary)') }}>
+                  <td style={{ textAlign: 'right', fontFamily: 'Space Grotesk,sans-serif', fontWeight: 700, color: r.type === 'income' ? 'var(--color-income)' : (r.isTransfer ? 'var(--color-brand)' : 'var(--color-text-primary)') }}>
                     {r.type === 'income' ? '+' : '-'}KES {r.amount.toLocaleString()}
                   </td>
                 </tr>
@@ -335,17 +335,17 @@ export function SmartUpload({ onDone }: { onDone?: () => void }) {
   /* ── Importing ───────────────────────────────────────────── */
   if (state === 'importing') return (
     <div style={{ textAlign: 'center', padding: '2rem' }}>
-      <Loader2 size={32} color="var(--primary)" style={{ margin: '0 auto 0.875rem', animation: 'spin 1s linear infinite' }} />
-      <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Saving to your account…</div>
+      <Loader2 size={32} color="var(--color-brand)" style={{ margin: '0 auto 0.875rem', animation: 'spin 1s linear infinite' }} />
+      <div style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>Saving to your account…</div>
     </div>
   );
 
   /* ── Done ─────────────────────────────────────────────────── */
   return (
     <div style={{ textAlign: 'center', padding: '2rem' }}>
-      <CheckCircle2 size={40} color="var(--success)" style={{ margin: '0 auto 0.875rem' }} />
-      <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--success)', marginBottom: '0.3rem' }}>Import complete!</div>
-      <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Your transactions have been saved.</p>
+      <CheckCircle2 size={40} color="var(--color-income)" style={{ margin: '0 auto 0.875rem' }} />
+      <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--color-income)', marginBottom: '0.3rem' }}>Import complete!</div>
+      <p style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)' }}>Your transactions have been saved.</p>
     </div>
   );
 }

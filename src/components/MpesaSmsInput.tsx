@@ -66,11 +66,11 @@ export function MpesaSmsInput({ onImport }: Props) {
 
   if (state === 'parsing') return (
     <div style={{ textAlign: 'center', padding: '2rem' }}>
-      <Loader2 size={36} color="var(--primary)" style={{ margin: '0 auto 1rem', animation: 'spin 1s linear infinite' }} />
-      <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
+      <Loader2 size={36} color="var(--color-brand)" style={{ margin: '0 auto 1rem', animation: 'spin 1s linear infinite' }} />
+      <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-text-primary)', marginBottom: '0.25rem' }}>
         Gemini AI is reading your SMS…
       </div>
-      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Extracting and categorising M-Pesa transactions</p>
+      <p style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Extracting and categorising M-Pesa transactions</p>
     </div>
   );
 
@@ -78,10 +78,10 @@ export function MpesaSmsInput({ onImport }: Props) {
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.875rem', flexWrap: 'wrap', gap: '0.5rem' }}>
         <div>
-          <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+          <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--color-text-primary)' }}>
             {parsed.length} transaction{parsed.length !== 1 ? 's' : ''} found
           </div>
-          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
+          <div style={{ fontSize: '0.72rem', color: 'var(--color-text-secondary)', marginTop: '0.1rem' }}>
             ✨ Parsed by Gemini AI · {selected.size} selected for import
           </div>
         </div>
@@ -119,7 +119,7 @@ export function MpesaSmsInput({ onImport }: Props) {
                     {t.category}
                   </span>
                 </td>
-                <td style={{ textAlign: 'right', fontFamily: 'Space Grotesk,sans-serif', fontWeight: 700, color: t.type === 'income' ? 'var(--success)' : 'var(--text-primary)' }}>
+                <td style={{ textAlign: 'right', fontFamily: 'Space Grotesk,sans-serif', fontWeight: 700, color: t.type === 'income' ? 'var(--color-income)' : 'var(--color-text-primary)' }}>
                   {t.type === 'income' ? '+' : '−'}KES {t.amount.toLocaleString()}
                 </td>
               </tr>
@@ -133,21 +133,21 @@ export function MpesaSmsInput({ onImport }: Props) {
   return (
     <div>
       {state === 'error' && (
-        <div style={{ marginBottom: '0.875rem', padding: '0.75rem 1rem', borderRadius: 8, background: 'var(--danger-light)', border: '1px solid rgba(220,38,38,0.2)', fontSize: '0.8rem', color: 'var(--danger)', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+        <div style={{ marginBottom: '0.875rem', padding: '0.75rem 1rem', borderRadius: 8, background: 'var(--color-expense-light)', border: '1px solid rgba(220,38,38,0.2)', fontSize: '0.8rem', color: 'var(--color-expense)', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           <AlertCircle size={14} /> {errMsg}
-          <button onClick={() => setState('idle')} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)' }}><X size={14} /></button>
+          <button onClick={() => setState('idle')} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-expense)' }}><X size={14} /></button>
         </div>
       )}
 
       {/* Icon + heading */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '1rem', textAlign: 'center' }}>
-        <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'linear-gradient(135deg, #00C853, #009624)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '0.75rem', boxShadow: '0 4px 16px rgba(0,200,83,0.3)' }}>
+        <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'var(--color-mpesa)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '0.75rem', boxShadow: '0 4px 16px rgba(30,132,73,0.3)' }}>
           <Smartphone size={24} color="white" />
         </div>
-        <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)', marginBottom: '0.25rem' }}>
+        <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--color-text-primary)', marginBottom: '0.25rem' }}>
           Paste M-Pesa SMS Messages
         </div>
-        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', maxWidth: 340 }}>
+        <p style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', maxWidth: 340 }}>
           Copy your M-Pesa confirmation SMS messages and paste them all below.
           Gemini AI will extract every transaction automatically. Phone numbers and account details are redacted before parsing.
         </p>
@@ -160,14 +160,14 @@ export function MpesaSmsInput({ onImport }: Props) {
         style={{
           width: '100%', minHeight: 180, padding: '0.75rem', borderRadius: 8,
           border: '1px solid var(--border)', background: 'var(--bg-app)',
-          color: 'var(--text-primary)', fontSize: '0.78rem', fontFamily: 'inherit',
+          color: 'var(--color-text-primary)', fontSize: '0.78rem', fontFamily: 'inherit',
           resize: 'vertical', outline: 'none', lineHeight: 1.6,
           boxSizing: 'border-box',
         }}
       />
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+        <span style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)' }}>
           💡 Works with Send Money, Paybill, Buy Goods, Receive, Withdraw, Fuliza
         </span>
         <button

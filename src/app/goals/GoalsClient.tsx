@@ -21,16 +21,16 @@ function goalStyle(pct: number) {
   if (pct >= 100) return {
     label: 'Achieved',
     badge: 'badge-success',
-    barGrad: 'linear-gradient(90deg, var(--success), hsl(152,65%,62%))',
-    borderColor: 'var(--success)',
-    numColor: 'var(--success)',
+    barGrad: 'linear-gradient(90deg, var(--color-income), hsl(152,65%,62%))',
+    borderColor: 'var(--color-income)',
+    numColor: 'var(--color-income)',
     glow: 'rgba(34,197,94,0.35)',
-    iconBg: 'var(--success-light)',
+    iconBg: 'var(--color-income-light)',
   };
   if (pct >= 70) return {
     label: 'Almost There',
     badge: 'badge-blue',
-    barGrad: 'linear-gradient(90deg, var(--primary), var(--teal))',
+    barGrad: 'linear-gradient(90deg, var(--color-brand), var(--teal))',
     borderColor: 'var(--teal)',
     numColor: 'var(--teal)',
     glow: 'rgba(20,184,166,0.3)',
@@ -39,11 +39,11 @@ function goalStyle(pct: number) {
   if (pct >= 35) return {
     label: 'Building',
     badge: 'badge-blue',
-    barGrad: 'linear-gradient(90deg, var(--sky), var(--primary))',
-    borderColor: 'var(--primary)',
-    numColor: 'var(--primary)',
+    barGrad: 'linear-gradient(90deg, var(--sky), var(--color-brand))',
+    borderColor: 'var(--color-brand)',
+    numColor: 'var(--color-brand)',
     glow: 'rgba(59,130,246,0.35)',
-    iconBg: 'var(--primary-light)',
+    iconBg: 'var(--color-brand-light)',
   };
   return {
     label: 'Early Stage',
@@ -104,9 +104,9 @@ function GoalModal({ goal, onClose, currency }: { goal?: Goal; onClose: () => vo
       <div className="card animate-in" style={{ width:'100%', maxWidth:460, padding:'1.75rem' }} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <h2 className="card-title" style={{ marginBottom:0 }}>{isEdit ? 'Edit Goal' : 'New Goal'}</h2>
-          <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', display:'flex' }}><X size={18}/></button>
+          <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--color-text-secondary)', display:'flex' }}><X size={18}/></button>
         </div>
-        {error && <div style={{ padding:'0.625rem', borderRadius:7, background:'var(--danger-light)', color:'var(--danger)', fontSize:'0.8rem', marginBottom:'1rem' }}>{error}</div>}
+        {error && <div style={{ padding:'0.625rem', borderRadius:7, background:'var(--color-expense-light)', color:'var(--color-expense)', fontSize:'0.8rem', marginBottom:'1rem' }}>{error}</div>}
         <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:'0.875rem' }}>
           <div>
             <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Goal Name</label>
@@ -129,7 +129,7 @@ function GoalModal({ goal, onClose, currency }: { goal?: Goal; onClose: () => vo
           </div>
           <div>
             <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>
-              Target Deadline <span style={{ fontWeight:400, color:'var(--text-muted)' }}>(optional)</span>
+              Target Deadline <span style={{ fontWeight:400, color:'var(--color-text-secondary)' }}>(optional)</span>
             </label>
             <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
               type="date" value={deadline} onChange={e => setDeadline(e.target.value)} />
@@ -189,7 +189,7 @@ export function GoalsClient({ goals, currency, categories = [] }: { goals: Goal[
               fontFamily:'Space Grotesk,sans-serif',
               fontSize: totalSaved > 9_999_999 ? '1.6rem' : totalSaved > 999_999 ? '1.9rem' : '2.25rem',
               fontWeight:800, letterSpacing:'-0.04em', lineHeight:1,
-              color:'var(--success)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
+              color:'var(--color-income)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
             }}>{fmtAdaptive(totalSaved, currency)}</p>
             <p className="hero-sub">of {fmtAdaptive(totalTarget, currency)} target</p>
             <div className="hero-progress-wrap" style={{ marginTop:'0.75rem', paddingTop:'0.75rem' }}>
@@ -198,24 +198,24 @@ export function GoalsClient({ goals, currency, categories = [] }: { goals: Goal[
                 <span className="hero-progress-val tabular">{overallPct}%</span>
               </div>
               <div className="hero-progress-track">
-                <div className="hero-progress-bar" style={{ width:`${overallPct}%`, backgroundColor:'var(--success)' }}/>
+                <div className="hero-progress-bar" style={{ width:`${overallPct}%`, backgroundColor:'var(--color-income)' }}/>
               </div>
             </div>
           </div>
           <div className="hero-stats-grid">
             <div className="hero-stat-card">
               <p className="hero-label">Goals</p>
-              <p className="hero-stat-value tabular" style={{ color:'var(--text-primary)' }}>{goals.length}</p>
+              <p className="hero-stat-value tabular" style={{ color:'var(--color-text-primary)' }}>{goals.length}</p>
               <p className="hero-sub">total</p>
             </div>
             <div className="hero-stat-card">
               <p className="hero-label">Achieved</p>
-              <p className="hero-stat-value tabular" style={{ color: achieved > 0 ? 'var(--success)' : 'var(--text-primary)' }}>{achieved}</p>
+              <p className="hero-stat-value tabular" style={{ color: achieved > 0 ? 'var(--color-income)' : 'var(--color-text-primary)' }}>{achieved}</p>
               <p className="hero-sub">complete</p>
             </div>
             <div className="hero-stat-card">
               <p className="hero-label">Almost There</p>
-              <p className="hero-stat-value tabular" style={{ color: almostThere > 0 ? 'var(--warning)' : 'var(--text-primary)' }}>{almostThere}</p>
+              <p className="hero-stat-value tabular" style={{ color: almostThere > 0 ? 'var(--warning)' : 'var(--color-text-primary)' }}>{almostThere}</p>
               <p className="hero-sub">70%+ done</p>
             </div>
           </div>
@@ -224,7 +224,7 @@ export function GoalsClient({ goals, currency, categories = [] }: { goals: Goal[
 
       {/* Goal cards / empty state */}
       {goals.length === 0 ? (
-        <div className="card" style={{ textAlign:'center', padding:'3rem', color:'var(--text-muted)' }}>
+        <div className="card" style={{ textAlign:'center', padding:'3rem', color:'var(--color-text-secondary)' }}>
           <PiggyBank size={40} style={{ margin:'0 auto 0.75rem', opacity:0.4 }} />
           <div style={{ fontWeight:600, marginBottom:'0.25rem' }}>No goals yet</div>
           <div style={{ fontSize:'0.78rem', marginBottom:'1rem' }}>Set your first savings goal to start tracking progress</div>
@@ -266,19 +266,19 @@ export function GoalsClient({ goals, currency, categories = [] }: { goals: Goal[
                     <div style={{ minWidth:0 }}>
                       <div
                         title={g.name}
-                        style={{ fontWeight:700, fontSize:'0.875rem', color:'var(--text-primary)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'9rem' }}
+                        style={{ fontWeight:700, fontSize:'0.875rem', color:'var(--color-text-primary)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'9rem' }}
                       >{g.name}</div>
-                      <div style={{ fontSize:'0.7rem', color:'var(--text-muted)', marginTop:'0.1rem' }}>Target by {deadlineLabel}</div>
+                      <div style={{ fontSize:'0.7rem', color:'var(--color-text-secondary)', marginTop:'0.1rem' }}>Target by {deadlineLabel}</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2" style={{ flexShrink:0 }}>
                     <span className={`badge ${st.badge}`}>{st.label}</span>
                     <button onClick={e => { e.stopPropagation(); setEditGoalObj(g); }} 
-                      style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', display:'flex', padding:'0.2rem' }}>
+                      style={{ background:'none', border:'none', cursor:'pointer', color:'var(--color-text-secondary)', display:'flex', padding:'0.2rem' }}>
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
                     </button>
                     <button onClick={e => { e.stopPropagation(); handleDelete(g.id); }} disabled={deletingId===g.id}
-                      style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', display:'flex', padding:'0.2rem' }}>
+                      style={{ background:'none', border:'none', cursor:'pointer', color:'var(--color-text-secondary)', display:'flex', padding:'0.2rem' }}>
                       {deletingId===g.id ? <Loader2 size={13} style={{ animation:'spin 1s linear infinite' }}/> : <Trash2 size={13}/>}
                     </button>
                   </div>
@@ -319,7 +319,7 @@ export function GoalsClient({ goals, currency, categories = [] }: { goals: Goal[
                 </div>
 
                 {pct >= 100 ? (
-                  <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'0.5rem', padding:'0.5rem', background:'var(--success-light)', borderRadius:6, fontSize:'0.8rem', fontWeight:700, color:'var(--success)' }}>
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'0.5rem', padding:'0.5rem', background:'var(--color-income-light)', borderRadius:6, fontSize:'0.8rem', fontWeight:700, color:'var(--color-income)' }}>
                     <CheckCircle2 size={14}/> Goal achieved — tap to celebrate 🎉
                   </div>
                 ) : (

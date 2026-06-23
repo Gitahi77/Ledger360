@@ -47,19 +47,19 @@ function LoginForm() {
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.625rem', marginBottom: '0.75rem' }}>
-            <div style={{ width: 40, height: 40, borderRadius: 10, background: 'var(--primary-grad)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(0,112,243,0.4)' }}>
+            <div style={{ width: 40, height: 40, borderRadius: 10, background: 'var(--color-brand-grad)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(0,112,243,0.4)' }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 3h18v4H3zM3 10h11v4H3zM3 17h7v4H3zM17 14l4 4-4 4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
             </div>
-            <span style={{ fontFamily: 'Space Grotesk,sans-serif', fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.04em' }}>Ledger<span style={{ color: 'var(--primary)' }}>360</span></span>
+            <span style={{ fontFamily: 'Space Grotesk,sans-serif', fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-text-primary)', letterSpacing: '-0.04em' }}>Ledger<span style={{ color: 'var(--color-brand)' }}>360</span></span>
           </div>
-          <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Sign in to your financial OS</p>
+          <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginTop: '0.25rem' }}>Sign in to your financial OS</p>
         </div>
 
         {/* Card */}
         <div className="card" style={{ padding: '2rem', boxShadow: '0 20px 60px rgba(0,0,0,0.12), 0 4px 16px rgba(0,0,0,0.08)' }}>
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {error && (
-              <div style={{ padding: '0.75rem 1rem', borderRadius: 8, background: 'var(--danger-light)', border: '1px solid rgba(220,38,38,0.2)', fontSize: '0.8125rem', color: 'var(--danger)', fontWeight: 500 }}>
+              <div style={{ padding: '0.75rem 1rem', borderRadius: 8, background: 'var(--color-expense-light)', border: '1px solid rgba(220,38,38,0.2)', fontSize: '0.8125rem', color: 'var(--color-expense)', fontWeight: 500 }}>
                 {error}
               </div>
             )}
@@ -77,12 +77,12 @@ function LoginForm() {
                 <input type={showPw ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required placeholder="••••••••"
                   autoComplete="current-password"
                   className="input-field" style={{ width: '100%', padding: '0.625rem 2.5rem 0.625rem 0.875rem', fontSize: '0.875rem' }} />
-                <button type="button" onClick={() => setShowPw(v => !v)} style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}>
+                <button type="button" onClick={() => setShowPw(v => !v)} style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', display: 'flex' }}>
                   {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
               </div>
               <div style={{ textAlign: 'right', marginTop: '0.4rem' }}>
-                <Link href="/forgot-password" style={{ fontSize: '0.75rem', color: 'var(--primary)', textDecoration: 'none', fontWeight: 500 }}>
+                <Link href="/forgot-password" style={{ fontSize: '0.75rem', color: 'var(--color-brand)', textDecoration: 'none', fontWeight: 500 }}>
                   Forgot password?
                 </Link>
               </div>
@@ -93,9 +93,9 @@ function LoginForm() {
             </button>
           </form>
 
-          <div style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+          <div style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.8125rem', color: 'var(--color-text-secondary)' }}>
             Don&apos;t have an account?{' '}
-            <Link href="/signup" style={{ color: 'var(--primary)', fontWeight: 600 }}>Create one free</Link>
+            <Link href="/signup" style={{ color: 'var(--color-brand)', fontWeight: 600 }}>Create one free</Link>
           </div>
         </div>
       </div>

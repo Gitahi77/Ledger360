@@ -29,21 +29,21 @@ export default function ForgotPasswordPage() {
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-app)', padding: '1.5rem' }}>
       <div className="card animate-in" style={{ width: '100%', maxWidth: 400, padding: '2rem', boxShadow: '0 20px 60px rgba(0,0,0,0.12)' }}>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '0.5rem', color: 'var(--text-primary)' }}>Reset Password</h1>
-          <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Enter your email to receive a reset link</p>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '0.5rem', color: 'var(--color-text-primary)' }}>Reset Password</h1>
+          <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>Enter your email to receive a reset link</p>
         </div>
 
         {error && (
-          <div style={{ padding: '0.75rem 1rem', borderRadius: 8, background: 'var(--danger-light)', color: 'var(--danger)', fontSize: '0.8125rem', marginBottom: '1rem', fontWeight: 500 }}>
+          <div style={{ padding: '0.75rem 1rem', borderRadius: 8, background: 'var(--color-expense-light)', color: 'var(--color-expense)', fontSize: '0.8125rem', marginBottom: '1rem', fontWeight: 500 }}>
             {error}
           </div>
         )}
 
         {sent ? (
-          <div style={{ textAlign: 'center', padding: '1rem', background: 'var(--success-light)', borderRadius: 8 }}>
-            <p style={{ color: 'var(--success)', fontWeight: 600, fontSize: '0.875rem', marginBottom: '0.5rem' }}>Check your email</p>
+          <div style={{ textAlign: 'center', padding: '1rem', background: 'var(--color-income-light)', borderRadius: 8 }}>
+            <p style={{ color: 'var(--color-income)', fontWeight: 600, fontSize: '0.875rem', marginBottom: '0.5rem' }}>Check your email</p>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.78rem' }}>If an account exists for {email}, a reset link has been sent.</p>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', marginTop: '0.5rem' }}>(In dev mode, check your server console for the link)</p>
+            <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.7rem', marginTop: '0.5rem' }}>(In dev mode, check your server console for the link)</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -67,7 +67,7 @@ export default function ForgotPasswordPage() {
         )}
 
         <div style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.8125rem' }}>
-          <Link href="/login" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>
+          <Link href="/login" style={{ color: 'var(--color-text-secondary)', textDecoration: 'none' }}>
             ← Back to Login
           </Link>
         </div>

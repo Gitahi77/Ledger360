@@ -65,21 +65,21 @@ export function FxTicker({ currency }: { currency: string }) {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.875rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <TrendingUp size={15} color="var(--primary)" />
-          <span style={{ fontWeight: 700, fontSize: '0.8125rem', color: 'var(--text-primary)' }}>
+          <TrendingUp size={15} color="var(--color-brand)" />
+          <span style={{ fontWeight: 700, fontSize: '0.8125rem', color: 'var(--color-text-primary)' }}>
             {rates ? rates.base : currency} Exchange Rates
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           {rates && (
-            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+            <span style={{ fontSize: '0.65rem', color: 'var(--color-text-secondary)' }}>
               Updated {rates.date}
             </span>
           )}
           <button
             onClick={load}
             disabled={loading}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '0.2rem', display: 'flex', borderRadius: 4, transition: 'color 0.15s' }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', padding: '0.2rem', display: 'flex', borderRadius: 4, transition: 'color 0.15s' }}
             title="Refresh rates"
           >
             <RefreshCw size={12} style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
@@ -89,7 +89,7 @@ export function FxTicker({ currency }: { currency: string }) {
 
       {/* Error state */}
       {error && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)', padding: '0.5rem 0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--color-text-secondary)', padding: '0.5rem 0' }}>
           <AlertCircle size={13} />
           Rates temporarily unavailable. Try refreshing.
         </div>
@@ -116,7 +116,7 @@ export function FxTicker({ currency }: { currency: string }) {
                 border: '1px solid var(--border-light)',
               }}>
                 <div style={{ fontSize: '0.9rem', marginBottom: '0.15rem' }}>{c.flag}</div>
-                <div style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 750, fontSize: '0.875rem', color: 'var(--text-primary)', lineHeight: 1.1 }}>
+                <div style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 750, fontSize: '0.875rem', color: 'var(--color-text-primary)', lineHeight: 1.1 }}>
                   {rate < 0.01
                     ? rate.toFixed(5)
                     : rate < 1
@@ -124,7 +124,7 @@ export function FxTicker({ currency }: { currency: string }) {
                     : rate.toFixed(2)
                   }
                 </div>
-                <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', marginTop: '0.1rem', fontWeight: 600 }}>
+                <div style={{ fontSize: '0.62rem', color: 'var(--color-text-secondary)', marginTop: '0.1rem', fontWeight: 600 }}>
                   {c.code}
                 </div>
               </div>
@@ -133,7 +133,7 @@ export function FxTicker({ currency }: { currency: string }) {
         </div>
       )}
 
-      <div style={{ fontSize: '0.62rem', color: 'var(--text-muted)', marginTop: '0.625rem', textAlign: 'right' }}>
+      <div style={{ fontSize: '0.62rem', color: 'var(--color-text-secondary)', marginTop: '0.625rem', textAlign: 'right' }}>
         Source: European Central Bank via Frankfurter API
       </div>
     </div>

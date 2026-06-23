@@ -54,7 +54,7 @@ export default function GlobalError({
     }}>
       <div className="card" style={{ maxWidth: 440, width: '100%', textAlign: 'center', padding: '2.5rem' }}>
         <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>⚠️</div>
-        <h2 style={{ fontWeight: 700, marginBottom: '0.5rem', color: 'var(--text-primary)' }}>
+        <h2 style={{ fontWeight: 700, marginBottom: '0.5rem', color: 'var(--color-text-primary)' }}>
           Something went wrong
         </h2>
         <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
@@ -78,8 +78,8 @@ export default function GlobalError({
         </div>
         {process.env.NODE_ENV === 'development' && error.message && (
           <details style={{ marginTop: '1.5rem', textAlign: 'left' }}>
-            <summary style={{ fontSize: '0.72rem', color: 'var(--text-muted)', cursor: 'pointer' }}>Technical details (dev only)</summary>
-            <pre style={{ fontSize: '0.65rem', color: 'var(--danger)', marginTop: '0.5rem', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+            <summary style={{ fontSize: '0.72rem', color: 'var(--color-text-secondary)', cursor: 'pointer' }}>Technical details (dev only)</summary>
+            <pre style={{ fontSize: '0.65rem', color: 'var(--color-expense)', marginTop: '0.5rem', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
               {error.message}
               {error.digest ? `\nDigest: ${error.digest}` : ''}
             </pre>

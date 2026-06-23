@@ -3,7 +3,7 @@
 // Copyright (c) 2024-present Eric Gitahi. All rights reserved.
 import { useState, useTransition, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { CategoryIcon } from '@/components/CategoryIcon';
+import { getCategoryIcon } from '@/lib/icons';
 import { SmartUpload } from '@/components/SmartUpload';
 import { addTransaction, editTransaction, deleteTransaction } from '@/lib/actions/transactions';
 import { createTransfer, editTransfer, deleteTransfer } from '@/lib/actions/transfers';
@@ -131,9 +131,9 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
       <div className="card animate-in" style={{ width:'100%', maxWidth:460, padding:'1.75rem', maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <h2 className="card-title" style={{ marginBottom:0 }}>{isEdit ? 'Edit Transaction' : 'Add Transaction'}</h2>
-          <button onClick={() => onClose()} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', display:'flex' }}><X size={18}/></button>
+          <button onClick={() => onClose()} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--color-text-secondary)', display:'flex' }}><X size={18}/></button>
         </div>
-        {error && <div style={{ padding:'0.625rem', borderRadius:7, background:'var(--danger-light)', color:'var(--danger)', fontSize:'0.8rem', marginBottom:'1rem' }}>{error}</div>}
+        {error && <div style={{ padding:'0.625rem', borderRadius:7, background:'var(--color-expense-light)', color:'var(--color-expense)', fontSize:'0.8rem', marginBottom:'1rem' }}>{error}</div>}
         <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:'0.875rem' }}>
           <div className="segmented-control" style={{ width:'100%' }}>
             {(['expense', 'income', 'transfer'] as const).map(t => (
@@ -236,7 +236,7 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
               type="date" value={date} onChange={e => setDate(e.target.value)} required />
           </div>
           <div>
-            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Note <span style={{ fontWeight:400, color:'var(--text-muted)' }}>(optional)</span></label>
+            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Note <span style={{ fontWeight:400, color:'var(--color-text-secondary)' }}>(optional)</span></label>
             <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
               value={note} onChange={e => setNote(e.target.value)} placeholder="e.g. May salary" />
           </div>
@@ -322,9 +322,9 @@ export function TransactionsClient({
       {showUpload && <div className="card mb-5 animate-in"><SmartUpload /></div>}
 
       {pageWarning && (
-        <div className="card animate-in mb-5 flex items-center justify-between" style={{ padding:'0.875rem 1.25rem', background:'var(--warning-light, #FFFBEB)', color:'var(--warning, #B45309)', border:'1px solid var(--warning-border, #FCD34D)' }}>
+        <div className="card animate-in mb-5 flex items-center justify-between" style={{ padding:'0.875rem 1.25rem', background:'var(--warning-light, rgb(255, 251, 235))', color:'var(--warning, rgb(180, 83, 9))', border:'1px solid var(--warning-border, rgb(252, 211, 77))' }}>
           <span style={{ fontSize:'0.85rem', fontWeight:500 }}>{pageWarning}</span>
-          <button onClick={() => setPageWarning('')} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--warning, #B45309)', display:'flex' }}><X size={16}/></button>
+          <button onClick={() => setPageWarning('')} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--warning, rgb(180, 83, 9))', display:'flex' }}><X size={16}/></button>
         </div>
       )}
 
@@ -346,7 +346,7 @@ export function TransactionsClient({
             ))}
           </div>
           <div style={{ position:'relative', minWidth:'200px' }}>
-            <Search size={14} style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', color:'var(--text-muted)' }} />
+            <Search size={14} style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', color:'var(--color-text-secondary)' }} />
             <input 
               className="input-field" 
               style={{ width:'100%', padding:'0.45rem 0.75rem 0.45rem 2rem', fontSize:'0.85rem' }}
@@ -372,7 +372,7 @@ export function TransactionsClient({
               fontFamily:'Space Grotesk,sans-serif',
               fontSize: Math.abs(net) > 9_999_999 ? '1.6rem' : Math.abs(net) > 999_999 ? '1.9rem' : '2.25rem',
               fontWeight:800, letterSpacing:'-0.04em', lineHeight:1,
-              color: netPositive ? 'var(--success)' : 'var(--danger)',
+              color: netPositive ? 'var(--color-income)' : 'var(--color-expense)',
               whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
             }}>
                 {netPositive ? '+' : '-'}{fmtAdaptive(Math.abs(net), currency)}
@@ -384,17 +384,17 @@ export function TransactionsClient({
           <div className="hero-stats-grid">
             <div className="hero-stat-card">
               <p className="hero-label">{periodLabel} Income</p>
-              <p className="hero-stat-value tabular" style={{ color:'var(--success)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{fmtAdaptive(totalIncome, currency)}</p>
+              <p className="hero-stat-value tabular" style={{ color:'var(--color-income)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{fmtAdaptive(totalIncome, currency)}</p>
               <p className="hero-sub">{totalIncome > 0 ? '+ Coming in' : 'No income yet'}</p>
             </div>
             <div className="hero-stat-card">
               <p className="hero-label">{PERIOD_LABELS[period] || 'All Time'} Money Out</p>
-              <p className="hero-stat-value tabular" style={{ color:'var(--danger)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{fmtAdaptive(moneyOut, currency)}</p>
+              <p className="hero-stat-value tabular" style={{ color:'var(--color-expense)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{fmtAdaptive(moneyOut, currency)}</p>
               <p className="hero-sub">- Going out</p>
             </div>
             <div className="hero-stat-card">
               <p className="hero-label">Transactions</p>
-              <p className="hero-stat-value tabular" style={{ color:'var(--text-primary)' }}>{transactions.length}</p>
+              <p className="hero-stat-value tabular" style={{ color:'var(--color-text-primary)' }}>{transactions.length}</p>
               <p className="hero-sub">in period</p>
             </div>
           </div>
@@ -404,12 +404,12 @@ export function TransactionsClient({
       {/* Transaction list */}
       <div className="card animate-in delay-2">
         {transactions.length === 0 ? (
-          <div style={{ textAlign:'center', padding:'3rem', color:'var(--text-muted)' }}>
+          <div style={{ textAlign:'center', padding:'3rem', color:'var(--color-text-secondary)' }}>
             <div style={{ fontSize:'2rem', marginBottom:'0.5rem' }}>📭</div>
             <div style={{ fontWeight:600 }}>No transactions in this period</div>
           </div>
         ) : filteredTxs.length === 0 ? (
-          <div style={{ textAlign:'center', padding:'3rem', color:'var(--text-muted)' }}>
+          <div style={{ textAlign:'center', padding:'3rem', color:'var(--color-text-secondary)' }}>
             <div style={{ fontSize:'2rem', marginBottom:'0.5rem' }}>🔍</div>
             <div style={{ fontWeight:600 }}>No matching transactions found</div>
           </div>
@@ -423,7 +423,11 @@ export function TransactionsClient({
                   subtitle={tx.note ? `${tx.category.name} • ${tx.note}` : tx.category.name}
                   amountMinor={tx.baseAmountMinor}
                   type={tx.type}
-                  icon={<CategoryIcon category={tx.category.icon ?? tx.category.name.toLowerCase()} name={tx.name} size={18}/>}
+                  icon={
+                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--bg-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <i className={`ti ${getCategoryIcon(tx.category.name)}`} style={{ fontSize: 20, color: 'var(--color-text-secondary)' }}></i>
+                    </div>
+                  }
                   state={tx.type === 'pending' ? 'pending' : undefined}
                   onClick={() => setEditTx(tx)}
                   onDelete={() => handleDelete(tx.id, tx.type)}
@@ -434,7 +438,7 @@ export function TransactionsClient({
             </div>
             {totalPages > 1 && (
               <div className="flex items-center justify-between" style={{ padding: '1rem', borderTop: '1px solid var(--border)' }}>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
                   Showing {(currentPage - 1) * PAGE_SIZE + 1} to {Math.min(currentPage * PAGE_SIZE, filteredTxs.length)} of {filteredTxs.length}
                 </div>
                 <div className="flex items-center gap-2">
@@ -446,7 +450,7 @@ export function TransactionsClient({
                   >
                     <ChevronLeft size={16} />
                   </button>
-                  <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-primary)' }}>
+                  <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--color-text-primary)' }}>
                     Page {currentPage} of {totalPages}
                   </span>
                   <button 

@@ -21,21 +21,21 @@ export type DonutPoint = {
 
 /* ── Shared chart colours ─────────────────────────────────── */
 const DONUT_COLORS = [
-  '#2980B9', '#27AE60', '#E74C3C', '#E67E22',
-  '#8E44AD', '#16A085', '#D4AC0D', '#1ABC9C',
+  'var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)',
+  'var(--chart-5)', 'var(--chart-6)', 'var(--chart-income)', 'var(--chart-savings)'
 ];
 
 /* ── Tooltip components ───────────────────────────────────── */
 function FlowTip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: '0.625rem 0.875rem', boxShadow: 'var(--shadow-md)' }}>
-      <p style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', marginBottom: '0.35rem' }}>{label}</p>
+    <div style={{ background: 'var(--surface-card)', border: '1px solid var(--border)', borderRadius: 8, padding: '0.625rem 0.875rem', boxShadow: 'var(--shadow-md)' }}>
+      <p style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-text-secondary)', marginBottom: '0.35rem' }}>{label}</p>
       {payload.map((p: any) => (
         <div key={p.name} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.1rem' }}>
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: p.color, flexShrink: 0 }} />
           <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{p.name}:</span>
-          <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'Space Grotesk, sans-serif' }}>
+          <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-primary)', fontFamily: 'Space Grotesk, sans-serif' }}>
             KES {Number(p.value).toLocaleString()}
           </span>
         </div>
@@ -47,15 +47,15 @@ function FlowTip({ active, payload, label }: any) {
 function PieTip({ active, payload, total }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: '0.625rem 0.875rem', boxShadow: 'var(--shadow-md)' }}>
-      <p style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)' }}>{payload[0].name}</p>
-      <p style={{ fontSize: '0.8rem', fontWeight: 700, fontFamily: 'Space Grotesk, sans-serif', color: 'var(--text-primary)' }}>KES {payload[0].value.toLocaleString()}</p>
-      {total > 0 && <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{((payload[0].value / total) * 100).toFixed(1)}% of spending</p>}
+    <div style={{ background: 'var(--surface-card)', border: '1px solid var(--border)', borderRadius: 8, padding: '0.625rem 0.875rem', boxShadow: 'var(--shadow-md)' }}>
+      <p style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>{payload[0].name}</p>
+      <p style={{ fontSize: '0.8rem', fontWeight: 700, fontFamily: 'Space Grotesk, sans-serif', color: 'var(--color-text-primary)' }}>KES {payload[0].value.toLocaleString()}</p>
+      {total > 0 && <p style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)' }}>{((payload[0].value / total) * 100).toFixed(1)}% of spending</p>}
     </div>
   );
 }
 
-const tick = { fontSize: 10, fill: 'var(--text-muted)', fontFamily: 'DM Sans, sans-serif' };
+const tick = { fontSize: 10, fill: 'var(--color-text-secondary)', fontFamily: 'DM Sans, sans-serif' };
 
 const RADIAN = Math.PI / 180;
 function PieLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) {
@@ -110,7 +110,7 @@ export function SpendingDonutChart({ data }: { data: DonutPoint[] }) {
   // Fallback empty state
   if (data.length === 0) {
     return (
-      <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+      <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-secondary)' }}>
         <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📊</div>
         <div style={{ fontSize: '0.8rem' }}>No expense data yet</div>
       </div>
@@ -137,7 +137,7 @@ export function SpendingDonutChart({ data }: { data: DonutPoint[] }) {
           <div key={d.name} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', minWidth: 0 }}>
             <div style={{ width: 7, height: 7, borderRadius: '50%', background: d.color, flexShrink: 0, boxShadow: `0 0 5px ${d.color}99` }} />
             <span style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</span>
-            <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'Space Grotesk, sans-serif', flexShrink: 0 }}>
+            <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--color-text-primary)', fontFamily: 'Space Grotesk, sans-serif', flexShrink: 0 }}>
               {d.pct}%
             </span>
           </div>

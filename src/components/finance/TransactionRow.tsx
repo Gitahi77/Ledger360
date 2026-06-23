@@ -49,7 +49,7 @@ export function TransactionRow({
           <button
             onClick={(e) => { e.stopPropagation(); onEdit(); }}
             className="transaction-row-edit"
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)' }}
           >
             <Edit2 size={16} />
           </button>

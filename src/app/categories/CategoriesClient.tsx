@@ -54,9 +54,9 @@ function CategoryModal({ category, onClose }: { category?: Category, onClose: ()
       <div className="card animate-in" style={{ width:'100%', maxWidth:400, padding:'1.75rem' }} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <h2 className="card-title" style={{ marginBottom:0 }}>{isEdit ? 'Edit Category' : 'New Category'}</h2>
-          <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', display:'flex' }}><X size={18}/></button>
+          <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--color-text-secondary)', display:'flex' }}><X size={18}/></button>
         </div>
-        {error && <div style={{ padding:'0.625rem', borderRadius:7, background:'var(--danger-light)', color:'var(--danger)', fontSize:'0.8rem', marginBottom:'1rem' }}>{error}</div>}
+        {error && <div style={{ padding:'0.625rem', borderRadius:7, background:'var(--color-expense-light)', color:'var(--color-expense)', fontSize:'0.8rem', marginBottom:'1rem' }}>{error}</div>}
         
         <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:'0.875rem' }}>
           <div>
@@ -77,7 +77,7 @@ function CategoryModal({ category, onClose }: { category?: Category, onClose: ()
             <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Icon Name (Optional)</label>
             <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
               value={icon} onChange={e => setIcon(e.target.value)} placeholder="e.g. shopping-cart" />
-            <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+            <p style={{ fontSize: '0.65rem', color: 'var(--color-text-secondary)', marginTop: '0.25rem' }}>
               Used to match lucide-react icons, if available.
             </p>
           </div>
@@ -125,12 +125,12 @@ export function CategoriesClient({ initialCategories, currency }: { initialCateg
 
   const renderSection = (title: string, items: Category[], color: string) => (
     <div style={{ marginBottom: '2rem' }}>
-      <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
-        {title} <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 400 }}>({items.length})</span>
+      <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1rem', color: 'var(--color-text-primary)', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
+        {title} <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', fontWeight: 400 }}>({items.length})</span>
       </h3>
       
       {items.length === 0 ? (
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontStyle: 'italic' }}>No categories.</p>
+        <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', fontStyle: 'italic' }}>No categories.</p>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.75rem' }}>
           {items.map(cat => (
@@ -140,8 +140,8 @@ export function CategoriesClient({ initialCategories, currency }: { initialCateg
                   <CategoryIcon category={cat.icon || cat.name.toLowerCase()} name={cat.name} size={18} />
                 </div>
                 <div>
-                  <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)' }}>{cat.name}</div>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
+                  <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--color-text-primary)' }}>{cat.name}</div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)', marginTop: '0.1rem' }}>
                     Used in: {cat._count.transactions} tx, {cat._count.budgets} budgets
                   </div>
                 </div>
@@ -149,13 +149,13 @@ export function CategoriesClient({ initialCategories, currency }: { initialCateg
               
               <div className="flex items-center gap-1">
                 <button onClick={() => setEditCat(cat)} 
-                  style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', display:'flex', padding:'0.4rem', borderRadius: 6 }}
+                  style={{ background:'none', border:'none', cursor:'pointer', color:'var(--color-text-secondary)', display:'flex', padding:'0.4rem', borderRadius: 6 }}
                   className="hover-bg-active"
                 >
                   <Edit2 size={14}/>
                 </button>
                 <button onClick={() => handleDelete(cat)} disabled={deletingId === cat.id}
-                  style={{ background:'none', border:'none', cursor:'pointer', color: (cat._count.transactions > 0 || cat._count.budgets > 0) ? 'var(--text-muted)' : 'var(--danger)', display:'flex', padding:'0.4rem', borderRadius: 6, opacity: (cat._count.transactions > 0 || cat._count.budgets > 0) ? 0.5 : 1 }}
+                  style={{ background:'none', border:'none', cursor:'pointer', color: (cat._count.transactions > 0 || cat._count.budgets > 0) ? 'var(--color-text-secondary)' : 'var(--color-expense)', display:'flex', padding:'0.4rem', borderRadius: 6, opacity: (cat._count.transactions > 0 || cat._count.budgets > 0) ? 0.5 : 1 }}
                   className="hover-bg-active"
                   title={(cat._count.transactions > 0 || cat._count.budgets > 0) ? "Cannot delete category in use" : "Delete"}
                 >
@@ -180,7 +180,7 @@ export function CategoriesClient({ initialCategories, currency }: { initialCateg
       </div>
 
       {errorMsg && (
-        <div className="animate-in mb-5" style={{ padding: '1rem', background: 'var(--danger-light)', color: 'var(--danger)', borderRadius: 10, display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+        <div className="animate-in mb-5" style={{ padding: '1rem', background: 'var(--color-expense-light)', color: 'var(--color-expense)', borderRadius: 10, display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
           <AlertTriangle size={18} style={{ flexShrink: 0, marginTop: '0.1rem' }} />
           <div style={{ fontSize: '0.85rem', lineHeight: 1.4 }}>{errorMsg}</div>
           <button onClick={() => setErrorMsg(null)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer' }}><X size={16} /></button>
@@ -188,9 +188,9 @@ export function CategoriesClient({ initialCategories, currency }: { initialCateg
       )}
 
       <div className="animate-in delay-1">
-        {renderSection('Expenses', expenses, 'var(--danger)')}
-        {renderSection('Income', incomes, 'var(--success)')}
-        {renderSection('Savings & Transfers', savings, 'var(--primary)')}
+        {renderSection('Expenses', expenses, 'var(--color-expense)')}
+        {renderSection('Income', incomes, 'var(--color-income)')}
+        {renderSection('Savings & Transfers', savings, 'var(--color-brand)')}
       </div>
       
       <style dangerouslySetInnerHTML={{__html: `

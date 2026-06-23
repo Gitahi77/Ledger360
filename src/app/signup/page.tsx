@@ -53,22 +53,22 @@ export default function SignupPage() {
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.625rem', marginBottom: '0.75rem' }}>
-            <div style={{ width: 40, height: 40, borderRadius: 10, background: 'var(--primary-grad)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(0,112,243,0.4)' }}>
+            <div style={{ width: 40, height: 40, borderRadius: 10, background: 'var(--color-brand-grad)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(0,112,243,0.4)' }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 3h18v4H3zM3 10h11v4H3zM3 17h7v4H3zM17 14l4 4-4 4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
             </div>
-            <span style={{ fontFamily: 'Space Grotesk,sans-serif', fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.04em' }}>Ledger<span style={{ color: 'var(--primary)' }}>360</span></span>
+            <span style={{ fontFamily: 'Space Grotesk,sans-serif', fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-text-primary)', letterSpacing: '-0.04em' }}>Ledger<span style={{ color: 'var(--color-brand)' }}>360</span></span>
           </div>
-          <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Create your free account</p>
+          <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>Create your free account</p>
         </div>
 
         {/* Step indicator */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}>
           {[1, 2].map(s => (
             <div key={s} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <div style={{ width: 28, height: 28, borderRadius: '50%', background: step >= s ? 'var(--primary-grad)' : 'var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', fontWeight: 800, color: step >= s ? 'white' : 'var(--text-muted)', boxShadow: step >= s ? '0 0 10px rgba(0,112,243,0.35)' : 'none', transition: 'all 0.2s' }}>
+              <div style={{ width: 28, height: 28, borderRadius: '50%', background: step >= s ? 'var(--color-brand-grad)' : 'var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', fontWeight: 800, color: step >= s ? 'white' : 'var(--color-text-secondary)', boxShadow: step >= s ? '0 0 10px rgba(0,112,243,0.35)' : 'none', transition: 'all 0.2s' }}>
                 {s}
               </div>
-              {s < 2 && <div style={{ width: 40, height: 2, borderRadius: 1, background: step > s ? 'var(--primary)' : 'var(--border)', transition: 'background 0.3s' }} />}
+              {s < 2 && <div style={{ width: 40, height: 2, borderRadius: 1, background: step > s ? 'var(--color-brand)' : 'var(--border)', transition: 'background 0.3s' }} />}
             </div>
           ))}
         </div>
@@ -76,7 +76,7 @@ export default function SignupPage() {
         <div className="card" style={{ padding: '2rem', boxShadow: '0 20px 60px rgba(0,0,0,0.12), 0 4px 16px rgba(0,0,0,0.08)' }}>
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {error && (
-              <div style={{ padding: '0.75rem 1rem', borderRadius: 8, background: 'var(--danger-light)', border: '1px solid rgba(220,38,38,0.2)', fontSize: '0.8125rem', color: 'var(--danger)', fontWeight: 500 }}>
+              <div style={{ padding: '0.75rem 1rem', borderRadius: 8, background: 'var(--color-expense-light)', border: '1px solid rgba(220,38,38,0.2)', fontSize: '0.8125rem', color: 'var(--color-expense)', fontWeight: 500 }}>
                 {error}
               </div>
             )}
@@ -84,7 +84,7 @@ export default function SignupPage() {
             {step === 1 && (
               <>
                 <div>
-                  <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.75rem' }}>I am signing up as a…</div>
+                  <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: '0.75rem' }}>I am signing up as a…</div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                     {([
                       { value: 'individual', label: 'Individual',  sub: 'Personal finance', Icon: User       },
@@ -92,14 +92,14 @@ export default function SignupPage() {
                     ] as const).map(({ value, label, sub, Icon }) => (
                       <button key={value} type="button" onClick={() => setAccountType(value)} style={{
                         padding: '1rem', borderRadius: 10, textAlign: 'left', cursor: 'pointer',
-                        border: `2px solid ${accountType === value ? 'var(--primary)' : 'var(--border)'}`,
-                        background: accountType === value ? 'var(--primary-light)' : 'var(--bg-app)',
+                        border: `2px solid ${accountType === value ? 'var(--color-brand)' : 'var(--border)'}`,
+                        background: accountType === value ? 'var(--color-brand-light)' : 'var(--bg-app)',
                         boxShadow: accountType === value ? '0 0 14px rgba(0,112,243,0.15)' : 'none',
                         transition: 'all 0.15s',
                       }}>
-                        <Icon size={18} color={accountType === value ? 'var(--primary)' : 'var(--text-muted)'} style={{ marginBottom: '0.5rem' }} />
-                        <div style={{ fontWeight: 700, fontSize: '0.875rem', color: accountType === value ? 'var(--primary)' : 'var(--text-primary)' }}>{label}</div>
-                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>{sub}</div>
+                        <Icon size={18} color={accountType === value ? 'var(--color-brand)' : 'var(--color-text-secondary)'} style={{ marginBottom: '0.5rem' }} />
+                        <div style={{ fontWeight: 700, fontSize: '0.875rem', color: accountType === value ? 'var(--color-brand)' : 'var(--color-text-primary)' }}>{label}</div>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)', marginTop: '0.15rem' }}>{sub}</div>
                       </button>
                     ))}
                   </div>
@@ -124,7 +124,7 @@ export default function SignupPage() {
 
             {step === 2 && (
               <>
-                <div style={{ padding: '0.75rem 1rem', borderRadius: 8, background: 'var(--success-light)', borderLeft: '3px solid var(--success)', fontSize: '0.8rem', color: 'var(--success-text)', fontWeight: 500 }}>
+                <div style={{ padding: '0.75rem 1rem', borderRadius: 8, background: 'var(--color-income-light)', borderLeft: '3px solid var(--color-income)', fontSize: '0.8rem', color: 'var(--color-income-text)', fontWeight: 500 }}>
                   Welcome, <strong>{name}</strong>! Almost done — set up your login credentials.
                 </div>
 
@@ -135,18 +135,18 @@ export default function SignupPage() {
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>Password <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(min 8 chars)</span></label>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>Password <span style={{ color: 'var(--color-text-secondary)', fontWeight: 400 }}>(min 8 chars)</span></label>
                   <div style={{ position: 'relative' }}>
                     <input type={showPw ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required minLength={8} placeholder="••••••••"
                       className="input-field" style={{ width: '100%', padding: '0.625rem 2.5rem 0.625rem 0.875rem', fontSize: '0.875rem' }} />
-                    <button type="button" onClick={() => setShowPw(v => !v)} style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex' }}>
+                    <button type="button" onClick={() => setShowPw(v => !v)} style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', display: 'flex' }}>
                       {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
                     </button>
                   </div>
                   {password.length > 0 && (
                     <div style={{ marginTop: '0.4rem', display: 'flex', gap: '0.25rem' }}>
                       {[...Array(4)].map((_, i) => (
-                        <div key={i} style={{ flex: 1, height: 3, borderRadius: 2, background: password.length >= (i + 1) * 3 ? (password.length >= 12 ? 'var(--success)' : 'var(--warning)') : 'var(--border)', transition: 'background 0.2s' }} />
+                        <div key={i} style={{ flex: 1, height: 3, borderRadius: 2, background: password.length >= (i + 1) * 3 ? (password.length >= 12 ? 'var(--color-income)' : 'var(--warning)') : 'var(--border)', transition: 'background 0.2s' }} />
                       ))}
                     </div>
                   )}
@@ -162,21 +162,21 @@ export default function SignupPage() {
           </form>
 
           {step === 2 && (
-            <button onClick={() => setStep(1)} style={{ display: 'block', marginTop: '0.75rem', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem', color: 'var(--text-muted)', width: '100%', textAlign: 'center' }}>
+            <button onClick={() => setStep(1)} style={{ display: 'block', marginTop: '0.75rem', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem', color: 'var(--color-text-secondary)', width: '100%', textAlign: 'center' }}>
               ← Back
             </button>
           )}
 
-          <div style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+          <div style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.8125rem', color: 'var(--color-text-secondary)' }}>
             Already have an account?{' '}
-            <Link href="/login" style={{ color: 'var(--primary)', fontWeight: 600 }}>Sign in</Link>
+            <Link href="/login" style={{ color: 'var(--color-brand)', fontWeight: 600 }}>Sign in</Link>
           </div>
 
-          <div style={{ marginTop: '1rem', textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+          <div style={{ marginTop: '1rem', textAlign: 'center', fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>
             By signing up, you agree to our{' '}
-            <Link href="/tos" style={{ color: 'var(--primary)', textDecoration: 'underline' }}>Terms</Link>
+            <Link href="/tos" style={{ color: 'var(--color-brand)', textDecoration: 'underline' }}>Terms</Link>
             {' '}and{' '}
-            <Link href="/privacy" style={{ color: 'var(--primary)', textDecoration: 'underline' }}>Privacy Policy</Link>.
+            <Link href="/privacy" style={{ color: 'var(--color-brand)', textDecoration: 'underline' }}>Privacy Policy</Link>.
           </div>
         </div>
       </div>

@@ -3,11 +3,11 @@ import React from 'react';
 export default function TermsOfServicePage() {
   return (
     <div style={{ maxWidth: 896, margin: '0 auto', padding: '1.5rem', paddingTop: '2rem', paddingBottom: '6rem' }}>
-      <h1 style={{ fontSize: '1.875rem', fontWeight: 700, marginBottom: '1.5rem', color: 'var(--text-primary)' }}>Terms of Service</h1>
-      <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '2rem' }}>Last Updated: {new Date().toLocaleDateString()}</p>
+      <h1 style={{ fontSize: '1.875rem', fontWeight: 700, marginBottom: '1.5rem', color: 'var(--color-text-primary)' }}>Terms of Service</h1>
+      <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '2rem' }}>Last Updated: {new Date().toLocaleDateString()}</p>
 
       <section style={{ marginBottom: '2rem' }}>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem', color: 'var(--text-primary)' }}>1. Acceptance of Terms</h2>
+        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem', color: 'var(--color-text-primary)' }}>1. Acceptance of Terms</h2>
         <p style={{ marginBottom: '1rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
           By accessing or using Ledger360, you agree to be bound by these Terms of Service and our Privacy Policy. 
           If you do not agree to these terms, please do not use our services.
@@ -15,7 +15,7 @@ export default function TermsOfServicePage() {
       </section>
 
       <section style={{ marginBottom: '2rem' }}>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem', color: 'var(--text-primary)' }}>2. Description of Service</h2>
+        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem', color: 'var(--color-text-primary)' }}>2. Description of Service</h2>
         <p style={{ marginBottom: '1rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
           Ledger360 is a personal finance operating system that allows users to track their net worth, 
           manage budgets, and categorize transactions. We provide tools to extract data from financial statements 
@@ -28,7 +28,7 @@ export default function TermsOfServicePage() {
       </section>
 
       <section style={{ marginBottom: '2rem' }}>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem', color: 'var(--text-primary)' }}>3. User Responsibilities</h2>
+        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem', color: 'var(--color-text-primary)' }}>3. User Responsibilities</h2>
         <p style={{ marginBottom: '1rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>As a user, you agree to:</p>
         <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '1rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           <li>Provide accurate information when registering for an account.</li>
@@ -39,7 +39,7 @@ export default function TermsOfServicePage() {
       </section>
 
       <section style={{ marginBottom: '2rem' }}>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem', color: 'var(--text-primary)' }}>4. Data and AI Processing</h2>
+        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem', color: 'var(--color-text-primary)' }}>4. Data and AI Processing</h2>
         <p style={{ marginBottom: '1rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
           When you upload financial statements or M-Pesa SMS messages, you authorize Ledger360 to process 
           this data using external AI providers (such as Google Gemini) to categorize and extract information. 
@@ -48,7 +48,7 @@ export default function TermsOfServicePage() {
       </section>
 
       <section style={{ marginBottom: '2rem' }}>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem', color: 'var(--text-primary)' }}>5. Account Termination</h2>
+        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem', color: 'var(--color-text-primary)' }}>5. Account Termination</h2>
         <p style={{ marginBottom: '1rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
           We reserve the right to suspend or terminate your account at any time if we suspect you have violated 
           these Terms. You may also delete your account at any time, which will initiate the permanent deletion 
@@ -57,7 +57,7 @@ export default function TermsOfServicePage() {
       </section>
 
       <section style={{ marginBottom: '2rem' }}>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem', color: 'var(--text-primary)' }}>6. Limitation of Liability</h2>
+        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem', color: 'var(--color-text-primary)' }}>6. Limitation of Liability</h2>
         <p style={{ marginBottom: '1rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
           Ledger360 is provided "as is". We make no warranties regarding the accuracy, completeness, or reliability 
           of the AI-extracted financial data or generated insights. We shall not be liable for any financial losses 
@@ -66,7 +66,7 @@ export default function TermsOfServicePage() {
       </section>
 
       <section style={{ marginBottom: '2rem' }}>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem', color: 'var(--text-primary)' }}>7. Governing Law</h2>
+        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem', color: 'var(--color-text-primary)' }}>7. Governing Law</h2>
         <p style={{ marginBottom: '1rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
           These Terms of Service are governed by the laws of the Republic of Kenya.
         </p>

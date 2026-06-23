@@ -3,11 +3,11 @@ import React from 'react';
 export default function PrivacyPolicyPage() {
   return (
     <div style={{ maxWidth: 896, margin: '0 auto', padding: '1.5rem', paddingTop: '2rem', paddingBottom: '6rem' }}>
-      <h1 style={{ fontSize: '1.875rem', fontWeight: 700, marginBottom: '1.5rem', color: 'var(--text-primary)' }}>Privacy Policy</h1>
-      <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '2rem' }}>Last Updated: {new Date().toLocaleDateString()}</p>
+      <h1 style={{ fontSize: '1.875rem', fontWeight: 700, marginBottom: '1.5rem', color: 'var(--color-text-primary)' }}>Privacy Policy</h1>
+      <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '2rem' }}>Last Updated: {new Date().toLocaleDateString()}</p>
 
       <section style={{ marginBottom: '2rem' }}>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem', color: 'var(--text-primary)' }}>1. Introduction</h2>
+        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem', color: 'var(--color-text-primary)' }}>1. Introduction</h2>
         <p style={{ marginBottom: '1rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
           Welcome to Ledger360. We are committed to protecting your personal data and your right to privacy. 
           This Privacy Policy explains how we collect, use, and share your personal information in compliance 
@@ -16,7 +16,7 @@ export default function PrivacyPolicyPage() {
       </section>
 
       <section style={{ marginBottom: '2rem' }}>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem', color: 'var(--text-primary)' }}>2. Lawful Basis for Processing</h2>
+        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem', color: 'var(--color-text-primary)' }}>2. Lawful Basis for Processing</h2>
         <p style={{ marginBottom: '1rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>We process your personal data under the following lawful bases:</p>
         <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '1rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           <li><strong>Consent:</strong> When you upload M-Pesa SMS or statements, we rely on your explicit consent to process the data, extract financial insights, and use our AI features.</li>
@@ -26,7 +26,7 @@ export default function PrivacyPolicyPage() {
       </section>
 
       <section style={{ marginBottom: '2rem' }}>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem', color: 'var(--text-primary)' }}>3. AI Processing & Cross-Border Transfers</h2>
+        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem', color: 'var(--color-text-primary)' }}>3. AI Processing & Cross-Border Transfers</h2>
         <p style={{ marginBottom: '1rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
           To provide intelligent financial insights from your uploaded documents and SMS, we utilize AI models provided by Google Gemini. 
           By uploading these documents, you explicitly consent to this processing.
@@ -42,7 +42,7 @@ export default function PrivacyPolicyPage() {
       </section>
 
       <section style={{ marginBottom: '2rem' }}>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem', color: 'var(--text-primary)' }}>4. Data Retention</h2>
+        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem', color: 'var(--color-text-primary)' }}>4. Data Retention</h2>
         <p style={{ marginBottom: '1rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
           We retain your financial data only as long as your account is active, to provide you with historical budgeting and net worth insights. 
           If you delete your account, all associated personal data, including transactions and AI processing logs, will be irreversibly deleted or anonymized within 30 days.
@@ -50,7 +50,7 @@ export default function PrivacyPolicyPage() {
       </section>
 
       <section style={{ marginBottom: '2rem' }}>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem', color: 'var(--text-primary)' }}>5. Your Data Subject Rights</h2>
+        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem', color: 'var(--color-text-primary)' }}>5. Your Data Subject Rights</h2>
         <p style={{ marginBottom: '1rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>Under the Kenya DPA, you have the right to:</p>
         <ul style={{ listStyleType: 'disc', paddingLeft: '1.5rem', marginBottom: '1rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           <li><strong>Access:</strong> Request a copy of your data in a machine-readable format.</li>
@@ -61,7 +61,7 @@ export default function PrivacyPolicyPage() {
       </section>
 
       <section style={{ marginBottom: '2rem' }}>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem', color: 'var(--text-primary)' }}>6. Contact Us</h2>
+        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem', color: 'var(--color-text-primary)' }}>6. Contact Us</h2>
         <p style={{ marginBottom: '1rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
           For any questions about this Privacy Policy or to exercise your rights, please contact our Data Protection Officer at privacy@ledger360.com.
         </p>

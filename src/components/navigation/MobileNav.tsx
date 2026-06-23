@@ -47,7 +47,7 @@ export function MobileNav() {
           left: 0,
           right: 0,
           height: 'calc(64px + env(safe-area-inset-bottom, 0px))',
-          background: 'var(--bg-card)',
+          background: 'var(--surface-card)',
           borderTop: '1px solid var(--border)',
           paddingBottom: 'env(safe-area-inset-bottom, 0px)',
           zIndex: 999,
@@ -71,18 +71,18 @@ export function MobileNav() {
               <div style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 width: 32, height: 32, borderRadius: '50%',
-                background: active ? 'var(--primary-light)' : 'transparent',
+                background: active ? 'var(--color-brand-light)' : 'transparent',
                 transition: 'background 0.2s',
               }}>
                 <Icon
                   size={20}
                   strokeWidth={active ? 2.5 : 2}
-                  color={active ? 'var(--primary)' : 'var(--text-muted)'}
+                  color={active ? 'var(--color-brand)' : 'var(--color-text-secondary)'}
                 />
               </div>
               <span style={{
                 fontSize: '0.55rem', fontWeight: 600,
-                color: active ? 'var(--text-primary)' : 'var(--text-muted)',
+                color: active ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
               }}>{item.label}</span>
             </Link>
           );
@@ -102,9 +102,9 @@ export function MobileNav() {
             background: 'transparent',
             transition: 'background 0.2s',
           }}>
-            <Menu size={20} strokeWidth={2} color="var(--text-muted)" />
+            <Menu size={20} strokeWidth={2} color="var(--color-text-secondary)" />
           </div>
-          <span style={{ fontSize: '0.55rem', fontWeight: 600, color: 'var(--text-muted)' }}>More</span>
+          <span style={{ fontSize: '0.55rem', fontWeight: 600, color: 'var(--color-text-secondary)' }}>More</span>
         </button>
       </nav>
 
@@ -122,7 +122,7 @@ export function MobileNav() {
           <div 
             className="animate-in"
             style={{
-              background: 'var(--bg-card)',
+              background: 'var(--surface-card)',
               borderTopLeftRadius: 16,
               borderTopRightRadius: 16,
               padding: '1.5rem',
@@ -132,7 +132,7 @@ export function MobileNav() {
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
               <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600 }}>More</h3>
-              <button onClick={() => setShowMore(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
+              <button onClick={() => setShowMore(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)' }}>
                 <X size={20} />
               </button>
             </div>
@@ -148,12 +148,12 @@ export function MobileNav() {
                     style={{
                       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                       gap: '0.5rem', padding: '1rem', textDecoration: 'none',
-                      background: active ? 'var(--primary-light)' : 'var(--bg-subtle)',
+                      background: active ? 'var(--color-brand-light)' : 'var(--bg-subtle)',
                       borderRadius: 12,
                     }}
                   >
-                    <Icon size={24} color={active ? 'var(--primary)' : 'var(--text-secondary)'} />
-                    <span style={{ fontSize: '0.7rem', fontWeight: 500, color: active ? 'var(--primary)' : 'var(--text-secondary)' }}>
+                    <Icon size={24} color={active ? 'var(--color-brand)' : 'var(--text-secondary)'} />
+                    <span style={{ fontSize: '0.7rem', fontWeight: 500, color: active ? 'var(--color-brand)' : 'var(--text-secondary)' }}>
                       {item.label}
                     </span>
                   </Link>

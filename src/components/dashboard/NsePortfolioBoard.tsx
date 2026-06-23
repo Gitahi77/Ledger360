@@ -46,7 +46,7 @@ export function NsePortfolioBoard() {
 
   if (error || stocks.length === 0) {
     return (
-      <div className="card" style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+      <div className="card" style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
         <AlertCircle size={32} style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
         <p>Could not load NSE market data.</p>
       </div>
@@ -58,15 +58,15 @@ export function NsePortfolioBoard() {
       <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h2 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <TrendingUp size={18} color="var(--primary)" />
+            <TrendingUp size={18} color="var(--color-brand)" />
             NSE Market Feed
           </h2>
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0, marginTop: '0.2rem' }}>
+          <p style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', margin: 0, marginTop: '0.2rem' }}>
             Top tracked securities
           </p>
         </div>
         {lastUpdated && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.7rem', color: isLive ? 'var(--success)' : 'var(--warning)', background: isLive ? 'var(--success-light)' : 'var(--warning-light)', padding: '0.2rem 0.5rem', borderRadius: 4, fontWeight: 600 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.7rem', color: isLive ? 'var(--color-income)' : 'var(--warning)', background: isLive ? 'var(--color-income-light)' : 'var(--warning-light)', padding: '0.2rem 0.5rem', borderRadius: 4, fontWeight: 600 }}>
             <Clock size={12} />
             {isLive ? 'Live Prices' : 'Delayed / Fallback'}
           </div>
@@ -74,7 +74,7 @@ export function NsePortfolioBoard() {
       </div>
 
       <div style={{ padding: '0 1.5rem' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', padding: '0.75rem 0', borderBottom: '1px solid var(--border)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', fontWeight: 600 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', padding: '0.75rem 0', borderBottom: '1px solid var(--border)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-text-secondary)', fontWeight: 600 }}>
           <div>Symbol</div>
           <div style={{ textAlign: 'right' }}>Price (KES)</div>
           <div style={{ textAlign: 'right' }}>Change</div>
@@ -83,14 +83,14 @@ export function NsePortfolioBoard() {
         {stocks.slice(0, 5).map((stock) => {
           const isPositive = stock.changePct > 0;
           const isNegative = stock.changePct < 0;
-          const color = isPositive ? 'var(--success)' : isNegative ? 'var(--danger)' : 'var(--text-muted)';
-          const bg = isPositive ? 'var(--success-light)' : isNegative ? 'var(--danger-light)' : 'var(--bg-subtle)';
+          const color = isPositive ? 'var(--color-income)' : isNegative ? 'var(--color-expense)' : 'var(--color-text-secondary)';
+          const bg = isPositive ? 'var(--color-income-light)' : isNegative ? 'var(--color-expense-light)' : 'var(--bg-subtle)';
 
           return (
             <div key={stock.symbol} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', padding: '1rem 0', borderBottom: '1px solid var(--border)', alignItems: 'center' }}>
               <div>
-                <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)' }}>{stock.symbol}</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{stock.name}</div>
+                <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--color-text-primary)' }}>{stock.symbol}</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{stock.name}</div>
               </div>
               <div style={{ textAlign: 'right', fontWeight: 600, fontFamily: 'Space Grotesk, sans-serif' }}>
                 {stock.price.toFixed(2)}
@@ -107,7 +107,7 @@ export function NsePortfolioBoard() {
       </div>
       
       <div style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>
-        <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0 }}>
+        <p style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)', margin: 0 }}>
           Prices as of market close. Data may be delayed.
         </p>
       </div>

@@ -28,9 +28,9 @@ import { ChamaBoard } from '@/components/dashboard/ChamaBoard';
 
 function budgetStatus(limit: number, spent: number) {
   const p = limit > 0 ? Math.min(100, (spent / limit) * 100) : (spent > 0 ? 100 : 0);
-  if (p >= 100) return { bar: 'var(--danger)',  badge: 'badge-danger',  label: 'Over',    pct: 100 };
+  if (p >= 100) return { bar: 'var(--color-expense)',  badge: 'badge-danger',  label: 'Over',    pct: 100 };
   if (p >= 80)  return { bar: 'var(--warning)', badge: 'badge-warning', label: 'Warning', pct: p   };
-  return              { bar: 'var(--success)', badge: 'badge-success', label: 'Good',    pct: p   };
+  return              { bar: 'var(--color-income)', badge: 'badge-success', label: 'Good',    pct: p   };
 }
 
 function DeltaChip({ value, suffix = '' }: { value: number; suffix?: string }) {
@@ -39,7 +39,7 @@ function DeltaChip({ value, suffix = '' }: { value: number; suffix?: string }) {
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: '0.2rem',
       fontSize: '0.72rem', fontWeight: 700,
-      color: up ? 'var(--success)' : 'var(--danger)',
+      color: up ? 'var(--color-income)' : 'var(--color-expense)',
     }}>
       {up ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
       {up ? '+' : ''}{value.toFixed(1)}{suffix}
@@ -131,7 +131,7 @@ export default async function Dashboard({
           {/* Saving rate badge */}
           <div className="hero-rate-badge">
             <p className="hero-rate-label">Saving Rate</p>
-            <p className="hero-rate-value tabular" style={{ color: summary.savingRate >= targetRate ? '#4ade80' : summary.savingRate >= targetRate / 2 ? '#fbbf24' : '#f87171' }}>
+            <p className="hero-rate-value tabular" style={{ color: summary.savingRate >= targetRate ? 'rgb(74, 222, 128)' : summary.savingRate >= targetRate / 2 ? 'rgb(251, 191, 36)' : 'rgb(248, 113, 113)' }}>
               {summary.savingRate}%
             </p>
             <div className="hero-rate-bar-track">
@@ -152,8 +152,8 @@ export default async function Dashboard({
             label: `${periodLabel} Income`,
             value: fmtAdaptive(summary.income, currency),
             sub: summary.income > 0 ? 'Money received' : 'No income yet',
-            iconBg: 'var(--success-light)',
-            iconColor: 'var(--success)',
+            iconBg: 'var(--color-income-light)',
+            iconColor: 'var(--color-income)',
             delta: null,
           },
           {
@@ -161,8 +161,8 @@ export default async function Dashboard({
             label: `${periodLabel} Spent`,
             value: fmtAdaptive(summary.moneyOut, currency),
             sub: summary.moneyOut > 0 ? 'Money out' : 'No spend yet',
-            iconBg: 'var(--danger-light)',
-            iconColor: 'var(--danger)',
+            iconBg: 'var(--color-expense-light)',
+            iconColor: 'var(--color-expense)',
             delta: null,
           },
           {
@@ -170,8 +170,8 @@ export default async function Dashboard({
             label: 'Total Cash',
             value: fmtAdaptive(netWorth.totalCashMinor, currency),
             sub: 'Liquid assets',
-            iconBg: 'var(--primary-light)',
-            iconColor: 'var(--primary)',
+            iconBg: 'var(--color-brand-light)',
+            iconColor: 'var(--color-brand)',
             delta: null,
           },
           {
@@ -191,7 +191,7 @@ export default async function Dashboard({
             <div style={{ minWidth: 0, flex: 1 }}>
               <p className="kpi-label">{kpi.label}</p>
               <p className="kpi-value tabular">{kpi.value}</p>
-              <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>{kpi.sub}</p>
+              <p style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)', marginTop: '0.2rem' }}>{kpi.sub}</p>
             </div>
           </div>
         ))}
@@ -202,7 +202,7 @@ export default async function Dashboard({
         <div className="card" style={{ minWidth: 0 }}>
           <div className="section-header">
             <h2 className="card-title" style={{ marginBottom: 0 }}>Cash Flow</h2>
-            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Last 6 months</span>
+            <span style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)' }}>Last 6 months</span>
           </div>
           <CashFlowChart data={chartData} />
         </div>
@@ -226,7 +226,7 @@ export default async function Dashboard({
             <Link href="/budgets" className="section-link">Manage <ArrowRight size={12} /></Link>
           </div>
           {budgets.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '2.5rem 1rem', color: 'var(--text-muted)' }}>
+            <div style={{ textAlign: 'center', padding: '2.5rem 1rem', color: 'var(--color-text-secondary)' }}>
               <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>📊</div>
               <p style={{ fontSize: '0.875rem', marginBottom: '0.75rem' }}>No budgets set up yet</p>
               <Link href="/budgets" className="btn btn-primary" style={{ fontSize: '0.8rem' }}>Create a budget</Link>
@@ -241,7 +241,7 @@ export default async function Dashboard({
                     <div className="flex items-center justify-between mb-1">
                       <span style={{ fontSize: '0.8125rem', fontWeight: 600 }}>{b.name}</span>
                       <div className="flex items-center gap-2">
-                        {over > 0 && <span style={{ fontSize: '0.68rem', color: 'var(--danger)', fontWeight: 700 }}>+{fmtAdaptive(over, currency)}</span>}
+                        {over > 0 && <span style={{ fontSize: '0.68rem', color: 'var(--color-expense)', fontWeight: 700 }}>+{fmtAdaptive(over, currency)}</span>}
                         <span className={`badge ${st.badge}`}>{st.label}</span>
                       </div>
                     </div>
@@ -270,7 +270,7 @@ export default async function Dashboard({
                 <Link href="/loans" className="section-link">View all <ArrowRight size={12} /></Link>
               </div>
               {overdueLoanCount > 0 && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.72rem', fontWeight: 700, color: 'var(--danger)', marginBottom: '0.625rem', padding: '0.4rem 0.6rem', background: 'var(--danger-light)', borderRadius: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-expense)', marginBottom: '0.625rem', padding: '0.4rem 0.6rem', background: 'var(--color-expense-light)', borderRadius: 8 }}>
                   <AlertTriangle size={11} /> {overdueLoanCount} overdue
                 </div>
               )}
@@ -278,7 +278,7 @@ export default async function Dashboard({
                 {loans.slice(0, 3).map(l => (
                   <div key={l.id} className="flex items-center justify-between" style={{ fontSize: '0.8125rem' }}>
                     <span style={{ color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '58%' }}>{l.name}</span>
-                    <span style={{ fontWeight: 700, color: l.daysOverdue > 0 ? 'var(--danger)' : 'var(--text-primary)', whiteSpace: 'nowrap' }}>
+                    <span style={{ fontWeight: 700, color: l.daysOverdue > 0 ? 'var(--color-expense)' : 'var(--color-text-primary)', whiteSpace: 'nowrap' }}>
                       {fmtAdaptive(l.balanceMinor, currency)}
                     </span>
                   </div>

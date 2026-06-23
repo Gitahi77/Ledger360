@@ -14,9 +14,9 @@ type Category = { id: string; name: string; type: string };
 
 function budgetStyle(limit: number, spent: number) {
   const pct = Math.min(100, limit > 0 ? (spent / limit) * 100 : 0);
-  if (pct >= 100) return { barColor:'var(--danger)',  badge:'badge-danger',  label:'Over Budget', numColor:'var(--danger)',  borderColor:'var(--danger)',  glow:'rgba(220,38,38,0.35)',  pct:100 };
+  if (pct >= 100) return { barColor:'var(--color-expense)',  badge:'badge-danger',  label:'Over Budget', numColor:'var(--color-expense)',  borderColor:'var(--color-expense)',  glow:'rgba(220,38,38,0.35)',  pct:100 };
   if (pct >= 80)  return { barColor:'var(--warning)', badge:'badge-warning', label:'Warning',     numColor:'var(--warning)', borderColor:'var(--warning)', glow:'rgba(217,119,6,0.3)',   pct };
-  return               { barColor:'var(--success)', badge:'badge-success', label:'On Track',    numColor:'var(--success)', borderColor:'var(--success)', glow:'rgba(22,163,74,0.3)',   pct };
+  return               { barColor:'var(--color-income)', badge:'badge-success', label:'On Track',    numColor:'var(--color-income)', borderColor:'var(--color-income)', glow:'rgba(22,163,74,0.3)',   pct };
 }
 
 function BudgetModal({ budget, categories, currency, onClose }: { budget?: Budget; categories: Category[]; currency: string; onClose: () => void }) {
@@ -65,9 +65,9 @@ function BudgetModal({ budget, categories, currency, onClose }: { budget?: Budge
       <div className="card animate-in" style={{ width:'100%', maxWidth:440, padding:'1.75rem' }} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <h2 className="card-title" style={{ marginBottom:0 }}>{isEdit ? 'Edit Budget' : 'Add Budget'}</h2>
-          <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', display:'flex' }}><X size={18}/></button>
+          <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--color-text-secondary)', display:'flex' }}><X size={18}/></button>
         </div>
-        {error && <div style={{ padding:'0.625rem', borderRadius:7, background:'var(--danger-light)', color:'var(--danger)', fontSize:'0.8rem', marginBottom:'1rem' }}>{error}</div>}
+        {error && <div style={{ padding:'0.625rem', borderRadius:7, background:'var(--color-expense-light)', color:'var(--color-expense)', fontSize:'0.8rem', marginBottom:'1rem' }}>{error}</div>}
         <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:'0.875rem' }}>
           <div>
             <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Budget Name</label>
@@ -123,7 +123,7 @@ export function BudgetsClient({ budgets, categories, totalBudgeted, totalSpent, 
   const overBudget = budgets.filter(b => b.spent >= b.limit).length;
   const onTrack    = budgets.filter(b => b.limit > 0 && (b.spent / b.limit) < 0.8).length;
   const overallPct = totalBudgeted > 0 ? Math.min(100, Math.round((totalSpent / totalBudgeted) * 100)) : 0;
-  const overallStatus = overallPct >= 100 ? { color:'var(--danger)', bar:'var(--danger)' } : overallPct >= 80 ? { color:'var(--warning)', bar:'var(--warning)' } : { color:'var(--success)', bar:'var(--success)' };
+  const overallStatus = overallPct >= 100 ? { color:'var(--color-expense)', bar:'var(--color-expense)' } : overallPct >= 80 ? { color:'var(--warning)', bar:'var(--warning)' } : { color:'var(--color-income)', bar:'var(--color-income)' };
 
   async function handleDelete(id: string) {
     if (!confirm('Delete this budget?')) return;
@@ -152,8 +152,8 @@ export function BudgetsClient({ budgets, categories, totalBudgeted, totalSpent, 
 
       {showUpload && (
         <div className="card mb-5 animate-in">
-          <div style={{ fontSize:'0.75rem', color:'var(--text-muted)', marginBottom:'0.75rem' }}>
-            <strong style={{ color:'var(--text-primary)' }}>Import bank statement</strong> — AI parses your PDF, CSV or screenshot.
+          <div style={{ fontSize:'0.75rem', color:'var(--color-text-secondary)', marginBottom:'0.75rem' }}>
+            <strong style={{ color:'var(--color-text-primary)' }}>Import bank statement</strong> — AI parses your PDF, CSV or screenshot.
           </div>
           <SmartUpload onDone={() => setShowUpload(false)} />
         </div>
@@ -168,7 +168,7 @@ export function BudgetsClient({ budgets, categories, totalBudgeted, totalSpent, 
               fontFamily:'Space Grotesk,sans-serif',
               fontSize: totalBudgeted > 9_999_999 ? '1.6rem' : totalBudgeted > 999_999 ? '1.9rem' : '2.25rem',
               fontWeight:800, letterSpacing:'-0.04em', lineHeight:1,
-              color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
+              color:'var(--color-text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
             }}>{fmtAdaptive(totalBudgeted, currency)}</p>
             <p className="hero-sub">{fmtAdaptive(totalSpent, currency)} spent · {overallPct}% used</p>
             {/* Overall progress bar */}
@@ -185,17 +185,17 @@ export function BudgetsClient({ budgets, categories, totalBudgeted, totalSpent, 
           <div className="hero-stats-grid">
             <div className="hero-stat-card">
               <p className="hero-label">Budgets</p>
-              <p className="hero-stat-value tabular" style={{ color:'var(--text-primary)' }}>{budgets.length}</p>
+              <p className="hero-stat-value tabular" style={{ color:'var(--color-text-primary)' }}>{budgets.length}</p>
               <p className="hero-sub">total</p>
             </div>
             <div className="hero-stat-card">
               <p className="hero-label">On Track</p>
-              <p className="hero-stat-value tabular" style={{ color:'var(--success)' }}>{onTrack}</p>
+              <p className="hero-stat-value tabular" style={{ color:'var(--color-income)' }}>{onTrack}</p>
               <p className="hero-sub">under 80%</p>
             </div>
             <div className="hero-stat-card">
               <p className="hero-label">Over Budget</p>
-              <p className="hero-stat-value tabular" style={{ color: overBudget > 0 ? 'var(--danger)' : 'var(--text-primary)' }}>{overBudget}</p>
+              <p className="hero-stat-value tabular" style={{ color: overBudget > 0 ? 'var(--color-expense)' : 'var(--color-text-primary)' }}>{overBudget}</p>
               <p className="hero-sub">{overBudget > 0 ? 'needs action' : 'all clear'}</p>
             </div>
           </div>
@@ -204,7 +204,7 @@ export function BudgetsClient({ budgets, categories, totalBudgeted, totalSpent, 
 
       {/* Budget cards */}
       {budgets.length === 0 ? (
-        <div className="card" style={{ textAlign:'center', padding:'3rem', color:'var(--text-muted)' }}>
+        <div className="card" style={{ textAlign:'center', padding:'3rem', color:'var(--color-text-secondary)' }}>
           <LayoutGrid size={40} style={{ margin:'0 auto 0.75rem', opacity:0.4 }}/>
           <div style={{ fontWeight:600, marginBottom:'0.25rem' }}>No budgets yet</div>
           <div style={{ fontSize:'0.78rem', marginBottom:'1rem' }}>Create your first budget to start tracking spending</div>
@@ -220,20 +220,20 @@ export function BudgetsClient({ budgets, categories, totalBudgeted, totalSpent, 
                 style={{ borderTop:`3px solid ${st.borderColor}` }}>
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <div style={{ fontWeight:700, fontSize:'0.875rem', color:'var(--text-primary)' }}>
+                    <div style={{ fontWeight:700, fontSize:'0.875rem', color:'var(--color-text-primary)' }}>
                       {b.name}
-                      {b.rollover && <span className="badge" style={{ marginLeft:'0.5rem', background:'var(--bg-card)', border:'1px solid var(--border-color)', color:'var(--text-muted)' }}>Envelope</span>}
+                      {b.rollover && <span className="badge" style={{ marginLeft:'0.5rem', background:'var(--surface-card)', border:'1px solid var(--border-color)', color:'var(--color-text-secondary)' }}>Envelope</span>}
                     </div>
-                    <div style={{ fontSize:'0.7rem', color:'var(--text-muted)', marginTop:'0.1rem', textTransform:'capitalize' }}>{b.category} · {b.period}</div>
+                    <div style={{ fontSize:'0.7rem', color:'var(--color-text-secondary)', marginTop:'0.1rem', textTransform:'capitalize' }}>{b.category} · {b.period}</div>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className={`badge ${st.badge}`}>{st.label}</span>
                     <button onClick={() => setEditBudget(b)} 
-                      style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', display:'flex', padding:'0.2rem' }}>
+                      style={{ background:'none', border:'none', cursor:'pointer', color:'var(--color-text-secondary)', display:'flex', padding:'0.2rem' }}>
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
                     </button>
                     <button onClick={() => handleDelete(b.id)} disabled={deletingId === b.id}
-                      style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', display:'flex', padding:'0.2rem' }}>
+                      style={{ background:'none', border:'none', cursor:'pointer', color:'var(--color-text-secondary)', display:'flex', padding:'0.2rem' }}>
                       {deletingId === b.id ? <Loader2 size={13} style={{ animation:'spin 1s linear infinite' }}/> : <Trash2 size={13}/>}
                     </button>
                   </div>

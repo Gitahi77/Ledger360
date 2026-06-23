@@ -20,7 +20,7 @@ function loanStyle(l: Loan) {
   const paidPct = Math.min(100, Math.round(((l.originalAmountMinor - l.balanceMinor) / l.originalAmountMinor) * 100));
   if (l.daysOverdue > 0) return {
     badge: 'badge-danger',  label: 'Overdue',
-    color: 'var(--danger)',  barGrad: 'linear-gradient(90deg,var(--danger),hsl(0,78%,72%))',
+    color: 'var(--color-expense)',  barGrad: 'linear-gradient(90deg,var(--color-expense),hsl(0,78%,72%))',
     glow: 'rgba(220,38,38,0.5)', paidPct,
   };
   // Due Soon only fires for FUTURE dates within 7 days — not past dates
@@ -34,7 +34,7 @@ function loanStyle(l: Loan) {
     };
   return {
     badge: 'badge-success', label: 'On Track',
-    color: 'var(--success)', barGrad: 'linear-gradient(90deg,var(--success),hsl(152,65%,62%))',
+    color: 'var(--color-income)', barGrad: 'linear-gradient(90deg,var(--color-income),hsl(152,65%,62%))',
     glow: 'rgba(22,163,74,0.4)', paidPct,
   };
 }
@@ -114,9 +114,9 @@ function LoanModal({ loan, accounts, onClose, currency }: { loan?: Loan; account
       <div className="card animate-in" style={{ width:'100%', maxWidth:500, padding:'1.75rem', maxHeight:'90vh', overflowY:'auto' }} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <h2 className="card-title" style={{ marginBottom:0 }}>{isEdit ? 'Edit Loan' : 'Add Loan'}</h2>
-          <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', display:'flex' }}><X size={18}/></button>
+          <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--color-text-secondary)', display:'flex' }}><X size={18}/></button>
         </div>
-        {error && <div style={{ padding:'0.625rem', borderRadius:7, background:'var(--danger-light)', color:'var(--danger)', fontSize:'0.8rem', marginBottom:'1rem' }}>{error}</div>}
+        {error && <div style={{ padding:'0.625rem', borderRadius:7, background:'var(--color-expense-light)', color:'var(--color-expense)', fontSize:'0.8rem', marginBottom:'1rem' }}>{error}</div>}
         <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:'0.875rem' }}>
           <div style={{ display:'flex', flexWrap:'wrap', gap:'0.75rem' }}>
             <div style={{ flex: '1 1 180px' }}>
@@ -255,16 +255,16 @@ function ExpandedForecast({ loan, monthsLeft, totalInterest, currency }: { loan:
           { label:'Payoff Date',    value: payoffDate(monthsLeft), sub:'projected' },
         ].map(f => (
           <div key={f.label} style={{ background:'var(--bg-app)', borderRadius:8, padding:'0.625rem 0.875rem', border:'1px solid var(--border)' }}>
-            <div style={{ fontSize:'0.6rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'var(--text-muted)', marginBottom:'0.2rem' }}>{f.label}</div>
-            <div style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'1rem', fontWeight:800, color:'var(--text-primary)' }}>{f.value}</div>
-            <div style={{ fontSize:'0.6rem', color:'var(--text-muted)', marginTop:'0.1rem' }}>{f.sub}</div>
+            <div style={{ fontSize:'0.6rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em', color:'var(--color-text-secondary)', marginBottom:'0.2rem' }}>{f.label}</div>
+            <div style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'1rem', fontWeight:800, color:'var(--color-text-primary)' }}>{f.value}</div>
+            <div style={{ fontSize:'0.6rem', color:'var(--color-text-secondary)', marginTop:'0.1rem' }}>{f.sub}</div>
           </div>
         ))}
       </div>
 
       {/* Interactive extra payment simulator */}
-      <div style={{ background:'var(--primary-light)', borderRadius:10, padding:'0.875rem 1rem', border:'1px solid var(--primary-dark)' }}>
-        <div style={{ fontSize:'0.7rem', fontWeight:700, color:'var(--primary)', marginBottom:'0.5rem', textTransform:'uppercase', letterSpacing:'0.06em' }}>Extra Payment Simulator</div>
+      <div style={{ background:'var(--color-brand-light)', borderRadius:10, padding:'0.875rem 1rem', border:'1px solid var(--color-brand-dark)' }}>
+        <div style={{ fontSize:'0.7rem', fontWeight:700, color:'var(--color-brand)', marginBottom:'0.5rem', textTransform:'uppercase', letterSpacing:'0.06em' }}>Extra Payment Simulator</div>
         <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', marginBottom: extraPayment > 0 ? '0.75rem' : 0 }}>
           <span style={{ fontSize:'0.8rem', color:'var(--text-secondary)', whiteSpace:'nowrap' }}>Pay extra {currency}</span>
           <input
@@ -280,12 +280,12 @@ function ExpandedForecast({ loan, monthsLeft, totalInterest, currency }: { loan:
         {extraPayment > 0 && isFinite(newMonths) && (
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(150px, 1fr))', gap:'0.5rem' }}>
             {[
-              { label:'New payoff', value: payoffDate(newMonths), color:'var(--success)' },
-              { label:'Months saved', value:`${monthsSaved} mo`, color:'var(--success)' },
-              { label:'Interest saved', value: formatKES(interestSavedMinor), color:'var(--success)' },
+              { label:'New payoff', value: payoffDate(newMonths), color:'var(--color-income)' },
+              { label:'Months saved', value:`${monthsSaved} mo`, color:'var(--color-income)' },
+              { label:'Interest saved', value: formatKES(interestSavedMinor), color:'var(--color-income)' },
             ].map(r => (
-              <div key={r.label} style={{ background:'var(--success-light)', borderRadius:7, padding:'0.5rem 0.625rem', border:'1px solid var(--success)' }}>
-                <div style={{ fontSize:'0.58rem', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', color:'var(--text-muted)', marginBottom:'0.15rem' }}>{r.label}</div>
+              <div key={r.label} style={{ background:'var(--color-income-light)', borderRadius:7, padding:'0.5rem 0.625rem', border:'1px solid var(--color-income)' }}>
+                <div style={{ fontSize:'0.58rem', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', color:'var(--color-text-secondary)', marginBottom:'0.15rem' }}>{r.label}</div>
                 <div style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'0.9rem', fontWeight:800, color: r.color }}>{r.value}</div>
               </div>
             ))}
@@ -344,7 +344,7 @@ export function LoansClient({ loans, currency, categories = [], accounts = [] }:
               fontFamily:'Space Grotesk,sans-serif',
               fontSize: totalDebtMinor > 9_999_99900 ? '1.6rem' : totalDebtMinor > 999_99900 ? '1.9rem' : '2.25rem',
               fontWeight:800, letterSpacing:'-0.04em', lineHeight:1,
-              color:'var(--danger)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
+              color:'var(--color-expense)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
             }}>{formatKES(totalDebtMinor)}</p>
             <p className="hero-sub">of {formatKES(totalOriginalMinor)} original · {paidPct}% paid</p>
             <div className="hero-progress-wrap" style={{ marginTop:'0.75rem', paddingTop:'0.75rem' }}>
@@ -353,24 +353,24 @@ export function LoansClient({ loans, currency, categories = [], accounts = [] }:
                 <span className="hero-progress-val tabular">{paidPct}% paid off</span>
               </div>
               <div className="hero-progress-track">
-                <div className="hero-progress-bar" style={{ width:`${paidPct}%`, backgroundColor:'var(--success)' }}/>
+                <div className="hero-progress-bar" style={{ width:`${paidPct}%`, backgroundColor:'var(--color-income)' }}/>
               </div>
             </div>
           </div>
           <div className="hero-stats-grid">
             <div className="hero-stat-card">
               <p className="hero-label">Loans</p>
-              <p className="hero-stat-value tabular" style={{ color:'var(--text-primary)' }}>{loans.length}</p>
+              <p className="hero-stat-value tabular" style={{ color:'var(--color-text-primary)' }}>{loans.length}</p>
               <p className="hero-sub">total</p>
             </div>
             <div className="hero-stat-card">
               <p className="hero-label">Monthly Pmts</p>
-              <p className="hero-stat-value tabular" style={{ color:'var(--text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{formatKES(totalMonthlyMinor)}</p>
+              <p className="hero-stat-value tabular" style={{ color:'var(--color-text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{formatKES(totalMonthlyMinor)}</p>
               <p className="hero-sub">per month</p>
             </div>
             <div className="hero-stat-card">
               <p className="hero-label">Overdue</p>
-              <p className="hero-stat-value tabular" style={{ color: overdue > 0 ? 'var(--danger)' : 'var(--success)' }}>{overdue}</p>
+              <p className="hero-stat-value tabular" style={{ color: overdue > 0 ? 'var(--color-expense)' : 'var(--color-income)' }}>{overdue}</p>
               <p className="hero-sub">{overdue > 0 ? '⚠ needs attention' : '✓ all current'}</p>
             </div>
           </div>
@@ -379,7 +379,7 @@ export function LoansClient({ loans, currency, categories = [], accounts = [] }:
 
       {/* Loan cards / empty state */}
       {loans.length === 0 ? (
-        <div className="card" style={{ textAlign:'center', padding:'3rem', color:'var(--text-muted)' }}>
+        <div className="card" style={{ textAlign:'center', padding:'3rem', color:'var(--color-text-secondary)' }}>
           <CreditCard size={40} style={{ margin:'0 auto 0.75rem', opacity:0.4 }} />
           <div style={{ fontWeight:600, marginBottom:'0.25rem' }}>No loans tracked</div>
           <div style={{ fontSize:'0.78rem', marginBottom:'1rem' }}>Add a loan to track repayments and interest</div>
@@ -413,12 +413,12 @@ export function LoansClient({ loans, currency, categories = [], accounts = [] }:
                 {/* Header */}
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
-                    <div style={{ width:36, height:36, borderRadius:8, background: l.daysOverdue > 0 ? 'var(--danger-light)' : 'var(--primary-light)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                      {l.daysOverdue > 0 ? <AlertTriangle size={16} color="var(--danger)" /> : <CreditCard size={16} color="var(--primary)" />}
+                    <div style={{ width:36, height:36, borderRadius:8, background: l.daysOverdue > 0 ? 'var(--color-expense-light)' : 'var(--color-brand-light)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                      {l.daysOverdue > 0 ? <AlertTriangle size={16} color="var(--color-expense)" /> : <CreditCard size={16} color="var(--color-brand)" />}
                     </div>
                     <div>
-                      <div style={{ fontWeight:700, fontSize:'0.9rem', color:'var(--text-primary)' }}>{l.name}</div>
-                      <div style={{ fontSize:'0.7rem', color:'var(--text-muted)', marginTop:'0.1rem', textTransform:'capitalize' }}>
+                      <div style={{ fontWeight:700, fontSize:'0.9rem', color:'var(--color-text-primary)' }}>{l.name}</div>
+                      <div style={{ fontSize:'0.7rem', color:'var(--color-text-secondary)', marginTop:'0.1rem', textTransform:'capitalize' }}>
                         {l.lender} · {l.type} · {l.annualRate}% p.a.
                       </div>
                     </div>
@@ -426,11 +426,11 @@ export function LoansClient({ loans, currency, categories = [], accounts = [] }:
                   <div className="flex items-center gap-2">
                     <span className={`badge ${st.badge}`}>{st.label}</span>
                     <button onClick={() => setEditLoanObj(l)} 
-                      style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', display:'flex', padding:'0.2rem' }}>
+                      style={{ background:'none', border:'none', cursor:'pointer', color:'var(--color-text-secondary)', display:'flex', padding:'0.2rem' }}>
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
                     </button>
                     <button onClick={() => handleDelete(l.id)} disabled={deletingId===l.id}
-                      style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-muted)', display:'flex', padding:'0.2rem' }}>
+                      style={{ background:'none', border:'none', cursor:'pointer', color:'var(--color-text-secondary)', display:'flex', padding:'0.2rem' }}>
                       {deletingId===l.id ? <Loader2 size={13} style={{ animation:'spin 1s linear infinite' }}/> : <Trash2 size={13}/>}
                     </button>
                   </div>
@@ -451,7 +451,7 @@ export function LoansClient({ loans, currency, categories = [], accounts = [] }:
                   </div>
                   <div style={{ textAlign:'right', flexShrink:0 }}>
                     <div style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'1.5rem', fontWeight:800, color:st.color, lineHeight:1, opacity:0.88 }}>{st.paidPct}%</div>
-                    <div style={{ fontSize:'0.65rem', color:'var(--text-muted)' }}>paid off</div>
+                    <div style={{ fontSize:'0.65rem', color:'var(--color-text-secondary)' }}>paid off</div>
                   </div>
                 </div>
 
@@ -462,19 +462,19 @@ export function LoansClient({ loans, currency, categories = [], accounts = [] }:
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(150px, 1fr))', gap:'1rem', flexWrap:'wrap', flex:'1 1 100%' }}>
                     <div>
-                      <div style={{ fontSize:'0.65rem', color:'var(--text-muted)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em' }}>Monthly</div>
-                      <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, fontSize:'0.85rem', color:'var(--text-primary)', whiteSpace:'nowrap' }}>{formatKES(l.monthlyPaymentMinor)}</div>
+                      <div style={{ fontSize:'0.65rem', color:'var(--color-text-secondary)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em' }}>Monthly</div>
+                      <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, fontSize:'0.85rem', color:'var(--color-text-primary)', whiteSpace:'nowrap' }}>{formatKES(l.monthlyPaymentMinor)}</div>
                     </div>
                     <div>
-                      <div style={{ fontSize:'0.65rem', color:'var(--text-muted)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em' }}>Next Due</div>
-                      <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, fontSize:'0.85rem', color: l.daysOverdue > 0 ? 'var(--danger)' : 'var(--text-primary)' }}>
+                      <div style={{ fontSize:'0.65rem', color:'var(--color-text-secondary)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em' }}>Next Due</div>
+                      <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, fontSize:'0.85rem', color: l.daysOverdue > 0 ? 'var(--color-expense)' : 'var(--color-text-primary)' }}>
                         {new Date(l.nextDue).toLocaleDateString('en-GB', { day:'numeric', month:'short' })}
                         {l.daysOverdue > 0 && <span style={{ fontSize:'0.7rem', marginLeft:4 }}>({l.daysOverdue}d late)</span>}
                       </div>
                     </div>
                     <div>
-                      <div style={{ fontSize:'0.65rem', color:'var(--text-muted)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em' }}>Est. Months Left</div>
-                      <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, fontSize:'0.85rem', color: isFinite(monthsLeft) ? 'var(--text-primary)' : 'var(--danger)' }}>
+                      <div style={{ fontSize:'0.65rem', color:'var(--color-text-secondary)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em' }}>Est. Months Left</div>
+                      <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, fontSize:'0.85rem', color: isFinite(monthsLeft) ? 'var(--color-text-primary)' : 'var(--color-expense)' }}>
                         {isFinite(monthsLeft) ? `~${monthsLeft} mo` : '⚠ Raise payment'}
                       </div>
                     </div>

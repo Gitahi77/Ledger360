@@ -12,33 +12,24 @@ type Account = {
   openingMinor: number; balanceMinor: number; archived: boolean;
 };
 
+import { getAccountIcon } from '@/lib/icons';
+import { getAccountGroup, ACCOUNT_GROUPS } from '@/lib/accounts';
+import type { AccountType } from '@prisma/client';
+
 const ACCOUNT_TYPES = [
-  { id: 'CHECKING',       label: 'Checking',      icon: Landmark,  color: 'var(--text-primary)' },
-  { id: 'SAVINGS',        label: 'Savings',       icon: Landmark,  color: 'var(--text-primary)' },
-  { id: 'MPESA',          label: 'M-Pesa',        icon: Smartphone, color: 'var(--color-mpesa)' },
-  { id: 'AIRTEL_MONEY',   label: 'Airtel Money',  icon: Smartphone, color: 'var(--danger)' },
-  { id: 'CREDIT_CARD',    label: 'Credit Card',   icon: CreditCard, color: 'var(--warning)' },
-  { id: 'SACCO_DEPOSIT',  label: 'SACCO Deposit', icon: Landmark,  color: 'var(--success)' },
-  { id: 'SACCO_LOAN',     label: 'SACCO Loan',    icon: Landmark,  color: 'var(--warning)' },
-  { id: 'CHAMA',          label: 'Chama',         icon: Wallet,    color: 'var(--purple)' },
-  { id: 'BROKERAGE',      label: 'Brokerage',     icon: TrendingUpIcon, color: 'var(--teal)' },
-  { id: 'MORTGAGE',       label: 'Mortgage',      icon: Landmark,  color: 'var(--warning)' },
-  { id: 'AUTO_LOAN',      label: 'Auto Loan',     icon: Landmark,  color: 'var(--warning)' },
-  { id: 'CRYPTO',         label: 'Crypto',        icon: Wallet,    color: 'var(--purple)' },
+  { id: 'CHECKING',       label: 'Checking' },
+  { id: 'SAVINGS',        label: 'Savings' },
+  { id: 'MPESA',          label: 'M-Pesa' },
+  { id: 'AIRTEL_MONEY',   label: 'Airtel Money' },
+  { id: 'CREDIT_CARD',    label: 'Credit Card' },
+  { id: 'SACCO_DEPOSIT',  label: 'SACCO Deposit' },
+  { id: 'SACCO_LOAN',     label: 'SACCO Loan' },
+  { id: 'CHAMA',          label: 'Chama' },
+  { id: 'BROKERAGE',      label: 'Brokerage' },
+  { id: 'MORTGAGE',       label: 'Mortgage' },
+  { id: 'AUTO_LOAN',      label: 'Auto Loan' },
+  { id: 'CRYPTO',         label: 'Crypto' },
 ];
-
-const ACCOUNT_GROUPS = [
-  { label: 'Mobile Money', types: ['MPESA', 'AIRTEL_MONEY'] },
-  { label: 'Bank & Cash',  types: ['CHECKING', 'SAVINGS'] },
-  { label: 'SACCOs & Chamas', types: ['SACCO_DEPOSIT', 'CHAMA'] },
-  { label: 'Loans',        types: ['CREDIT_CARD', 'SACCO_LOAN', 'MORTGAGE', 'AUTO_LOAN'] },
-  { label: 'Investments',  types: ['BROKERAGE', 'CRYPTO'] },
-];
-
-// Helper to get an icon
-function TrendingUpIcon(props: any) {
-  return <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>;
-}
 
 export function AccountsClient({ accounts, currency }: { accounts: Account[], currency: string }) {
   const router = useRouter();
@@ -125,22 +116,22 @@ export function AccountsClient({ accounts, currency }: { accounts: Account[], cu
 
   function renderList(list: Account[], isArchivedList = false) {
     if (list.length === 0) {
-      return <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', padding: '1rem' }}>No accounts found.</div>;
+      return <div style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', padding: '1rem' }}>No accounts found.</div>;
     }
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
         {list.map(acc => {
           const typeObj = ACCOUNT_TYPES.find(t => t.id === acc.type);
-          const Icon = typeObj?.icon || Landmark;
+          const iconClass = getAccountIcon(acc.type as AccountType);
           return (
             <div key={acc.id} className="card animate-in" style={{ padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', opacity: isArchivedList ? 0.6 : 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--bg-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Icon size={20} color="var(--text-secondary)" />
+                  <i className={`ti ${iconClass}`} style={{ fontSize: 20, color: 'var(--text-secondary)' }}></i>
                 </div>
                 <div>
                   <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600 }}>{acc.name}</h3>
-                  <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>
                     {typeObj?.label} $ {acc.archived ? 'Archived' : 'Active'}
                   </p>
                 </div>
@@ -148,20 +139,20 @@ export function AccountsClient({ accounts, currency }: { accounts: Account[], cu
               
               <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
                 <div style={{ textAlign: 'right' }}>
-                  <p style={{ margin: 0, fontSize: '0.7rem', color: 'var(--text-muted)' }}>Balance</p>
-                  <p style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600, color: acc.balanceMinor < 0 ? 'var(--danger)' : 'var(--text-primary)' }}>
+                  <p style={{ margin: 0, fontSize: '0.7rem', color: 'var(--color-text-secondary)' }}>Balance</p>
+                  <p style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600, color: acc.balanceMinor < 0 ? 'var(--color-expense)' : 'var(--color-text-primary)' }}>
                     {formatKES(acc.balanceMinor)}
                   </p>
                 </div>
                 
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button onClick={() => openEdit(acc)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }} title="Edit">
+                  <button onClick={() => openEdit(acc)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)' }} title="Edit">
                     <Edit2 size={16} />
                   </button>
-                  <button onClick={() => handleToggleArchive(acc)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }} title={acc.archived ? "Unarchive" : "Archive"}>
+                  <button onClick={() => handleToggleArchive(acc)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)' }} title={acc.archived ? "Unarchive" : "Archive"}>
                     <Archive size={16} />
                   </button>
-                  <button onClick={() => handleDelete(acc.id)} disabled={deletingId === acc.id} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)' }} title="Delete">
+                  <button onClick={() => handleDelete(acc.id)} disabled={deletingId === acc.id} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-expense)' }} title="Delete">
                     {deletingId === acc.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
                   </button>
                 </div>
@@ -175,19 +166,19 @@ export function AccountsClient({ accounts, currency }: { accounts: Account[], cu
 
   function renderGroupedList(list: Account[], isArchivedList = false) {
     if (list.length === 0) {
-      return <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', padding: '1rem' }}>No accounts found.</div>;
+      return <div style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', padding: '1rem' }}>No accounts found.</div>;
     }
     
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-        {ACCOUNT_GROUPS.map(group => {
-          const groupAccounts = list.filter(acc => group.types.includes(acc.type));
+        {Object.entries(ACCOUNT_GROUPS).map(([groupLabel, types]) => {
+          const groupAccounts = list.filter(acc => (types as string[]).includes(acc.type));
           if (groupAccounts.length === 0) return null;
           
           return (
-            <div key={group.label}>
-              <h3 style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                {group.label}
+            <div key={groupLabel}>
+              <h3 style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                {groupLabel}
               </h3>
               {renderList(groupAccounts, isArchivedList)}
             </div>
@@ -195,12 +186,12 @@ export function AccountsClient({ accounts, currency }: { accounts: Account[], cu
         })}
         {/* Render any accounts that don't fit into defined groups */}
         {(() => {
-          const groupedTypes = ACCOUNT_GROUPS.flatMap(g => g.types);
-          const otherAccounts = list.filter(acc => !groupedTypes.includes(acc.type));
+          const groupedTypes = Object.values(ACCOUNT_GROUPS).flat();
+          const otherAccounts = list.filter(acc => !groupedTypes.includes(acc.type as AccountType));
           if (otherAccounts.length === 0) return null;
           return (
             <div key="Other">
-              <h3 style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <h3 style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Other
               </h3>
               {renderList(otherAccounts, isArchivedList)}
@@ -228,7 +219,7 @@ export function AccountsClient({ accounts, currency }: { accounts: Account[], cu
       {archivedAccounts.length > 0 && (
         <div>
           <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1rem', color: 'var(--text-secondary)' }}>Archived Accounts</h2>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+          <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginBottom: '1rem' }}>
             Archived accounts do not appear in dropdowns, but their balances still count toward your Net Worth.
           </p>
           {renderGroupedList(archivedAccounts, true)}
@@ -241,10 +232,10 @@ export function AccountsClient({ accounts, currency }: { accounts: Account[], cu
           <div className="card animate-in" style={{ width: '100%', maxWidth: 400, padding: '1.5rem', maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
               <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600 }}>{editingAcc ? 'Edit Account' : 'New Account'}</h2>
-              <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={18} /></button>
+              <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)' }}><X size={18} /></button>
             </div>
 
-            {error && <div style={{ padding: '0.625rem', borderRadius: 7, background: 'var(--danger-light)', color: 'var(--danger)', fontSize: '0.8rem', marginBottom: '1rem' }}>{error}</div>}
+            {error && <div style={{ padding: '0.625rem', borderRadius: 7, background: 'var(--color-expense-light)', color: 'var(--color-expense)', fontSize: '0.8rem', marginBottom: '1rem' }}>{error}</div>}
 
             <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
@@ -265,7 +256,7 @@ export function AccountsClient({ accounts, currency }: { accounts: Account[], cu
                 <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>Opening Balance ({currency})</label>
                 <input type="number" step="0.01" inputMode="decimal" className="input-field" style={{ width: '100%', padding: '0.55rem 0.75rem', fontSize: '0.85rem' }}
                   value={opening} onChange={e => setOpening(e.target.value)} placeholder="0.00" />
-                <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.3rem' }}>
+                <p style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)', marginTop: '0.3rem' }}>
                   Set the starting balance before adding transactions in Ledger360.
                 </p>
               </div>

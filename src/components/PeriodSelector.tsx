@@ -39,7 +39,7 @@ export function PeriodSelector({ value, onChange }: PeriodSelectorProps) {
       {period === 'custom' && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', animation: 'fadeIn 0.2s ease' }}>
           <input type="date" value={from} onChange={e => setFrom(e.target.value)} className="input-field" />
-          <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>to</span>
+          <span style={{ color: 'var(--color-text-secondary)', fontSize: '0.8rem' }}>to</span>
           <input type="date" value={to} onChange={e => { setTo(e.target.value); onChange?.('custom', from, e.target.value); }} className="input-field" />
         </div>
       )}

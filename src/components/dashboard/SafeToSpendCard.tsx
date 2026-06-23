@@ -35,7 +35,7 @@ export function SafeToSpendCard({
       role="button"
       tabIndex={0}
       style={{ 
-        background: isSafe ? 'var(--primary-grad)' : 'var(--danger-grad)', 
+        background: isSafe ? 'var(--color-brand-grad)' : 'var(--color-expense-grad)', 
         color: 'white', 
         border: 'none',
         cursor: 'pointer',
@@ -118,7 +118,7 @@ export function SafeToSpendCard({
               <span style={{ fontWeight: 600 }}>-{fmtAdaptive(breakdown.unbudgetedSpendThisPeriod, currency)}</span>
             </div>
             {breakdown.envelopeOverspendPenalty > 0 && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#ffb3b3' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
                 <span style={{ fontWeight: 600 }}>Envelope Overspend Penalty</span>
                 <span style={{ fontWeight: 700 }}>-{fmtAdaptive(breakdown.envelopeOverspendPenalty, currency)}</span>
               </div>

@@ -49,8 +49,8 @@ function Row({ label, desc, children }: { label: string; desc?: string; children
   return (
     <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0.875rem 0', borderBottom:'1px solid var(--border-light)', gap:'1rem', flexWrap:'wrap' }}>
       <div style={{ flex:1, minWidth:0 }}>
-        <div style={{ fontSize:'0.8125rem', fontWeight:600, color:'var(--text-primary)' }}>{label}</div>
-        {desc && <div style={{ fontSize:'0.72rem', color:'var(--text-muted)', marginTop:'0.15rem' }}>{desc}</div>}
+        <div style={{ fontSize:'0.8125rem', fontWeight:600, color:'var(--color-text-primary)' }}>{label}</div>
+        {desc && <div style={{ fontSize:'0.72rem', color:'var(--color-text-secondary)', marginTop:'0.15rem' }}>{desc}</div>}
       </div>
       <div style={{ flexShrink:0 }}>{children}</div>
     </div>
@@ -65,7 +65,7 @@ function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (
       aria-pressed={checked}
       style={{
         width:42, height:24, borderRadius:999, border:'none', cursor: disabled ? 'not-allowed' : 'pointer',
-        background: checked ? 'linear-gradient(90deg,#27AE60,#1E8449)' : 'var(--border)',
+        background: checked ? 'linear-gradient(90deg,rgb(39, 174, 96),rgb(30, 132, 73))' : 'var(--border)',
         position:'relative', transition:'background 0.2s',
         boxShadow: checked ? '0 2px 6px rgba(39,174,96,0.35)' : 'inset 0 1px 3px rgba(0,0,0,0.15)',
         opacity: disabled ? 0.5 : 1,
@@ -120,15 +120,15 @@ export function SavingsAutomationSection({
 
   const inputStyle: React.CSSProperties = {
     width: 70, padding: '0.375rem 0.5rem', borderRadius: 6,
-    border: '1px solid var(--border)', background: 'var(--bg-card)',
-    color: 'var(--text-primary)', fontSize: '0.8rem', textAlign: 'center',
+    border: '1px solid var(--border)', background: 'var(--surface-card)',
+    color: 'var(--color-text-primary)', fontSize: '0.8rem', textAlign: 'center',
     fontFamily: 'Space Grotesk,sans-serif', fontWeight: 700,
   };
 
   const selectStyle: React.CSSProperties = {
     padding: '0.375rem 0.625rem', borderRadius: 6,
-    border: '1px solid var(--border)', background: 'var(--bg-card)',
-    color: 'var(--text-primary)', fontSize: '0.8rem', fontFamily: 'inherit',
+    border: '1px solid var(--border)', background: 'var(--surface-card)',
+    color: 'var(--color-text-primary)', fontSize: '0.8rem', fontFamily: 'inherit',
     outline: 'none', cursor: 'pointer', maxWidth: '100%',
   };
 
@@ -184,16 +184,16 @@ export function SavingsAutomationSection({
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
         <div style={{
           width: 32, height: 32, borderRadius: 8,
-          background: 'linear-gradient(135deg, #27AE60, #1E8449)',
+          background: 'linear-gradient(135deg, rgb(39, 174, 96), rgb(30, 132, 73))',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
           <TrendingUp size={16} color="white" />
         </div>
         <div>
-          <div style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text-primary)' }}>
+          <div style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--color-text-primary)' }}>
             Save-More-Tomorrow
           </div>
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+          <div style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)' }}>
             Automatically save a growing % of every income
           </div>
         </div>
@@ -201,7 +201,7 @@ export function SavingsAutomationSection({
 
       {/* Info box */}
       <div style={{ padding: '0.75rem', background: 'var(--bg-app)', borderRadius: 8, display: 'flex', gap: '0.5rem', marginBottom: '1.25rem' }}>
-        <Info size={14} color="var(--text-muted)" style={{ flexShrink: 0, marginTop: 1 }} />
+        <Info size={14} color="var(--color-text-secondary)" style={{ flexShrink: 0, marginTop: 1 }} />
         <p style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
           Each time you record income, Ledger360 automatically creates a transfer to your savings.
           The rate starts at your base rate and escalates monthly until the cap.
@@ -235,7 +235,7 @@ export function SavingsAutomationSection({
         {/* Goal (required if destination isn't savings/investment) */}
         {needsGoal && (
           <div style={{ padding: '0.5rem 0.75rem', background: 'rgba(217, 119, 6, 0.08)', borderRadius: 6, marginTop: '0.25rem', marginBottom: '0.5rem' }}>
-            <div style={{ fontSize: '0.72rem', color: 'var(--warning, #D97706)', fontWeight: 600, marginBottom: '0.25rem' }}>
+            <div style={{ fontSize: '0.72rem', color: 'var(--warning, rgb(217, 119, 6))', fontWeight: 600, marginBottom: '0.25rem' }}>
               ⚠ Non-savings account selected — a goal is required
             </div>
             <select style={selectStyle} value={goalId} onChange={e => setGoalId(e.target.value)}>
@@ -264,7 +264,7 @@ export function SavingsAutomationSection({
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
             <input type="number" value={baseRatePct} min={1} max={80}
               onChange={e => setBaseRatePct(e.target.value)} style={inputStyle} />
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>%</span>
+            <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>%</span>
           </div>
         </Row>
 
@@ -272,7 +272,7 @@ export function SavingsAutomationSection({
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
             <input type="number" value={escalationPct} min={0} max={20}
               onChange={e => setEscalationPct(e.target.value)} style={inputStyle} />
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>pp/mo</span>
+            <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>pp/mo</span>
           </div>
         </Row>
 
@@ -280,14 +280,14 @@ export function SavingsAutomationSection({
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
             <input type="number" value={maxRatePct} min={1} max={80}
               onChange={e => setMaxRatePct(e.target.value)} style={inputStyle} />
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>%</span>
+            <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>%</span>
           </div>
         </Row>
 
         {/* Current rate (read-only, from plan) */}
         {plan && (
           <Row label="Current Rate" desc="Active rate after escalation">
-            <span style={{ fontSize: '0.875rem', fontWeight: 700, fontFamily: 'Space Grotesk,sans-serif', color: 'var(--success, #27AE60)' }}>
+            <span style={{ fontSize: '0.875rem', fontWeight: 700, fontFamily: 'Space Grotesk,sans-serif', color: 'var(--color-income, rgb(39, 174, 96))' }}>
               {plan.currentRatePct}%
             </span>
           </Row>
@@ -296,7 +296,7 @@ export function SavingsAutomationSection({
         {/* Next escalation (read-only) */}
         {plan && (
           <Row label="Next Escalation" desc="When the rate bumps next">
-            <span style={{ fontSize: '0.8rem', fontFamily: 'Space Grotesk,sans-serif', color: 'var(--text-primary)' }}>
+            <span style={{ fontSize: '0.8rem', fontFamily: 'Space Grotesk,sans-serif', color: 'var(--color-text-primary)' }}>
               {new Date(plan.nextEscalation).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
             </span>
           </Row>
@@ -314,12 +314,12 @@ export function SavingsAutomationSection({
             {saving ? 'Saving…' : (plan ? 'Update Plan' : 'Create Plan')}
           </button>
           {saved && (
-            <div className="animate-in" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.78rem', color: 'var(--success)', fontWeight: 600 }}>
+            <div className="animate-in" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.78rem', color: 'var(--color-income)', fontWeight: 600 }}>
               <CheckCircle2 size={14} /> Saved!
             </div>
           )}
           {error && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.78rem', color: 'var(--danger)', fontWeight: 600 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.78rem', color: 'var(--color-expense)', fontWeight: 600 }}>
               <AlertTriangle size={14} /> {error}
             </div>
           )}
@@ -329,7 +329,7 @@ export function SavingsAutomationSection({
       {/* Recent Auto-Saves with Undo */}
       {autoSaves.length > 0 && (
         <div style={{ marginTop: '1.5rem' }}>
-          <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.625rem' }}>
+          <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: '0.625rem' }}>
             Recent Auto-Saves
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem', maxHeight: 280, overflowY: 'auto' }}>
@@ -340,10 +340,10 @@ export function SavingsAutomationSection({
                 border: '1px solid var(--border)',
               }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                  <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
                     {fmtAdaptive(toMajor(s.amountMinor), currency)}
                   </div>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)', marginTop: '0.1rem' }}>
                     {s.fromAccount?.name ?? '?'} → {s.toAccount?.name ?? '?'} · {new Date(s.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                   </div>
                 </div>
@@ -355,7 +355,7 @@ export function SavingsAutomationSection({
                     display: 'flex', alignItems: 'center', gap: '0.25rem',
                     padding: '0.3rem 0.5rem', borderRadius: 6,
                     border: '1px solid var(--border)', background: 'transparent',
-                    color: 'var(--danger)', fontSize: '0.72rem', cursor: 'pointer',
+                    color: 'var(--color-expense)', fontSize: '0.72rem', cursor: 'pointer',
                     opacity: undoing === s.id ? 0.5 : 1,
                   }}
                 >
