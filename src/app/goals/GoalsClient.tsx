@@ -4,7 +4,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { addGoal, editGoal, deleteGoal } from '@/lib/actions/goals';
-import { CategoryIcon } from '@/components/CategoryIcon';
+import { getCategoryIcon } from '@/lib/icons';
 import { fmtAdaptive, fmtFull, fmtPct } from '@/lib/format';
 import { Plus, CheckCircle2, TrendingUp, Trash2, Loader2, X, PiggyBank, Info } from 'lucide-react';
 import { inflationAdjustedTarget, yearsUntil } from '@/lib/api/inflation';
@@ -261,7 +261,7 @@ export function GoalsClient({ goals, currency, categories = [] }: { goals: Goal[
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <div style={{ width:32, height:32, borderRadius:7, background:st.iconBg, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                      <CategoryIcon category={g.category} name={g.name} size={15} />
+                      <i className={`ti ${getCategoryIcon(g.category)}`} style={{ fontSize: 16, color: st.iconColor }}></i>
                     </div>
                     <div style={{ minWidth:0 }}>
                       <div

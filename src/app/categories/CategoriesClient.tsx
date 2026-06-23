@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { createCategory, editCategory, deleteCategory } from '@/lib/actions/categories';
-import { CategoryIcon } from '@/components/CategoryIcon';
+import { getCategoryIcon } from '@/lib/icons';
 import { Plus, Trash2, Edit2, Loader2, X, AlertTriangle } from 'lucide-react';
 
 type Category = {
@@ -135,9 +135,9 @@ export function CategoriesClient({ initialCategories, currency }: { initialCateg
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.75rem' }}>
           {items.map(cat => (
             <div key={cat.id} className="card" style={{ padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderLeft: `3px solid ${color}` }}>
-              <div className="flex items-center gap-3">
-                <div style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--surface-active)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <CategoryIcon category={cat.icon || cat.name.toLowerCase()} name={cat.name} size={18} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--surface-card-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <i className={`ti ${getCategoryIcon(cat.name)}`} style={{ fontSize: 20, color: 'var(--color-text-secondary)' }}></i>
                 </div>
                 <div>
                   <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--color-text-primary)' }}>{cat.name}</div>
