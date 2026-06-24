@@ -31,7 +31,7 @@ export async function getNetWorth() {
     
     if (!rateC || !rateUser) return amount;
     
-    return Math.round(amount * (rateUser / rateC));
+    return Math.round((amount * rateUser) / rateC);
   };
 
   const totalCashMinor        = cashAccounts.reduce((s, a) => s + convert(a.balanceMinor, a.currency), 0);

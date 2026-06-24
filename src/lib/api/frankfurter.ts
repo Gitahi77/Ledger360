@@ -38,12 +38,12 @@ export async function getRates(base: string = 'USD'): Promise<FxRates | null> {
 export function kesTo(amount: number, currency: string, rates: FxRates): number {
   const rate = rates.rates[currency];
   if (!rate) return amount;
-  return +(amount * rate).toFixed(2);
+  return Math.round(amount * rate);
 }
 
 /** Convert an amount from a foreign currency back to KES */
 export function toKes(amount: number, currency: string, rates: FxRates): number {
   const rate = rates.rates[currency];
   if (!rate) return amount;
-  return +(amount / rate).toFixed(2);
+  return Math.round(amount / rate);
 }

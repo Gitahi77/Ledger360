@@ -8,7 +8,7 @@
  * result in a negative loan balance.
  */
 export function computeLoanBalance(loanBalanceMinor: number, repaidAmountMinor: number): number {
-  return loanBalanceMinor - repaidAmountMinor;
+  return Math.max(0, loanBalanceMinor - repaidAmountMinor);
 }
 
 /**
@@ -21,5 +21,5 @@ export function computeDailyInterest(principalMinor: number, annualRate: number,
   // annualRate is typically a percentage, e.g. 5 for 5%
   const ratePerDay = (annualRate / 100) / 365;
   const accruedAmount = principalMinor * Math.pow(1 + ratePerDay, days);
-  return accruedAmount - principalMinor;
+  return Math.round(accruedAmount - principalMinor);
 }
