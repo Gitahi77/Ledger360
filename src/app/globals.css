@@ -262,7 +262,17 @@
 
 
 /* ── Reset & Base ────────────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, /* Global reset and standard elements */
+* {
+  box-sizing: border-box;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
+
+body {margin: 0; padding: 0; }
 
 body {
   font-family: var(--font-inter), 'Inter', -apple-system, system-ui, sans-serif;
@@ -746,14 +756,20 @@ select, input { font-family: inherit; }
     align-items: center;
     justify-content: center;
     padding: 0.25rem;
+    min-height: 44px;
+    min-width: 44px;
   }
   .sidebar-backdrop {
     display: block;
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
     background: rgba(0, 0, 0, 0.5);
-    
-    z-index: 90; /* just below sidebar */
+    z-index: 40;
+    animation: fadeIn var(--motion-fade) ease forwards;
+  }
+  
+  .btn, .input-field, .segmented-btn, button {
+    min-height: 44px;
   }
 
   /* Grid collapsing */

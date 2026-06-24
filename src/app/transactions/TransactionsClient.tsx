@@ -345,7 +345,7 @@ export function TransactionsClient({
               </button>
             ))}
           </div>
-          <div style={{ position:'relative', minWidth:'200px' }}>
+          <div style={{ position:'relative', flex: '1 1 200px' }}>
             <Search size={14} style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', color:'var(--color-text-secondary)' }} />
             <input 
               className="input-field" 
