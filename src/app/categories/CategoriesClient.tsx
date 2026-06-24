@@ -50,40 +50,40 @@ function CategoryModal({ category, onClose }: { category?: Category, onClose: ()
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="card animate-in" style={{ width:'100%', maxWidth:400, padding:'1.75rem' }} onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="card-title" style={{ marginBottom:0 }}>{isEdit ? 'Edit Category' : 'New Category'}</h2>
-          <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--color-text-secondary)', display:'flex' }}><X size={18}/></button>
+    <div className="modal-overlay" onClick={onClose} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+      <div className="card animate-in" style={{ width:'100%', maxWidth:420, padding:'2rem', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--border)' }} onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="card-title" style={{ marginBottom:0, fontSize: '1.25rem', letterSpacing: '-0.02em' }}>{isEdit ? 'Edit Category' : 'New Category'}</h2>
+          <button onClick={onClose} style={{ background:'var(--surface-sunken)', border:'1px solid var(--border)', borderRadius: '50%', width: 32, height: 32, cursor:'pointer', color:'var(--color-text-secondary)', display:'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }} className="hover-bg-active"><X size={16}/></button>
         </div>
-        {error && <div style={{ padding:'0.625rem', borderRadius:7, background:'var(--color-expense-light)', color:'var(--color-expense)', fontSize:'0.8rem', marginBottom:'1rem' }}>{error}</div>}
+        {error && <div style={{ padding:'0.75rem 1rem', borderRadius:8, background:'var(--color-expense-light)', color:'var(--color-expense)', fontSize:'0.85rem', marginBottom:'1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 500 }}><AlertTriangle size={16} /> {error}</div>}
         
-        <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:'0.875rem' }}>
+        <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:'1.25rem' }}>
           <div>
-            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>Category Name</label>
-            <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
-              value={name} onChange={e => setName(e.target.value)} required placeholder="e.g. Groceries" />
+            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:700, textTransform: 'uppercase', letterSpacing: '0.05em', color:'var(--color-text-secondary)', marginBottom:'0.5rem' }}>Category Name</label>
+            <input className="input-field" style={{ width:'100%', padding:'0.65rem 0.85rem', fontSize:'0.9rem', borderRadius: 8, border: '1px solid var(--border)' }}
+              value={name} onChange={e => setName(e.target.value)} required placeholder="e.g. Groceries, Salary, Rent" />
           </div>
           <div>
-            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>Type</label>
-            <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem', textTransform:'capitalize' }}
+            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:700, textTransform: 'uppercase', letterSpacing: '0.05em', color:'var(--color-text-secondary)', marginBottom:'0.5rem' }}>Type</label>
+            <select className="input-field" style={{ width:'100%', padding:'0.65rem 0.85rem', fontSize:'0.9rem', textTransform:'capitalize', borderRadius: 8, border: '1px solid var(--border)' }}
               value={type} onChange={e => setType(e.target.value)}>
               <option value="expense">Expense</option>
               <option value="income">Income</option>
-              <option value="savings">Savings</option>
+              <option value="savings">Savings / Transfer</option>
             </select>
           </div>
           <div>
-            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>Icon Name (Optional)</label>
-            <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
-              value={icon} onChange={e => setIcon(e.target.value)} placeholder="e.g. shopping-cart" />
-            <p style={{ fontSize: '0.65rem', color: 'var(--color-text-secondary)', marginTop: '0.25rem' }}>
-              Used to match lucide-react icons, if available.
+            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:700, textTransform: 'uppercase', letterSpacing: '0.05em', color:'var(--color-text-secondary)', marginBottom:'0.5rem' }}>Icon Identifier (Optional)</label>
+            <input className="input-field" style={{ width:'100%', padding:'0.65rem 0.85rem', fontSize:'0.9rem', borderRadius: 8, border: '1px solid var(--border)' }}
+              value={icon} onChange={e => setIcon(e.target.value)} placeholder="e.g. ti-shopping-cart" />
+            <p style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)', marginTop: '0.4rem', lineHeight: 1.4 }}>
+              Used to match Tabler Icons. If left blank, a default icon will be assigned based on the name.
             </p>
           </div>
           
-          <button type="submit" disabled={loading} className="btn btn-primary" style={{ width:'100%', justifyContent:'center', padding:'0.7rem', marginTop:'0.25rem' }}>
-            {loading ? <><Loader2 size={14} style={{ animation:'spin 1s linear infinite' }}/> Saving…</> : (isEdit ? 'Save Changes' : 'Create Category')}
+          <button type="submit" disabled={loading} className="btn btn-primary" style={{ width:'100%', justifyContent:'center', padding:'0.85rem', marginTop:'0.5rem', borderRadius: 8, fontSize: '0.9rem', fontWeight: 600 }}>
+            {loading ? <><Loader2 size={16} style={{ animation:'spin 1s linear infinite' }}/> Saving…</> : (isEdit ? 'Save Changes' : 'Create Category')}
           </button>
         </form>
       </div>
@@ -109,7 +109,7 @@ export function CategoriesClient({ initialCategories, currency }: { initialCateg
       return;
     }
     
-    if (!confirm(`Delete category '${cat.name}'?`)) return;
+    if (!confirm(`Are you sure you want to permanently delete the category '${cat.name}'?`)) return;
     
     setDeletingId(cat.id);
     setErrorMsg(null);
@@ -123,79 +123,110 @@ export function CategoriesClient({ initialCategories, currency }: { initialCateg
     }
   }
 
-  const renderSection = (title: string, items: Category[], color: string) => (
-    <div style={{ marginBottom: '2rem' }}>
-      <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1rem', color: 'var(--color-text-primary)', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
-        {title} <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', fontWeight: 400 }}>({items.length})</span>
-      </h3>
-      
-      {items.length === 0 ? (
-        <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', fontStyle: 'italic' }}>No categories.</p>
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.75rem' }}>
-          {items.map(cat => (
-            <div key={cat.id} className="card" style={{ padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderLeft: `3px solid ${color}` }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--surface-card-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <i className={`ti ${getCategoryIcon(cat.name)}`} style={{ fontSize: 20, color: 'var(--color-text-secondary)' }}></i>
-                </div>
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--color-text-primary)' }}>{cat.name}</div>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)', marginTop: '0.1rem' }}>
-                    Used in: {cat._count.transactions} tx, {cat._count.budgets} budgets
+  const renderSection = (title: string, items: Category[], type: 'expense' | 'income' | 'savings') => {
+    const isExpense = type === 'expense';
+    const isIncome = type === 'income';
+    const colorVar = isExpense ? 'var(--color-expense)' : isIncome ? 'var(--color-income)' : 'var(--color-brand)';
+    const bgVar = isExpense ? 'var(--color-expense-light)' : isIncome ? 'var(--color-income-light)' : 'var(--color-brand-light)';
+
+    return (
+      <div style={{ marginBottom: '3rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.75rem' }}>
+          <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--color-text-primary)', letterSpacing: '-0.02em', margin: 0 }}>
+            {title}
+          </h3>
+          <span style={{ background: 'var(--surface-sunken)', border: '1px solid var(--border)', padding: '0.15rem 0.6rem', borderRadius: 999, fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-secondary)' }}>
+            {items.length}
+          </span>
+        </div>
+        
+        {items.length === 0 ? (
+          <div style={{ padding: '2rem', textAlign: 'center', background: 'var(--surface-sunken)', borderRadius: 12, border: '1px dashed var(--border)' }}>
+            <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem', margin: 0 }}>No {title.toLowerCase()} configured.</p>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1rem' }}>
+            {items.map(cat => (
+              <div key={cat.id} className="card category-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderRadius: 12, transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)', cursor: 'default' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+                  <div style={{ width: 48, height: 48, borderRadius: 12, background: bgVar, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: `1px solid ${colorVar}40`, boxShadow: `inset 0 2px 4px rgba(255,255,255,0.1)` }}>
+                    <i className={`ti ${getCategoryIcon(cat.name)}`} style={{ fontSize: 24, color: colorVar }}></i>
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--color-text-primary)', letterSpacing: '-0.01em' }}>{cat.name}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginTop: '0.2rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <span style={{ fontWeight: 500 }}>{cat._count.transactions}</span> txns
+                      <span style={{ color: 'var(--border)' }}>•</span>
+                      <span style={{ fontWeight: 500 }}>{cat._count.budgets}</span> budgets
+                    </div>
                   </div>
                 </div>
+                
+                <div className="flex items-center gap-2 category-actions" style={{ opacity: 0.7, transition: 'opacity 0.2s' }}>
+                  <button onClick={() => setEditCat(cat)} 
+                    style={{ background:'var(--surface-sunken)', border:'1px solid var(--border)', cursor:'pointer', color:'var(--color-text-primary)', display:'flex', padding:'0.5rem', borderRadius: 8, transition: 'all 0.2s' }}
+                    className="hover-bg-active"
+                    title="Edit Category"
+                  >
+                    <Edit2 size={16}/>
+                  </button>
+                  <button onClick={() => handleDelete(cat)} disabled={deletingId === cat.id}
+                    style={{ background:'var(--surface-sunken)', border:'1px solid var(--border)', cursor:'pointer', color: (cat._count.transactions > 0 || cat._count.budgets > 0) ? 'var(--color-text-secondary)' : 'var(--color-expense)', display:'flex', padding:'0.5rem', borderRadius: 8, opacity: (cat._count.transactions > 0 || cat._count.budgets > 0) ? 0.4 : 1, transition: 'all 0.2s' }}
+                    className="hover-bg-active"
+                    title={(cat._count.transactions > 0 || cat._count.budgets > 0) ? "Cannot delete category in use" : "Delete Category"}
+                  >
+                    {deletingId === cat.id ? <Loader2 size={16} style={{ animation:'spin 1s linear infinite' }}/> : <Trash2 size={16}/>}
+                  </button>
+                </div>
               </div>
-              
-              <div className="flex items-center gap-1">
-                <button onClick={() => setEditCat(cat)} 
-                  style={{ background:'none', border:'none', cursor:'pointer', color:'var(--color-text-secondary)', display:'flex', padding:'0.4rem', borderRadius: 6 }}
-                  className="hover-bg-active"
-                >
-                  <Edit2 size={14}/>
-                </button>
-                <button onClick={() => handleDelete(cat)} disabled={deletingId === cat.id}
-                  style={{ background:'none', border:'none', cursor:'pointer', color: (cat._count.transactions > 0 || cat._count.budgets > 0) ? 'var(--color-text-secondary)' : 'var(--color-expense)', display:'flex', padding:'0.4rem', borderRadius: 6, opacity: (cat._count.transactions > 0 || cat._count.budgets > 0) ? 0.5 : 1 }}
-                  className="hover-bg-active"
-                  title={(cat._count.transactions > 0 || cat._count.budgets > 0) ? "Cannot delete category in use" : "Delete"}
-                >
-                  {deletingId === cat.id ? <Loader2 size={14} style={{ animation:'spin 1s linear infinite' }}/> : <Trash2 size={14}/>}
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
-    <div className="page-container">
+    <div className="page-container" style={{ maxWidth: 1100 }}>
       {showAdd && <CategoryModal onClose={() => setShowAdd(false)} />}
       {editCat && <CategoryModal category={editCat} onClose={() => setEditCat(null)} />}
       
-      <div className="flex items-center justify-between mb-5 flex-wrap gap-3 animate-in">
-        <div />
-        <button className="btn btn-primary" onClick={() => setShowAdd(true)}><Plus size={13}/> New Category</button>
+      <div className="flex items-center justify-between mb-8 flex-wrap gap-4 animate-in">
+        <div>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--color-text-primary)', letterSpacing: '-0.03em', margin: 0 }}>Categories</h1>
+          <p style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', marginTop: '0.25rem' }}>Manage how your transactions are classified.</p>
+        </div>
+        <button className="btn btn-primary" onClick={() => setShowAdd(true)} style={{ padding: '0.65rem 1.25rem', borderRadius: 8, fontWeight: 700, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+          <Plus size={16}/> New Category
+        </button>
       </div>
 
       {errorMsg && (
-        <div className="animate-in mb-5" style={{ padding: '1rem', background: 'var(--color-expense-light)', color: 'var(--color-expense)', borderRadius: 10, display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
-          <AlertTriangle size={18} style={{ flexShrink: 0, marginTop: '0.1rem' }} />
-          <div style={{ fontSize: '0.85rem', lineHeight: 1.4 }}>{errorMsg}</div>
-          <button onClick={() => setErrorMsg(null)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer' }}><X size={16} /></button>
+        <div className="animate-in mb-6" style={{ padding: '1rem 1.25rem', background: 'var(--color-expense-light)', color: 'var(--color-expense)', borderRadius: 12, border: '1px solid var(--color-expense)', display: 'flex', alignItems: 'flex-start', gap: '0.85rem', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+          <AlertTriangle size={20} style={{ flexShrink: 0, marginTop: '0.1rem' }} />
+          <div style={{ fontSize: '0.9rem', lineHeight: 1.5, fontWeight: 500 }}>{errorMsg}</div>
+          <button onClick={() => setErrorMsg(null)} style={{ marginLeft: 'auto', background: 'var(--color-expense)', border: 'none', color: 'white', cursor: 'pointer', padding: '0.25rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={14} /></button>
         </div>
       )}
 
       <div className="animate-in delay-1">
-        {renderSection('Expenses', expenses, 'var(--color-expense)')}
-        {renderSection('Income', incomes, 'var(--color-income)')}
-        {renderSection('Savings & Transfers', savings, 'var(--color-brand)')}
+        {renderSection('Expenses', expenses, 'expense')}
+        {renderSection('Income', incomes, 'income')}
+        {renderSection('Savings & Transfers', savings, 'savings')}
       </div>
       
       <style dangerouslySetInnerHTML={{__html: `
         .hover-bg-active:hover {
-          background-color: var(--surface-active);
+          background-color: var(--surface-card) !important;
+          box-shadow: var(--shadow-sm);
+        }
+        .category-card:hover {
+          transform: translateY(-2px);
+          box-shadow: var(--shadow-md);
+          border-color: var(--border-strong, var(--border));
+        }
+        .category-card:hover .category-actions {
+          opacity: 1 !important;
         }
       `}} />
     </div>

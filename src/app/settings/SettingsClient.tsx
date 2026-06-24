@@ -610,32 +610,35 @@ export function SettingsClient({
                 </div>
               </div>
 
-              <div style={{ padding:'1.5rem', background:'var(--color-expense)', color: 'white', borderRadius:8, border:'1px solid rgba(0,0,0,0.1)' }}>
-                <div style={{ fontSize:'0.9rem', fontWeight:700, color:'white', marginBottom:'0.35rem' }}>Danger Zone</div>
-                <div style={{ fontSize:'0.75rem', color:'rgba(255,255,255,0.9)', marginBottom:'0.875rem' }}>
+              <div style={{ padding:'1.5rem', background:'var(--color-expense-light)', borderRadius:12, border:'1px solid var(--color-expense)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                  <AlertTriangle size={18} color="var(--color-expense)" />
+                  <div style={{ fontSize:'1rem', fontWeight:800, color:'var(--color-expense)', letterSpacing: '-0.01em' }}>Danger Zone</div>
+                </div>
+                <div style={{ fontSize:'0.85rem', color:'var(--color-text-secondary)', marginBottom:'1.5rem', lineHeight: 1.5 }}>
                   Deleting your data is permanent and cannot be undone. Please export your data first.
                 </div>
                 {deleteConfirm ? (
-                  <div style={{ display:'flex', gap:'0.5rem', alignItems:'center', flexWrap:'wrap' }}>
-                    <span style={{ fontSize:'0.78rem', color:'var(--color-expense)', fontWeight:600 }}>Type "DELETE" to confirm:</span>
+                  <div style={{ display:'flex', gap:'0.75rem', alignItems:'center', flexWrap:'wrap', background: 'var(--surface-card)', padding: '1rem', borderRadius: 8, border: '1px solid var(--border)' }}>
+                    <span style={{ fontSize:'0.85rem', color:'var(--color-text-primary)', fontWeight:600 }}>Type "DELETE" to confirm:</span>
                     <input
                       type="text"
                       value={deleteAllText}
                       onChange={(e) => setDeleteAllText(e.target.value)}
                       placeholder="DELETE"
-                      style={{ width: 80, padding: '0.375rem 0.5rem', borderRadius: 6, border: '1px solid white', background: 'transparent', color: 'white', fontSize: '0.8rem', textAlign: 'center', fontWeight: 700, textTransform: 'uppercase' }}
+                      style={{ width: 100, padding: '0.45rem 0.75rem', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface-sunken)', color: 'var(--color-text-primary)', fontSize: '0.85rem', textAlign: 'center', fontWeight: 700, textTransform: 'uppercase' }}
                     />
                     <button
                       type="button"
                       onClick={handleDeleteAll}
                       disabled={dataState.saving || deleteAllText !== 'DELETE'}
                       className="btn"
-                      style={{ background:'white', color:'var(--color-expense)', display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.78rem', opacity: deleteAllText === 'DELETE' ? 1 : 0.5 }}
+                      style={{ background:'var(--color-expense)', color:'white', display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.85rem', fontWeight: 700, opacity: deleteAllText === 'DELETE' ? 1 : 0.5, padding: '0.5rem 1rem', borderRadius: 6 }}
                     >
-                      {dataState.saving ? <Loader2 size={12} style={{ animation:'spin 1s linear infinite' }}/> : <Trash2 size={12}/>}
+                      {dataState.saving ? <Loader2 size={14} style={{ animation:'spin 1s linear infinite' }}/> : <Trash2 size={14}/>}
                       Yes, Delete Everything
                     </button>
-                    <button type="button" onClick={() => { setDeleteConfirm(false); setDeleteAllText(''); }} className="btn btn-outline" style={{ fontSize:'0.78rem', color: 'white', borderColor: 'white', background: 'transparent' }}>
+                    <button type="button" onClick={() => { setDeleteConfirm(false); setDeleteAllText(''); }} className="btn btn-outline" style={{ fontSize:'0.85rem', padding: '0.5rem 1rem' }}>
                       Cancel
                     </button>
                   </div>
@@ -644,38 +647,38 @@ export function SettingsClient({
                     type="button"
                     onClick={() => setDeleteConfirm(true)}
                     className="btn"
-                    style={{ background:'white', color:'var(--color-expense)', display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.78rem' }}
+                    style={{ background:'var(--color-expense)', color:'white', display:'flex', alignItems:'center', gap:'0.4rem', fontSize:'0.85rem', fontWeight: 700, padding: '0.6rem 1.25rem', borderRadius: 6, border: 'none' }}
                   >
-                    <Trash2 size={12}/> Delete All Data
+                    <Trash2 size={14}/> Delete All Data
                   </button>
                 )}
 
-                <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.2)' }}>
-                  <div style={{ fontSize:'0.9rem', fontWeight:700, color:'white', marginBottom:'0.35rem' }}>Delete Account</div>
-                  <div style={{ fontSize:'0.75rem', color:'rgba(255,255,255,0.9)', marginBottom:'0.875rem' }}>
+                <div style={{ marginTop: '2.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)' }}>
+                  <div style={{ fontSize:'0.9rem', fontWeight:700, color:'var(--color-text-primary)', marginBottom:'0.35rem' }}>Delete Account</div>
+                  <div style={{ fontSize:'0.85rem', color:'var(--color-text-secondary)', marginBottom:'1.25rem', lineHeight: 1.5 }}>
                     Permanently delete your account and all associated data. This action is irreversible.
                   </div>
                   {deleteAcctConfirm ? (
-                    <div style={{ display:'flex', gap:'0.5rem', alignItems:'center', flexWrap:'wrap' }}>
-                      <span style={{ fontSize:'0.78rem', color:'white', fontWeight:600 }}>Type "DELETE" to confirm:</span>
+                    <div style={{ display:'flex', gap:'0.75rem', alignItems:'center', flexWrap:'wrap', background: 'var(--surface-card)', padding: '1rem', borderRadius: 8, border: '1px solid var(--border)' }}>
+                      <span style={{ fontSize:'0.85rem', color:'var(--color-text-primary)', fontWeight:600 }}>Type "DELETE" to confirm:</span>
                       <input
                         type="text"
                         value={deleteAcctText}
                         onChange={(e) => setDeleteAcctText(e.target.value)}
                         placeholder="DELETE"
-                        style={{ width: 80, padding: '0.375rem 0.5rem', borderRadius: 6, border: '1px solid white', background: 'transparent', color: 'white', fontSize: '0.8rem', textAlign: 'center', fontWeight: 700, textTransform: 'uppercase' }}
+                        style={{ width: 100, padding: '0.45rem 0.75rem', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface-sunken)', color: 'var(--color-text-primary)', fontSize: '0.85rem', textAlign: 'center', fontWeight: 700, textTransform: 'uppercase' }}
                       />
                       <button
                         type="button"
                         onClick={handleDeleteAccount}
                         disabled={dataState.saving || deleteAcctText !== 'DELETE'}
                         className="btn"
-                        style={{ background:'white', color:'var(--color-expense)', display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.78rem', opacity: deleteAcctText === 'DELETE' ? 1 : 0.5 }}
+                        style={{ background:'var(--color-expense)', color:'white', display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.85rem', fontWeight: 700, opacity: deleteAcctText === 'DELETE' ? 1 : 0.5, padding: '0.5rem 1rem', borderRadius: 6 }}
                       >
-                        {dataState.saving ? <Loader2 size={12} style={{ animation:'spin 1s linear infinite' }}/> : <Trash2 size={12}/>}
+                        {dataState.saving ? <Loader2 size={14} style={{ animation:'spin 1s linear infinite' }}/> : <Trash2 size={14}/>}
                         Yes, Delete My Account
                       </button>
-                      <button type="button" onClick={() => { setDeleteAcctConfirm(false); setDeleteAcctText(''); }} className="btn btn-outline" style={{ fontSize:'0.78rem', color: 'white', borderColor: 'white', background: 'transparent' }}>
+                      <button type="button" onClick={() => { setDeleteAcctConfirm(false); setDeleteAcctText(''); }} className="btn btn-outline" style={{ fontSize:'0.85rem', padding: '0.5rem 1rem' }}>
                         Cancel
                       </button>
                     </div>
@@ -684,15 +687,15 @@ export function SettingsClient({
                       type="button"
                       onClick={() => setDeleteAcctConfirm(true)}
                       className="btn"
-                      style={{ background:'white', color:'var(--color-expense)', display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.78rem' }}
+                      style={{ background:'transparent', color:'var(--color-expense)', display:'flex', alignItems:'center', gap:'0.4rem', fontSize:'0.85rem', fontWeight: 700, padding: '0.6rem 1.25rem', borderRadius: 6, border: '1px solid var(--color-expense)' }}
                     >
-                      <Trash2 size={12}/> Delete Account
+                      <Trash2 size={14}/> Delete Account
                     </button>
                   )}
                 </div>
 
                 {dataState.error && (
-                  <div style={{ marginTop:'0.5rem', fontSize:'0.78rem', color:'white' }}>{dataState.error}</div>
+                  <div style={{ marginTop:'1rem', fontSize:'0.85rem', color:'var(--color-expense)', fontWeight: 600 }}>{dataState.error}</div>
                 )}
               </div>
             </div>
