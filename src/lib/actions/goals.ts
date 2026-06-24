@@ -4,6 +4,15 @@ import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { requireAuth } from './_auth';
 import type { Goal } from '@prisma/client';
+import { z } from 'zod';
+
+const DeleteSchema = z.object({ id: z.string().cuid() });
+const EditGoalSchema = z.object({
+  name: z.string().optional(),
+  category: z.string().optional(),
+  targetAmountMinor: z.number().int().positive().optional(),
+  deadline: z.string().optional().nullable(),
+});
 
 export async function getGoals() {
   const user = await requireAuth();
@@ -45,29 +54,46 @@ export async function addGoal(raw: {
 
 export async function deleteGoal(id: string) {
   const user = await requireAuth();
-  if (!id) throw new Error('Missing id');
-  await prisma.goal.deleteMany({ where: { id, userId: user.id } });
-  revalidatePath('/goals');
-  revalidatePath('/');
+  try {
+    const parsedId = DeleteSchema.safeParse({ id });
+    if (!parsedId.success) return { error: 'Invalid input' };
+    const validId = parsedId.data.id;
+
+    await prisma.goal.deleteMany({ where: { id: validId, userId: user.id } });
+    revalidatePath('/goals');
+    revalidatePath('/');
+    return { success: true };
+  } catch (error) {
+    console.error('[deleteGoal]', error);
+    return { error: 'An unexpected error occurred. Please try again.' };
+  }
 }
 
-export async function editGoal(id: string, data: {
-  name?: string; category?: string; targetAmountMinor?: number; deadline?: string | null;
-}) {
+export async function editGoal(id: string, rawData: unknown) {
   const user = await requireAuth();
-  if (!id) throw new Error('Missing id');
+  try {
+    const parsedId = DeleteSchema.safeParse({ id });
+    const parsedData = EditGoalSchema.safeParse(rawData);
+    if (!parsedId.success || !parsedData.success) return { error: 'Invalid input' };
+    const validId = parsedId.data.id;
+    const data = parsedData.data;
 
-  const updateData: Record<string, unknown> = { ...data };
-  if (data.deadline !== undefined) {
-    updateData.deadline = data.deadline ? new Date(data.deadline) : null;
+    const updateData: Record<string, unknown> = { ...data };
+    if (data.deadline !== undefined) {
+      updateData.deadline = data.deadline ? new Date(data.deadline) : null;
+    }
+
+    const { count } = await prisma.goal.updateMany({
+      where: { id: validId, userId: user.id },
+      data: updateData,
+    });
+    if (count === 0) return { error: 'Goal not found or ownership failed' };
+    
+    revalidatePath('/goals');
+    revalidatePath('/');
+    return { success: true };
+  } catch (error) {
+    console.error('[editGoal]', error);
+    return { error: 'An unexpected error occurred. Please try again.' };
   }
-
-  const { count } = await prisma.goal.updateMany({
-    where: { id, userId: user.id },
-    data: updateData,
-  });
-  if (count === 0) throw new Error('Goal not found or ownership failed');
-  
-  revalidatePath('/goals');
-  revalidatePath('/');
 }

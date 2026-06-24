@@ -193,7 +193,7 @@ export function GoalsClient({ goals, currency, categories = [] }: { goals: Goal[
               fontFamily:'Space Grotesk,sans-serif',
               fontSize: totalSaved > 9_999_999 ? '1.6rem' : totalSaved > 999_999 ? '1.9rem' : '2.25rem',
               fontWeight:800, letterSpacing:'-0.04em', lineHeight:1,
-              color:'var(--color-income)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
+              color:'var(--hero-income)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
             }}>{fmtAdaptive(totalSaved, currency)}</p>
             <p className="hero-sub">of {fmtAdaptive(totalTarget, currency)} target</p>
             <div className="hero-progress-wrap" style={{ marginTop:'0.75rem', paddingTop:'0.75rem' }}>
@@ -202,24 +202,24 @@ export function GoalsClient({ goals, currency, categories = [] }: { goals: Goal[
                 <span className="hero-progress-val tabular">{overallPct}%</span>
               </div>
               <div className="hero-progress-track">
-                <div className="hero-progress-bar" style={{ width:`${overallPct}%`, backgroundColor:'var(--color-income)' }}/>
+                <div className="hero-progress-bar" style={{ width:`${overallPct}%`, backgroundColor:'var(--hero-income)' }}/>
               </div>
             </div>
           </div>
           <div className="hero-stats-grid">
             <div className="hero-stat-card">
               <p className="hero-label">Goals</p>
-              <p className="hero-stat-value tabular" style={{ color:'var(--color-text-primary)' }}>{goals.length}</p>
+              <p className="hero-stat-value tabular" style={{ color:'white' }}>{goals.length}</p>
               <p className="hero-sub">total</p>
             </div>
             <div className="hero-stat-card">
               <p className="hero-label">Achieved</p>
-              <p className="hero-stat-value tabular" style={{ color: achieved > 0 ? 'var(--color-income)' : 'var(--color-text-primary)' }}>{achieved}</p>
+              <p className="hero-stat-value tabular" style={{ color: achieved > 0 ? 'var(--hero-income)' : 'white' }}>{achieved}</p>
               <p className="hero-sub">complete</p>
             </div>
             <div className="hero-stat-card">
               <p className="hero-label">Almost There</p>
-              <p className="hero-stat-value tabular" style={{ color: almostThere > 0 ? 'var(--warning)' : 'var(--color-text-primary)' }}>{almostThere}</p>
+              <p className="hero-stat-value tabular" style={{ color: almostThere > 0 ? 'var(--hero-warning)' : 'white' }}>{almostThere}</p>
               <p className="hero-sub">70%+ done</p>
             </div>
           </div>

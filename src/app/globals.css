@@ -810,7 +810,7 @@ select, input { font-family: inherit; }
 /* Force white inside the dark hero card regardless of theme */
 .dashboard-hero .balance-text,
 .dashboard-hero h1 {
-  color: white !important;
+  color: white;
 }
 
 /* LedgerAmount */
@@ -973,6 +973,10 @@ select, input { font-family: inherit; }
 
 /* Dashboard Hero — Phase 4: gradient hero with teal-to-deep-teal */
 .dashboard-hero {
+  --hero-text-muted: rgba(255,255,255,0.7);
+  --hero-income: hsl(152, 65%, 65%);
+  --hero-expense: hsl(0, 80%, 75%);
+  --hero-warning: hsl(38, 90%, 70%);
   border-radius: 1.25rem;
   border: 1px solid transparent;
   background: linear-gradient(135deg, hsl(192, 72%, 21%) 0%, hsl(192, 72%, 13%) 100%);
@@ -1042,7 +1046,7 @@ select, input { font-family: inherit; }
   color: white;
 }
 .hero-label-white { color: rgba(255,255,255,0.6); font-size: var(--font-caption); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
-.hero-balance-text { color: white !important; }
+.hero-balance-text { color: white; }
 .hero-progress-wrap {
   margin-top: 1.25rem;
   padding-top: 1.25rem;
@@ -1345,6 +1349,10 @@ select, input { font-family: inherit; }
 
 /* Net Worth Hero — always dark background, always white text */
 .dashboard-hero {
+  --hero-text-muted: rgba(255,255,255,0.7);
+  --hero-income: hsl(152, 65%, 65%);
+  --hero-expense: hsl(0, 80%, 75%);
+  --hero-warning: hsl(38, 90%, 70%);
   border-radius: 1.25rem;
   border: 1px solid transparent;
   background: linear-gradient(135deg, hsl(192, 72%, 21%) 0%, hsl(192, 72%, 13%) 100%);
@@ -1438,29 +1446,29 @@ select, input { font-family: inherit; }
   margin: 0;
 }
 /* Ensure elements sitting directly on the dark hero background are white/translucent white */
-.dashboard-hero-grid > div > .hero-label,
-.dashboard-hero > .hero-content > .hero-eyebrow,
-.dashboard-hero > .hero-content > .hero-rate-sub,
-.dashboard-hero > .hero-content > .hero-net-worth-sub {
-  color: rgba(255, 255, 255, 0.7) !important;
+.dashboard-hero-grid .hero-label,
+.dashboard-hero .hero-eyebrow,
+.dashboard-hero .hero-rate-sub,
+.dashboard-hero .hero-net-worth-sub {
+  color: var(--hero-text-muted);
 }
 
-.dashboard-hero-grid > div > p,
-.dashboard-hero-grid > div > div,
-.dashboard-hero-grid > div > h1,
-.dashboard-hero-grid > div > h2,
+.dashboard-hero-grid p,
+.dashboard-hero-grid div,
+.dashboard-hero-grid h1,
+.dashboard-hero-grid h2,
 .dashboard-hero .balance-text,
-.dashboard-hero > .hero-content > .hero-net-worth {
-  color: white !important;
+.dashboard-hero .hero-net-worth {
+  color: white;
 }
 
-/* Stat cards sit on top of the hero and have their own light/dark background */
+/* Stat cards sit on top of the hero and have translucent dark backgrounds */
 .hero-stat-card .hero-label,
 .hero-stat-card .hero-sub {
-  color: var(--color-text-secondary);
+  color: var(--hero-text-muted);
 }
 .hero-stat-card .hero-stat-value {
-  color: var(--color-text-primary);
+  color: white;
 }
 
 /* Year-End Forecast card */

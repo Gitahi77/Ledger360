@@ -123,7 +123,7 @@ export function BudgetsClient({ budgets, categories, totalBudgeted, totalSpent, 
   const overBudget = budgets.filter(b => b.spent >= b.limit).length;
   const onTrack    = budgets.filter(b => b.limit > 0 && (b.spent / b.limit) < 0.8).length;
   const overallPct = totalBudgeted > 0 ? Math.min(100, Math.round((totalSpent / totalBudgeted) * 100)) : 0;
-  const overallStatus = overallPct >= 100 ? { color:'var(--color-expense)', bar:'var(--color-expense)' } : overallPct >= 80 ? { color:'var(--warning)', bar:'var(--warning)' } : { color:'var(--color-income)', bar:'var(--color-income)' };
+  const overallStatus = overallPct >= 100 ? { color:'var(--hero-expense)', bar:'var(--hero-expense)' } : overallPct >= 80 ? { color:'var(--hero-warning)', bar:'var(--hero-warning)' } : { color:'var(--hero-income)', bar:'var(--hero-income)' };
 
   async function handleDelete(id: string) {
     if (!confirm('Delete this budget?')) return;
@@ -168,7 +168,7 @@ export function BudgetsClient({ budgets, categories, totalBudgeted, totalSpent, 
               fontFamily:'Space Grotesk,sans-serif',
               fontSize: totalBudgeted > 9_999_999 ? '1.6rem' : totalBudgeted > 999_999 ? '1.9rem' : '2.25rem',
               fontWeight:800, letterSpacing:'-0.04em', lineHeight:1,
-              color:'var(--color-text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
+              color:'white', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
             }}>{fmtAdaptive(totalBudgeted, currency)}</p>
             <p className="hero-sub">{fmtAdaptive(totalSpent, currency)} spent · {overallPct}% used</p>
             {/* Overall progress bar */}
@@ -185,17 +185,17 @@ export function BudgetsClient({ budgets, categories, totalBudgeted, totalSpent, 
           <div className="hero-stats-grid">
             <div className="hero-stat-card">
               <p className="hero-label">Budgets</p>
-              <p className="hero-stat-value tabular" style={{ color:'var(--color-text-primary)' }}>{budgets.length}</p>
+              <p className="hero-stat-value tabular" style={{ color:'white' }}>{budgets.length}</p>
               <p className="hero-sub">total</p>
             </div>
             <div className="hero-stat-card">
               <p className="hero-label">On Track</p>
-              <p className="hero-stat-value tabular" style={{ color:'var(--color-income)' }}>{onTrack}</p>
+              <p className="hero-stat-value tabular" style={{ color:'var(--hero-income)' }}>{onTrack}</p>
               <p className="hero-sub">under 80%</p>
             </div>
             <div className="hero-stat-card">
               <p className="hero-label">Over Budget</p>
-              <p className="hero-stat-value tabular" style={{ color: overBudget > 0 ? 'var(--color-expense)' : 'var(--color-text-primary)' }}>{overBudget}</p>
+              <p className="hero-stat-value tabular" style={{ color: overBudget > 0 ? 'var(--hero-expense)' : 'white' }}>{overBudget}</p>
               <p className="hero-sub">{overBudget > 0 ? 'needs action' : 'all clear'}</p>
             </div>
           </div>

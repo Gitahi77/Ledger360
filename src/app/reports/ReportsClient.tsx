@@ -116,7 +116,7 @@ export function ReportsClient({
               fontFamily:'Space Grotesk,sans-serif',
               fontSize: Math.abs(summary.netCashFlow) > 9_999_999 ? '1.6rem' : Math.abs(summary.netCashFlow) > 999_999 ? '1.9rem' : '2.25rem',
               fontWeight:800, letterSpacing:'-0.04em', lineHeight:1,
-              color: summary.netCashFlow >= 0 ? 'var(--color-income)' : 'var(--color-expense)',
+              color: summary.netCashFlow >= 0 ? 'var(--hero-income)' : 'var(--hero-expense)',
               whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
             }}>
               {summary.netCashFlow >= 0 ? '+' : '−'}{fmtAdaptive(Math.abs(summary.netCashFlow), currency)}
@@ -124,7 +124,7 @@ export function ReportsClient({
             <p className="hero-sub" style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
               Saving rate: {summary.savingRate}% of income
               <span style={{ 
-                color: summary.previous.netCashFlowChange > 0 ? 'var(--color-income)' : summary.previous.netCashFlowChange < 0 ? 'var(--color-expense)' : 'var(--color-text-secondary)',
+                color: summary.previous.netCashFlowChange > 0 ? 'var(--hero-income)' : summary.previous.netCashFlowChange < 0 ? 'var(--hero-expense)' : 'var(--hero-text-muted)',
                 fontSize: '0.68rem',
                 fontWeight: 600
               }}>
@@ -135,29 +135,29 @@ export function ReportsClient({
           <div className="hero-stats-grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '1rem' }}>
             <div className="hero-stat-card">
               <p className="hero-label">{periodLabel} Income</p>
-              <p className="hero-stat-value tabular" style={{ color:'var(--color-income)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>+{fmtAdaptive(summary.income, currency)}</p>
-              <p className="hero-sub" style={{ color: summary.previous.incomeChange > 0 ? 'var(--color-income)' : summary.previous.incomeChange < 0 ? 'var(--color-expense)' : 'var(--color-text-secondary)' }}>
+              <p className="hero-stat-value tabular" style={{ color:'var(--hero-income)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>+{fmtAdaptive(summary.income, currency)}</p>
+              <p className="hero-sub" style={{ color: summary.previous.incomeChange > 0 ? 'var(--hero-income)' : summary.previous.incomeChange < 0 ? 'var(--hero-expense)' : 'var(--hero-text-muted)' }}>
                 {summary.previous.incomeChange > 0 ? '↑' : summary.previous.incomeChange < 0 ? '↓' : ''}{Math.abs(summary.previous.incomeChange)}% vs {prevLabel}
               </p>
             </div>
             <div className="hero-stat-card">
               <p className="hero-label">{periodLabel} Spending</p>
-              <p className="hero-stat-value tabular" style={{ color:'var(--color-expense)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>−{fmtAdaptive(summary.expenses, currency)}</p>
-              <p className="hero-sub" style={{ color: summary.previous.expensesChange < 0 ? 'var(--color-income)' : summary.previous.expensesChange > 0 ? 'var(--color-expense)' : 'var(--color-text-secondary)' }}>
+              <p className="hero-stat-value tabular" style={{ color:'var(--hero-expense)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>−{fmtAdaptive(summary.expenses, currency)}</p>
+              <p className="hero-sub" style={{ color: summary.previous.expensesChange < 0 ? 'var(--hero-income)' : summary.previous.expensesChange > 0 ? 'var(--hero-expense)' : 'var(--hero-text-muted)' }}>
                 {summary.previous.expensesChange > 0 ? '↑' : summary.previous.expensesChange < 0 ? '↓' : ''}{Math.abs(summary.previous.expensesChange)}% vs {prevLabel}
               </p>
             </div>
             <div className="hero-stat-card">
               <p className="hero-label">{periodLabel} Savings</p>
               <p className="hero-stat-value tabular" style={{ color:'var(--brand)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{fmtAdaptive(summary.savings, currency)}</p>
-              <p className="hero-sub" style={{ color: summary.previous.savingsChange > 0 ? 'var(--brand)' : summary.previous.savingsChange < 0 ? 'var(--color-expense)' : 'var(--color-text-secondary)' }}>
+              <p className="hero-sub" style={{ color: summary.previous.savingsChange > 0 ? 'var(--brand)' : summary.previous.savingsChange < 0 ? 'var(--hero-expense)' : 'var(--hero-text-muted)' }}>
                 {summary.previous.savingsChange > 0 ? '↑' : summary.previous.savingsChange < 0 ? '↓' : ''}{Math.abs(summary.previous.savingsChange)}% vs {prevLabel}
               </p>
             </div>
             <div className="hero-stat-card">
               <p className="hero-label">{periodLabel} Debt Repayment</p>
               <p className="hero-stat-value tabular" style={{ color:'rgb(139, 92, 246)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{fmtAdaptive(summary.debtRepayment, currency)}</p>
-              <p className="hero-sub" style={{ color: summary.previous.debtRepaymentChange > 0 ? 'rgb(139, 92, 246)' : summary.previous.debtRepaymentChange < 0 ? 'var(--color-income)' : 'var(--color-text-secondary)' }}>
+              <p className="hero-sub" style={{ color: summary.previous.debtRepaymentChange > 0 ? 'rgb(139, 92, 246)' : summary.previous.debtRepaymentChange < 0 ? 'var(--hero-income)' : 'var(--hero-text-muted)' }}>
                 {summary.previous.debtRepaymentChange > 0 ? '↑' : summary.previous.debtRepaymentChange < 0 ? '↓' : ''}{Math.abs(summary.previous.debtRepaymentChange)}% vs {prevLabel}
               </p>
             </div>

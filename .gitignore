@@ -44,3 +44,8 @@ next-env.d.ts
 
 # mingit binaries (not part of the app — purge history with git filter-repo)
 mingit/
+ 
+# Development artefacts
+tsc_output.txt
+tsc_errors.txt
+*.log

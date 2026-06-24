@@ -8,6 +8,15 @@ import { z } from 'zod';
 
 const PeriodSchema = z.enum(['this-week', 'this-month', 'this-year', 'all']);
 
+const DeleteSchema = z.object({ id: z.string().cuid() });
+const EditBudgetSchema = z.object({
+  name: z.string().optional(),
+  limitAmountMinor: z.number().int().positive().optional(),
+  period: z.enum(['weekly', 'monthly', 'yearly']).optional(),
+  categoryId: z.string().cuid().optional(),
+  rollover: z.boolean().optional(),
+});
+
 export async function getBudgetsWithSpend(inputPeriod: unknown = 'this-month') {
   const GetBudgetsSchema = z.object({
     period: PeriodSchema.default('this-month'),
@@ -120,24 +129,44 @@ export async function addBudget(raw: {
 
 export async function deleteBudget(id: string) {
   const user = await requireAuth();
-  if (!id) throw new Error('Missing id');
-  await prisma.budget.deleteMany({ where: { id, userId: user.id } });
-  revalidatePath('/budgets');
-  revalidatePath('/');
+  try {
+    const parsedId = DeleteSchema.safeParse({ id });
+    if (!parsedId.success) return { error: 'Invalid input' };
+    const validId = parsedId.data.id;
+
+    await prisma.budget.deleteMany({ where: { id: validId, userId: user.id } });
+    revalidatePath('/budgets');
+    revalidatePath('/');
+    return { success: true };
+  } catch (error) {
+    console.error('[deleteBudget]', error);
+    return { error: 'An unexpected error occurred. Please try again.' };
+  }
 }
 
-export async function editBudget(id: string, data: { name?: string; limitAmountMinor?: number; period?: 'monthly' | 'yearly'; categoryId?: string; rollover?: boolean }) {
+export async function editBudget(id: string, rawData: unknown) {
   const user = await requireAuth();
-  if (!id) throw new Error('Missing id');
-  if (data.categoryId) {
-    const cat = await prisma.category.findFirst({ where: { id: data.categoryId, userId: user.id } });
-    if (!cat) throw new Error('Invalid category');
+  try {
+    const parsedId = DeleteSchema.safeParse({ id });
+    const parsedData = EditBudgetSchema.safeParse(rawData);
+    if (!parsedId.success || !parsedData.success) return { error: 'Invalid input' };
+    const validId = parsedId.data.id;
+    const data = parsedData.data;
+
+    if (data.categoryId) {
+      const cat = await prisma.category.findFirst({ where: { id: data.categoryId, userId: user.id } });
+      if (!cat) return { error: 'Invalid category' };
+    }
+    const { count } = await prisma.budget.updateMany({
+      where: { id: validId, userId: user.id },
+      data: { ...data, limitAmountMinor: data.limitAmountMinor, rollover: data.rollover },
+    });
+    if (count === 0) return { error: 'Budget not found or ownership failed' };
+    revalidatePath('/budgets');
+    revalidatePath('/');
+    return { success: true };
+  } catch (error) {
+    console.error('[editBudget]', error);
+    return { error: 'An unexpected error occurred. Please try again.' };
   }
-  const { count } = await prisma.budget.updateMany({
-    where: { id, userId: user.id },
-    data: { ...data, limitAmountMinor: data.limitAmountMinor, rollover: data.rollover },
-  });
-  if (count === 0) throw new Error('Budget not found or ownership failed');
-  revalidatePath('/budgets');
-  revalidatePath('/');
 }

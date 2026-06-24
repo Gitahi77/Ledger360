@@ -14,6 +14,10 @@ const AccountSchema = z.object({
   archived: z.boolean().optional(),
 });
 
+const DeleteSchema = z.object({
+  id: z.string().cuid(),
+});
+
 export type AccountWithBalance = Account & { balanceMinor: number };
 
 function invalidateAccountPaths() {
@@ -113,67 +117,86 @@ export async function createAccount(data: z.infer<typeof AccountSchema>) {
   return result;
 }
 
-export async function updateAccount(id: string, data: Partial<z.infer<typeof AccountSchema>>) {
+export async function updateAccount(id: string, rawData: unknown) {
   const user = await requireAuth();
+  try {
+    const parsedId = DeleteSchema.safeParse({ id });
+    if (!parsedId.success) return { error: 'Invalid input' };
+    const validId = parsedId.data.id;
 
-  const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-    const { count } = await tx.account.updateMany({
-      where: { id, userId: user.id },
-      data,
+    // We can use partial parsing since it's an update
+    const parsedData = AccountSchema.partial().safeParse(rawData);
+    if (!parsedData.success) return { error: 'Invalid input' };
+    const data = parsedData.data;
+
+    const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const { count } = await tx.account.updateMany({
+        where: { id: validId, userId: user.id },
+        data,
+      });
+      
+      if (count === 0) throw new Error('Account not found or unauthorized');
+
+      const updated = await tx.account.findUnique({ where: { id: validId } });
+
+      await tx.auditLog.create({
+        data: {
+          userId: user.id,
+          action: 'UPDATE_ACCOUNT',
+          resource: 'Account',
+          metadata: JSON.stringify({ accountId: validId, updates: data }),
+        },
+      });
+
+      return updated;
     });
-    
-    if (count === 0) throw new Error('Account not found or unauthorized');
 
-    const updated = await tx.account.findUnique({ where: { id } });
-
-    await tx.auditLog.create({
-      data: {
-        userId: user.id,
-        action: 'UPDATE_ACCOUNT',
-        resource: 'Account',
-        metadata: JSON.stringify({ accountId: id, updates: data }),
-      },
-    });
-
-    return updated;
-  });
-
-  invalidateAccountPaths();
-  return result;
+    invalidateAccountPaths();
+    return { success: true, account: result };
+  } catch (error) {
+    console.error('[updateAccount]', error);
+    return { error: 'An unexpected error occurred. Please try again.' };
+  }
 }
 
 export async function deleteAccount(id: string) {
   const user = await requireAuth();
+  try {
+    const parsedId = DeleteSchema.safeParse({ id });
+    if (!parsedId.success) return { error: 'Invalid input' };
+    const validId = parsedId.data.id;
 
-  // Block deletion if transactions or transfers exist
-  const [txCount, transferFromCount, transferToCount] = await Promise.all([
-    prisma.transaction.count({ where: { accountId: id, userId: user.id } }),
-    prisma.transfer.count({ where: { fromAccountId: id, userId: user.id } }),
-    prisma.transfer.count({ where: { toAccountId: id, userId: user.id } })
-  ]);
-  if (txCount > 0 || transferFromCount > 0 || transferToCount > 0) {
-    throw new Error('Cannot delete account with existing transactions or transfers. Please reassign them first.');
+    // Block deletion if transactions or transfers exist
+    const [txCount, transferFromCount, transferToCount] = await Promise.all([
+      prisma.transaction.count({ where: { accountId: validId, userId: user.id } }),
+      prisma.transfer.count({ where: { fromAccountId: validId, userId: user.id } }),
+      prisma.transfer.count({ where: { toAccountId: validId, userId: user.id } })
+    ]);
+    if (txCount > 0 || transferFromCount > 0 || transferToCount > 0) {
+      return { error: 'Cannot delete account with existing transactions or transfers. Please reassign them first.' };
+    }
+
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const { count } = await tx.account.deleteMany({
+        where: { id: validId, userId: user.id }
+      });
+
+      if (count === 0) throw new Error('Account not found or unauthorized');
+
+      await tx.auditLog.create({
+        data: {
+          userId: user.id,
+          action: 'DELETE_ACCOUNT',
+          resource: 'Account',
+          metadata: JSON.stringify({ accountId: validId }),
+        },
+      });
+    });
+
+    invalidateAccountPaths();
+    return { success: true };
+  } catch (error) {
+    console.error('[deleteAccount]', error);
+    return { error: 'An unexpected error occurred. Please try again.' };
   }
-
-  const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-    const { count } = await tx.account.deleteMany({
-      where: { id, userId: user.id }
-    });
-
-    if (count === 0) throw new Error('Account not found or unauthorized');
-
-    await tx.auditLog.create({
-      data: {
-        userId: user.id,
-        action: 'DELETE_ACCOUNT',
-        resource: 'Account',
-        metadata: JSON.stringify({ accountId: id }),
-      },
-    });
-    
-    return true;
-  });
-
-  invalidateAccountPaths();
-  return result;
 }
