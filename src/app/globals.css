@@ -973,6 +973,10 @@ select, input { font-family: inherit; }
 
 /* Dashboard Hero — Phase 4: gradient hero with teal-to-deep-teal */
 .dashboard-hero {
+  --hero-text-muted: rgba(255,255,255,0.7);
+  --hero-income: hsl(152, 65%, 65%);
+  --hero-expense: hsl(0, 80%, 75%);
+  --hero-warning: hsl(38, 90%, 70%);
   border-radius: 1.25rem;
   border: 1px solid transparent;
   background: linear-gradient(135deg, hsl(192, 72%, 21%) 0%, hsl(192, 72%, 13%) 100%);
@@ -1345,6 +1349,10 @@ select, input { font-family: inherit; }
 
 /* Net Worth Hero — always dark background, always white text */
 .dashboard-hero {
+  --hero-text-muted: rgba(255,255,255,0.7);
+  --hero-income: hsl(152, 65%, 65%);
+  --hero-expense: hsl(0, 80%, 75%);
+  --hero-warning: hsl(38, 90%, 70%);
   border-radius: 1.25rem;
   border: 1px solid transparent;
   background: linear-gradient(135deg, hsl(192, 72%, 21%) 0%, hsl(192, 72%, 13%) 100%);

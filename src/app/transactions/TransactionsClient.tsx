@@ -372,7 +372,7 @@ export function TransactionsClient({
               fontFamily:'Space Grotesk,sans-serif',
               fontSize: Math.abs(net) > 9_999_999 ? '1.6rem' : Math.abs(net) > 999_999 ? '1.9rem' : '2.25rem',
               fontWeight:800, letterSpacing:'-0.04em', lineHeight:1,
-              color: netPositive ? 'var(--color-income)' : 'var(--color-expense)',
+              color: netPositive ? 'var(--hero-income)' : 'var(--hero-expense)',
               whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
             }}>
                 {netPositive ? '+' : '-'}{fmtAdaptive(Math.abs(net), currency)}
@@ -384,17 +384,17 @@ export function TransactionsClient({
           <div className="hero-stats-grid">
             <div className="hero-stat-card">
               <p className="hero-label">{periodLabel} Income</p>
-              <p className="hero-stat-value tabular" style={{ color:'var(--color-income)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{fmtAdaptive(totalIncome, currency)}</p>
+              <p className="hero-stat-value tabular" style={{ color:'var(--hero-income)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{fmtAdaptive(totalIncome, currency)}</p>
               <p className="hero-sub">{totalIncome > 0 ? '+ Coming in' : 'No income yet'}</p>
             </div>
             <div className="hero-stat-card">
               <p className="hero-label">{PERIOD_LABELS[period] || 'All Time'} Money Out</p>
-              <p className="hero-stat-value tabular" style={{ color:'var(--color-expense)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{fmtAdaptive(moneyOut, currency)}</p>
+              <p className="hero-stat-value tabular" style={{ color:'var(--hero-expense)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{fmtAdaptive(moneyOut, currency)}</p>
               <p className="hero-sub">- Going out</p>
             </div>
             <div className="hero-stat-card">
               <p className="hero-label">Transactions</p>
-              <p className="hero-stat-value tabular" style={{ color:'var(--color-text-primary)' }}>{transactions.length}</p>
+              <p className="hero-stat-value tabular" style={{ color:'white' }}>{transactions.length}</p>
               <p className="hero-sub">in period</p>
             </div>
           </div>

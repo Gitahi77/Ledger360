@@ -344,7 +344,7 @@ export function LoansClient({ loans, currency, categories = [], accounts = [] }:
               fontFamily:'Space Grotesk,sans-serif',
               fontSize: totalDebtMinor > 9_999_99900 ? '1.6rem' : totalDebtMinor > 999_99900 ? '1.9rem' : '2.25rem',
               fontWeight:800, letterSpacing:'-0.04em', lineHeight:1,
-              color:'var(--color-expense)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
+              color:'var(--hero-expense)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
             }}>{formatKES(totalDebtMinor)}</p>
             <p className="hero-sub">of {formatKES(totalOriginalMinor)} original · {paidPct}% paid</p>
             <div className="hero-progress-wrap" style={{ marginTop:'0.75rem', paddingTop:'0.75rem' }}>
@@ -352,25 +352,24 @@ export function LoansClient({ loans, currency, categories = [], accounts = [] }:
                 <span className="hero-progress-label">Repayment progress</span>
                 <span className="hero-progress-val tabular">{paidPct}% paid off</span>
               </div>
-              <div className="hero-progress-track">
-                <div className="hero-progress-bar" style={{ width:`${paidPct}%`, backgroundColor:'var(--color-income)' }}/>
+                <div className="hero-progress-bar" style={{ width:`${paidPct}%`, backgroundColor:'var(--hero-income)' }}/>
               </div>
             </div>
           </div>
           <div className="hero-stats-grid">
             <div className="hero-stat-card">
               <p className="hero-label">Loans</p>
-              <p className="hero-stat-value tabular" style={{ color:'var(--color-text-primary)' }}>{loans.length}</p>
+              <p className="hero-stat-value tabular" style={{ color:'white' }}>{loans.length}</p>
               <p className="hero-sub">total</p>
             </div>
             <div className="hero-stat-card">
               <p className="hero-label">Monthly Pmts</p>
-              <p className="hero-stat-value tabular" style={{ color:'var(--color-text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{formatKES(totalMonthlyMinor)}</p>
+              <p className="hero-stat-value tabular" style={{ color:'white', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{formatKES(totalMonthlyMinor)}</p>
               <p className="hero-sub">per month</p>
             </div>
             <div className="hero-stat-card">
               <p className="hero-label">Overdue</p>
-              <p className="hero-stat-value tabular" style={{ color: overdue > 0 ? 'var(--color-expense)' : 'var(--color-income)' }}>{overdue}</p>
+              <p className="hero-stat-value tabular" style={{ color: overdue > 0 ? 'var(--hero-expense)' : 'var(--hero-income)' }}>{overdue}</p>
               <p className="hero-sub">{overdue > 0 ? '⚠ needs attention' : '✓ all current'}</p>
             </div>
           </div>
