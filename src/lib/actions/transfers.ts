@@ -4,6 +4,9 @@ import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/actions/_auth';
 import { revalidatePath } from 'next/cache';
 import { logActivity } from '@/lib/audit';
+import { z } from 'zod';
+
+const DeleteSchema = z.object({ id: z.string().cuid() });
 
 /* ── Fetch ────────────────────────────────────────────────── */
 export async function getTransfers(period?: 'this-month' | 'last-30-days' | 'all-time') {
@@ -138,144 +141,161 @@ export async function createTransfer(raw: {
   revalidatePath('/');
 }
 
-export async function editTransfer(id: string, raw: {
-  fromAccountId: string;
-  toAccountId?: string | null;
-  amountMinor: number;
-  date: string;
-  note?: string;
-  goalId?: string | null;
-  loanId?: string | null;
-  interestMinor?: number;
-}) {
-  const { AddTransferSchema } = await import('@/lib/validation');
-  const data = AddTransferSchema.parse(raw);
+export async function editTransfer(id: string, rawData: unknown) {
   const user = await requireAuth();
-  const { toMajor } = await import('@/lib/money');
+  try {
+    const parsedId = DeleteSchema.safeParse({ id });
+    if (!parsedId.success) return { error: 'Invalid input' };
+    const validId = parsedId.data.id;
 
-  const [oldTransfer, fromAccount, toAccount, goal] = await Promise.all([
-    prisma.transfer.findFirst({ where: { id, userId: user.id } }),
-    prisma.account.findFirst({ where: { id: data.fromAccountId, userId: user.id } }),
-    data.toAccountId ? prisma.account.findFirst({ where: { id: data.toAccountId, userId: user.id } }) : Promise.resolve(null),
-    data.goalId ? prisma.goal.findFirst({ where: { id: data.goalId, userId: user.id } }) : Promise.resolve(null)
-  ]);
+    const { AddTransferSchema } = await import('@/lib/validation');
+    const parsedData = AddTransferSchema.safeParse(rawData);
+    if (!parsedData.success) return { error: 'Invalid input' };
+    const data = parsedData.data;
 
-  if (!oldTransfer) throw new Error('Transfer not found');
-  if (!fromAccount) throw new Error('Please choose a valid From Account.');
+    const { toMajor } = await import('@/lib/money');
 
-  if (data.toAccountId) {
-    if (!toAccount) throw new Error('Please choose a valid To Account.');
-    if (fromAccount.currency !== toAccount.currency) {
-      throw new Error('Multi-currency transfers are not yet supported. Both accounts must have the same currency.');
-    }
-  }
+    const [oldTransfer, fromAccount, toAccount, goal] = await Promise.all([
+      prisma.transfer.findFirst({ where: { id: validId, userId: user.id } }),
+      prisma.account.findFirst({ where: { id: data.fromAccountId, userId: user.id } }),
+      data.toAccountId ? prisma.account.findFirst({ where: { id: data.toAccountId, userId: user.id } }) : Promise.resolve(null),
+      data.goalId ? prisma.goal.findFirst({ where: { id: data.goalId, userId: user.id } }) : Promise.resolve(null)
+    ]);
 
-  if (data.goalId && !goal) {
-    throw new Error('Please choose a valid goal.');
-  }
+    if (!oldTransfer) return { error: 'Transfer not found' };
+    if (!fromAccount) return { error: 'Please choose a valid From Account.' };
 
-  if (data.loanId) {
-    const { getLoansForUser } = await import('@/lib/actions/loans');
-    const loans = await getLoansForUser(user.id);
-    const loan = loans.find(l => l.id === data.loanId);
-    if (!loan) throw new Error('Please choose a valid loan.');
-    
-    // Headroom = outstanding + oldRepaymentAmount (if editing the SAME loan repayment)
-    const isSameLoan = oldTransfer.loanId === data.loanId;
-    
-    let finalInterestMinor = 0;
-    const autoInterest = Math.round((loan.balanceMinor * loan.annualRate) / 1200);
-    finalInterestMinor = data.interestMinor ?? autoInterest;
-    if (finalInterestMinor < 0) finalInterestMinor = 0;
-
-    const principal = data.amountMinor - finalInterestMinor;
-    const oldRepaymentPrincipal = isSameLoan ? (oldTransfer.baseAmountMinor - oldTransfer.interestMinor) : 0;
-    const headroom = loan.balanceMinor + oldRepaymentPrincipal;
-
-    if (principal > headroom) {
-      throw new Error(`You can't pay more than you owe. This loan's remaining balance is  ${toMajor(headroom)}.`);
-    }
-  }
-
-  if (fromAccount.type !== 'CREDIT_CARD') {
-    const { getAccountBalances } = await import('@/lib/actions/accounts');
-    const balances = await getAccountBalances(user.id);
-    const acc = balances.find(a => a.id === fromAccount.id);
-    if (acc) {
-      // Effective Balance = currentBalance + oldAmount (if editing from the SAME account)
-      const isSameAccount = oldTransfer.fromAccountId === data.fromAccountId;
-      const oldAmount = isSameAccount ? oldTransfer.amountMinor : 0;
-      const effectiveBalance = acc.balanceMinor + oldAmount;
-      
-      if (effectiveBalance - data.amountMinor < 0) {
-        throw new Error(`Not enough money in ${fromAccount.name}. Available: ${fromAccount.currency} ${toMajor(effectiveBalance)}.`);
+    if (data.toAccountId) {
+      if (!toAccount) return { error: 'Please choose a valid To Account.' };
+      if (fromAccount.currency !== toAccount.currency) {
+        return { error: 'Multi-currency transfers are not yet supported. Both accounts must have the same currency.' };
       }
     }
-  }
-  let finalInterestMinor = 0;
-  if (data.loanId) {
-    const { getLoansForUser } = await import('@/lib/actions/loans');
-    const loans = await getLoansForUser(user.id);
-    const loan = loans.find(l => l.id === data.loanId);
-    if (loan) {
+
+    if (data.goalId && !goal) {
+      return { error: 'Please choose a valid goal.' };
+    }
+
+    if (data.loanId) {
+      const { getLoansForUser } = await import('@/lib/actions/loans');
+      const loans = await getLoansForUser(user.id);
+      const loan = loans.find(l => l.id === data.loanId);
+      if (!loan) return { error: 'Please choose a valid loan.' };
+      
+      // Headroom = outstanding + oldRepaymentAmount (if editing the SAME loan repayment)
+      const isSameLoan = oldTransfer.loanId === data.loanId;
+      
+      let finalInterestMinor = 0;
       const autoInterest = Math.round((loan.balanceMinor * loan.annualRate) / 1200);
       finalInterestMinor = data.interestMinor ?? autoInterest;
       if (finalInterestMinor < 0) finalInterestMinor = 0;
+
+      const principal = data.amountMinor - finalInterestMinor;
+      const oldRepaymentPrincipal = isSameLoan ? (oldTransfer.baseAmountMinor - oldTransfer.interestMinor) : 0;
+      const headroom = loan.balanceMinor + oldRepaymentPrincipal;
+
+      if (principal > headroom) {
+        return { error: `You can't pay more than you owe. This loan's remaining balance is  ${toMajor(headroom)}.` };
+      }
     }
+
+    if (fromAccount.type !== 'CREDIT_CARD') {
+      const { getAccountBalances } = await import('@/lib/actions/accounts');
+      const balances = await getAccountBalances(user.id);
+      const acc = balances.find(a => a.id === fromAccount.id);
+      if (acc) {
+        // Effective Balance = currentBalance + oldAmount (if editing from the SAME account)
+        const isSameAccount = oldTransfer.fromAccountId === data.fromAccountId;
+        const oldAmount = isSameAccount ? oldTransfer.amountMinor : 0;
+        const effectiveBalance = acc.balanceMinor + oldAmount;
+        
+        if (effectiveBalance - data.amountMinor < 0) {
+          return { error: `Not enough money in ${fromAccount.name}. Available: ${fromAccount.currency} ${toMajor(effectiveBalance)}.` };
+        }
+      }
+    }
+    let finalInterestMinor = 0;
+    if (data.loanId) {
+      const { getLoansForUser } = await import('@/lib/actions/loans');
+      const loans = await getLoansForUser(user.id);
+      const loan = loans.find(l => l.id === data.loanId);
+      if (loan) {
+        const autoInterest = Math.round((loan.balanceMinor * loan.annualRate) / 1200);
+        finalInterestMinor = data.interestMinor ?? autoInterest;
+        if (finalInterestMinor < 0) finalInterestMinor = 0;
+      }
+    }
+
+    await prisma.$transaction(async (tx) => {
+      const { count } = await tx.transfer.updateMany({
+        where: { id: validId, userId: user.id },
+        data: {
+          fromAccountId: data.fromAccountId,
+          toAccountId: data.toAccountId || null,
+          amountMinor: data.amountMinor,
+          currency: fromAccount.currency,
+          baseAmountMinor: data.amountMinor,
+          date: new Date(data.date),
+          note: data.note,
+          goalId: data.goalId || null,
+          loanId: data.loanId || null,
+          interestMinor: finalInterestMinor,
+        },
+      });
+
+      if (count === 0) throw new Error('Transfer not found or unauthorized');
+
+      await tx.auditLog.create({
+        data: {
+          userId: user.id,
+          action: 'UPDATE',
+          resource: 'Transfer',
+          metadata: JSON.stringify({ transferId: validId, amount: data.amountMinor }),
+        }
+      });
+    });
+
+    revalidatePath('/transactions');
+    revalidatePath('/accounts');
+    revalidatePath('/finance');
+    revalidatePath('/');
+    return { success: true };
+  } catch (error) {
+    console.error('[editTransfer]', error);
+    return { error: 'An unexpected error occurred. Please try again.' };
   }
-
-  // Atomic ownership update
-  const { count } = await prisma.transfer.updateMany({
-    where: { id, userId: user.id },
-    data: {
-      fromAccountId: data.fromAccountId,
-      toAccountId: data.toAccountId || null,
-      amountMinor: data.amountMinor,
-      currency: fromAccount.currency,
-      baseAmountMinor: data.amountMinor,
-      date: new Date(data.date),
-      note: data.note,
-      goalId: data.goalId || null,
-      loanId: data.loanId || null,
-      interestMinor: finalInterestMinor,
-    },
-  });
-
-  if (count === 0) throw new Error('Transfer not found or unauthorized');
-
-  await logActivity({
-    userId: user.id,
-    action: 'UPDATE',
-    resource: 'Transfer',
-    metadata: { transferId: id, amount: data.amountMinor },
-  });
-
-  revalidatePath('/transactions');
-  revalidatePath('/accounts');
-  revalidatePath('/finance');
-  revalidatePath('/');
 }
 
 /* ── Delete (atomic — no TOCTOU race) ────────────────────── */
 export async function deleteTransfer(id: string) {
   const user = await requireAuth();
-  if (!id) throw new Error('Missing id');
+  try {
+    const parsedId = DeleteSchema.safeParse({ id });
+    if (!parsedId.success) return { error: 'Invalid input' };
+    const validId = parsedId.data.id;
 
-  // atomic ownership enforce
-  const { count } = await prisma.transfer.deleteMany({
-    where: { id, userId: user.id },
-  });
-  if (count === 0) throw new Error('Transfer not found or already deleted');
+    await prisma.$transaction(async (tx) => {
+      const { count } = await tx.transfer.deleteMany({
+        where: { id: validId, userId: user.id },
+      });
+      if (count === 0) throw new Error('Transfer not found or already deleted');
 
-  // Security Audit
-  await logActivity({
-    userId:   user.id,
-    action:   'DELETE',
-    resource: 'Transfer',
-    metadata: { transferId: id },
-  });
+      await tx.auditLog.create({
+        data: {
+          userId:   user.id,
+          action:   'DELETE',
+          resource: 'Transfer',
+          metadata: JSON.stringify({ transferId: validId }),
+        }
+      });
+    });
 
-  revalidatePath('/transactions');
-  revalidatePath('/accounts');
-  revalidatePath('/');
+    revalidatePath('/transactions');
+    revalidatePath('/accounts');
+    revalidatePath('/');
+    return { success: true };
+  } catch (error) {
+    console.error('[deleteTransfer]', error);
+    return { error: 'An unexpected error occurred. Please try again.' };
+  }
 }

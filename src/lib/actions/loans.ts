@@ -5,6 +5,20 @@ import { revalidatePath } from 'next/cache';
 import { requireAuth } from './_auth';
 import { computeLoanBalance } from '@/lib/shared-computations';
 import type { Loan } from '@prisma/client';
+import { z } from 'zod';
+
+const DeleteSchema = z.object({ id: z.string().cuid() });
+const EditLoanSchema = z.object({
+  name: z.string().optional(),
+  lender: z.string().optional(),
+  type: z.string().optional(),
+  originalAmountMinor: z.number().int().positive().optional(),
+  balanceMinor: z.number().int().optional(),
+  annualRate: z.number().optional(),
+  amortization: z.string().optional(),
+  monthlyPaymentMinor: z.number().int().positive().optional(),
+  nextDue: z.string().optional(),
+});
 
 export async function getLoansForUser(userId: string) {
   const today = new Date();
@@ -88,28 +102,44 @@ export async function addLoan(raw: {
 
 export async function deleteLoan(id: string) {
   const user = await requireAuth();
-  if (!id) throw new Error('Missing id');
-  await prisma.loan.deleteMany({ where: { id, userId: user.id } });
-  revalidatePath('/loans');
-  revalidatePath('/');
+  try {
+    const parsedId = DeleteSchema.safeParse({ id });
+    if (!parsedId.success) return { error: 'Invalid input' };
+    const validId = parsedId.data.id;
+
+    await prisma.loan.deleteMany({ where: { id: validId, userId: user.id } });
+    revalidatePath('/loans');
+    revalidatePath('/');
+    return { success: true };
+  } catch (error) {
+    console.error('[deleteLoan]', error);
+    return { error: 'An unexpected error occurred. Please try again.' };
+  }
 }
 
-export async function editLoan(id: string, data: {
-  name?: string; lender?: string; type?: string; originalAmountMinor?: number; balanceMinor?: number;
-  annualRate?: number; amortization?: string; monthlyPaymentMinor?: number; nextDue?: string;
-}) {
+export async function editLoan(id: string, rawData: unknown) {
   const user = await requireAuth();
-  if (!id) throw new Error('Missing id');
+  try {
+    const parsedId = DeleteSchema.safeParse({ id });
+    const parsedData = EditLoanSchema.safeParse(rawData);
+    if (!parsedId.success || !parsedData.success) return { error: 'Invalid input' };
+    const validId = parsedId.data.id;
+    const data = parsedData.data;
 
-  const updateData: Record<string, unknown> = { ...data };
-  if (data.nextDue) updateData.nextDue = new Date(data.nextDue);
+    const updateData: Record<string, unknown> = { ...data };
+    if (data.nextDue) updateData.nextDue = new Date(data.nextDue);
 
-  const { count } = await prisma.loan.updateMany({
-    where: { id, userId: user.id },
-    data: updateData,
-  });
-  if (count === 0) throw new Error('Loan not found or ownership failed');
-  
-  revalidatePath('/loans');
-  revalidatePath('/');
+    const { count } = await prisma.loan.updateMany({
+      where: { id: validId, userId: user.id },
+      data: updateData,
+    });
+    if (count === 0) return { error: 'Loan not found or ownership failed' };
+    
+    revalidatePath('/loans');
+    revalidatePath('/');
+    return { success: true };
+  } catch (error) {
+    console.error('[editLoan]', error);
+    return { error: 'An unexpected error occurred. Please try again.' };
+  }
 }

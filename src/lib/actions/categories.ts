@@ -3,86 +3,132 @@
 import { requireAuth } from './_auth';
 import { prisma } from '@/lib/prisma';
 
-export async function createCategory(data: { name: string; type: string; icon?: string }) {
+import { z } from 'zod';
+
+const CategorySchema = z.object({
+  name: z.string().min(1).max(100),
+  type: z.string(),
+  icon: z.string().optional(),
+});
+
+const DeleteSchema = z.object({
+  id: z.string().cuid(),
+});
+
+export async function createCategory(rawData: unknown) {
   const user = await requireAuth();
 
-  const existing = await prisma.category.findUnique({
-    where: {
-      name_userId: { name: data.name, userId: user.id },
-    },
-  });
+  try {
+    const parsed = CategorySchema.safeParse(rawData);
+    if (!parsed.success) return { error: 'Invalid input' };
+    const data = parsed.data;
 
-  if (existing) {
-    throw new Error('A category with this name already exists.');
+    const existing = await prisma.category.findUnique({
+      where: {
+        name_userId: { name: data.name, userId: user.id },
+      },
+    });
+
+    if (existing) {
+      return { error: 'A category with this name already exists.' };
+    }
+
+    const result = await prisma.category.create({
+      data: {
+        ...data,
+        userId: user.id,
+      },
+    });
+    return { success: true, category: result };
+  } catch (error) {
+    console.error('[createCategory]', error);
+    return { error: 'An unexpected error occurred. Please try again.' };
   }
-
-  return prisma.category.create({
-    data: {
-      ...data,
-      userId: user.id,
-    },
-  });
 }
 
-export async function editCategory(id: string, data: { name: string; type: string; icon?: string }) {
+export async function editCategory(id: string, rawData: unknown) {
   const user = await requireAuth();
 
-  // Check if trying to rename to an existing category
-  const existing = await prisma.category.findFirst({
-    where: {
-      name: data.name,
-      userId: user.id,
-      id: { not: id },
-    },
-  });
+  try {
+    const parsedId = DeleteSchema.safeParse({ id });
+    const parsedData = CategorySchema.safeParse(rawData);
+    if (!parsedId.success || !parsedData.success) return { error: 'Invalid input' };
+    const validId = parsedId.data.id;
+    const data = parsedData.data;
 
-  if (existing) {
-    throw new Error('A category with this name already exists.');
-  }
+    // Check if trying to rename to an existing category
+    const existing = await prisma.category.findFirst({
+      where: {
+        name: data.name,
+        userId: user.id,
+        id: { not: validId },
+      },
+    });
 
-  const result = await prisma.category.updateMany({
-    where: { id, userId: user.id },
-    data: {
-      name: data.name,
-      type: data.type,
-      icon: data.icon,
-    },
-  });
+    if (existing) {
+      return { error: 'A category with this name already exists.' };
+    }
 
-  if (result.count === 0) {
-    throw new Error('Category not found or access denied.');
+    const result = await prisma.category.updateMany({
+      where: { id: validId, userId: user.id },
+      data: {
+        name: data.name,
+        type: data.type,
+        icon: data.icon,
+      },
+    });
+
+    if (result.count === 0) {
+      return { error: 'Category not found or access denied.' };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('[editCategory]', error);
+    return { error: 'An unexpected error occurred. Please try again.' };
   }
 }
 
 export async function deleteCategory(id: string) {
   const user = await requireAuth();
 
-  // First check if it's used in transactions or budgets
-  const inUse = await prisma.category.findFirst({
-    where: {
-      id,
-      userId: user.id,
-      OR: [
-        { transactions: { some: {} } },
-        { budgets: { some: {} } },
-      ],
-    },
-    include: {
-      _count: {
-        select: { transactions: true, budgets: true },
+  try {
+    const parsedId = DeleteSchema.safeParse({ id });
+    if (!parsedId.success) return { error: 'Invalid input' };
+    const validId = parsedId.data.id;
+
+    // First check if it's used in transactions or budgets
+    const inUse = await prisma.category.findFirst({
+      where: {
+        id: validId,
+        userId: user.id,
+        OR: [
+          { transactions: { some: {} } },
+          { budgets: { some: {} } },
+        ],
       },
-    },
-  });
+      include: {
+        _count: {
+          select: { transactions: true, budgets: true },
+        },
+      },
+    });
 
-  if (inUse && (inUse._count.transactions > 0 || inUse._count.budgets > 0)) {
-    throw new Error(`Cannot delete category in use by ${inUse._count.transactions} transactions and ${inUse._count.budgets} budgets.`);
-  }
+    if (inUse && (inUse._count.transactions > 0 || inUse._count.budgets > 0)) {
+      return { error: `Cannot delete category in use by ${inUse._count.transactions} transactions and ${inUse._count.budgets} budgets.` };
+    }
 
-  const result = await prisma.category.deleteMany({
-    where: { id, userId: user.id },
-  });
+    const result = await prisma.category.deleteMany({
+      where: { id: validId, userId: user.id },
+    });
 
-  if (result.count === 0) {
-    throw new Error('Category not found or access denied.');
+    if (result.count === 0) {
+      return { error: 'Category not found or access denied.' };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('[deleteCategory]', error);
+    return { error: 'An unexpected error occurred. Please try again.' };
   }
 }

@@ -11,6 +11,20 @@ import { z } from 'zod';
 const PeriodSchema = z.enum(['this-week', 'this-month', 'this-year', 'all']);
 const TypeSchema = z.enum(['income', 'expense', 'transfer', 'savings', 'all']);
 
+const DeleteSchema = z.object({
+  id: z.string().cuid(),
+});
+
+const EditTransactionSchema = z.object({
+  baseAmountMinor: z.number().int().positive().optional(),
+  name: z.string().min(1).max(255).optional(),
+  type: z.enum(['income', 'expense']).optional(),
+  date: z.date().optional(),
+  categoryId: z.string().cuid().optional(),
+  accountId: z.string().cuid().optional(),
+  note: z.string().max(500).optional(),
+});
+
 /* ── List ─────────────────────────────────────────────────── */
 export async function getTransactions(inputPeriod: unknown = 'this-month', inputType?: unknown) {
   const GetTransactionsSchema = z.object({
@@ -409,88 +423,103 @@ export async function importTransactions(rows: {
 /* ── Delete (atomic — no TOCTOU race) ────────────────────── */
 export async function deleteTransaction(id: string) {
   const user = await requireAuth();
-  if (!id) throw new Error('Missing id');
+  try {
+    const parsed = DeleteSchema.safeParse({ id });
+    if (!parsed.success) return { error: 'Invalid input' };
 
-  // findFirst + delete is a TOCTOU race: another request could delete between the two calls.
-  // deleteMany with userId scope is atomic AND enforces ownership in one query.
-  const { count } = await prisma.transaction.deleteMany({
-    where: { id, userId: user.id },
-  });
-  if (count === 0) throw new Error('Transaction not found or already deleted');
+    await prisma.$transaction(async (tx) => {
+      const { count } = await tx.transaction.deleteMany({
+        where: { id: parsed.data.id, userId: user.id },
+      });
+      if (count === 0) throw new Error('Transaction not found or already deleted');
 
-  // Security Audit
-  const { logActivity } = await import('@/lib/audit');
-  await logActivity({
-    userId:   user.id,
-    action:   'DELETE',
-    resource: 'Transaction',
-    metadata: { txId: id },
-  });
+      const { logActivity } = await import('@/lib/audit');
+      await logActivity({
+        userId:   user.id,
+        action:   'DELETE',
+        resource: 'Transaction',
+        metadata: { txId: parsed.data.id },
+      });
+    });
 
-  revalidatePath('/transactions');
-  revalidatePath('/');
+    revalidatePath('/transactions');
+    revalidatePath('/');
+    return { success: true };
+  } catch (error) {
+    console.error('[deleteTransaction]', error);
+    return { error: 'An unexpected error occurred. Please try again.' };
+  }
 }
 
 /* ── Edit (atomic ownership check) ────────────────────────── */
-export async function editTransaction(id: string, data: {
-  baseAmountMinor?: number; name?: string; type?: 'income' | 'expense'; date?: Date; categoryId?: string; accountId?: string; note?: string;
-}) {
+export async function editTransaction(id: string, rawData: unknown) {
   const user = await requireAuth();
-  if (!id) throw new Error('Missing id');
+  try {
+    const parsedId = DeleteSchema.safeParse({ id });
+    const parsedData = EditTransactionSchema.safeParse(rawData);
+    if (!parsedId.success || !parsedData.success) return { error: 'Invalid input' };
+    const validId = parsedId.data.id;
+    const data = parsedData.data;
 
-  const oldTx = await prisma.transaction.findFirst({ where: { id, userId: user.id } });
-  if (!oldTx) throw new Error('Transaction not found');
+    const oldTx = await prisma.transaction.findFirst({ where: { id: validId, userId: user.id } });
+    if (!oldTx) return { error: 'Transaction not found' };
 
-  const newType = data.type ?? oldTx.type;
-  const newAmount = data.baseAmountMinor ?? oldTx.baseAmountMinor;
-  const newAccountId = data.accountId ?? oldTx.accountId;
+    const newType = data.type ?? oldTx.type;
+    const newAmount = data.baseAmountMinor ?? oldTx.baseAmountMinor;
+    const newAccountId = data.accountId ?? oldTx.accountId;
 
-  if (newAccountId !== oldTx.accountId) {
-    const acc = await prisma.account.findFirst({ where: { id: newAccountId, userId: user.id } });
-    if (!acc) throw new Error('Target account not found or access denied.');
-  }
+    if (newAccountId !== oldTx.accountId) {
+      const acc = await prisma.account.findFirst({ where: { id: newAccountId, userId: user.id } });
+      if (!acc) return { error: 'Target account not found or access denied.' };
+    }
 
-  if (data.categoryId && data.categoryId !== oldTx.categoryId) {
-    const cat = await prisma.category.findFirst({ where: { id: data.categoryId, userId: user.id } });
-    if (!cat) throw new Error('Category not found or access denied.');
-  }
+    if (data.categoryId && data.categoryId !== oldTx.categoryId) {
+      const cat = await prisma.category.findFirst({ where: { id: data.categoryId, userId: user.id } });
+      if (!cat) return { error: 'Category not found or access denied.' };
+    }
 
-  let warning: string | undefined;
+    let warning: string | undefined;
 
-  if (newType === 'expense' && newAccountId) {
-    const { toMajor } = await import('@/lib/money');
-    const balances = await getAccountBalances(user.id);
-    const acc = balances.find(a => a.id === newAccountId);
-    
-    if (acc && acc.type !== 'CREDIT_CARD') {
-      let effectiveBalance = acc.balanceMinor;
-      if (oldTx.type === 'expense' && oldTx.accountId === newAccountId) {
-        effectiveBalance += oldTx.baseAmountMinor; // restore old amount
-      } else if (oldTx.type === 'income' && oldTx.accountId === newAccountId) {
-        effectiveBalance -= oldTx.baseAmountMinor; // remove old income
-      }
+    if (newType === 'expense' && newAccountId) {
+      const { toMajor } = await import('@/lib/money');
+      const balances = await getAccountBalances(user.id);
+      const acc = balances.find(a => a.id === newAccountId);
       
-      if (effectiveBalance - newAmount < 0) {
-        warning = `Warning: Not enough money in ${acc.name}. Available: ${acc.currency} ${toMajor(effectiveBalance)}.`;
+      if (acc && acc.type !== 'CREDIT_CARD') {
+        let effectiveBalance = acc.balanceMinor;
+        if (oldTx.type === 'expense' && oldTx.accountId === newAccountId) {
+          effectiveBalance += oldTx.baseAmountMinor; // restore old amount
+        } else if (oldTx.type === 'income' && oldTx.accountId === newAccountId) {
+          effectiveBalance -= oldTx.baseAmountMinor; // remove old income
+        }
+        
+        if (effectiveBalance - newAmount < 0) {
+          warning = `Warning: Not enough money in ${acc.name}. Available: ${acc.currency} ${toMajor(effectiveBalance)}.`;
+        }
       }
     }
+
+    await prisma.$transaction(async (tx) => {
+      const { count } = await tx.transaction.updateMany({
+        where: { id: validId, userId: user.id },
+        data,
+      });
+      if (count === 0) throw new Error('Transaction not found or ownership failed');
+
+      const { logActivity } = await import('@/lib/audit');
+      await logActivity({
+        userId:   user.id,
+        action:   'UPDATE',
+        resource: 'Transaction',
+        metadata: { txId: validId, fields: Object.keys(data) },
+      });
+    });
+
+    revalidatePath('/transactions');
+    revalidatePath('/');
+    return { success: true, warning };
+  } catch (error) {
+    console.error('[editTransaction]', error);
+    return { error: 'An unexpected error occurred. Please try again.' };
   }
-
-  const { count } = await prisma.transaction.updateMany({
-    where: { id, userId: user.id },
-    data,
-  });
-  if (count === 0) throw new Error('Transaction not found or ownership failed');
-
-  const { logActivity } = await import('@/lib/audit');
-  await logActivity({
-    userId:   user.id,
-    action:   'UPDATE',
-    resource: 'Transaction',
-    metadata: { txId: id, fields: Object.keys(data) },
-  });
-
-  revalidatePath('/transactions');
-  revalidatePath('/');
-  return { warning };
 }

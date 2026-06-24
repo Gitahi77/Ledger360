@@ -9,7 +9,8 @@ import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/actions/_auth';
 import { revalidatePath } from 'next/cache';
 import { logActivity } from '@/lib/audit';
-import { UpsertSavingsPlanSchema, UpsertSavingsPlanInput } from '@/lib/validation';
+import { UpsertSavingsPlanSchema } from '@/lib/validation';
+import { z } from 'zod';
 
 /* ── Lazy escalation (no cron — B-5, design point 6) ──────── */
 // Advances nextEscalation in a loop until it is in the future,
@@ -64,103 +65,119 @@ export async function getSavingsPlan() {
 }
 
 /* ── Upsert plan ──────────────────────────────────────────── */
-export async function upsertSavingsPlan(raw: UpsertSavingsPlanInput) {
-  const data = UpsertSavingsPlanSchema.parse(raw);
+export async function upsertSavingsPlan(raw: unknown) {
   const user = await requireAuth();
+  try {
+    const parsed = UpsertSavingsPlanSchema.safeParse(raw);
+    if (!parsed.success) return { error: 'Invalid input' };
+    const data = parsed.data;
 
-  // Validate accounts belong to user
-  const [fromAccount, toAccount] = await Promise.all([
-    prisma.account.findFirst({ where: { id: data.fromAccountId, userId: user.id } }),
-    prisma.account.findFirst({ where: { id: data.toAccountId, userId: user.id } }),
-  ]);
-  if (!fromAccount) throw new Error('Please choose a valid source account.');
-  if (!toAccount) throw new Error('Please choose a valid destination account.');
+    const [fromAccount, toAccount] = await Promise.all([
+      prisma.account.findFirst({ where: { id: data.fromAccountId, userId: user.id } }),
+      prisma.account.findFirst({ where: { id: data.toAccountId, userId: user.id } }),
+    ]);
+    if (!fromAccount) return { error: 'Please choose a valid source account.' };
+    if (!toAccount) return { error: 'Please choose a valid destination account.' };
 
-  // Destination enforcement (design point 2):
-  // toAccount must be savings/investment OR goalId must be set
-  const isSavingsAccount = ['SAVINGS', 'BROKERAGE', 'CRYPTO', 'SACCO_DEPOSIT'].includes(toAccount.type);
-  if (!isSavingsAccount && !data.goalId) {
-    throw new Error(
-      'The destination must be a savings or investment account, or you must select a goal.'
-    );
-  }
+    const isSavingsAccount = ['SAVINGS', 'BROKERAGE', 'CRYPTO', 'SACCO_DEPOSIT'].includes(toAccount.type);
+    if (!isSavingsAccount && !data.goalId) {
+      return { error: 'The destination must be a savings or investment account, or you must select a goal.' };
+    }
 
-  // Validate goal belongs to user if provided
-  if (data.goalId) {
-    const goal = await prisma.goal.findFirst({ where: { id: data.goalId, userId: user.id } });
-    if (!goal) throw new Error('Please choose a valid goal.');
-  }
+    if (data.goalId) {
+      const goal = await prisma.goal.findFirst({ where: { id: data.goalId, userId: user.id } });
+      if (!goal) return { error: 'Please choose a valid goal.' };
+    }
 
-  // Seed currentRatePct from UserPreferences.savingRate on first create
-  const existing = await prisma.savingsPlan.findUnique({ where: { userId: user.id } });
+    await prisma.$transaction(async (tx) => {
+      const existing = await tx.savingsPlan.findUnique({ where: { userId: user.id } });
 
-  if (existing) {
-    // Update existing plan
-    const { count } = await prisma.savingsPlan.updateMany({
-      where: { id: existing.id, userId: user.id },
-      data: {
-        fromAccountId:  data.fromAccountId,
-        toAccountId:    data.toAccountId,
-        goalId:         data.goalId || null,
-        baseRatePct:    data.baseRatePct,
-        escalationPct:  data.escalationPct,
-        maxRatePct:     data.maxRatePct,
-        active:         data.active,
-        // Don't touch currentRatePct or nextEscalation on update
-      },
+      if (existing) {
+        const { count } = await tx.savingsPlan.updateMany({
+          where: { id: existing.id, userId: user.id },
+          data: {
+            fromAccountId:  data.fromAccountId,
+            toAccountId:    data.toAccountId,
+            goalId:         data.goalId || null,
+            baseRatePct:    data.baseRatePct,
+            escalationPct:  data.escalationPct,
+            maxRatePct:     data.maxRatePct,
+            active:         data.active,
+          },
+        });
+        if (count === 0) throw new Error('Plan not found or unauthorized');
+      } else {
+        const prefs = await tx.userPreferences.findUnique({ where: { userId: user.id } });
+        const seedRate = prefs?.savingRate ?? data.baseRatePct;
+
+        const nextEsc = new Date();
+        nextEsc.setMonth(nextEsc.getMonth() + 1);
+
+        await tx.savingsPlan.create({
+          data: {
+            userId:         user.id,
+            fromAccountId:  data.fromAccountId,
+            toAccountId:    data.toAccountId,
+            goalId:         data.goalId || null,
+            baseRatePct:    data.baseRatePct,
+            escalationPct:  data.escalationPct,
+            maxRatePct:     data.maxRatePct,
+            currentRatePct: Math.min(seedRate, data.maxRatePct),
+            nextEscalation: nextEsc,
+            active:         data.active,
+          },
+        });
+      }
+
+      await tx.auditLog.create({
+        data: {
+          userId: user.id,
+          action: existing ? 'UPDATE' : 'CREATE',
+          resource: 'SavingsPlan',
+          metadata: JSON.stringify({ active: data.active }),
+        }
+      });
     });
-    if (count === 0) throw new Error('Plan not found or unauthorized');
-  } else {
-    // Create new plan — seed currentRatePct from UserPreferences.savingRate
-    const prefs = await prisma.userPreferences.findUnique({ where: { userId: user.id } });
-    const seedRate = prefs?.savingRate ?? data.baseRatePct;
 
-    const nextEsc = new Date();
-    nextEsc.setMonth(nextEsc.getMonth() + 1);
-
-    await prisma.savingsPlan.create({
-      data: {
-        userId:         user.id,
-        fromAccountId:  data.fromAccountId,
-        toAccountId:    data.toAccountId,
-        goalId:         data.goalId || null,
-        baseRatePct:    data.baseRatePct,
-        escalationPct:  data.escalationPct,
-        maxRatePct:     data.maxRatePct,
-        currentRatePct: Math.min(seedRate, data.maxRatePct),
-        nextEscalation: nextEsc,
-        active:         data.active,
-      },
-    });
+    revalidatePath('/settings');
+    revalidatePath('/');
+    return { success: true };
+  } catch (error) {
+    console.error('[upsertSavingsPlan]', error);
+    return { error: 'An unexpected error occurred. Please try again.' };
   }
-
-  await logActivity({
-    userId: user.id,
-    action: existing ? 'UPDATE' : 'CREATE',
-    resource: 'SavingsPlan',
-  });
-
-  revalidatePath('/settings');
-  revalidatePath('/');
 }
 
 /* ── Toggle active ────────────────────────────────────────── */
-export async function toggleSavingsPlan(active: boolean) {
+export async function toggleSavingsPlan(active: unknown) {
   const user = await requireAuth();
-  const { count } = await prisma.savingsPlan.updateMany({
-    where: { userId: user.id },
-    data: { active },
-  });
-  if (count === 0) throw new Error('No savings plan found.');
+  try {
+    const parsed = z.boolean().safeParse(active);
+    if (!parsed.success) return { error: 'Invalid input' };
 
-  await logActivity({
-    userId: user.id,
-    action: 'UPDATE',
-    resource: 'SavingsPlan',
-    metadata: { active },
-  });
+    await prisma.$transaction(async (tx) => {
+      const { count } = await tx.savingsPlan.updateMany({
+        where: { userId: user.id },
+        data: { active: parsed.data },
+      });
+      if (count === 0) throw new Error('No savings plan found.');
 
-  revalidatePath('/settings');
+      await tx.auditLog.create({
+        data: {
+          userId: user.id,
+          action: 'UPDATE',
+          resource: 'SavingsPlan',
+          metadata: JSON.stringify({ active: parsed.data }),
+        }
+      });
+    });
+
+    revalidatePath('/settings');
+    return { success: true };
+  } catch (error) {
+    console.error('[toggleSavingsPlan]', error);
+    return { error: 'An unexpected error occurred. Please try again.' };
+  }
 }
 
 /* ── Get recent auto-saves for UI ─────────────────────────── */
@@ -180,19 +197,30 @@ export async function getRecentAutoSaves() {
 /* ── Delete plan ──────────────────────────────────────────── */
 export async function deleteSavingsPlan() {
   const user = await requireAuth();
-  const { count } = await prisma.savingsPlan.deleteMany({
-    where: { userId: user.id },
-  });
-  if (count === 0) throw new Error('No savings plan found.');
+  try {
+    await prisma.$transaction(async (tx) => {
+      const { count } = await tx.savingsPlan.deleteMany({
+        where: { userId: user.id },
+      });
+      if (count === 0) throw new Error('No savings plan found.');
 
-  await logActivity({
-    userId: user.id,
-    action: 'DELETE',
-    resource: 'SavingsPlan',
-  });
+      await tx.auditLog.create({
+        data: {
+          userId: user.id,
+          action: 'DELETE',
+          resource: 'SavingsPlan',
+          metadata: JSON.stringify({}),
+        }
+      });
+    });
 
-  revalidatePath('/settings');
-  revalidatePath('/');
+    revalidatePath('/settings');
+    revalidatePath('/');
+    return { success: true };
+  } catch (error) {
+    console.error('[deleteSavingsPlan]', error);
+    return { error: 'An unexpected error occurred. Please try again.' };
+  }
 }
 
 /* ── Auto-save trigger (called from addTransaction / importTransactions) ── */
