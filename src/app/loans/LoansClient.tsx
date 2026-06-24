@@ -460,7 +460,7 @@ export function LoansClient({ loans, currency, categories = [], accounts = [] }:
                 </div>
 
                 <div className="flex items-center justify-between flex-wrap gap-2">
-                  <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(150px, 1fr))', gap:'1rem', flexWrap:'wrap', flex:'1 1 100%' }}>
+                  <div className="grid-3" style={{ flex:'1 1 100%' }}>
                     <div>
                       <div style={{ fontSize:'0.65rem', color:'var(--color-text-secondary)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em' }}>Monthly</div>
                       <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, fontSize:'0.85rem', color:'var(--color-text-primary)', whiteSpace:'nowrap' }}>{formatKES(l.monthlyPaymentMinor)}</div>

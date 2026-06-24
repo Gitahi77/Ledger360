@@ -1,64 +1,36 @@
-'use client';
-// src/app/settings/SettingsClient.tsx
-// Copyright (c) 2024-present Eric Gitahi. All rights reserved.
-// Fully wired: every toggle/field saves to the database via server actions.
-import { useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
-import { updateProfile } from '@/lib/actions/reports';
-import {
-  saveAppearance, savePreferences, saveNotifications,
-  exportUserData, deleteAllUserData, deleteUserAccount,
-} from '@/lib/actions/settings';
-import { signOut } from 'next-auth/react';
-import { toMajor, toMinor } from '@/lib/money';
-import { fmtAdaptive } from '@/lib/format';
-import {
-  User, Bell, Palette, ShieldCheck, Database,
-  HelpCircle, Download, Trash2, ExternalLink, Info,
-  Globe, CheckCircle2, Loader2, ChevronDown, ChevronRight,
-  AlertTriangle,
-} from 'lucide-react';
-import { ThemeToggle } from '@/components/ThemeToggle';
-import { CURRENCIES } from '@/lib/constants/currencies';
-import { SavingsAutomationSection } from './SavingsAutomationSection';
+import re
 
-type Section = 'profile' | 'appearance' | 'preferences' | 'savings' | 'notifications' | 'security' | 'data' | 'help';
+with open('src/app/settings/SettingsClient.tsx', 'r', encoding='utf-8') as f:
+    content = f.read()
 
-const SECTIONS: { id: Section; label: string; Icon: React.ElementType; desc: string }[] = [
-  { id: 'profile',       label: 'Profile',        Icon: User,        desc: 'Name, email, account type'     },
-  { id: 'appearance',    label: 'Appearance',      Icon: Palette,     desc: 'Theme, accent color, display'  },
-  { id: 'preferences',   label: 'Preferences',     Icon: Globe,       desc: 'Currency, date format'         },
-  { id: 'savings',       label: 'Save-More-Tomorrow', Icon: Globe,    desc: 'Auto-save automation (B-5)'    },
-  { id: 'notifications', label: 'Notifications',   Icon: Bell,        desc: 'Alerts and reminders'          },
-  { id: 'security',      label: 'Security & Activity', Icon: ShieldCheck, desc: 'Audit logs and sessions'   },
-  { id: 'data',          label: 'Data & Privacy',  Icon: Database,    desc: 'Export, import, delete'        },
-  { id: 'help',          label: 'Help & About',    Icon: HelpCircle,  desc: 'Guide, shortcuts, version'     },
-];
-
-const ACCENTS = [
-  { label: 'Royal Blue', value: '#1A73E8' },
-  { label: 'Emerald',    value: '#1E8449' },
-  { label: 'Teal',       value: '#0E6655' },
-  { label: 'Purple',     value: '#6C3483' },
-  { label: 'Rose',       value: '#C0392B' },
-  { label: 'Amber',      value: '#D35400' },
-];
-
-/* ── Shared sub-components ────────────────────────────────── */
-function Row({ label, desc, children }: { label: string; desc?: string; children: React.ReactNode }) {
+# Replace Toggle component
+old_toggle = """function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: () => void; disabled?: boolean }) {
   return (
-    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0.875rem 0', borderBottom:'1px solid var(--border-light)', gap:'1rem', flexWrap:'wrap' }}>
-      <div style={{ flex:1, minWidth:0 }}>
-        <div style={{ fontSize:'0.8125rem', fontWeight:600, color:'var(--color-text-primary)' }}>{label}</div>
-        {desc && <div style={{ fontSize:'0.72rem', color:'var(--color-text-secondary)', marginTop:'0.15rem' }}>{desc}</div>}
+    <button
+      onClick={onChange}
+      disabled={disabled}
+      aria-pressed={checked}
+      style={{
+        width: 64, height: 52,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'transparent', border: 'none',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        padding: '0.75rem',
+      }}
+    >
+      <div style={{
+        width: 42, height: 24, borderRadius: 999,
+        background: checked ? 'var(--color-brand)' : 'var(--border)',
+        position: 'relative', transition: 'background 0.2s',
+        opacity: disabled ? 0.5 : 1,
+      }}>
+        <div style={{ position: 'absolute', top: 3, left: checked ? 21 : 3, width: 18, height: 18, borderRadius: '50%', background: 'white', transition: 'left 0.2s' }} />
       </div>
-      <div style={{ flexShrink:0 }}>{children}</div>
-    </div>
+    </button>
   );
-}
+}"""
 
-function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: () => void; disabled?: boolean }) {
+new_toggle = """function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: () => void; disabled?: boolean }) {
   return (
     <button
       type="button"
@@ -84,270 +56,11 @@ function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (
       </div>
     </button>
   );
-}
+}"""
 
-function SettingSelect({ value, onChange, children }: { value: string; onChange: (v: string) => void; children: React.ReactNode }) {
-  return (
-    <select value={value} onChange={e => onChange(e.target.value)} style={{ padding:'0.375rem 0.625rem', borderRadius:6, border:'1px solid var(--border)', background:'var(--surface-card)', color:'var(--color-text-primary)', fontSize:'0.8rem', fontFamily:'inherit', outline:'none', cursor:'pointer', maxWidth:'100%' }}>
-      {children}
-    </select>
-  );
-}
+content = content.replace(old_toggle, new_toggle)
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div style={{ marginBottom:'1.125rem' }}>
-      <label style={{ display:'block', fontSize:'0.7rem', fontWeight:700, color:'var(--color-text-secondary)', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:'0.375rem' }}>{label}</label>
-      {children}
-    </div>
-  );
-}
-
-function SaveRow({ saving, saved, error }: { saving: boolean; saved: boolean; error: string }) {
-  return (
-    <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', marginTop:'1rem' }}>
-      <button type="submit" disabled={saving} className="btn btn-primary" style={{ display:'flex', alignItems:'center', gap:'0.4rem' }}>
-        {saving ? <Loader2 size={13} style={{ animation:'spin 1s linear infinite' }}/> : null}
-        {saving ? 'Saving…' : 'Save Changes'}
-      </button>
-      {saved && (
-        <div className="animate-in" style={{ display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.78rem', color:'var(--color-income)', fontWeight:600 }}>
-          <CheckCircle2 size={14}/> Saved!
-        </div>
-      )}
-      {error && (
-        <div style={{ display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.78rem', color:'var(--color-expense)', fontWeight:600 }}>
-          <AlertTriangle size={14}/> {error}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ── Accordion header ─────────────────────────────────────── */
-function AccordionHeader({ section, isOpen, onClick }: {
-  section: typeof SECTIONS[number]; isOpen: boolean; onClick: () => void;
-}) {
-  const Icon = section.Icon;
-  return (
-    <button
-      onClick={onClick}
-      aria-expanded={isOpen}
-      style={{
-        display:'flex', alignItems:'center', gap:'0.75rem',
-        width:'100%', padding:'1rem', borderRadius: isOpen ? '0.75rem 0.75rem 0 0' : '0.75rem',
-        background: isOpen ? 'var(--color-brand-light)' : 'var(--surface-card)',
-        border:`1px solid ${isOpen ? 'var(--color-brand)' : 'var(--border)'}`,
-        borderBottom: isOpen ? 'none' : `1px solid var(--border)`,
-        color: isOpen ? 'var(--color-brand)' : 'var(--text-secondary)',
-        textAlign:'left', cursor:'pointer',
-        transition:'all 0.2s', marginBottom: isOpen ? 0 : '0.5rem',
-      }}
-    >
-      <div style={{
-        width:36, height:36, borderRadius:8, flexShrink:0,
-        background: isOpen ? 'var(--color-brand)' : 'var(--bg-hover)',
-        display:'flex', alignItems:'center', justifyContent:'center',
-        color: isOpen ? 'white' : 'var(--color-text-secondary)',
-        transition:'all 0.2s',
-      }}>
-        <Icon size={16} strokeWidth={isOpen ? 2.5 : 2} />
-      </div>
-      <div style={{ flex:1, minWidth:0 }}>
-        <div style={{ fontWeight:700, fontSize:'0.875rem', color: isOpen ? 'var(--color-brand)' : 'var(--color-text-primary)' }}>{section.label}</div>
-        <div style={{ fontSize:'0.7rem', color: isOpen ? 'var(--color-brand)' : 'var(--color-text-secondary)', opacity:0.8, marginTop:'0.1rem' }}>{section.desc}</div>
-      </div>
-      {isOpen
-        ? <ChevronDown size={16} style={{ flexShrink:0, color:'var(--color-brand)' }} />
-        : <ChevronRight size={16} style={{ flexShrink:0, color:'var(--color-text-secondary)' }} />
-      }
-    </button>
-  );
-}
-
-function AccordionPanel({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="animate-in" style={{
-      border:'1px solid var(--color-brand)', borderTop:'none',
-      borderRadius:'0 0 0.75rem 0.75rem',
-      padding:'1.25rem',
-      background:'var(--surface-card)',
-      marginBottom:'0.5rem',
-    }}>
-      {children}
-    </div>
-  );
-}
-
-/* ── Main Settings Client ─────────────────────────────────── */
-export function SettingsClient({
-  initialName, initialEmail, initialCurrency, initialAccountType,
-  initialPrefs, logs, savingsPlan, autoSaves, accounts, goals,
-}: {
-  initialName: string; initialEmail: string; initialCurrency: string; initialAccountType: string;
-  initialPrefs: {
-    accentColor: string; compactMode: boolean; smoothAnims: boolean;
-    dateFormat: string; weekStartDay: string; savingRate: number;
-    notifOverbudget: boolean; notifGoals: boolean; notifBills: boolean;
-    notifInsights: boolean; notifLoanDue: boolean;
-    expectedMonthlyIncomeMinor: number | null;
-  } | null;
-  logs: { id: string; action: string; resource: string; metadata: string | null; createdAt: string }[];
-  savingsPlan: any;
-  autoSaves: any[];
-  accounts: { id: string; name: string; type: string; currency: string }[];
-  goals: { id: string; name: string }[];
-}) {
-  const router       = useRouter();
-  const { update: updateSession } = useSession();
-  const [, startT]   = useTransition();
-
-  const [openSection, setOpenSection] = useState<Section | null>('profile');
-
-  // Per-section save state
-  const [profileState, setProfileState] = useState({ saving: false, saved: false, error: '' });
-  const [appearState,  setAppearState]  = useState({ saving: false, saved: false, error: '' });
-  const [prefsState,   setPrefsState]   = useState({ saving: false, saved: false, error: '' });
-  const [notifState,   setNotifState]   = useState({ saving: false, saved: false, error: '' });
-  const [dataState,    setDataState]    = useState({ saving: false, saved: false, error: '' });
-
-  // Profile fields
-  const [name,        setName]        = useState(initialName);
-  const [currency,    setCurrency]    = useState(initialCurrency);
-  const [accountType, setAccountType] = useState(initialAccountType);
-
-  // Appearance fields (from DB prefs or defaults)
-  const [accent,       setAccent]      = useState(initialPrefs?.accentColor  ?? 'rgb(26, 115, 232)');
-  const [compactMode,  setCompactMode] = useState(initialPrefs?.compactMode  ?? false);
-  const [smoothAnims,  setSmoothAnims] = useState(initialPrefs?.smoothAnims  ?? true);
-
-  // Preferences fields
-  const [dateFormat,  setDateFmt]    = useState(initialPrefs?.dateFormat    ?? 'DD/MM/YYYY');
-  const [savingRate,  setSavingRate] = useState(String(initialPrefs?.savingRate ?? 30));
-  const [weekStart,   setWeekStart]  = useState(initialPrefs?.weekStartDay  ?? 'Monday');
-  const [expectedMonthlyIncome, setExpectedMonthlyIncome] = useState(initialPrefs?.expectedMonthlyIncomeMinor != null ? String(toMajor(initialPrefs.expectedMonthlyIncomeMinor)) : '');
-
-  // Notification flags
-  const [notifs, setNotifs] = useState({
-    overbudget: initialPrefs?.notifOverbudget ?? true,
-    goals:      initialPrefs?.notifGoals      ?? true,
-    bills:      initialPrefs?.notifBills      ?? true,
-    insights:   initialPrefs?.notifInsights   ?? false,
-    loanDue:    initialPrefs?.notifLoanDue    ?? true,
-  });
-
-  // Delete confirmation
-  const [deleteConfirm, setDeleteConfirm] = useState(false);
-  const [deleteAllText, setDeleteAllText] = useState('');
-  const [deleteAcctConfirm, setDeleteAcctConfirm] = useState(false);
-  const [deleteAcctText, setDeleteAcctText] = useState('');
-
-  const inputStyle: React.CSSProperties = {
-    width:'100%', padding:'0.5rem 0.75rem', borderRadius:6,
-    border:'1px solid var(--border)', background:'var(--surface-card)',
-    color:'var(--color-text-primary)', fontSize:'0.8rem', fontFamily:'inherit',
-    outline:'none', boxShadow:'0 1px 2px rgba(0,0,0,0.05)',
-  };
-
-  const initials = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || '??';
-
-  function toggleSection(id: Section) {
-    setOpenSection(prev => prev === id ? null : id);
-  }
-
-  async function withSave(
-    setter: React.Dispatch<React.SetStateAction<{ saving: boolean; saved: boolean; error: string }>>,
-    fn: () => Promise<void>
-  ) {
-    setter({ saving: true, saved: false, error: '' });
-    try {
-      await fn();
-      setter({ saving: false, saved: true, error: '' });
-      setTimeout(() => setter({ saving: false, saved: false, error: '' }), 3000);
-    } catch (err: any) {
-      setter({ saving: false, saved: false, error: err?.message ?? 'Save failed' });
-    }
-  }
-
-  // ── Save handlers ────────────────────────────────────────────
-  async function handleSaveProfile(e: React.FormEvent) {
-    e.preventDefault();
-    await withSave(setProfileState, async () => {
-      await updateProfile({ name, currency, accountType });
-      // Refresh the JWT token so currency/accountType changes propagate immediately
-      await updateSession({ currency, accountType, name });
-      startT(() => router.refresh());
-    });
-  }
-
-  async function handleSaveAppearance(e: React.FormEvent) {
-    e.preventDefault();
-    await withSave(setAppearState, async () => {
-      await saveAppearance({ accentColor: accent, compactMode, smoothAnims });
-      // Apply accent immediately via CSS variable
-      document.documentElement.style.setProperty('--color-brand', accent);
-    });
-  }
-
-  async function handleSavePrefs(e: React.FormEvent) {
-    e.preventDefault();
-    await withSave(setPrefsState, async () => {
-      await savePreferences({
-        dateFormat:  dateFormat  as 'DD/MM/YYYY' | 'MM/DD/YYYY' | 'YYYY-MM-DD',
-        weekStartDay: weekStart  as 'Monday' | 'Sunday',
-        savingRate: Math.min(80, Math.max(1, parseInt(savingRate) || 30)),
-        expectedMonthlyIncomeMinor: expectedMonthlyIncome ? toMinor(parseFloat(expectedMonthlyIncome)) : null,
-      });
-      startT(() => router.refresh());
-    });
-  }
-
-  async function handleSaveNotifs(e: React.FormEvent) {
-    e.preventDefault();
-    await withSave(setNotifState, async () => {
-      await saveNotifications({
-        overbudget: notifs.overbudget,
-        goals:      notifs.goals,
-        bills:      notifs.bills,
-        insights:   notifs.insights,
-        loanDue:    notifs.loanDue,
-      });
-    });
-  }
-
-  async function handleExportData() {
-    await withSave(setDataState, async () => {
-      const data = await exportUserData();
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const url  = URL.createObjectURL(blob);
-      const a    = document.createElement('a');
-      a.href     = url;
-      a.download = `ledger360-export-${new Date().toISOString().split('T')[0]}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-    });
-  }
-
-  async function handleDeleteAll() {
-    if (!deleteConfirm) { setDeleteConfirm(true); return; }
-    await withSave(setDataState, async () => {
-      await deleteAllUserData();
-      setDeleteConfirm(false);
-      startT(() => router.refresh());
-    });
-  }
-
-  async function handleDeleteAccount() {
-    setDataState({ saving: true, saved: false, error: '' });
-    try {
-      await deleteUserAccount();
-      signOut({ callbackUrl: '/login' });
-    } catch (e: any) {
-      setDataState({ saving: false, saved: false, error: e.message || 'Failed to delete account.' });
-    }
-  }
-
-  return (
+new_body = """  return (
     <div className="settings-container">
       <div className="settings-sidebar">
         <button className={`settings-sidebar-btn ${['profile', 'appearance'].includes(openSection || '') ? 'active' : ''}`} onClick={() => setOpenSection('profile')}>
@@ -733,4 +446,17 @@ export function SettingsClient({
     </div>
   );
 }
+"""
 
+start_str = "  return ("
+start_idx = content.rfind("  return (")
+
+if start_idx != -1:
+    content = content[:start_idx] + new_body + "\n"
+
+# Let's remove AccordionHeader and AccordionPanel if they exist
+content = re.sub(r'function AccordionHeader.*?return.*?\}\s*\}\s*', '', content, flags=re.DOTALL)
+content = re.sub(r'function AccordionPanel.*?return.*?\}\s*', '', content, flags=re.DOTALL)
+
+with open('src/app/settings/SettingsClient.tsx', 'w', encoding='utf-8') as f:
+    f.write(content)
