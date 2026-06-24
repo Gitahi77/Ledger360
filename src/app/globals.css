@@ -810,7 +810,7 @@ select, input { font-family: inherit; }
 /* Force white inside the dark hero card regardless of theme */
 .dashboard-hero .balance-text,
 .dashboard-hero h1 {
-  color: white !important;
+  color: white;
 }
 
 /* LedgerAmount */
@@ -1046,7 +1046,7 @@ select, input { font-family: inherit; }
   color: white;
 }
 .hero-label-white { color: rgba(255,255,255,0.6); font-size: var(--font-caption); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
-.hero-balance-text { color: white !important; }
+.hero-balance-text { color: white; }
 .hero-progress-wrap {
   margin-top: 1.25rem;
   padding-top: 1.25rem;
@@ -1450,7 +1450,7 @@ select, input { font-family: inherit; }
 .dashboard-hero .hero-eyebrow,
 .dashboard-hero .hero-rate-sub,
 .dashboard-hero .hero-net-worth-sub {
-  color: rgba(255, 255, 255, 0.7) !important;
+  color: var(--hero-text-muted);
 }
 
 .dashboard-hero-grid p,
@@ -1459,16 +1459,16 @@ select, input { font-family: inherit; }
 .dashboard-hero-grid h2,
 .dashboard-hero .balance-text,
 .dashboard-hero .hero-net-worth {
-  color: white !important;
+  color: white;
 }
 
 /* Stat cards sit on top of the hero and have translucent dark backgrounds */
 .hero-stat-card .hero-label,
 .hero-stat-card .hero-sub {
-  color: rgba(255, 255, 255, 0.6) !important;
+  color: var(--hero-text-muted);
 }
 .hero-stat-card .hero-stat-value {
-  color: white !important;
+  color: white;
 }
 
 /* Year-End Forecast card */
