@@ -18,53 +18,51 @@ export async function getMonthlyTrend() {
   const end   = new Date(Date.UTC(nYr, nMo + 1, 0, 20, 59, 59, 999));
 
   type Row = { yr: number; mo: number; type: string; total: number };
-  // "AT TIME ZONE" correctly converts timestamptz to local wall-clock time.
-  const rows: Row[] = await prisma.$queryRaw`
-    SELECT
-      EXTRACT(YEAR  FROM (date AT TIME ZONE 'Africa/Nairobi'))::int AS yr,
-      EXTRACT(MONTH FROM (date AT TIME ZONE 'Africa/Nairobi'))::int AS mo,
-      type,
-      SUM("baseAmountMinor")::float            AS total
-    FROM "Transaction"
-    WHERE "userId" = ${user.id}
-      AND type IN ('income','expense')
-      AND date >= ${start} AND date <= ${end}
-    GROUP BY yr, mo, type
-    ORDER BY yr, mo
-  `;
-
-  // "AT TIME ZONE" correctly converts timestamptz to local wall-clock time.
-  const savingsRows: Row[] = await prisma.$queryRaw`
-    SELECT
-      EXTRACT(YEAR  FROM (t.date AT TIME ZONE 'Africa/Nairobi'))::int AS yr,
-      EXTRACT(MONTH FROM (t.date AT TIME ZONE 'Africa/Nairobi'))::int AS mo,
-      'savings' AS type,
-      SUM(t."baseAmountMinor")::float AS total
-    FROM "Transfer" t
-    LEFT JOIN "Account" a ON t."toAccountId" = a.id
-    WHERE t."userId" = ${user.id}
-      AND t."loanId" IS NULL
-      AND (t."goalId" IS NOT NULL OR a.type IN ('savings', 'investment'))
-      AND t.date >= ${start} AND t.date <= ${end}
-    GROUP BY yr, mo
-  `;
-
   type DebtRow = Row & { interest: number };
-  // "AT TIME ZONE" correctly converts timestamptz to local wall-clock time.
-  const debtRows: DebtRow[] = await prisma.$queryRaw`
-    SELECT
-      EXTRACT(YEAR  FROM (date AT TIME ZONE 'Africa/Nairobi'))::int AS yr,
-      EXTRACT(MONTH FROM (date AT TIME ZONE 'Africa/Nairobi'))::int AS mo,
-      'debt' AS type,
-      SUM("baseAmountMinor" - "interestMinor")::float AS total,
-      SUM("interestMinor")::float AS interest
-    FROM "Transfer"
-    WHERE "userId" = ${user.id}
-      AND "loanId" IS NOT NULL
-      AND "toAccountId" IS NULL
-      AND date >= ${start} AND date <= ${end}
-    GROUP BY yr, mo
-  `;
+
+  const [rows, savingsRows, debtRows] = await Promise.all([
+    prisma.$queryRaw<Row[]>`
+      SELECT
+        EXTRACT(YEAR  FROM (date AT TIME ZONE 'Africa/Nairobi'))::int AS yr,
+        EXTRACT(MONTH FROM (date AT TIME ZONE 'Africa/Nairobi'))::int AS mo,
+        type,
+        SUM("baseAmountMinor")::float            AS total
+      FROM "Transaction"
+      WHERE "userId" = ${user.id}
+        AND type IN ('income','expense')
+        AND date >= ${start} AND date <= ${end}
+      GROUP BY yr, mo, type
+      ORDER BY yr, mo
+    `,
+    prisma.$queryRaw<Row[]>`
+      SELECT
+        EXTRACT(YEAR  FROM (t.date AT TIME ZONE 'Africa/Nairobi'))::int AS yr,
+        EXTRACT(MONTH FROM (t.date AT TIME ZONE 'Africa/Nairobi'))::int AS mo,
+        'savings' AS type,
+        SUM(t."baseAmountMinor")::float AS total
+      FROM "Transfer" t
+      LEFT JOIN "Account" a ON t."toAccountId" = a.id
+      WHERE t."userId" = ${user.id}
+        AND t."loanId" IS NULL
+        AND (t."goalId" IS NOT NULL OR a.type IN ('savings', 'investment'))
+        AND t.date >= ${start} AND t.date <= ${end}
+      GROUP BY yr, mo
+    `,
+    prisma.$queryRaw<DebtRow[]>`
+      SELECT
+        EXTRACT(YEAR  FROM (date AT TIME ZONE 'Africa/Nairobi'))::int AS yr,
+        EXTRACT(MONTH FROM (date AT TIME ZONE 'Africa/Nairobi'))::int AS mo,
+        'debt' AS type,
+        SUM("baseAmountMinor" - "interestMinor")::float AS total,
+        SUM("interestMinor")::float AS interest
+      FROM "Transfer"
+      WHERE "userId" = ${user.id}
+        AND "loanId" IS NOT NULL
+        AND "toAccountId" IS NULL
+        AND date >= ${start} AND date <= ${end}
+      GROUP BY yr, mo
+    `
+  ]);
 
   const months: { label: string; yr: number; mo: number }[] = [];
   for (let i = 5; i >= 0; i--) {

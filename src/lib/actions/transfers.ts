@@ -50,24 +50,22 @@ export async function createTransfer(raw: {
 
   const { toMajor } = await import('@/lib/money');
 
-  // Validate that accounts belong to the user
-  const fromAccount = await prisma.account.findFirst({ where: { id: data.fromAccountId, userId: user.id } });
-  if (!fromAccount) throw new Error('Please choose a valid From Account.');
+  const [fromAccount, toAccount, goal] = await Promise.all([
+    prisma.account.findFirst({ where: { id: data.fromAccountId, userId: user.id } }),
+    data.toAccountId ? prisma.account.findFirst({ where: { id: data.toAccountId, userId: user.id } }) : Promise.resolve(null),
+    data.goalId ? prisma.goal.findFirst({ where: { id: data.goalId, userId: user.id } }) : Promise.resolve(null)
+  ]);
 
-  let toAccount = null;
+  if (!fromAccount) throw new Error('Please choose a valid From Account.');
   if (data.toAccountId) {
-    toAccount = await prisma.account.findFirst({ where: { id: data.toAccountId, userId: user.id } });
     if (!toAccount) throw new Error('Please choose a valid To Account.');
-    
     // Same-currency transfers only for now
     if (fromAccount.currency !== toAccount.currency) {
       throw new Error('Multi-currency transfers are not yet supported. Both accounts must have the same currency.');
     }
   }
-
-  if (data.goalId) {
-    const goal = await prisma.goal.findFirst({ where: { id: data.goalId, userId: user.id } });
-    if (!goal) throw new Error('Please choose a valid goal.');
+  if (data.goalId && !goal) {
+    throw new Error('Please choose a valid goal.');
   }
 
   let finalInterestMinor = 0;
@@ -155,24 +153,25 @@ export async function editTransfer(id: string, raw: {
   const user = await requireAuth();
   const { toMajor } = await import('@/lib/money');
 
-  const oldTransfer = await prisma.transfer.findFirst({ where: { id, userId: user.id } });
-  if (!oldTransfer) throw new Error('Transfer not found');
+  const [oldTransfer, fromAccount, toAccount, goal] = await Promise.all([
+    prisma.transfer.findFirst({ where: { id, userId: user.id } }),
+    prisma.account.findFirst({ where: { id: data.fromAccountId, userId: user.id } }),
+    data.toAccountId ? prisma.account.findFirst({ where: { id: data.toAccountId, userId: user.id } }) : Promise.resolve(null),
+    data.goalId ? prisma.goal.findFirst({ where: { id: data.goalId, userId: user.id } }) : Promise.resolve(null)
+  ]);
 
-  const fromAccount = await prisma.account.findFirst({ where: { id: data.fromAccountId, userId: user.id } });
+  if (!oldTransfer) throw new Error('Transfer not found');
   if (!fromAccount) throw new Error('Please choose a valid From Account.');
 
-  let toAccount = null;
   if (data.toAccountId) {
-    toAccount = await prisma.account.findFirst({ where: { id: data.toAccountId, userId: user.id } });
     if (!toAccount) throw new Error('Please choose a valid To Account.');
     if (fromAccount.currency !== toAccount.currency) {
       throw new Error('Multi-currency transfers are not yet supported. Both accounts must have the same currency.');
     }
   }
 
-  if (data.goalId) {
-    const goal = await prisma.goal.findFirst({ where: { id: data.goalId, userId: user.id } });
-    if (!goal) throw new Error('Please choose a valid goal.');
+  if (data.goalId && !goal) {
+    throw new Error('Please choose a valid goal.');
   }
 
   if (data.loanId) {

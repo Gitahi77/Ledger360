@@ -60,14 +60,29 @@ export async function getTransactionSummary(inputPeriod: unknown = 'this-month')
     prevTo = new Date(from.getFullYear(), from.getMonth(), 0, 23, 59, 59, 999);
   }
 
-  const income   = await prisma.transaction.aggregate({ where: { userId: user.id, type: 'income',   date: { gte: from, lte: to } }, _sum: { baseAmountMinor: true } });
-  const expenses = await prisma.transaction.aggregate({ where: { userId: user.id, type: 'expense',  date: { gte: from, lte: to } }, _sum: { baseAmountMinor: true } });
+  const startOfToday = new Date(to.getFullYear(), to.getMonth(), to.getDate(), 0, 0, 0, 0);
+
+  const [income, expenses, transfersOut, savingsTransfers, todaySpendAgg] = await Promise.all([
+    prisma.transaction.aggregate({ where: { userId: user.id, type: 'income',   date: { gte: from, lte: to } }, _sum: { baseAmountMinor: true } }),
+    prisma.transaction.aggregate({ where: { userId: user.id, type: 'expense',  date: { gte: from, lte: to } }, _sum: { baseAmountMinor: true } }),
+    prisma.transfer.aggregate({
+      where: { userId: user.id, toAccountId: null, date: { gte: from, lte: to } },
+      _sum: { baseAmountMinor: true, interestMinor: true }
+    }),
+    prisma.transfer.aggregate({
+      where: {
+        userId: user.id, date: { gte: from, lte: to }, loanId: null,
+        OR: [{ goalId: { not: null } }, { toAccount: { type: { in: ['SAVINGS', 'BROKERAGE', 'CRYPTO', 'SACCO_DEPOSIT'] } } }],
+      },
+      _sum: { baseAmountMinor: true },
+    }),
+    prisma.transaction.aggregate({
+      where: { userId: user.id, type: 'expense', date: { gte: startOfToday, lte: to } },
+      _sum: { baseAmountMinor: true }
+    })
+  ]);
 
   const inc = income._sum.baseAmountMinor ?? 0;
-  const transfersOut = await prisma.transfer.aggregate({
-    where: { userId: user.id, toAccountId: null, date: { gte: from, lte: to } },
-    _sum: { baseAmountMinor: true, interestMinor: true }
-  });
   
   const totalLoanInterest = transfersOut._sum.interestMinor ?? 0;
   const exp = (expenses._sum.baseAmountMinor ?? 0) + totalLoanInterest;
@@ -76,21 +91,7 @@ export async function getTransactionSummary(inputPeriod: unknown = 'this-month')
   // WO-16 / BUG-3: "savings" = sum of transfers that fund a goal OR go to a
   // savings/investment account, EXCLUDING loan repayments. Each qualifying
   // transfer is counted once even if it matches multiple conditions.
-  const savingsTransfers = await prisma.transfer.aggregate({
-    where: {
-      userId: user.id, date: { gte: from, lte: to }, loanId: null,
-      OR: [{ goalId: { not: null } }, { toAccount: { type: { in: ['SAVINGS', 'BROKERAGE', 'CRYPTO', 'SACCO_DEPOSIT'] } } }],
-    },
-    _sum: { baseAmountMinor: true },
-  });
-
   const savings = savingsTransfers._sum?.baseAmountMinor ?? 0;
-
-  const startOfToday = new Date(to.getFullYear(), to.getMonth(), to.getDate(), 0, 0, 0, 0);
-  const todaySpendAgg = await prisma.transaction.aggregate({
-    where: { userId: user.id, type: 'expense', date: { gte: startOfToday, lte: to } },
-    _sum: { baseAmountMinor: true }
-  });
   const todaySpend = todaySpendAgg._sum.baseAmountMinor ?? 0;
 
   return {
@@ -330,13 +331,20 @@ export async function importTransactions(rows: {
     const existingCats = await tx.category.findMany({ where: { userId: user.id, name: { in: categoryNames } } });
     const catMap: Record<string, string> = Object.fromEntries(existingCats.map(c => [c.name, c.id]));
 
-    for (const name of categoryNames) {
-      if (!catMap[name]) {
+    const newCatsToCreate = categoryNames
+      .filter(name => !catMap[name])
+      .map(name => {
         const typeHint = validRows.find(r => r.categoryName === name)?.type === 'income' ? 'income' : 'expense';
-        const cat = await tx.category.create({
-          data: { name, type: typeHint, userId: user.id },
-        });
-        catMap[name] = cat.id;
+        return { name, type: typeHint, userId: user.id };
+      });
+
+    if (newCatsToCreate.length > 0) {
+      await tx.category.createMany({ data: newCatsToCreate, skipDuplicates: true });
+      const newlyCreated = await tx.category.findMany({
+        where: { userId: user.id, name: { in: newCatsToCreate.map(c => c.name) } }
+      });
+      for (const cat of newlyCreated) {
+        catMap[cat.name] = cat.id;
       }
     }
 

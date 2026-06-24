@@ -492,12 +492,21 @@ export async function POST(request: Request) {
     const existingCats  = await prisma.category.findMany({ where: { userId, name: { in: categoryNames } } });
     const catMap: Record<string, string> = Object.fromEntries(existingCats.map(c => [c.name, c.id]));
 
-    for (const name of categoryNames) {
-      if (!catMap[name]) {
-        const cat = await prisma.category.create({
-          data: { name, type: validRows.find((t: RowData) => t.category === name)?.type ?? 'expense', userId },
-        });
-        catMap[name] = cat.id;
+    const newCatsToCreate = categoryNames
+      .filter(name => !catMap[name])
+      .map(name => ({
+        name,
+        type: validRows.find((t: RowData) => t.category === name)?.type ?? 'expense',
+        userId
+      }));
+
+    if (newCatsToCreate.length > 0) {
+      await prisma.category.createMany({ data: newCatsToCreate, skipDuplicates: true });
+      const newlyCreated = await prisma.category.findMany({
+        where: { userId, name: { in: newCatsToCreate.map(c => c.name) } }
+      });
+      for (const cat of newlyCreated) {
+        catMap[cat.name] = cat.id;
       }
     }
 

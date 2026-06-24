@@ -10,15 +10,17 @@ import { getRates } from '@/lib/api/frankfurter';
 export async function getNetWorth() {
   const user = await requireAuth();
 
-  const accounts = await getAccountBalances(user.id);
-  const assets: import('@prisma/client').Asset[] = await prisma.asset.findMany({ where: { userId: user.id } });
-  const loans    = await getLoansForUser(user.id);
+  const userCurrency = user.currency || 'KES';
+
+  const [accounts, assets, loans, rates] = await Promise.all([
+    getAccountBalances(user.id),
+    prisma.asset.findMany({ where: { userId: user.id } }),
+    getLoansForUser(user.id),
+    getRates('USD')
+  ]);
 
   const cashAccounts = accounts.filter(a => a.type !== 'CREDIT_CARD' && a.balanceMinor >= 0);
   const debtAccounts = accounts.filter(a => a.type === 'CREDIT_CARD' || a.balanceMinor < 0);
-
-  const userCurrency = user.currency || 'KES';
-  const rates = await getRates('USD');
 
   const convert = (amount: number, currency?: string | null) => {
     const c = currency || userCurrency;

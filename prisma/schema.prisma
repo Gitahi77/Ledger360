@@ -100,6 +100,7 @@ model OAuthAccount {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+  @@index([userId])
 }
 
 model Account {
@@ -128,6 +129,8 @@ model Session {
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model VerificationToken {
@@ -150,6 +153,7 @@ model Category {
   budgets      Budget[]
 
   @@unique([name, userId])
+  @@index([userId])
 }
 
 model Transaction {
@@ -193,6 +197,7 @@ model Budget {
   createdAt DateTime @default(now())
 
   @@unique([categoryId, period, userId])
+  @@index([userId])
 }
 
 model Goal {
@@ -207,6 +212,8 @@ model Goal {
   createdAt DateTime   @default(now())
   transfers Transfer[]
   savingsPlans SavingsPlan[]
+
+  @@index([userId])
 }
 
 model Loan {
