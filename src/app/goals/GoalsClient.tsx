@@ -201,6 +201,7 @@ export function GoalsClient({ goals, currency, categories = [] }: { goals: Goal[
                 <span className="hero-progress-label">Overall progress</span>
                 <span className="hero-progress-val tabular">{overallPct}%</span>
               </div>
+              <div className="hero-progress-track">
                 <div className="hero-progress-bar" style={{ width:`${overallPct}%`, backgroundColor:'var(--hero-income)' }}/>
               </div>
             </div>

@@ -352,6 +352,7 @@ export function LoansClient({ loans, currency, categories = [], accounts = [] }:
                 <span className="hero-progress-label">Repayment progress</span>
                 <span className="hero-progress-val tabular">{paidPct}% paid off</span>
               </div>
+              <div className="hero-progress-track">
                 <div className="hero-progress-bar" style={{ width:`${paidPct}%`, backgroundColor:'var(--hero-income)' }}/>
               </div>
             </div>
