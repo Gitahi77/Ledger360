@@ -1437,17 +1437,30 @@ select, input { font-family: inherit; }
   color: rgba(255,255,255,0.5);
   margin: 0;
 }
-/* Force ALL text inside hero to white — this is the critical fix */
-.dashboard-hero,
-.dashboard-hero *,
-.dashboard-hero .balance-text,
-.dashboard-hero h1,
-.dashboard-hero h2,
-.dashboard-hero p {
-  color: inherit;
+/* Ensure elements sitting directly on the dark hero background are white/translucent white */
+.dashboard-hero-grid > div > .hero-label,
+.dashboard-hero > .hero-content > .hero-eyebrow,
+.dashboard-hero > .hero-content > .hero-rate-sub,
+.dashboard-hero > .hero-content > .hero-net-worth-sub {
+  color: rgba(255, 255, 255, 0.7) !important;
 }
-.dashboard-hero {
-  color: white;
+
+.dashboard-hero-grid > div > p,
+.dashboard-hero-grid > div > div,
+.dashboard-hero-grid > div > h1,
+.dashboard-hero-grid > div > h2,
+.dashboard-hero .balance-text,
+.dashboard-hero > .hero-content > .hero-net-worth {
+  color: white !important;
+}
+
+/* Stat cards sit on top of the hero and have their own light/dark background */
+.hero-stat-card .hero-label,
+.hero-stat-card .hero-sub {
+  color: var(--color-text-secondary);
+}
+.hero-stat-card .hero-stat-value {
+  color: var(--color-text-primary);
 }
 
 /* Year-End Forecast card */

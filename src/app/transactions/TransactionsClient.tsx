@@ -275,7 +275,7 @@ export function TransactionsClient({
     const q = searchQuery.toLowerCase();
     return (
       tx.name.toLowerCase().includes(q) ||
-      tx.category.name.toLowerCase().includes(q) ||
+      tx.category?.name?.toLowerCase().includes(q) ||
       (tx.note && tx.note.toLowerCase().includes(q)) ||
       String(toMajor(tx.baseAmountMinor)).includes(q)
     );
@@ -420,12 +420,12 @@ export function TransactionsClient({
                 <TransactionRow
                   key={tx.id}
                   title={tx.name}
-                  subtitle={tx.note ? `${tx.category.name} • ${tx.note}` : tx.category.name}
+                  subtitle={tx.note ? `${tx.category?.name || 'Uncategorized'} • ${tx.note}` : (tx.category?.name || 'Uncategorized')}
                   amountMinor={tx.baseAmountMinor}
                   type={tx.type}
                   icon={
                     <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--bg-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <i className={`ti ${getCategoryIcon(tx.category.name)}`} style={{ fontSize: 20, color: 'var(--color-text-secondary)' }}></i>
+                      <i className={`ti ${getCategoryIcon(tx.category?.name || 'Other')}`} style={{ fontSize: 20, color: 'var(--color-text-secondary)' }}></i>
                     </div>
                   }
                   state={tx.type === 'pending' ? 'pending' : undefined}

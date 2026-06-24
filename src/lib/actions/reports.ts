@@ -44,7 +44,7 @@ export async function getMonthlyTrend() {
       LEFT JOIN "Account" a ON t."toAccountId" = a.id
       WHERE t."userId" = ${user.id}
         AND t."loanId" IS NULL
-        AND (t."goalId" IS NOT NULL OR a.type IN ('savings', 'investment'))
+        AND (t."goalId" IS NOT NULL OR a.type IN ('SAVINGS', 'BROKERAGE', 'CRYPTO', 'SACCO_DEPOSIT'))
         AND t.date >= ${start} AND t.date <= ${end}
       GROUP BY yr, mo
     `,
