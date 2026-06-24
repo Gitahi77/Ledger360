@@ -23,6 +23,7 @@ vi.mock('@/lib/audit', () => ({
 
 vi.mock('@/lib/prisma', () => ({
   prisma: {
+    $transaction: vi.fn(async (cb: any) => cb(prisma)),
     savingsPlan: {
       findUnique: vi.fn(),
       create: vi.fn().mockResolvedValue({ id: 'plan-1' }),

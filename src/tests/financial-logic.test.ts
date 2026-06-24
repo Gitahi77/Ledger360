@@ -332,10 +332,11 @@ describe('Financial Logic and Validations', () => {
       ]);
       vi.mocked(prisma.loan.findFirst).mockResolvedValue({ id: 'loan-1', balanceMinor: 1000, userId: 'user-1', name: 'Personal Loan', lender: 'Bank', type: 'personal', amortization: 'REDUCING_BALANCE', annualRate: 10, monthlyPaymentMinor: 250, nextDue: new Date(), createdAt: new Date() } as any);
 
-      // Overpayment should throw
-      await expect(createTransfer({
+      // Overpayment should return error
+      const overpaymentRes = await createTransfer({
         fromAccountId: 'acc-1', loanId: 'loan-1', amountMinor: 1200, date: '2023-10-10'
-      })).rejects.toThrow(/You can't pay more than you owe/);
+      });
+      expect(overpaymentRes).toEqual({ error: expect.stringMatching(/You can't pay more than you owe/) });
 
       // Exact payoff should succeed
       await expect(createTransfer({
@@ -350,7 +351,10 @@ describe('Financial Logic and Validations', () => {
       const res = await addTransaction({
         name: 'Lunch', type: 'expense', baseAmountMinor: 600, categoryId: 'cat-1', accountId: 'acc-1', date: '2023-10-10'
       });
-      expect(res).toEqual({ warning: expect.stringMatching(/Not enough money in Bank/) });
+      expect(res).toEqual({
+        success: true,
+        warning: expect.stringMatching(/Not enough money in Bank/)
+      });
     });
 
     it('allows overdrafts for credit_card accounts in addTransaction', async () => {
