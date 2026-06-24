@@ -8,7 +8,7 @@
  * result in a negative loan balance.
  */
 export function computeLoanBalance(loanBalanceMinor: number, repaidAmountMinor: number): number {
-  return Math.max(0, loanBalanceMinor - repaidAmountMinor);
+  return loanBalanceMinor - repaidAmountMinor;
 }
 
 /**

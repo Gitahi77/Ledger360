@@ -328,17 +328,17 @@ describe('Save-More-Tomorrow (WO-15)', () => {
       .mockResolvedValueOnce({ id: 'acc-bank2', type: 'bank', userId: 'user-1', name: 'Bank2', currency: 'KES' } as any);
     vi.mocked(prisma.savingsPlan.findUnique).mockResolvedValue(null);
 
-    await expect(
-      upsertSavingsPlan({
-        fromAccountId: 'acc-bank',
-        toAccountId: 'acc-bank2',
-        goalId: null,
-        baseRatePct: 10,
-        escalationPct: 1,
-        maxRatePct: 30,
-        active: true,
-      }),
-    ).rejects.toThrow('savings or investment account');
+    const res = await upsertSavingsPlan({
+      fromAccountId: 'acc-bank',
+      toAccountId: 'acc-bank2',
+      goalId: null,
+      baseRatePct: 10,
+      escalationPct: 1,
+      maxRatePct: 30,
+      active: true,
+    });
+    
+    expect(res).toEqual({ error: expect.stringMatching(/savings or investment account/) });
   });
 
   /* ── Test 9: Income dated before plan creation does NOT trigger ── */

@@ -369,20 +369,23 @@ describe('Financial Logic and Validations', () => {
       vi.mocked(getAccountBalances).mockResolvedValue([{ id: 'acc-1', type: 'CHECKING', balanceMinor: 500, userId: 'user-1', name: 'Bank', currency: 'KES', openingMinor: 0, archived: false, createdAt: new Date() }]);
       
       vi.mocked(prisma.transaction.findFirst).mockResolvedValue({
-        id: 'tx-1', type: 'expense', baseAmountMinor: 300, accountId: 'acc-1', userId: 'user-1', name: 'Lunch', categoryId: 'cat-1', date: new Date(), note: null, createdAt: new Date()
+        id: 'clrq9xyz00000123456789abc', type: 'expense', baseAmountMinor: 300, accountId: 'acc-1', userId: 'user-1', name: 'Lunch', categoryId: 'cat-1', date: new Date(), note: null, createdAt: new Date()
       } as any);
       vi.mocked(prisma.transaction.updateMany).mockResolvedValue({ count: 1 });
 
       // Increasing expense to 700: 800 - 700 = 100 >= 0 (Allowed)
-      await expect(editTransaction('tx-1', {
+      await expect(editTransaction('clrq9xyz00000123456789abc', {
         baseAmountMinor: 700
-      })).resolves.not.toThrow();
+      })).resolves.not.toHaveProperty('error');
 
       // Increasing expense to 900: 800 - 900 = -100 < 0 (Warning)
-      const res = await editTransaction('tx-1', {
+      const res = await editTransaction('clrq9xyz00000123456789abc', {
         baseAmountMinor: 900
       });
-      expect(res).toEqual({ warning: expect.stringMatching(/Not enough money in Bank/) });
+      expect(res).toEqual({
+        success: true,
+        warning: expect.stringMatching(/Not enough money in Bank/)
+      });
     });
   });
 
