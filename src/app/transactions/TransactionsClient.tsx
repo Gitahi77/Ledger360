@@ -3,7 +3,7 @@
 // Copyright (c) 2024-present Eric Gitahi. All rights reserved.
 import { useState, useTransition, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { getCategoryIcon } from '@/lib/icons';
+import { DynamicCategoryIcon } from '@/lib/icons';
 import { SmartUpload } from '@/components/SmartUpload';
 import { addTransaction, editTransaction, deleteTransaction } from '@/lib/actions/transactions';
 import { createTransfer, editTransfer, deleteTransfer } from '@/lib/actions/transfers';
@@ -424,8 +424,8 @@ export function TransactionsClient({
                   amountMinor={tx.baseAmountMinor}
                   type={tx.type}
                   icon={
-                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--bg-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <i className={`ti ${getCategoryIcon(tx.category?.name || 'Other')}`} style={{ fontSize: 20, color: 'var(--color-text-secondary)' }}></i>
+                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--bg-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <DynamicCategoryIcon category={tx.category?.name || 'Other'} size={20} style={{ color: 'var(--color-text-secondary)' }} />
                     </div>
                   }
                   state={tx.type === 'pending' ? 'pending' : undefined}

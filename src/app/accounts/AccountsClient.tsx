@@ -12,7 +12,7 @@ type Account = {
   openingMinor: number; balanceMinor: number; archived: boolean;
 };
 
-import { getAccountIcon } from '@/lib/icons';
+import { DynamicAccountIcon } from '@/lib/icons';
 import { getAccountGroup, ACCOUNT_GROUPS } from '@/lib/accounts';
 import type { AccountType } from '@prisma/client';
 
@@ -122,12 +122,11 @@ export function AccountsClient({ accounts, currency }: { accounts: Account[], cu
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
         {list.map(acc => {
           const typeObj = ACCOUNT_TYPES.find(t => t.id === acc.type);
-          const iconClass = getAccountIcon(acc.type as AccountType);
           return (
             <div key={acc.id} className="card animate-in" style={{ padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', opacity: isArchivedList ? 0.6 : 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--bg-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <i className={`ti ${iconClass}`} style={{ fontSize: 20, color: 'var(--color-text-secondary)' }}></i>
+                  <DynamicAccountIcon type={acc.type as AccountType} size={20} style={{ color: 'var(--color-text-secondary)' }} />
                 </div>
                 <div>
                   <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600 }}>{acc.name}</h3>

@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { createCategory, editCategory, deleteCategory } from '@/lib/actions/categories';
-import { getCategoryIcon } from '@/lib/icons';
+import { DynamicCategoryIcon } from '@/lib/icons';
 import { Plus, Trash2, Edit2, Loader2, X, AlertTriangle } from 'lucide-react';
 
 type Category = {
@@ -150,7 +150,7 @@ export function CategoriesClient({ initialCategories, currency }: { initialCateg
               <div key={cat.id} className="card category-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderRadius: 12, transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)', cursor: 'default' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
                   <div style={{ width: 48, height: 48, borderRadius: 12, background: bgVar, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: `1px solid ${colorVar}40`, boxShadow: `inset 0 2px 4px rgba(255,255,255,0.1)` }}>
-                    <i className={`ti ${getCategoryIcon(cat.name)}`} style={{ fontSize: 24, color: colorVar }}></i>
+                    <DynamicCategoryIcon category={cat.name} size={24} style={{ color: colorVar }} />
                   </div>
                   <div>
                     <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--color-text-primary)', letterSpacing: '-0.01em' }}>{cat.name}</div>

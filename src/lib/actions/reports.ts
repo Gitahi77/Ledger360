@@ -232,8 +232,8 @@ export async function getReportCategories(period: string, type: 'expense' | 'inc
   const total  = rows.reduce((s, r: AggRow) => s + (r._sum.baseAmountMinor ?? 0), 0);
 
   const PALETTE = type === 'expense' 
-    ? ['var(--chart-6)','var(--chart-4)','var(--chart-3)','var(--chart-5)','var(--chart-1)','var(--chart-2)']
-    : ['var(--chart-2)','var(--chart-5)','var(--chart-1)','var(--chart-4)','var(--chart-3)','var(--chart-6)'];
+    ? ['#06b6d4','#f59e0b','#ef4444','#8b5cf6','#1d4ed8','#10b981']
+    : ['#10b981','#8b5cf6','#1d4ed8','#f59e0b','#ef4444','#06b6d4'];
 
   return rows.map((r: AggRow, i) => ({
     name:  catMap[r.categoryId]?.name ?? 'Other',
