@@ -325,7 +325,7 @@ export function LoansClient({ loans, currency, categories = [], accounts = [] }:
   }
 
   return (
-    <>
+    <div className="page-container">
       {showAdd    && <LoanModal accounts={accounts} onClose={() => setShowAdd(false)} currency={currency} />}
       {editLoanObj && <LoanModal loan={editLoanObj} accounts={accounts} onClose={() => setEditLoanObj(null)} currency={currency} />}
 
@@ -379,8 +379,8 @@ export function LoansClient({ loans, currency, categories = [], accounts = [] }:
 
       {/* Loan cards / empty state */}
       {loans.length === 0 ? (
-        <div className="card" style={{ textAlign:'center', padding:'3rem', color:'var(--color-text-secondary)' }}>
-          <CreditCard size={40} style={{ margin:'0 auto 0.75rem', opacity:0.4 }} />
+        <div className="card" style={{ textAlign:'left', padding:'3rem', color:'var(--color-text-secondary)' }}>
+          <CreditCard size={40} style={{ margin:'0 0 0.75rem 0', opacity:0.4 }} />
           <div style={{ fontWeight:600, marginBottom:'0.25rem' }}>No loans tracked</div>
           <div style={{ fontSize:'0.78rem', marginBottom:'1rem' }}>Add a loan to track repayments and interest</div>
           <button className="btn btn-primary" onClick={() => setShowAdd(true)}><Plus size={13}/> Add Loan</button>
@@ -496,6 +496,6 @@ export function LoansClient({ loans, currency, categories = [], accounts = [] }:
           })}
         </div>
       )}
-    </>
+    </div>
   );
 }

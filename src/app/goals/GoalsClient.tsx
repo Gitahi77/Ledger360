@@ -174,7 +174,7 @@ export function GoalsClient({ goals, currency, categories = [] }: { goals: Goal[
   }
 
   return (
-    <>
+    <div className="page-container">
       {showAdd      && <GoalModal onClose={() => setShowAdd(false)} currency={currency} />}
       {editGoalObj  && <GoalModal goal={editGoalObj} onClose={() => setEditGoalObj(null)} currency={currency} />}
 
@@ -228,8 +228,8 @@ export function GoalsClient({ goals, currency, categories = [] }: { goals: Goal[
 
       {/* Goal cards / empty state */}
       {goals.length === 0 ? (
-        <div className="card" style={{ textAlign:'center', padding:'3rem', color:'var(--color-text-secondary)' }}>
-          <PiggyBank size={40} style={{ margin:'0 auto 0.75rem', opacity:0.4 }} />
+        <div className="card" style={{ textAlign:'left', padding:'3rem', color:'var(--color-text-secondary)' }}>
+          <PiggyBank size={40} style={{ margin:'0 0 0.75rem 0', opacity:0.4 }} />
           <div style={{ fontWeight:600, marginBottom:'0.25rem' }}>No goals yet</div>
           <div style={{ fontSize:'0.78rem', marginBottom:'1rem' }}>Set your first savings goal to start tracking progress</div>
           <button className="btn btn-primary" onClick={() => setShowAdd(true)}><Plus size={13}/> Create Goal</button>
@@ -338,6 +338,6 @@ export function GoalsClient({ goals, currency, categories = [] }: { goals: Goal[
           })}
         </div>
       )}
-    </>
+    </div>
   );
 }

@@ -137,7 +137,7 @@ export function BudgetsClient({ budgets, categories, totalBudgeted, totalSpent, 
   }
 
   return (
-    <>
+    <div className="page-container">
       {showAdd && <BudgetModal categories={categories} currency={currency} onClose={() => setShowAdd(false)} />}
       {editBudget && <BudgetModal budget={editBudget} categories={categories} currency={currency} onClose={() => setEditBudget(null)} />}
 
@@ -204,8 +204,8 @@ export function BudgetsClient({ budgets, categories, totalBudgeted, totalSpent, 
 
       {/* Budget cards */}
       {budgets.length === 0 ? (
-        <div className="card" style={{ textAlign:'center', padding:'3rem', color:'var(--color-text-secondary)' }}>
-          <LayoutGrid size={40} style={{ margin:'0 auto 0.75rem', opacity:0.4 }}/>
+        <div className="card" style={{ textAlign:'left', padding:'3rem', color:'var(--color-text-secondary)' }}>
+          <LayoutGrid size={40} style={{ margin:'0 0 0.75rem 0', opacity:0.4 }}/>
           <div style={{ fontWeight:600, marginBottom:'0.25rem' }}>No budgets yet</div>
           <div style={{ fontSize:'0.78rem', marginBottom:'1rem' }}>Create your first budget to start tracking spending</div>
           <button className="btn btn-primary" onClick={() => setShowAdd(true)}><Plus size={13}/> Create Budget</button>
@@ -266,6 +266,6 @@ export function BudgetsClient({ budgets, categories, totalBudgeted, totalSpent, 
           })}
         </div>
       )}
-    </>
+    </div>
   );
 }

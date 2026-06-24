@@ -203,7 +203,7 @@ export function AccountsClient({ accounts, currency }: { accounts: Account[], cu
   }
 
   return (
-    <div style={{ maxWidth: 800, margin: '0 auto', paddingBottom: '3rem' }}>
+    <div className="page-container" style={{ paddingBottom: '3rem' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
         <h1 style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0 }}>Accounts</h1>
         <button onClick={openNew} className="btn btn-primary" style={{ gap: '0.4rem' }}>

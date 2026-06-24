@@ -89,7 +89,7 @@ export function ReportsClient({
   const isEmpty = summary.income === 0 && summary.expenses === 0;
 
   return (
-    <>
+    <div className="page-container">
       {/* Toolbar */}
       <div className="flex items-center justify-between mb-5 animate-in flex-wrap gap-3 print-hide">
         <div style={{ display:'flex', gap:'0.5rem' }}>
@@ -166,7 +166,7 @@ export function ReportsClient({
       </div>
 
       {isEmpty ? (
-        <div className="card" style={{ textAlign:'center', padding:'3rem', color:'var(--color-text-secondary)' }}>
+        <div className="card" style={{ textAlign:'left', padding:'3rem', color:'var(--color-text-secondary)' }}>
           <div style={{ fontSize:'2.5rem', marginBottom:'0.75rem' }}>📊</div>
           <div style={{ fontWeight:600, marginBottom:'0.25rem' }}>No data for {periodLabel.toLowerCase()}</div>
           <div style={{ fontSize:'0.78rem' }}>Add transactions to start seeing reports and insights.</div>
@@ -247,6 +247,6 @@ export function ReportsClient({
           )}
         </>
       )}
-    </>
+    </div>
   );
 }

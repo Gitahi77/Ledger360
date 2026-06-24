@@ -170,7 +170,7 @@ export function CategoriesClient({ initialCategories, currency }: { initialCateg
   );
 
   return (
-    <>
+    <div className="page-container">
       {showAdd && <CategoryModal onClose={() => setShowAdd(false)} />}
       {editCat && <CategoryModal category={editCat} onClose={() => setEditCat(null)} />}
       
@@ -198,6 +198,6 @@ export function CategoriesClient({ initialCategories, currency }: { initialCateg
           background-color: var(--surface-active);
         }
       `}} />
-    </>
+    </div>
   );
 }

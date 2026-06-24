@@ -316,7 +316,7 @@ export function TransactionsClient({
   const periodLabel = PERIOD_LABELS[period] ?? 'This Period';
 
   return (
-    <>
+    <div className="page-container">
       {showAdd && <TransactionModal categories={categories} accounts={accounts} goals={goals} loans={loans} currency={currency} onClose={(w) => { setShowAdd(false); if(w) setPageWarning(w); }} />}
       {editTx && <TransactionModal key={editTx.id} tx={editTx} categories={categories} accounts={accounts} goals={goals} loans={loans} currency={currency} onClose={(w) => { setEditTx(null); if(w) setPageWarning(w); }} />}
       {showUpload && <div className="card mb-5 animate-in"><SmartUpload /></div>}
@@ -404,12 +404,12 @@ export function TransactionsClient({
       {/* Transaction list */}
       <div className="card animate-in delay-2">
         {transactions.length === 0 ? (
-          <div style={{ textAlign:'center', padding:'3rem', color:'var(--color-text-secondary)' }}>
+          <div style={{ textAlign:'left', padding:'3rem', color:'var(--color-text-secondary)' }}>
             <div style={{ fontSize:'2rem', marginBottom:'0.5rem' }}>📭</div>
             <div style={{ fontWeight:600 }}>No transactions in this period</div>
           </div>
         ) : filteredTxs.length === 0 ? (
-          <div style={{ textAlign:'center', padding:'3rem', color:'var(--color-text-secondary)' }}>
+          <div style={{ textAlign:'left', padding:'3rem', color:'var(--color-text-secondary)' }}>
             <div style={{ fontSize:'2rem', marginBottom:'0.5rem' }}>🔍</div>
             <div style={{ fontWeight:600 }}>No matching transactions found</div>
           </div>
@@ -467,6 +467,6 @@ export function TransactionsClient({
           </>
         )}
       </div>
-    </>
+    </div>
   );
 }
