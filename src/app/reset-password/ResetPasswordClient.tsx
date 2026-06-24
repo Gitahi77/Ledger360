@@ -77,12 +77,12 @@ export default function ResetPasswordClient() {
         {success ? (
           <div style={{ textAlign: 'center', padding: '1rem', background: 'var(--color-income-light)', borderRadius: 8 }}>
             <p style={{ color: 'var(--color-income)', fontWeight: 600, fontSize: '0.875rem' }}>Password reset successful!</p>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', marginTop: '0.5rem' }}>Redirecting to login...</p>
+            <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.78rem', marginTop: '0.5rem' }}>Redirecting to login...</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>
+              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '0.4rem' }}>
                 New Password <span style={{ color: 'var(--color-text-secondary)', fontWeight: 400 }}>(min 8 chars)</span>
               </label>
               <div style={{ position: 'relative' }}>

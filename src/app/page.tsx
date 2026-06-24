@@ -204,7 +204,7 @@ export default async function Dashboard({
             <h2 className="card-title" style={{ marginBottom: 0 }}>Cash Flow</h2>
             <span style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)' }}>Last 6 months</span>
           </div>
-          <CashFlowChart data={chartData} />
+          <CashFlowChart data={chartData} currency={currency} />
         </div>
 
         <div className="card" style={{ minWidth: 0, overflow: 'visible' }}>
@@ -212,7 +212,7 @@ export default async function Dashboard({
             <h2 className="card-title" style={{ marginBottom: 0 }}>Spending Breakdown</h2>
             <Link href="/transactions" className="section-link">Details <ArrowRight size={12} /></Link>
           </div>
-          <SpendingDonutChart data={donutData} />
+          <SpendingDonutChart data={donutData} currency={currency} />
         </div>
       </div>
 
@@ -277,7 +277,7 @@ export default async function Dashboard({
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {loans.slice(0, 3).map(l => (
                   <div key={l.id} className="flex items-center justify-between" style={{ fontSize: '0.8125rem' }}>
-                    <span style={{ color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '58%' }}>{l.name}</span>
+                    <span style={{ color: 'var(--color-text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '58%' }}>{l.name}</span>
                     <span style={{ fontWeight: 700, color: l.daysOverdue > 0 ? 'var(--color-expense)' : 'var(--color-text-primary)', whiteSpace: 'nowrap' }}>
                       {fmtAdaptive(l.balanceMinor, currency)}
                     </span>

@@ -62,7 +62,7 @@ export function InsightsFeed({ initialInsights }: { initialInsights: Insight[] }
             <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--color-text-primary)', marginBottom: '0.2rem' }}>
               {insight.title}
             </div>
-            <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+            <div style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>
               {insight.description}
             </div>
           </div>

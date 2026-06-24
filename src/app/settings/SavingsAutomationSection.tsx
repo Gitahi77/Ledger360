@@ -202,7 +202,7 @@ export function SavingsAutomationSection({
       {/* Info box */}
       <div style={{ padding: '0.75rem', background: 'var(--bg-app)', borderRadius: 8, display: 'flex', gap: '0.5rem', marginBottom: '1.25rem' }}>
         <Info size={14} color="var(--color-text-secondary)" style={{ flexShrink: 0, marginTop: 1 }} />
-        <p style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
+        <p style={{ fontSize: '0.72rem', color: 'var(--color-text-secondary)', margin: 0, lineHeight: 1.5 }}>
           Each time you record income, Ledger360 automatically creates a transfer to your savings.
           The rate starts at your base rate and escalates monthly until the cap.
           Every auto-save is visible here and can be undone instantly.

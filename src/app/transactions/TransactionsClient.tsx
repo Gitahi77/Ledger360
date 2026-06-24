@@ -127,7 +127,7 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
   }
 
   return (
-    <div style={{ position:'fixed', inset:0, zIndex:1000, background:'rgba(0,0,0,0.5)', backdropFilter:'blur(6px)', display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem' }} onClick={() => onClose()}>
+    <div className="modal-overlay" style={{ background: 'rgba(0, 0, 0, 0.6)', backdropFilter: 'none' }} onClick={() => onClose()}>
       <div className="card animate-in" style={{ width:'100%', maxWidth:460, padding:'1.75rem', maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <h2 className="card-title" style={{ marginBottom:0 }}>{isEdit ? 'Edit Transaction' : 'Add Transaction'}</h2>
@@ -146,13 +146,13 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
           <div style={{ display:'flex', flexWrap:'wrap', gap:'0.75rem' }}>
             {type !== 'transfer' && (
               <div style={{ flex: '1 1 180px' }}>
-                <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Description</label>
+                <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>Description</label>
                 <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                   value={name} onChange={e => setName(e.target.value)} required placeholder="e.g. Naivas Grocery" />
               </div>
             )}
             <div style={{ flex: type === 'transfer' ? '1 1 100%' : '1 1 180px' }}>
-              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Amount ({currency})</label>
+              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>Amount ({currency})</label>
               <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                 type="number" inputMode="decimal" min="1" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} required placeholder="0.00" />
             </div>
@@ -161,7 +161,7 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
             {type !== 'transfer' ? (
               <>
                 <div style={{ flex: '1 1 180px' }}>
-                  <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Category</label>
+                  <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>Category</label>
                   <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                     value={categoryId} onChange={e => setCategoryId(e.target.value)} required>
                     <option value="">Select…</option>
@@ -172,7 +172,7 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
                   </select>
                 </div>
                 <div style={{ flex: '1 1 180px' }}>
-                  <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Account</label>
+                  <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>Account</label>
                   <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                     value={accountId} onChange={e => setAccountId(e.target.value)} required>
                     <option value="">Select Account…</option>
@@ -183,7 +183,7 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
             ) : (
               <>
                 <div style={{ flex: '1 1 180px' }}>
-                  <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>From Account</label>
+                  <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>From Account</label>
                   <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                     value={accountId} onChange={e => setAccountId(e.target.value)} required>
                     <option value="">Select From Account...</option>
@@ -192,7 +192,7 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
                 </div>
                 {!loanId && (
                   <div style={{ flex: '1 1 180px' }}>
-                    <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>To Account</label>
+                    <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>To Account</label>
                     <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                       value={toAccountId} onChange={e => setToAccountId(e.target.value)} required>
                       <option value="">Select To Account...</option>
@@ -202,7 +202,7 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
                 )}
                 {goals.length > 0 && !loanId && (
                   <div style={{ flex: '1 1 180px' }}>
-                    <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Goal to Fund (Optional)</label>
+                    <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>Goal to Fund (Optional)</label>
                     <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                       value={goalId} onChange={e => setGoalId(e.target.value)}>
                       <option value="">None</option>
@@ -212,7 +212,7 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
                 )}
                 {loans.length > 0 && !goalId && (
                   <div style={{ flex: '1 1 180px' }}>
-                    <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Loan to Repay (Optional)</label>
+                    <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>Loan to Repay (Optional)</label>
                     <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                       value={loanId} onChange={e => setLoanId(e.target.value)}>
                       <option value="">None</option>
@@ -225,18 +225,18 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
           </div>
           {type === 'transfer' && loanId && (
             <div>
-              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Interest Portion ({currency})</label>
+              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>Interest Portion ({currency})</label>
               <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                 type="number" inputMode="decimal" min="0" step="0.01" value={interestAmount} onChange={e => setInterestAmount(e.target.value)} required placeholder="0.00" />
             </div>
           )}
           <div>
-            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Date</label>
+            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>Date</label>
             <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
               type="date" value={date} onChange={e => setDate(e.target.value)} required />
           </div>
           <div>
-            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Note <span style={{ fontWeight:400, color:'var(--color-text-secondary)' }}>(optional)</span></label>
+            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>Note <span style={{ fontWeight:400, color:'var(--color-text-secondary)' }}>(optional)</span></label>
             <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
               value={note} onChange={e => setNote(e.target.value)} placeholder="e.g. May salary" />
           </div>

@@ -104,7 +104,7 @@ function GoalModal({ goal, onClose, currency }: { goal?: Goal; onClose: () => vo
   }
 
   return (
-    <div style={{ position:'fixed', inset:0, zIndex:1000, background:'rgba(0,0,0,0.5)', backdropFilter:'blur(6px)', display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem' }} onClick={onClose}>
+    <div className="modal-overlay" onClick={onClose}>
       <div className="card animate-in" style={{ width:'100%', maxWidth:460, padding:'1.75rem' }} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <h2 className="card-title" style={{ marginBottom:0 }}>{isEdit ? 'Edit Goal' : 'New Goal'}</h2>
@@ -113,12 +113,12 @@ function GoalModal({ goal, onClose, currency }: { goal?: Goal; onClose: () => vo
         {error && <div style={{ padding:'0.625rem', borderRadius:7, background:'var(--color-expense-light)', color:'var(--color-expense)', fontSize:'0.8rem', marginBottom:'1rem' }}>{error}</div>}
         <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:'0.875rem' }}>
           <div>
-            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Goal Name</label>
+            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>Goal Name</label>
             <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
               value={name} onChange={e => setName(e.target.value)} required placeholder="e.g. Emergency Fund" />
           </div>
           <div>
-            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Category</label>
+            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>Category</label>
             <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
               value={category} onChange={e => setCategory(e.target.value)}>
               {GOAL_CATS.map(c => <option key={c} value={c}>{c.charAt(0).toUpperCase()+c.slice(1)}</option>)}
@@ -126,13 +126,13 @@ function GoalModal({ goal, onClose, currency }: { goal?: Goal; onClose: () => vo
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'1fr', gap:'0.75rem' }}>
             <div>
-              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Target Amount ({currency})</label>
+              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>Target Amount ({currency})</label>
               <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                 type="number" min="1" step="1" value={targetAmount} onChange={e => setTargetAmount(e.target.value)} required placeholder="100000" />
             </div>
           </div>
           <div>
-            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>
+            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>
               Target Deadline <span style={{ fontWeight:400, color:'var(--color-text-secondary)' }}>(optional)</span>
             </label>
             <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
@@ -300,7 +300,7 @@ export function GoalsClient({ goals, currency, categories = [] }: { goals: Goal[
                     }}>
                       {fmtAdaptive(g.currentAmountMinor, currency)}
                     </div>
-                    <div style={{ fontSize:'0.7rem', color:'var(--text-secondary)', marginTop:'0.2rem', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                    <div style={{ fontSize:'0.7rem', color:'var(--color-text-secondary)', marginTop:'0.2rem', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
                       of {fmtAdaptive(g.targetAmountMinor, currency)}
                     </div>
                     {inflTargetMinor && inflTargetMinor > g.targetAmountMinor && (
@@ -328,7 +328,7 @@ export function GoalsClient({ goals, currency, categories = [] }: { goals: Goal[
                   </div>
                 ) : (
                   <div className="flex items-center justify-between">
-                    <span style={{ fontSize:'0.72rem', color:'var(--text-secondary)', fontWeight:500, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', flex:1, marginRight:'0.5rem' }}>
+                    <span style={{ fontSize:'0.72rem', color:'var(--color-text-secondary)', fontWeight:500, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', flex:1, marginRight:'0.5rem' }}>
                       {fmtAdaptive(left, currency)} to go
                     </span>
                   </div>

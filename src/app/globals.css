@@ -107,10 +107,10 @@
   --surface-card:    hsl(0, 0%, 100%);
   --bg-sidebar: hsl(0, 0%, 100%);
   --bg-hover:   hsl(220, 20%, 94%);
+  --bg-subtle:  hsl(220, 20%, 94%);
 
   /* Text */
   --color-text-primary:   hsl(222, 47%, 11%);
-  --text-secondary: hsl(215, 25%, 35%);
   --color-text-secondary:     hsl(215, 16%, 52%);
 
   /* Brand — Midnight Green (#0F4C5C) */
@@ -136,6 +136,7 @@
   --warning-grad:  hsl(28, 93%, 54%);
   --warning-light: hsl(28, 95%, 94%);
   --warning-text:  hsl(28, 85%, 28%);
+  --warning-border: hsl(45, 97%, 70%);
 
   /* Accent palette */
   --purple:        hsl(258, 60%, 55%);
@@ -183,7 +184,7 @@
   --background: var(--bg-app);
   --foreground: var(--color-text-primary);
   --secondary:  var(--surface-card);
-  --secondary-foreground: var(--text-secondary);
+  --secondary-foreground: var(--color-text-secondary);
   --color-income-light-bg: var(--color-income-light);
 }
 
@@ -194,10 +195,10 @@
   --surface-card:    hsl(222, 38%, 12%);
   --bg-sidebar: hsl(222, 42%, 10%);
   --bg-hover:   hsl(215, 30%, 16%);
+  --bg-subtle:  hsl(215, 25%, 16%);
 
   /* Text hierarchy — high contrast, not blinding */
   --color-text-primary:   hsl(210, 40%, 96%);
-  --text-secondary: hsl(215, 20%, 68%);
   --color-text-secondary:     hsl(215, 16%, 50%);
 
   /* Brand blue — lighter on dark for readability */
@@ -223,6 +224,7 @@
   --warning-grad:  hsl(38, 88%, 56%);
   --warning-light: hsl(38, 60%, 10%);
   --warning-text:  hsl(38, 90%, 78%);
+  --warning-border: hsl(38, 60%, 30%);
 
   /* Accent palette */
   --purple:        hsl(258, 70%, 72%);
@@ -256,7 +258,7 @@
   --background: var(--bg-app);
   --foreground: var(--color-text-primary);
   --secondary:  var(--surface-card);
-  --secondary-foreground: var(--text-secondary);
+  --secondary-foreground: var(--color-text-secondary);
   --color-income-light-bg: var(--color-income-light);
 }
 
@@ -354,7 +356,7 @@ select, input { font-family: inherit; }
   border-radius: 8px;
   font-size: 0.8125rem;
   font-weight: 500;
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
   position: relative;
   transition: all 0.15s;
   margin-bottom: 2px;
@@ -427,7 +429,7 @@ select, input { font-family: inherit; }
 }
 
 .top-header-title {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: var(--font-space-grotesk), sans-serif;
   font-size: 0.9375rem; font-weight: 700;
   letter-spacing: -0.02em; color: var(--color-text-primary);
 }
@@ -456,7 +458,7 @@ select, input { font-family: inherit; }
 }
 
 .card-title {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: var(--font-space-grotesk), sans-serif;
   font-size: 0.8125rem; font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--color-text-primary); margin-bottom: 1rem;
@@ -487,7 +489,7 @@ select, input { font-family: inherit; }
 }
 
 .kpi-value {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: var(--font-space-grotesk), sans-serif;
   /* Fluid: shrinks from 1.35rem to 1rem as container narrows */
   font-size: clamp(0.95rem, 2.5cqi, 1.35rem);
   font-weight: 700;
@@ -544,7 +546,7 @@ select, input { font-family: inherit; }
 .segmented-btn {
   padding: 0.3rem 0.875rem; border-radius: 4px;
   font-size: 0.775rem; font-weight: 600;
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
   transition: all 0.15s; white-space: nowrap;
 }
 
@@ -595,7 +597,7 @@ select, input { font-family: inherit; }
 
 .btn-outline {
   background: transparent;
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
   border: 1px solid var(--border);
 }
 .btn-outline:hover {
@@ -617,7 +619,7 @@ select, input { font-family: inherit; }
 .theme-toggle {
   width: 30px; height: 30px; border-radius: var(--radius-sm);
   border: 1px solid var(--border);
-  background: var(--surface-card); color: var(--text-secondary);
+  background: var(--surface-card); color: var(--color-text-secondary);
   display: flex; align-items: center; justify-content: center;
   transition: all 0.15s;
 }
@@ -679,7 +681,7 @@ select, input { font-family: inherit; }
 .truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
 /* ── Color text ──────────────────────────────────────────── */
-.text-secondary { color:var(--text-secondary); }
+.text-secondary { color:var(--color-text-secondary); }
 .text-muted     { color:var(--color-text-secondary); }
 .text-success   { color:var(--color-income); }
 .text-danger    { color:var(--color-expense); }
@@ -828,7 +830,7 @@ select, input { font-family: inherit; }
 .ledger-amount {
   text-align: right;
   font-weight: 600;
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: var(--font-space-grotesk), sans-serif;
 }
 .ledger-amount.positive {
   /* Use the semantic token — properly overridden in dark mode */
@@ -864,7 +866,7 @@ select, input { font-family: inherit; }
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
 }
 .transaction-row-content {
   min-width: 0;
@@ -1231,7 +1233,7 @@ select, input { font-family: inherit; }
   margin-bottom: 0.25rem;
 }
 .safe-to-spend-value {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: var(--font-space-grotesk), sans-serif;
   font-weight: 750;
   font-size: 1.5rem;
   letter-spacing: -0.04em;
@@ -1287,7 +1289,7 @@ select, input { font-family: inherit; }
 }
 .insight-card-desc {
   font-size: var(--font-caption);
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
   line-height: 1.5;
 }
 
@@ -1573,7 +1575,7 @@ select, input { font-family: inherit; }
   border-radius: var(--radius-sm);
   background: transparent;
   border: none;
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
   font-weight: 600;
   font-size: 0.85rem;
   cursor: pointer;
@@ -1604,7 +1606,7 @@ select, input { font-family: inherit; }
   padding: 1.5rem;
 }
 .settings-card-title {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: var(--font-space-grotesk), sans-serif;
   font-size: 1.1rem;
   font-weight: 700;
   color: var(--color-text-primary);
@@ -1614,4 +1616,31 @@ select, input { font-family: inherit; }
   font-size: 0.8rem;
   color: var(--color-text-secondary);
   margin-bottom: 1.5rem;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.delay-5 {
+  animation-delay: 500ms;
+}
+
+.delay-6 {
+  animation-delay: 600ms;
+}
+
+.sidebar-signout-btn {
+  color: var(--color-text-secondary);
+  transition: color 0.15s;
+}
+.sidebar-signout-btn:hover {
+  color: var(--color-expense);
 }

@@ -152,8 +152,8 @@ export function MobileNav() {
                       borderRadius: 12,
                     }}
                   >
-                    <Icon size={24} color={active ? 'var(--color-brand)' : 'var(--text-secondary)'} />
-                    <span style={{ fontSize: '0.7rem', fontWeight: 500, color: active ? 'var(--color-brand)' : 'var(--text-secondary)' }}>
+                    <Icon size={24} color={active ? 'var(--color-brand)' : 'var(--color-text-secondary)'} />
+                    <span style={{ fontSize: '0.7rem', fontWeight: 500, color: active ? 'var(--color-brand)' : 'var(--color-text-secondary)' }}>
                       {item.label}
                     </span>
                   </Link>

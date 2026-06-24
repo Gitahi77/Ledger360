@@ -49,7 +49,8 @@ export function TransactionRow({
           <button
             onClick={(e) => { e.stopPropagation(); onEdit(); }}
             className="transaction-row-edit"
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)' }}
+            aria-label="Edit Transaction"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', minWidth: '44px', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
             <Edit2 size={16} />
           </button>
@@ -59,6 +60,8 @@ export function TransactionRow({
             onClick={(e) => { e.stopPropagation(); onDelete(); }}
             disabled={isDeleting}
             className="transaction-row-delete"
+            aria-label="Delete Transaction"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', minWidth: '44px', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
             {isDeleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
           </button>

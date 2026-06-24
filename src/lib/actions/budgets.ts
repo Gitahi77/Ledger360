@@ -33,37 +33,51 @@ export async function getBudgetsWithSpend(inputPeriod: unknown = 'this-month') {
     include: { category: true },
   });
 
-  const allExpenses = await prisma.transaction.findMany({
+  const spendThisPeriodGroup = await prisma.transaction.groupBy({
+    by: ['categoryId'],
     where: { 
       userId: user.id, 
       type: 'expense', 
-      date: { lte: to },
+      date: { gte: from, lte: to },
       NOT: [
         { name: { contains: 'VOIDED', mode: 'insensitive' } },
         { name: { contains: 'pending', mode: 'insensitive' } }
       ]
     },
-    select: { categoryId: true, baseAmountMinor: true, date: true }
+    _sum: { baseAmountMinor: true }
   });
 
   const spendThisPeriodMap: Record<string, number> = {};
-  const rolloverSpendMap = new Map<string, number>();
-
-  for (const tx of allExpenses) {
-    if (tx.date >= from && tx.date <= to) {
-      spendThisPeriodMap[tx.categoryId] = (spendThisPeriodMap[tx.categoryId] || 0) + tx.baseAmountMinor;
+  for (const g of spendThisPeriodGroup) {
+    if (g.categoryId) {
+      spendThisPeriodMap[g.categoryId] = Number(g._sum.baseAmountMinor ?? 0);
     }
   }
 
   const rolloverBudgets = budgets.filter(b => b.rollover);
-  for (const b of rolloverBudgets) {
-    let sum = 0;
-    for (const tx of allExpenses) {
-      if (tx.categoryId === b.categoryId && tx.date >= b.createdAt && tx.date <= to) {
-        sum += tx.baseAmountMinor;
-      }
+  const rolloverSpendMap = new Map<string, number>();
+
+  if (rolloverBudgets.length > 0) {
+    const rolloverPromises = rolloverBudgets.map(async b => {
+      const agg = await prisma.transaction.aggregate({
+        where: {
+          userId: user.id,
+          type: 'expense',
+          categoryId: b.categoryId,
+          date: { gte: b.createdAt, lte: to },
+          NOT: [
+            { name: { contains: 'VOIDED', mode: 'insensitive' } },
+            { name: { contains: 'pending', mode: 'insensitive' } }
+          ]
+        },
+        _sum: { baseAmountMinor: true }
+      });
+      return { id: b.id, sum: Number(agg._sum.baseAmountMinor ?? 0) };
+    });
+    const results = await Promise.all(rolloverPromises);
+    for (const r of results) {
+      rolloverSpendMap.set(r.id, r.sum);
     }
-    rolloverSpendMap.set(b.id, sum);
   }
 
   return budgets.map(b => {
@@ -73,12 +87,16 @@ export async function getBudgetsWithSpend(inputPeriod: unknown = 'this-month') {
     if (b.rollover) {
       let periodsExisted = 1;
       if (b.createdAt < from) {
+        const shiftToNairobi = (d: Date) => new Date(d.getTime() + 3 * 3600000);
+        const bCreated = shiftToNairobi(b.createdAt);
+        const fromDate = shiftToNairobi(from);
+
         if (b.period === 'monthly') {
-          const m1 = b.createdAt.getFullYear() * 12 + b.createdAt.getMonth();
-          const m2 = from.getFullYear() * 12 + from.getMonth();
+          const m1 = bCreated.getUTCFullYear() * 12 + bCreated.getUTCMonth();
+          const m2 = fromDate.getUTCFullYear() * 12 + fromDate.getUTCMonth();
           periodsExisted = Math.max(1, m2 - m1 + 1);
         } else if (b.period === 'yearly') {
-          periodsExisted = Math.max(1, from.getFullYear() - b.createdAt.getFullYear() + 1);
+          periodsExisted = Math.max(1, fromDate.getUTCFullYear() - bCreated.getUTCFullYear() + 1);
         } else if (b.period === 'weekly') {
           periodsExisted = Math.max(1, Math.floor((from.getTime() - b.createdAt.getTime()) / (7 * 86400000)) + 1);
         }
@@ -110,21 +128,27 @@ export async function getBudgetsWithSpend(inputPeriod: unknown = 'this-month') {
 }
 
 /* ── Add (Zod-validated) ──────────────────────────────────── */
-export async function addBudget(raw: {
-  name: string; categoryId: string; limitAmountMinor: number; period: string; rollover?: boolean;
-}) {
-  const { AddBudgetSchema } = await import('@/lib/validation');
-  const data = AddBudgetSchema.parse(raw);
-  const user = await requireAuth();
+export async function addBudget(raw: unknown) {
+  try {
+    const { AddBudgetSchema } = await import('@/lib/validation');
+    const parsed = AddBudgetSchema.safeParse(raw);
+    if (!parsed.success) return { error: 'Invalid input' };
+    const data = parsed.data;
+    const user = await requireAuth();
 
-  const cat = await prisma.category.findFirst({
-    where: { id: data.categoryId, userId: user.id },
-  });
-  if (!cat) throw new Error('Invalid category');
+    const cat = await prisma.category.findFirst({
+      where: { id: data.categoryId, userId: user.id },
+    });
+    if (!cat) return { error: 'Invalid category' };
 
-  await prisma.budget.create({ data: { ...data, rollover: raw.rollover ?? false, userId: user.id, limitAmountMinor: data.limitAmountMinor } });
-  revalidatePath('/budgets');
-  revalidatePath('/');
+    await prisma.budget.create({ data: { ...data, rollover: (data as any).rollover ?? false, userId: user.id, limitAmountMinor: data.limitAmountMinor } });
+    revalidatePath('/budgets');
+    revalidatePath('/');
+    return { success: true };
+  } catch (error) {
+    console.error('[addBudget]', error);
+    return { error: 'An unexpected error occurred. Please try again.' };
+  }
 }
 
 export async function deleteBudget(id: string) {

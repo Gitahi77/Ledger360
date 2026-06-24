@@ -12,11 +12,12 @@ export default async function Reports({
   const { period: rawPeriod } = await searchParams;
   const period = rawPeriod ?? 'this-month';
 
-  const [user, trend, summary, categories] = await Promise.all([
+  const [user, trend, summary, expenseCategories, incomeCategories] = await Promise.all([
     requireAuth(),
     getMonthlyTrend(),
     getReportSummary(period),
-    getReportCategories(period),
+    getReportCategories(period, 'expense'),
+    getReportCategories(period, 'income'),
   ]);
 
   return (
@@ -25,7 +26,8 @@ export default async function Reports({
         period={period}
         trend={trend}
         summary={summary}
-        categories={categories}
+        expenseCategories={expenseCategories}
+        incomeCategories={incomeCategories}
         currency={user.currency}
       />
     </AppLayout>

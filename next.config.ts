@@ -47,7 +47,7 @@ const nextConfig: NextConfig = {
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: blob:",
               // https://*.sentry.io is required for Sentry error reporting to reach the ingest endpoint.
-              "connect-src 'self' https://api.frankfurter.app https://*.sentry.io",
+              "connect-src 'self' https://api.frankfurter.dev https://api.frankfurter.app https://*.sentry.io",
               "object-src 'none'",
               "base-uri 'self'",
               "form-action 'self'",

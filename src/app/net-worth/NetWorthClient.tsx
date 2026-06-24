@@ -6,11 +6,26 @@ import { useRouter } from 'next/navigation';
 import { addAsset, editAsset, deleteAsset } from '@/lib/actions/networth';
 import { fmtAdaptive } from '@/lib/format';
 import { Plus, Trash2, Loader2, X, Home, Car, Briefcase, PiggyBank, Gem, BarChart3, Edit2 } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 import { toMinor, toMajor } from '@/lib/money';
 
 type Asset = { id: string; name: string; category: string; valueMinor: number };
 type Loan  = { id: string; name: string; balanceMinor: number; type: string };
+
+function NwChartTip({ active, payload, label, currency }: any) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div style={{ background:'var(--surface-card)', border:'1px solid var(--border)', borderRadius:8, padding:'0.625rem 0.875rem', boxShadow:'var(--shadow-md)' }}>
+      <p style={{ fontSize:'0.68rem', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em', color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>{label}</p>
+      <div style={{ display:'flex', alignItems:'center', gap:'0.4rem' }}>
+        <div style={{ width:7, height:7, borderRadius:'50%', background: payload[0].value >= 0 ? 'var(--color-income)' : 'var(--color-expense)', flexShrink:0 }} />
+        <span style={{ fontSize:'0.78rem', color:'var(--color-text-secondary)' }}>Net Worth:</span>
+        <span style={{ fontSize:'0.78rem', fontWeight:700, fontFamily:'Space Grotesk,sans-serif', color:'var(--color-text-primary)' }}>{fmtAdaptive(payload[0].value, currency)}</span>
+      </div>
+    </div>
+  );
+}
 
 const ASSET_ICONS: Record<string, React.ReactNode> = {
   Property:    <Home size={16}/>,
@@ -47,7 +62,7 @@ function AssetModal({ asset, onClose, currency }: { asset?: Asset; onClose: () =
   }
 
   return (
-    <div style={{ position:'fixed', inset:0, zIndex:1000, background:'rgba(0,0,0,0.5)', backdropFilter:'blur(6px)', display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem' }} onClick={onClose}>
+    <div className="modal-overlay" onClick={onClose}>
       <div className="card animate-in" style={{ width:'100%', maxWidth:420, padding:'1.75rem' }} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <h2 className="card-title" style={{ marginBottom:0 }}>{isEdit ? 'Update Value' : 'Add Asset'}</h2>
@@ -56,17 +71,17 @@ function AssetModal({ asset, onClose, currency }: { asset?: Asset; onClose: () =
         {error && <div style={{ padding:'0.625rem', borderRadius:7, background:'var(--color-expense-light)', color:'var(--color-expense)', fontSize:'0.8rem', marginBottom:'1rem' }}>{error}</div>}
         <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:'0.875rem' }}>
           <div>
-            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Asset Name</label>
+            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>Asset Name</label>
             <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }} value={name} onChange={e => setName(e.target.value)} required placeholder="e.g. Family Land Machakos" />
           </div>
           <div>
-            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Category</label>
+            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>Category</label>
             <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }} value={category} onChange={e => setCategory(e.target.value)}>
               {ASSET_CATS.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div>
-            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>
+            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>
               {isEdit ? `New Estimated Value (${currency})` : `Current Value (${currency})`}
             </label>
             <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }} type="number" min="0" step="1" value={value} onChange={e => setValue(e.target.value)} required placeholder="500000" autoFocus={isEdit} />
@@ -80,10 +95,12 @@ function AssetModal({ asset, onClose, currency }: { asset?: Asset; onClose: () =
   );
 }
 
-export function NetWorthClient({ assets, liabilities, totalAssetsMinor, totalLiabilitiesMinor, netWorthMinor, debtRatio, currency }: {
+export function NetWorthClient({ assets, liabilities, totalAssetsMinor, totalLiabilitiesMinor, netWorthMinor, debtRatio, history, currency }: {
   assets: Asset[]; liabilities: Loan[];
   totalAssetsMinor: number; totalLiabilitiesMinor: number;
-  netWorthMinor: number; debtRatio: number; currency: string;
+  netWorthMinor: number; debtRatio: number; 
+  history: { date: string; netWorthMinor: number }[];
+  currency: string;
 }) {
   const router     = useRouter();
   const [, startT] = useTransition();
@@ -92,6 +109,10 @@ export function NetWorthClient({ assets, liabilities, totalAssetsMinor, totalLia
   const [deletingId, setDeletingId] = useState<string | null>(null);
   
   const [openSection, setOpenSection] = useState<'assets' | 'liabilities' | null>(null);
+  const [timeframe, setTimeframe] = useState<'1M' | '3M' | '1Y' | 'ALL'>('3M');
+
+  const sliceDays = timeframe === '1M' ? 30 : timeframe === '3M' ? 90 : timeframe === '1Y' ? 365 : 365;
+  const chartData = history.slice(-sliceDays).map(d => ({ ...d, label: new Date(d.date).toLocaleDateString('default', { month: 'short', day: 'numeric' }) }));
 
   async function handleDelete(id: string) {
     if (!confirm('Remove this asset?')) return;
@@ -152,6 +173,53 @@ export function NetWorthClient({ assets, liabilities, totalAssetsMinor, totalLia
               <p className="hero-sub">{debtLabel}</p>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Chart Section */}
+      <div className="card animate-in mb-5">
+        <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h2 className="card-title" style={{ marginBottom: 0 }}>Net Worth History</h2>
+          </div>
+          <div style={{ display: 'flex', gap: '0.25rem', background: 'var(--surface-sunken)', padding: '0.25rem', borderRadius: 8 }}>
+            {['1M', '3M', '1Y', 'ALL'].map(t => (
+              <button 
+                key={t}
+                onClick={() => setTimeframe(t as any)}
+                style={{ 
+                  background: timeframe === t ? 'var(--surface-card)' : 'transparent',
+                  border: timeframe === t ? '1px solid var(--border)' : '1px solid transparent',
+                  borderRadius: 6,
+                  padding: '0.2rem 0.6rem',
+                  fontSize: '0.7rem',
+                  fontWeight: 600,
+                  color: timeframe === t ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
+                  cursor: 'pointer',
+                  boxShadow: timeframe === t ? 'var(--shadow-sm)' : 'none',
+                }}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div style={{ marginTop: '1rem' }}>
+          <ResponsiveContainer width="100%" height={260}>
+            <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <defs>
+                <linearGradient id="colorNw" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="var(--color-brand)" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="var(--color-brand)" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+              <XAxis dataKey="label" tick={{ fontSize: 10, fill: 'var(--color-text-secondary)' }} tickLine={false} axisLine={false} minTickGap={30} dy={10} />
+              <YAxis tick={{ fontSize: 10, fill: 'var(--color-text-secondary)' }} tickLine={false} axisLine={false} tickFormatter={v => Math.abs(v) >= 100000000 ? `${Math.round(v/100000000)}M` : Math.abs(v) >= 100000 ? `${Math.round(v/100000)}k` : String(v/100)} />
+              <Tooltip content={<NwChartTip currency={currency} />} />
+              <Area type="monotone" dataKey="netWorthMinor" stroke="var(--color-brand)" strokeWidth={2.5} fillOpacity={1} fill="url(#colorNw)" />
+            </AreaChart>
+          </ResponsiveContainer>
         </div>
       </div>
 

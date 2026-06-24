@@ -23,27 +23,31 @@ const EditLoanSchema = z.object({
 export async function getLoansForUser(userId: string) {
   const today = new Date();
 
-  const loans: (Loan & { transfers: { baseAmountMinor: number; interestMinor: number }[] })[] = await prisma.loan.findMany({
+  const loans = await prisma.loan.findMany({
     where:   { userId: userId },
-    include: {
-      transfers: { 
-        where: { toAccountId: null },
-        select: { baseAmountMinor: true, interestMinor: true } 
-      }
-    },
     orderBy: { annualRate: 'desc' },
   });
+
+  const transferAgg = await prisma.transfer.groupBy({
+    by: ['loanId'],
+    where: { userId, loanId: { not: null }, toAccountId: null },
+    _sum: { baseAmountMinor: true, interestMinor: true }
+  });
+
+  const transferMap = new Map(transferAgg.map(t => [
+    t.loanId,
+    (t._sum.baseAmountMinor ?? 0) - (t._sum.interestMinor ?? 0)
+  ]));
 
   return loans.map(l => {
     const due  = new Date(l.nextDue);
     const auto = due < today
       ? Math.floor((today.getTime() - due.getTime()) / 86_400_000)
       : 0;
-    const repaidAmount = l.transfers.reduce((s, t) => s + (t.baseAmountMinor - t.interestMinor), 0);
+    const repaidAmount = transferMap.get(l.id) ?? 0;
     const currentBalanceMinor = computeLoanBalance(l.balanceMinor, repaidAmount);
     
-    const { transfers: _transfers, ...rest } = l;
-    return { ...rest, balanceMinor: currentBalanceMinor, daysOverdue: auto };
+    return { ...l, balanceMinor: currentBalanceMinor, daysOverdue: auto };
   });
 }
 
@@ -53,51 +57,54 @@ export async function getLoans() {
 }
 
 /* ── Add (Zod-validated) ──────────────────────────────────── */
-export async function addLoan(raw: {
-  name: string; lender: string; type: string;
-  originalAmountMinor: number; balanceMinor: number;
-  annualRate: number; amortization: string; monthlyPaymentMinor: number; nextDue: string;
-  disbursementType?: string; disbursementAccountId?: string;
-}) {
-  const { AddLoanSchema } = await import('@/lib/validation');
-  const data = AddLoanSchema.parse(raw);
-  const user = await requireAuth();
-  
-  await prisma.$transaction(async (tx) => {
-    const loan = await tx.loan.create({
-      data: {
-        name: data.name,
-        lender: data.lender,
-        type: data.type,
-        userId: user.id,
-        nextDue: new Date(data.nextDue),
-        originalAmountMinor: data.originalAmountMinor,
-        balanceMinor: data.balanceMinor,
-        monthlyPaymentMinor: data.monthlyPaymentMinor,
-        annualRate: data.annualRate,
-        amortization: data.amortization,
-      },
-    });
-
-    if (data.disbursementType === 'received_funds' && data.disbursementAccountId) {
-      await tx.transfer.create({
+export async function addLoan(raw: unknown) {
+  try {
+    const { AddLoanSchema } = await import('@/lib/validation');
+    const parsed = AddLoanSchema.safeParse(raw);
+    if (!parsed.success) return { error: 'Invalid input' };
+    const data = parsed.data;
+    const user = await requireAuth();
+    
+    await prisma.$transaction(async (tx) => {
+      const loan = await tx.loan.create({
         data: {
+          name: data.name,
+          lender: data.lender,
+          type: data.type,
           userId: user.id,
-          fromAccountId: null,
-          toAccountId: data.disbursementAccountId,
-          amountMinor: data.balanceMinor,
-          currency: user.currency || 'KES',
-          baseAmountMinor: data.balanceMinor,
-          fxRate: 1,
-          date: new Date(),
-          source: 'loan_disbursement',
-          loanId: loan.id,
-        }
+          nextDue: new Date(data.nextDue),
+          originalAmountMinor: data.originalAmountMinor,
+          balanceMinor: data.balanceMinor,
+          monthlyPaymentMinor: data.monthlyPaymentMinor,
+          annualRate: data.annualRate,
+          amortization: data.amortization,
+        },
       });
-    }
-  });
-  revalidatePath('/loans');
-  revalidatePath('/');
+
+      if (data.disbursementType === 'received_funds' && data.disbursementAccountId) {
+        await tx.transfer.create({
+          data: {
+            userId: user.id,
+            fromAccountId: null,
+            toAccountId: data.disbursementAccountId,
+            amountMinor: data.balanceMinor,
+            currency: user.currency || 'KES',
+            baseAmountMinor: data.balanceMinor,
+            fxRate: 1,
+            date: new Date(),
+            source: 'loan_disbursement',
+            loanId: loan.id,
+          }
+        });
+      }
+    });
+    revalidatePath('/loans');
+    revalidatePath('/');
+    return { success: true };
+  } catch (error) {
+    console.error('[addLoan]', error);
+    return { error: 'An unexpected error occurred. Please try again.' };
+  }
 }
 
 export async function deleteLoan(id: string) {

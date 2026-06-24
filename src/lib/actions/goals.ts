@@ -16,40 +16,48 @@ const EditGoalSchema = z.object({
 
 export async function getGoals() {
   const user = await requireAuth();
-  const goals: (Goal & { transfers: { baseAmountMinor: number }[] })[] = await prisma.goal.findMany({
+  const goals: Goal[] = await prisma.goal.findMany({
     where: { userId: user.id },
-    include: {
-      transfers: { select: { baseAmountMinor: true } },
-    },
     orderBy: { deadline: 'asc' },
   });
 
+  const transferAgg = await prisma.transfer.groupBy({
+    by: ['goalId'],
+    where: { userId: user.id, goalId: { not: null } },
+    _sum: { baseAmountMinor: true },
+  });
+
+  const transferMap = new Map(transferAgg.map(t => [t.goalId, t._sum.baseAmountMinor ?? 0]));
+
   return goals.map(g => {
-    const currentAmountMinor = g.transfers.reduce((sum, t) => sum + t.baseAmountMinor, 0);
-    const { transfers: _transfers, ...rest } = g;
-    return { ...rest, currentAmountMinor };
+    return { ...g, currentAmountMinor: transferMap.get(g.id) ?? 0 };
   });
 }
 
 /* ── Add (Zod-validated) ──────────────────────────────────── */
-export async function addGoal(raw: {
-  name: string; category: string; targetAmountMinor: number;
-  deadline?: string;
-}) {
-  const { AddGoalSchema } = await import('@/lib/validation');
-  const data = AddGoalSchema.parse(raw);
-  const user = await requireAuth();
-  await prisma.goal.create({
-    data: {
-      name:          data.name,
-      category:      data.category,
-      targetAmountMinor:  data.targetAmountMinor,
-      deadline:      data.deadline ? new Date(data.deadline) : null,
-      userId:        user.id,
-    },
-  });
-  revalidatePath('/goals');
-  revalidatePath('/');
+export async function addGoal(raw: unknown) {
+  try {
+    const { AddGoalSchema } = await import('@/lib/validation');
+    const parsed = AddGoalSchema.safeParse(raw);
+    if (!parsed.success) return { error: 'Invalid input' };
+    const data = parsed.data;
+    const user = await requireAuth();
+    await prisma.goal.create({
+      data: {
+        name:          data.name,
+        category:      data.category,
+        targetAmountMinor:  data.targetAmountMinor,
+        deadline:      data.deadline ? new Date(data.deadline) : null,
+        userId:        user.id,
+      },
+    });
+    revalidatePath('/goals');
+    revalidatePath('/');
+    return { success: true };
+  } catch (error) {
+    console.error('[addGoal]', error);
+    return { error: 'An unexpected error occurred. Please try again.' };
+  }
 }
 
 export async function deleteGoal(id: string) {

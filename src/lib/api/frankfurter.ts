@@ -20,7 +20,7 @@ export async function getRates(base: string = 'USD'): Promise<FxRates | null> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
     const res = await fetch(
-      `https://api.frankfurter.app/latest?from=${base}&to=${toCurrencies}`,
+      `https://api.frankfurter.dev/v2/latest?provider=cbk&from=${base}&to=${toCurrencies}`,
       { next: { revalidate: 3600 }, signal: controller.signal }
     );
     clearTimeout(timeoutId);

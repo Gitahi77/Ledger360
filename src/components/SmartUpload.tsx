@@ -140,7 +140,7 @@ export function SmartUpload({ onDone }: { onDone?: () => void }) {
               flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.375rem',
               padding: '0.6rem 0.5rem', border: 'none', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600,
               background: tab === t.key ? 'var(--color-brand)' : 'transparent',
-              color:      tab === t.key ? 'white' : 'var(--text-secondary)',
+              color:      tab === t.key ? 'white' : 'var(--color-text-secondary)',
               transition: 'all 0.15s',
             }}
           >
@@ -162,7 +162,7 @@ export function SmartUpload({ onDone }: { onDone?: () => void }) {
         <select
           value={accountId}
           onChange={e => setAccountId(e.target.value)}
-          className="input-base"
+          className="input-field"
           style={{ width: '100%' }}
         >
           <option value="" disabled>Select an account...</option>

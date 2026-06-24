@@ -139,7 +139,7 @@ function AccordionHeader({ section, isOpen, onClick }: {
         background: isOpen ? 'var(--color-brand-light)' : 'var(--surface-card)',
         border:`1px solid ${isOpen ? 'var(--color-brand)' : 'var(--border)'}`,
         borderBottom: isOpen ? 'none' : `1px solid var(--border)`,
-        color: isOpen ? 'var(--color-brand)' : 'var(--text-secondary)',
+        color: isOpen ? 'var(--color-brand)' : 'var(--color-text-secondary)',
         textAlign:'left', cursor:'pointer',
         transition:'all 0.2s', marginBottom: isOpen ? 0 : '0.5rem',
       }}
@@ -507,7 +507,7 @@ export function SettingsClient({
                 </div>
                 <div style={{ marginTop:'1rem', padding:'0.75rem', background:'var(--bg-app)', borderRadius:8, display:'flex', gap:'0.5rem' }}>
                   <Info size={14} color="var(--color-text-secondary)" style={{ flexShrink:0, marginTop:1 }} />
-                  <p style={{ fontSize:'0.72rem', color:'var(--text-secondary)' }}>Notifications are in-app only. Email and push notifications coming soon.</p>
+                  <p style={{ fontSize:'0.72rem', color:'var(--color-text-secondary)' }}>Notifications are in-app only. Email and push notifications coming soon.</p>
                 </div>
               </form>
             </div>

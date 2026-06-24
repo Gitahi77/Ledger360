@@ -38,6 +38,7 @@ export function ThemeToggle() {
       className="theme-toggle"
       aria-label="Toggle theme"
       title={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+      style={{ minWidth: '44px', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
     >
       {isDark ? <Sun size={20} /> : <Moon size={20} />}
     </button>

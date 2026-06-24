@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { TrendingUp, TrendingDown, Clock, AlertCircle } from 'lucide-react';
+import { formatKES } from '@/lib/format';
 
 interface NseStock {
   symbol: string;
@@ -93,7 +94,7 @@ export function NsePortfolioBoard() {
                 <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{stock.name}</div>
               </div>
               <div style={{ textAlign: 'right', fontWeight: 600, fontFamily: 'Space Grotesk, sans-serif' }}>
-                {stock.price.toFixed(2)}
+                {formatKES(stock.price)}
               </div>
               <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem' }}>
                 <span style={{ background: bg, color: color, padding: '0.2rem 0.4rem', borderRadius: 4, fontSize: '0.75rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
@@ -108,7 +109,7 @@ export function NsePortfolioBoard() {
       
       <div style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>
         <p style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)', margin: 0 }}>
-          Prices as of market close. Data may be delayed.
+          Prices provided by Yahoo Finance. Data may be delayed by up to 15 minutes.
         </p>
       </div>
     </div>

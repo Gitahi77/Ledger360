@@ -88,33 +88,40 @@ export async function getAccountBalances(userId: string): Promise<AccountWithBal
   });
 }
 
-export async function createAccount(data: z.infer<typeof AccountSchema>) {
-  const user = await requireAuth();
-  const valid = AccountSchema.parse(data);
+export async function createAccount(rawData: unknown) {
+  try {
+    const user = await requireAuth();
+    const parsed = AccountSchema.safeParse(rawData);
+    if (!parsed.success) return { error: 'Invalid input' };
+    const valid = parsed.data;
 
-  const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-    const account = await tx.account.create({
-      data: {
-        ...valid,
-        currency: user.currency || 'KES',
-        userId: user.id,
-      },
+    const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const account = await tx.account.create({
+        data: {
+          ...valid,
+          currency: user.currency || 'KES',
+          userId: user.id,
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          userId: user.id,
+          action: 'CREATE_ACCOUNT',
+          resource: 'Account',
+          metadata: JSON.stringify({ accountId: account.id, name: account.name }),
+        },
+      });
+
+      return account;
     });
 
-    await tx.auditLog.create({
-      data: {
-        userId: user.id,
-        action: 'CREATE_ACCOUNT',
-        resource: 'Account',
-        metadata: JSON.stringify({ accountId: account.id, name: account.name }),
-      },
-    });
-
-    return account;
-  });
-
-  invalidateAccountPaths();
-  return result;
+    invalidateAccountPaths();
+    return { success: true, account: result };
+  } catch (error) {
+    console.error('[createAccount]', error);
+    return { error: 'An unexpected error occurred. Please try again.' };
+  }
 }
 
 export async function updateAccount(id: string, rawData: unknown) {

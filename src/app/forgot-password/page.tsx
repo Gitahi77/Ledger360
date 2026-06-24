@@ -42,13 +42,13 @@ export default function ForgotPasswordPage() {
         {sent ? (
           <div style={{ textAlign: 'center', padding: '1rem', background: 'var(--color-income-light)', borderRadius: 8 }}>
             <p style={{ color: 'var(--color-income)', fontWeight: 600, fontSize: '0.875rem', marginBottom: '0.5rem' }}>Check your email</p>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.78rem' }}>If an account exists for {email}, a reset link has been sent.</p>
+            <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.78rem' }}>If an account exists for {email}, a reset link has been sent.</p>
             <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.7rem', marginTop: '0.5rem' }}>(In dev mode, check your server console for the link)</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>Email Address</label>
+              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '0.4rem' }}>Email Address</label>
               <input 
                 type="email" 
                 value={email} 

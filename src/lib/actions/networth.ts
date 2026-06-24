@@ -82,3 +82,44 @@ export async function deleteAsset(id: string) {
   revalidatePath('/net-worth');
   revalidatePath('/');
 }
+
+export async function getNetWorthHistory(days: number) {
+  const user = await requireAuth();
+  const currentNw = (await getNetWorth()).netWorthMinor;
+  
+  const flows = await prisma.$queryRaw<{ date: string; change: number }[]>`
+    SELECT 
+      DATE(date AT TIME ZONE 'Africa/Nairobi')::text AS date,
+      SUM(CASE WHEN type = 'income' THEN "baseAmountMinor" ELSE -"baseAmountMinor" END)::float AS change
+    FROM "Transaction"
+    WHERE "userId" = ${user.id} AND date >= CURRENT_DATE - (${days} * INTERVAL '1 day')
+    GROUP BY DATE(date AT TIME ZONE 'Africa/Nairobi')
+    ORDER BY date DESC
+  `;
+
+  const history: { date: string; netWorthMinor: number }[] = [];
+  let runningNw = currentNw;
+  
+  const changeMap = new Map<string, number>();
+  for (const f of flows) {
+    changeMap.set(f.date, f.change);
+  }
+
+  const today = new Date();
+  for (let i = 0; i <= days; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const dateStr = `${yyyy}-${mm}-${dd}`;
+    
+    history.unshift({ date: dateStr, netWorthMinor: runningNw });
+    
+    const change = changeMap.get(dateStr) || 0;
+    runningNw -= Math.round(change);
+  }
+
+  return history;
+}

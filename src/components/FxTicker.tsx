@@ -97,7 +97,7 @@ export function FxTicker({ currency }: { currency: string }) {
 
       {/* Loading skeleton */}
       {loading && !rates && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))', gap: '0.5rem' }}>
           {[1,2,3,4,5,6].map(i => (
             <div key={i} style={{ height: 52, borderRadius: 8, background: 'var(--bg-hover)', animation: 'pulse 2s ease infinite' }} />
           ))}
@@ -106,7 +106,7 @@ export function FxTicker({ currency }: { currency: string }) {
 
       {/* Rate grid */}
       {rates && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))', gap: '0.5rem' }}>
           {CURRENCIES.map(c => {
             const rate = rates.rates[c.code];
             if (!rate) return null;
@@ -134,7 +134,7 @@ export function FxTicker({ currency }: { currency: string }) {
       )}
 
       <div style={{ fontSize: '0.62rem', color: 'var(--color-text-secondary)', marginTop: '0.625rem', textAlign: 'right' }}>
-        Source: European Central Bank via Frankfurter API
+        Source: Central Bank of Kenya via Frankfurter API
       </div>
     </div>
   );

@@ -115,7 +115,7 @@ export function MpesaSmsInput({ onImport }: Props) {
                 <td style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.name}</td>
                 <td>{t.date}</td>
                 <td>
-                  <span style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: 4, background: 'var(--bg-hover)', color: 'var(--text-secondary)' }}>
+                  <span style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: 4, background: 'var(--bg-hover)', color: 'var(--color-text-secondary)' }}>
                     {t.category}
                   </span>
                 </td>

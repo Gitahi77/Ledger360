@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/actions/_auth';
 import { revalidatePath } from 'next/cache';
 import { logActivity } from '@/lib/audit';
+import { getNairobiNow } from '@/lib/dateUtils';
 import { z } from 'zod';
 
 const DeleteSchema = z.object({ id: z.string().cuid() });
@@ -15,10 +16,10 @@ export async function getTransfers(period?: 'this-month' | 'last-30-days' | 'all
   // Basic date filtering
   let dateFilter = {};
   if (period === 'this-month') {
-    const now = new Date();
+    const now = getNairobiNow();
     dateFilter = { gte: new Date(now.getFullYear(), now.getMonth(), 1) };
   } else if (period === 'last-30-days') {
-    const d = new Date();
+    const d = getNairobiNow();
     d.setDate(d.getDate() - 30);
     dateFilter = { gte: d };
   }
@@ -37,108 +38,108 @@ export async function getTransfers(period?: 'this-month' | 'last-30-days' | 'all
 }
 
 /* ── Add (Zod-validated) ──────────────────────────────────── */
-export async function createTransfer(raw: {
-  fromAccountId: string;
-  toAccountId?: string | null;
-  amountMinor: number;
-  date: string;
-  note?: string;
-  goalId?: string | null;
-  loanId?: string | null;
-  interestMinor?: number;
-}) {
-  const { AddTransferSchema } = await import('@/lib/validation');
-  const data = AddTransferSchema.parse(raw);
-  const user = await requireAuth();
+export async function createTransfer(raw: unknown) {
+  try {
+    const { AddTransferSchema } = await import('@/lib/validation');
+    const parsed = AddTransferSchema.safeParse(raw);
+    if (!parsed.success) return { error: 'Invalid input' };
+    const data = parsed.data;
+    const user = await requireAuth();
 
-  const { toMajor } = await import('@/lib/money');
+    const { toMajor } = await import('@/lib/money');
 
-  const [fromAccount, toAccount, goal] = await Promise.all([
-    prisma.account.findFirst({ where: { id: data.fromAccountId, userId: user.id } }),
-    data.toAccountId ? prisma.account.findFirst({ where: { id: data.toAccountId, userId: user.id } }) : Promise.resolve(null),
-    data.goalId ? prisma.goal.findFirst({ where: { id: data.goalId, userId: user.id } }) : Promise.resolve(null)
-  ]);
+    const [fromAccount, toAccount, goal] = await Promise.all([
+      prisma.account.findFirst({ where: { id: data.fromAccountId, userId: user.id } }),
+      data.toAccountId ? prisma.account.findFirst({ where: { id: data.toAccountId, userId: user.id } }) : Promise.resolve(null),
+      data.goalId ? prisma.goal.findFirst({ where: { id: data.goalId, userId: user.id } }) : Promise.resolve(null)
+    ]);
 
-  if (!fromAccount) throw new Error('Please choose a valid From Account.');
-  if (data.toAccountId) {
-    if (!toAccount) throw new Error('Please choose a valid To Account.');
-    // Same-currency transfers only for now
-    if (fromAccount.currency !== toAccount.currency) {
-      throw new Error('Multi-currency transfers are not yet supported. Both accounts must have the same currency.');
-    }
-  }
-  if (data.goalId && !goal) {
-    throw new Error('Please choose a valid goal.');
-  }
-
-  let finalInterestMinor = 0;
-  if (data.loanId) {
-    const { getLoansForUser } = await import('@/lib/actions/loans');
-    const loans = await getLoansForUser(user.id);
-    const loan = loans.find(l => l.id === data.loanId);
-    if (!loan) throw new Error('Please choose a valid loan.');
-    
-    // Auto-compute default interest (multiply before divide to prevent FP drift)
-    const autoInterest = Math.round((loan.balanceMinor * loan.annualRate) / 1200);
-    finalInterestMinor = data.interestMinor ?? autoInterest;
-
-    // Server-side validation
-    if (finalInterestMinor < 0) finalInterestMinor = 0;
-    if (finalInterestMinor > data.amountMinor) {
-      finalInterestMinor = data.amountMinor;
-    }
-    
-    const principal = data.amountMinor - finalInterestMinor;
-    if (principal > loan.balanceMinor) {
-      throw new Error(`You can't pay more than you owe. This loan's remaining balance is  ${toMajor(loan.balanceMinor)}.`);
-    }
-  }
-
-  // Overdraft prevention
-  if (fromAccount.type !== 'CREDIT_CARD') {
-    const { getAccountBalances } = await import('@/lib/actions/accounts');
-    const balances = await getAccountBalances(user.id);
-    const acc = balances.find(a => a.id === fromAccount.id);
-    if (acc && acc.balanceMinor - data.amountMinor < 0) {
-      throw new Error(`Not enough money in ${fromAccount.name}. Available: ${fromAccount.currency} ${toMajor(acc.balanceMinor)}.`);
-    }
-  }
-
-  const newTransfer = await prisma.$transaction(async (tx) => {
-    const createdTransfer = await tx.transfer.create({
-      data: {
-        userId: user.id,
-        fromAccountId: data.fromAccountId,
-        toAccountId: data.toAccountId || null,
-        amountMinor: data.amountMinor,
-        currency: fromAccount.currency,
-        baseAmountMinor: data.amountMinor, // fxRate = 1
-        fxRate: 1,
-        date: new Date(data.date),
-        note: data.note,
-        goalId: data.goalId || null,
-        loanId: data.loanId || null,
-        interestMinor: finalInterestMinor,
-        source: 'MANUAL',
-      },
-    });
-
-    await tx.auditLog.create({
-      data: {
-        userId: user.id,
-        action: 'CREATE',
-        resource: 'Transfer',
-        metadata: JSON.stringify({ transferId: createdTransfer.id, amount: data.amountMinor, from: data.fromAccountId, to: data.toAccountId ?? undefined, goal: data.goalId ?? undefined, loan: data.loanId ?? undefined }),
+    if (!fromAccount) throw new Error('Please choose a valid From Account.');
+    if (data.toAccountId) {
+      if (!toAccount) throw new Error('Please choose a valid To Account.');
+      // Same-currency transfers only for now
+      if (fromAccount.currency !== toAccount.currency) {
+        throw new Error('Multi-currency transfers are not yet supported. Both accounts must have the same currency.');
       }
+    }
+    if (data.goalId && !goal) {
+      throw new Error('Please choose a valid goal.');
+    }
+
+    let finalInterestMinor = 0;
+    if (data.loanId) {
+      const { getLoansForUser } = await import('@/lib/actions/loans');
+      const loans = await getLoansForUser(user.id);
+      const loan = loans.find(l => l.id === data.loanId);
+      if (!loan) throw new Error('Please choose a valid loan.');
+      
+      // Auto-compute default interest (multiply before divide to prevent FP drift)
+      const autoInterest = Math.round((loan.balanceMinor * loan.annualRate) / 1200);
+      finalInterestMinor = data.interestMinor ?? autoInterest;
+
+      // Server-side validation
+      if (finalInterestMinor < 0) finalInterestMinor = 0;
+      if (finalInterestMinor > data.amountMinor) {
+        finalInterestMinor = data.amountMinor;
+      }
+      
+      const principal = data.amountMinor - finalInterestMinor;
+      if (principal > loan.balanceMinor) {
+        throw new Error(`You can't pay more than you owe. This loan's remaining balance is  ${toMajor(loan.balanceMinor)}.`);
+      }
+    }
+
+    // Overdraft prevention
+    if (fromAccount.type !== 'CREDIT_CARD') {
+      const { getAccountBalances } = await import('@/lib/actions/accounts');
+      const balances = await getAccountBalances(user.id);
+      const acc = balances.find(a => a.id === fromAccount.id);
+      if (acc && acc.balanceMinor - data.amountMinor < 0) {
+        throw new Error(`Not enough money in ${fromAccount.name}. Available: ${fromAccount.currency} ${toMajor(acc.balanceMinor)}.`);
+      }
+    }
+
+    const newTransfer = await prisma.$transaction(async (tx) => {
+      const createdTransfer = await tx.transfer.create({
+        data: {
+          userId: user.id,
+          fromAccountId: data.fromAccountId,
+          toAccountId: data.toAccountId || null,
+          amountMinor: data.amountMinor,
+          currency: fromAccount.currency,
+          baseAmountMinor: data.amountMinor, // fxRate = 1
+          fxRate: 1,
+          date: new Date(data.date),
+          note: data.note,
+          goalId: data.goalId || null,
+          loanId: data.loanId || null,
+          interestMinor: finalInterestMinor,
+          source: 'MANUAL',
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          userId: user.id,
+          action: 'CREATE',
+          resource: 'Transfer',
+          metadata: JSON.stringify({ transferId: createdTransfer.id, amount: data.amountMinor, from: data.fromAccountId, to: data.toAccountId ?? undefined, goal: data.goalId ?? undefined, loan: data.loanId ?? undefined }),
+        }
+      });
+
+      return createdTransfer;
     });
 
-    return createdTransfer;
-  });
-
-  revalidatePath('/transactions');
-  revalidatePath('/accounts');
-  revalidatePath('/finance');
-  revalidatePath('/');
+    revalidatePath('/transactions');
+    revalidatePath('/accounts');
+    revalidatePath('/finance');
+    revalidatePath('/');
+    return { success: true };
+  } catch (error) {
+    console.error('[createTransfer]', error);
+    const msg = error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.';
+    return { error: msg };
+  }
 }
 
 export async function editTransfer(id: string, rawData: unknown) {

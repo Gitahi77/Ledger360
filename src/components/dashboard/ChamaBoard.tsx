@@ -48,7 +48,7 @@ export async function ChamaBoard() {
                 <div>
                   <h3 style={{ fontSize: '0.9rem', fontWeight: 700, margin: 0, color: 'var(--color-text-primary)' }}>{chama.account.name}</h3>
                   <p style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)', margin: 0, marginTop: '0.1rem' }}>
-                    Payout Position: <strong style={{ color: 'var(--text-secondary)' }}>{chama.yourPayoutPosition} of {chama.totalMembers}</strong>
+                    Payout Position: <strong style={{ color: 'var(--color-text-secondary)' }}>{chama.yourPayoutPosition} of {chama.totalMembers}</strong>
                   </p>
                 </div>
                 <div style={{ textAlign: 'right' }}>

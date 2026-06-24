@@ -57,7 +57,7 @@ export default function GlobalError({
         <h2 style={{ fontWeight: 700, marginBottom: '0.5rem', color: 'var(--color-text-primary)' }}>
           Something went wrong
         </h2>
-        <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
+        <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '1.5rem', lineHeight: 1.6 }}>
           {friendlyMessage}
         </p>
         <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>

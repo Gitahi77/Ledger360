@@ -127,7 +127,7 @@ export function AccountsClient({ accounts, currency }: { accounts: Account[], cu
             <div key={acc.id} className="card animate-in" style={{ padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', opacity: isArchivedList ? 0.6 : 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--bg-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <i className={`ti ${iconClass}`} style={{ fontSize: 20, color: 'var(--text-secondary)' }}></i>
+                  <i className={`ti ${iconClass}`} style={{ fontSize: 20, color: 'var(--color-text-secondary)' }}></i>
                 </div>
                 <div>
                   <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600 }}>{acc.name}</h3>
@@ -212,13 +212,13 @@ export function AccountsClient({ accounts, currency }: { accounts: Account[], cu
       </div>
 
       <div style={{ marginBottom: '2rem' }}>
-        <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1rem', color: 'var(--text-secondary)' }}>Active Accounts</h2>
+        <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1rem', color: 'var(--color-text-secondary)' }}>Active Accounts</h2>
         {renderGroupedList(activeAccounts, false)}
       </div>
 
       {archivedAccounts.length > 0 && (
         <div>
-          <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1rem', color: 'var(--text-secondary)' }}>Archived Accounts</h2>
+          <h2 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1rem', color: 'var(--color-text-secondary)' }}>Archived Accounts</h2>
           <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginBottom: '1rem' }}>
             Archived accounts do not appear in dropdowns, but their balances still count toward your Net Worth.
           </p>
@@ -228,7 +228,7 @@ export function AccountsClient({ accounts, currency }: { accounts: Account[], cu
 
       {/* Modal */}
       {showModal && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }} onClick={() => setShowModal(false)}>
+        <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="card animate-in" style={{ width: '100%', maxWidth: 400, padding: '1.5rem', maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
               <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600 }}>{editingAcc ? 'Edit Account' : 'New Account'}</h2>
@@ -239,13 +239,13 @@ export function AccountsClient({ accounts, currency }: { accounts: Account[], cu
 
             <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>Account Name</label>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '0.35rem' }}>Account Name</label>
                 <input required className="input-field" style={{ width: '100%', padding: '0.55rem 0.75rem', fontSize: '0.85rem' }}
                   value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Main Checking" />
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>Type</label>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '0.35rem' }}>Type</label>
                 <select required className="input-field" style={{ width: '100%', padding: '0.55rem 0.75rem', fontSize: '0.85rem' }}
                   value={type} onChange={e => setType(e.target.value)}>
                   {ACCOUNT_TYPES.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
@@ -253,7 +253,7 @@ export function AccountsClient({ accounts, currency }: { accounts: Account[], cu
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>Opening Balance ({currency})</label>
+                <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '0.35rem' }}>Opening Balance ({currency})</label>
                 <input type="number" step="0.01" inputMode="decimal" className="input-field" style={{ width: '100%', padding: '0.55rem 0.75rem', fontSize: '0.85rem' }}
                   value={opening} onChange={e => setOpening(e.target.value)} placeholder="0.00" />
                 <p style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)', marginTop: '0.3rem' }}>

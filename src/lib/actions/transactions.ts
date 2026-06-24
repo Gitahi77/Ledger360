@@ -215,18 +215,18 @@ export async function getCategories(inputType?: unknown) {
 }
 
 /* ── Add (Zod-validated) ──────────────────────────────────── */
-export async function addTransaction(raw: {
-  name: string; baseAmountMinor: number; type: string;
-  categoryId: string; accountId?: string; date: string; note?: string;
-}) {
-  const { AddTransactionSchema } = await import('@/lib/validation');
-  const data = AddTransactionSchema.parse(raw);
-  const user = await requireAuth();
+export async function addTransaction(raw: unknown) {
+  try {
+    const { AddTransactionSchema } = await import('@/lib/validation');
+    const parsed = AddTransactionSchema.safeParse(raw);
+    if (!parsed.success) return { error: 'Invalid input' };
+    const data = parsed.data;
+    const user = await requireAuth();
 
-  // RLS-equivalent: validate category belongs to this user
-  const cat = await prisma.category.findFirst({
-    where: { id: data.categoryId, userId: user.id },
-  });
+    // RLS-equivalent: validate category belongs to this user
+    const cat = await prisma.category.findFirst({
+      where: { id: data.categoryId, userId: user.id },
+    });
   if (!cat) throw new Error('Please choose a valid category.');
 
   // Find a default account if not provided
@@ -296,24 +296,25 @@ export async function addTransaction(raw: {
     );
   }
 
-  revalidatePath('/transactions');
-  revalidatePath('/');
-  const warnings = [warning, autoSaveWarning].filter(Boolean).join(' ');
-  return { warning: warnings || undefined };
+    revalidatePath('/transactions');
+    revalidatePath('/');
+    const warnings = [warning, autoSaveWarning].filter(Boolean).join(' ');
+    return { warning: warnings || undefined, success: true };
+  } catch (error) {
+    console.error('[addTransaction]', error);
+    return { error: 'An unexpected error occurred. Please try again.' };
+  }
 }
-export async function importTransactions(rows: {
-  name: string; baseAmountMinor: number; type: string;
-  categoryName: string; date: string; note?: string;
-  reference?: string; importHash?: string;
-}[], targetAccountId: string) {
-  const user = await requireAuth();
-  if (!Array.isArray(rows) || rows.length === 0) throw new Error('No rows to import');
-  if (rows.length > 500) throw new Error('Max 500 rows per import');
-  if (!targetAccountId) throw new Error('Account ID is required for import');
+export async function importTransactions(rows: any[], targetAccountId: string) {
+  try {
+    const user = await requireAuth();
+    if (!Array.isArray(rows) || rows.length === 0) throw new Error('No rows to import');
+    if (rows.length > 500) throw new Error('Max 500 rows per import');
+    if (!targetAccountId) throw new Error('Account ID is required for import');
 
-  // Verify the target account exists and belongs to the user
-  const account = await prisma.account.findFirst({ where: { id: targetAccountId, userId: user.id } });
-  if (!account) throw new Error('Selected account not found');
+    // Verify the target account exists and belongs to the user
+    const account = await prisma.account.findFirst({ where: { id: targetAccountId, userId: user.id } });
+    if (!account) throw new Error('Selected account not found');
 
   // Pre-validate every row BEFORE touching the DB.
   // Reject any row with a non-finite or non-positive amount to prevent NaN/Infinity
@@ -379,18 +380,18 @@ export async function importTransactions(rows: {
       })),
     });
 
-    // Return income rows to trigger auto-save outside the transaction
-    return validRows.filter(r => r.type === 'income');
-  });
+      await tx.auditLog.create({
+        data: {
+          userId: user.id,
+          action: 'IMPORT',
+          resource: 'Transactions',
+          metadata: JSON.stringify({ rowCount: validRows.length }),
+        }
+      });
 
-  // Security Audit
-  const { logActivity } = await import('@/lib/audit');
-  await logActivity({
-    userId: user.id,
-    action: 'IMPORT',
-    resource: 'Transactions',
-    metadata: { rowCount: validRows.length },
-  });
+      // Return income rows to trigger auto-save outside the transaction
+      return validRows.filter(r => r.type === 'income');
+    });
 
   // WO-15: Save-More-Tomorrow auto-save trigger for imported income rows.
   const incomeRows = createdIds;
@@ -416,8 +417,13 @@ export async function importTransactions(rows: {
     }
   }
 
-  revalidatePath('/transactions');
-  revalidatePath('/');
+    revalidatePath('/transactions');
+    revalidatePath('/');
+    return { success: true };
+  } catch (error) {
+    console.error('[importTransactions]', error);
+    return { error: 'An unexpected error occurred. Please try again.' };
+  }
 }
 
 /* ── Delete (atomic — no TOCTOU race) ────────────────────── */
@@ -433,12 +439,13 @@ export async function deleteTransaction(id: string) {
       });
       if (count === 0) throw new Error('Transaction not found or already deleted');
 
-      const { logActivity } = await import('@/lib/audit');
-      await logActivity({
-        userId:   user.id,
-        action:   'DELETE',
-        resource: 'Transaction',
-        metadata: { txId: parsed.data.id },
+      await tx.auditLog.create({
+        data: {
+          userId:   user.id,
+          action:   'DELETE',
+          resource: 'Transaction',
+          metadata: JSON.stringify({ txId: parsed.data.id }),
+        }
       });
     });
 
@@ -506,12 +513,13 @@ export async function editTransaction(id: string, rawData: unknown) {
       });
       if (count === 0) throw new Error('Transaction not found or ownership failed');
 
-      const { logActivity } = await import('@/lib/audit');
-      await logActivity({
-        userId:   user.id,
-        action:   'UPDATE',
-        resource: 'Transaction',
-        metadata: { txId: validId, fields: Object.keys(data) },
+      await tx.auditLog.create({
+        data: {
+          userId:   user.id,
+          action:   'UPDATE',
+          resource: 'Transaction',
+          metadata: JSON.stringify({ txId: validId, fields: Object.keys(data) }),
+        }
       });
     });
 

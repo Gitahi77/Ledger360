@@ -264,8 +264,8 @@ export async function triggerAutoSave(
     const rate = esc.currentRatePct;
 
     // 3. Compute amounts
-    const transfersToCreate = [];
-    const logEntries = [];
+    const transfersToCreate: any[] = [];
+    const logEntries: any[] = [];
     let totalNeeded = 0;
 
     for (const tx of validIncomes) {
@@ -306,19 +306,23 @@ export async function triggerAutoSave(
     }
 
     // 5. Create transfers in bulk, ignoring conflicts for idempotency
-    await prisma.transfer.createMany({
-      data: transfersToCreate,
-      skipDuplicates: true,
-    });
-
-    for (const log of logEntries) {
-      await logActivity({
-        userId,
-        action: 'CREATE',
-        resource: 'Transfer',
-        metadata: log,
+    await prisma.$transaction(async (tx) => {
+      await tx.transfer.createMany({
+        data: transfersToCreate,
+        skipDuplicates: true,
       });
-    }
+
+      for (const log of logEntries) {
+        await tx.auditLog.create({
+          data: {
+            userId,
+            action: 'CREATE',
+            resource: 'Transfer',
+            metadata: JSON.stringify(log),
+          }
+        });
+      }
+    });
 
     return null; // success, no warning
   } catch (err: unknown) {

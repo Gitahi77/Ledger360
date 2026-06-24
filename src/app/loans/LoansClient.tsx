@@ -110,7 +110,7 @@ function LoanModal({ loan, accounts, onClose, currency }: { loan?: Loan; account
   }
 
   return (
-    <div style={{ position:'fixed', inset:0, zIndex:1000, background:'rgba(0,0,0,0.45)', backdropFilter:'blur(4px)', display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem' }} onClick={onClose}>
+    <div className="modal-overlay" onClick={onClose}>
       <div className="card animate-in" style={{ width:'100%', maxWidth:500, padding:'1.75rem', maxHeight:'90vh', overflowY:'auto' }} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <h2 className="card-title" style={{ marginBottom:0 }}>{isEdit ? 'Edit Loan' : 'Add Loan'}</h2>
@@ -120,19 +120,19 @@ function LoanModal({ loan, accounts, onClose, currency }: { loan?: Loan; account
         <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:'0.875rem' }}>
           <div style={{ display:'flex', flexWrap:'wrap', gap:'0.75rem' }}>
             <div style={{ flex: '1 1 180px' }}>
-              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Loan Name</label>
+              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>Loan Name</label>
               <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                 value={name} onChange={e => setName(e.target.value)} required placeholder="e.g. KCB Personal Loan" />
             </div>
             <div style={{ flex: '1 1 180px' }}>
-              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Lender</label>
+              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>Lender</label>
               <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                 value={lender} onChange={e => setLender(e.target.value)} required placeholder="e.g. KCB Bank" />
             </div>
           </div>
 
           <div>
-            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Loan Type</label>
+            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>Loan Type</label>
             <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
               value={type} onChange={e => setType(e.target.value)}>
               {LOAN_TYPES.map(t => <option key={t} value={t} style={{ textTransform:'capitalize' }}>{t.charAt(0).toUpperCase()+t.slice(1)}</option>)}
@@ -141,12 +141,12 @@ function LoanModal({ loan, accounts, onClose, currency }: { loan?: Loan; account
 
           <div style={{ display:'flex', flexWrap:'wrap', gap:'0.75rem' }}>
             <div style={{ flex: '1 1 180px' }}>
-              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Original Amount</label>
+              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>Original Amount</label>
               <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                 type="number" min="1" step="1" value={origAmt} onChange={e => setOrigAmt(e.target.value)} required placeholder="500000" />
             </div>
             <div style={{ flex: '1 1 180px' }}>
-              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Current Balance</label>
+              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>Current Balance</label>
               <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                 type="number" min="0" step="1" value={balance} onChange={e => setBalance(e.target.value)} placeholder="Leave blank = same as original" />
             </div>
@@ -154,19 +154,19 @@ function LoanModal({ loan, accounts, onClose, currency }: { loan?: Loan; account
 
           <div style={{ display:'flex', flexWrap:'wrap', gap:'0.75rem' }}>
             <div style={{ flex: '1 1 180px' }}>
-              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Annual Rate (%)</label>
+              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>Annual Rate (%)</label>
               <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                 type="number" min="0" step="0.1" value={rate} onChange={e => setRate(e.target.value)} required placeholder="14.5" />
             </div>
             <div style={{ flex: '1 1 180px' }}>
-              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Monthly Payment</label>
+              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>Monthly Payment</label>
               <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                 type="number" min="1" step="1" value={monthly} onChange={e => setMonthly(e.target.value)} required placeholder="15000" />
             </div>
           </div>
           <div style={{ display:'flex', flexWrap:'wrap', gap:'0.75rem' }}>
             <div style={{ flex: '1 1 180px' }}>
-              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Amortization</label>
+              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>Amortization</label>
               <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                 value={amortization} onChange={e => setAmortization(e.target.value)}>
                 <option value="REDUCING_BALANCE">Reducing Balance</option>
@@ -174,7 +174,7 @@ function LoanModal({ loan, accounts, onClose, currency }: { loan?: Loan; account
               </select>
             </div>
             <div style={{ flex: '1 1 180px' }}>
-              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Next Due Date</label>
+              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>Next Due Date</label>
               <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                 type="date" value={nextDue} onChange={e => setNextDue(e.target.value)} required />
             </div>
@@ -182,7 +182,7 @@ function LoanModal({ loan, accounts, onClose, currency }: { loan?: Loan; account
 
           {!isEdit && (
             <div style={{ marginTop: '0.5rem', background: 'var(--bg-app)', padding: '0.875rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
-              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.5rem' }}>Disbursement Details</label>
+              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.5rem' }}>Disbursement Details</label>
               <div className="segmented-control" style={{ width:'100%', marginBottom: disbursementType === 'received_funds' ? '0.75rem' : '0' }}>
                 <button type="button" onClick={() => setDisbursementType('existing_debt')}
                   className={`segmented-btn ${disbursementType === 'existing_debt' ? 'active' : ''}`} style={{ flex:1, fontSize:'0.75rem', justifyContent:'center' }}>
@@ -196,7 +196,7 @@ function LoanModal({ loan, accounts, onClose, currency }: { loan?: Loan; account
               
               {disbursementType === 'received_funds' && (
                 <div className="animate-in fade-in slide-in-from-top-2" style={{ marginTop: '0.5rem' }}>
-                  <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Receiving Account</label>
+                  <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>Receiving Account</label>
                   <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
                     value={disbursementAccountId} onChange={e => setDisbursementAccountId(e.target.value)} required>
                     {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
@@ -245,7 +245,7 @@ function ExpandedForecast({ loan, monthsLeft, totalInterest, currency }: { loan:
 
   return (
     <div className="animate-in" style={{ marginTop:'1rem', borderTop:'1px solid var(--border)', paddingTop:'1rem' }}>
-      <div style={{ fontSize:'0.72rem', fontWeight:700, color:'var(--text-secondary)', marginBottom:'0.75rem', textTransform:'uppercase', letterSpacing:'0.06em' }}>Repayment Forecast</div>
+      <div style={{ fontSize:'0.72rem', fontWeight:700, color:'var(--color-text-secondary)', marginBottom:'0.75rem', textTransform:'uppercase', letterSpacing:'0.06em' }}>Repayment Forecast</div>
 
       {/* Base forecast */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(150px, 1fr))', gap:'0.75rem', marginBottom:'1rem' }}>
@@ -266,7 +266,7 @@ function ExpandedForecast({ loan, monthsLeft, totalInterest, currency }: { loan:
       <div style={{ background:'var(--color-brand-light)', borderRadius:10, padding:'0.875rem 1rem', border:'1px solid var(--color-brand-dark)' }}>
         <div style={{ fontSize:'0.7rem', fontWeight:700, color:'var(--color-brand)', marginBottom:'0.5rem', textTransform:'uppercase', letterSpacing:'0.06em' }}>Extra Payment Simulator</div>
         <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', marginBottom: extraPayment > 0 ? '0.75rem' : 0 }}>
-          <span style={{ fontSize:'0.8rem', color:'var(--text-secondary)', whiteSpace:'nowrap' }}>Pay extra {currency}</span>
+          <span style={{ fontSize:'0.8rem', color:'var(--color-text-secondary)', whiteSpace:'nowrap' }}>Pay extra {currency}</span>
           <input
             type="number" min="0" step="500"
             value={extraPayment || ''}
@@ -275,7 +275,7 @@ function ExpandedForecast({ loan, monthsLeft, totalInterest, currency }: { loan:
             className="input-field"
             style={{ width:'100%', padding:'0.4rem 0.65rem', fontSize:'0.82rem' }}
           />
-          <span style={{ fontSize:'0.8rem', color:'var(--text-secondary)', whiteSpace:'nowrap' }}>per month</span>
+          <span style={{ fontSize:'0.8rem', color:'var(--color-text-secondary)', whiteSpace:'nowrap' }}>per month</span>
         </div>
         {extraPayment > 0 && isFinite(newMonths) && (
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(150px, 1fr))', gap:'0.5rem' }}>
@@ -447,7 +447,7 @@ export function LoansClient({ loans, currency, categories = [], accounts = [] }:
                     }}>
                       {formatKES(l.balanceMinor)}
                     </div>
-                    <div style={{ fontSize:'0.7rem', color:'var(--text-secondary)', marginTop:'0.2rem', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>of {formatKES(l.originalAmountMinor)} original</div>
+                    <div style={{ fontSize:'0.7rem', color:'var(--color-text-secondary)', marginTop:'0.2rem', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>of {formatKES(l.originalAmountMinor)} original</div>
                   </div>
                   <div style={{ textAlign:'right', flexShrink:0 }}>
                     <div style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'1.5rem', fontWeight:800, color:st.color, lineHeight:1, opacity:0.88 }}>{st.paidPct}%</div>

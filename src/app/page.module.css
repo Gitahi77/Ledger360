@@ -53,7 +53,7 @@
   font-size: 18px;
   line-height: 32px;
   text-wrap: balance;
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
 }
 
 .intro a {

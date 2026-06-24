@@ -200,7 +200,7 @@ export async function getReportSummary(period: string) {
 }
 
 /* ── Category breakdown ───────────────────────────────────── */
-export async function getReportCategories(period: string) {
+export async function getReportCategories(period: string, type: 'expense' | 'income' = 'expense') {
   const user = await requireAuth();
   const now  = new Date();
   let from: Date, to: Date;
@@ -219,7 +219,7 @@ export async function getReportCategories(period: string) {
   type AggRow = { categoryId: string; _sum: { baseAmountMinor: number | null } };
   const rows = await prisma.transaction.groupBy({
     by: ['categoryId'],
-    where: { userId: user.id, type: 'expense', date: { gte: from, lte: to } },
+    where: { userId: user.id, type: type, date: { gte: from, lte: to } },
     _sum: { baseAmountMinor: true },
     orderBy: { _sum: { baseAmountMinor: 'desc' } },
     take: 8,
@@ -231,7 +231,10 @@ export async function getReportCategories(period: string) {
   const catMap = Object.fromEntries(cats.map(c => [c.id, c]));
   const total  = rows.reduce((s, r: AggRow) => s + (r._sum.baseAmountMinor ?? 0), 0);
 
-  const PALETTE = ['#0070F3','#16A34A','#DC2626','#D97706','#7C3AED','#0F766E','#DB2777','#F97316'];
+  const PALETTE = type === 'expense' 
+    ? ['var(--chart-6)','var(--chart-4)','var(--chart-3)','var(--chart-5)','var(--chart-1)','var(--chart-2)']
+    : ['var(--chart-2)','var(--chart-5)','var(--chart-1)','var(--chart-4)','var(--chart-3)','var(--chart-6)'];
+
   return rows.map((r: AggRow, i) => ({
     name:  catMap[r.categoryId]?.name ?? 'Other',
     value: r._sum.baseAmountMinor ?? 0,

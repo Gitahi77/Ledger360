@@ -61,7 +61,7 @@ function BudgetModal({ budget, categories, currency, onClose }: { budget?: Budge
   }
 
   return (
-    <div style={{ position:'fixed', inset:0, zIndex:1000, background:'rgba(0,0,0,0.5)', backdropFilter:'blur(6px)', display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem' }} onClick={onClose}>
+    <div className="modal-overlay" style={{ background: 'rgba(0, 0, 0, 0.6)', backdropFilter: 'none' }} onClick={onClose}>
       <div className="card animate-in" style={{ width:'100%', maxWidth:440, padding:'1.75rem' }} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <h2 className="card-title" style={{ marginBottom:0 }}>{isEdit ? 'Edit Budget' : 'Add Budget'}</h2>
@@ -70,19 +70,19 @@ function BudgetModal({ budget, categories, currency, onClose }: { budget?: Budge
         {error && <div style={{ padding:'0.625rem', borderRadius:7, background:'var(--color-expense-light)', color:'var(--color-expense)', fontSize:'0.8rem', marginBottom:'1rem' }}>{error}</div>}
         <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:'0.875rem' }}>
           <div>
-            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Budget Name</label>
+            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>Budget Name</label>
             <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }} value={name} onChange={e => setName(e.target.value)} required placeholder="e.g. Monthly Groceries" />
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.75rem' }}>
             <div>
-              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Category</label>
+              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>Category</label>
               <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }} value={categoryId} onChange={e => setCategoryId(e.target.value)} required>
                 <option value="">Select…</option>
                 {expenseCats.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
             <div>
-              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Period</label>
+              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>Period</label>
               <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }} value={period} onChange={e => setPeriod(e.target.value)}>
                 <option value="weekly">Weekly</option>
                 <option value="monthly">Monthly</option>
@@ -91,12 +91,12 @@ function BudgetModal({ budget, categories, currency, onClose }: { budget?: Budge
             </div>
           </div>
           <div>
-            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--text-secondary)', marginBottom:'0.35rem' }}>Monthly Limit ({currency})</label>
+            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>Monthly Limit ({currency})</label>
             <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }} type="number" min="1" step="1" value={limitAmt} onChange={e => setLimitAmt(e.target.value)} required placeholder="5000" />
           </div>
           <div style={{ display:'flex', alignItems:'center', gap:'0.5rem', marginTop:'0.25rem' }}>
             <input type="checkbox" id="rollover" checked={rollover} onChange={e => setRollover(e.target.checked)} style={{ cursor:'pointer' }} />
-            <label htmlFor="rollover" style={{ fontSize:'0.8rem', color:'var(--text-secondary)', cursor:'pointer' }}>
+            <label htmlFor="rollover" style={{ fontSize:'0.8rem', color:'var(--color-text-secondary)', cursor:'pointer' }}>
               <strong>Strict Envelope</strong> (carry unspent amount to next period)
             </label>
           </div>
@@ -229,11 +229,13 @@ export function BudgetsClient({ budgets, categories, totalBudgeted, totalSpent, 
                   <div className="flex items-center gap-2">
                     <span className={`badge ${st.badge}`}>{st.label}</span>
                     <button onClick={() => setEditBudget(b)} 
-                      style={{ background:'none', border:'none', cursor:'pointer', color:'var(--color-text-secondary)', display:'flex', padding:'0.2rem' }}>
+                      aria-label="Edit Budget"
+                      style={{ background:'none', border:'none', cursor:'pointer', color:'var(--color-text-secondary)', display:'flex', padding:'0.2rem', minWidth:'44px', minHeight:'44px', alignItems:'center', justifyContent:'center' }}>
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
                     </button>
                     <button onClick={() => handleDelete(b.id)} disabled={deletingId === b.id}
-                      style={{ background:'none', border:'none', cursor:'pointer', color:'var(--color-text-secondary)', display:'flex', padding:'0.2rem' }}>
+                      aria-label="Delete Budget"
+                      style={{ background:'none', border:'none', cursor:'pointer', color:'var(--color-text-secondary)', display:'flex', padding:'0.2rem', minWidth:'44px', minHeight:'44px', alignItems:'center', justifyContent:'center' }}>
                       {deletingId === b.id ? <Loader2 size={13} style={{ animation:'spin 1s linear infinite' }}/> : <Trash2 size={13}/>}
                     </button>
                   </div>
@@ -246,7 +248,7 @@ export function BudgetsClient({ budgets, categories, totalBudgeted, totalSpent, 
                       fontWeight:800, color:st.numColor, letterSpacing:'-0.04em', lineHeight:1.1,
                       whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
                     }}>{fmtAdaptive(b.spent, currency)}</div>
-                    <div style={{ fontSize:'0.7rem', color:'var(--text-secondary)', marginTop:'0.2rem' }}>of {fmtAdaptive(b.limit, currency)}</div>
+                    <div style={{ fontSize:'0.7rem', color:'var(--color-text-secondary)', marginTop:'0.2rem' }}>of {fmtAdaptive(b.limit, currency)}</div>
                   </div>
                   <div style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'2rem', fontWeight:800, color:st.numColor, letterSpacing:'-0.05em', lineHeight:1, opacity:0.8, flexShrink:0 }}>
                     {Math.round(st.pct)}%
@@ -256,7 +258,7 @@ export function BudgetsClient({ budgets, categories, totalBudgeted, totalSpent, 
                   <div className="progress-fill" style={{ width:`${st.pct}%`, background:st.barColor, boxShadow:`0 0 8px ${st.glow}` }}/>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span style={{ fontSize:'0.72rem', color:'var(--text-secondary)', fontWeight:500, overflow:'hidden', textOverflow:'ellipsis', flex:1, marginRight:'0.5rem' }}>
+                  <span style={{ fontSize:'0.72rem', color:'var(--color-text-secondary)', fontWeight:500, overflow:'hidden', textOverflow:'ellipsis', flex:1, marginRight:'0.5rem' }}>
                     {rem > 0 ? `${fmtAdaptive(rem, currency)} left` : `${fmtAdaptive(b.spent - b.limit, currency)} over`}
                   </span>
                   <span style={{ fontSize:'0.72rem', fontWeight:700, color:st.numColor, flexShrink:0 }}>{st.label}</span>

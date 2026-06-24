@@ -2,6 +2,7 @@
 // Nairobi Securities Exchange — community price feed
 // Falls back to manual prices if the community API is unavailable
 // Copyright (c) 2024-present Eric Gitahi. All rights reserved.
+import yahooFinance from 'yahoo-finance2';
 
 export interface NseStock {
   symbol: string;
@@ -34,25 +35,22 @@ export async function getNseStocks(): Promise<{ stocks: NseStock[]; isLive: bool
     return { stocks: _cache.stocks, isLive: true };
   }
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-    const res = await fetch('https://nse-api-eight.vercel.app/api/stocks', {
-      next: { revalidate: 900 },
-      signal: controller.signal,
-    });
-    clearTimeout(timeoutId);
-    if (!res.ok) throw new Error(`NSE API ${res.status}`);
-    const raw = await res.json();
+    const symbols = NSE_STOCKS_FALLBACK.map(s => `${s.symbol}.NR`);
+    const quotes = await yahooFinance.quote(symbols);
 
-    // Normalize API response (shape may vary)
-    const stocks: NseStock[] = (Array.isArray(raw) ? raw : raw.stocks ?? []).map((s: any) => ({
-      symbol:    s.symbol ?? s.ticker ?? '',
-      name:      s.name ?? s.company ?? s.symbol ?? '',
-      price:     parseFloat(s.price ?? s.last ?? 0),
-      change:    parseFloat(s.change ?? 0),
-      changePct: parseFloat(s.changePercent ?? s.changePct ?? s.pct ?? 0),
-      volume:    parseInt(s.volume ?? 0),
-    })).filter((s: NseStock) => s.symbol && s.price > 0);
+    const quotesArray = Array.isArray(quotes) ? quotes : [quotes];
+    const stocks: NseStock[] = quotesArray.map((q: any) => {
+      const symbol = q.symbol.replace('.NR', '');
+      const fallback = NSE_STOCKS_FALLBACK.find(f => f.symbol === symbol);
+      return {
+        symbol: symbol,
+        name: q.shortName ?? fallback?.name ?? symbol,
+        price: Math.round((q.regularMarketPrice ?? fallback?.price ?? 0) * 100),
+        change: Math.round((q.regularMarketChange ?? 0) * 100),
+        changePct: q.regularMarketChangePercent ?? 0,
+        volume: q.regularMarketVolume ?? 0,
+      };
+    }).filter((s: NseStock) => s.price > 0);
 
     if (stocks.length > 0) {
       _cache = { stocks, updatedAt: Date.now() };
@@ -61,12 +59,19 @@ export async function getNseStocks(): Promise<{ stocks: NseStock[]; isLive: bool
     throw new Error('Empty NSE response');
   } catch (err) {
     console.warn('[NSE] Using fallback prices:', err);
-    return { stocks: NSE_STOCKS_FALLBACK, isLive: false };
+    return { 
+      stocks: NSE_STOCKS_FALLBACK.map(s => ({
+        ...s,
+        price: Math.round(s.price * 100),
+        change: Math.round(s.change * 100)
+      })), 
+      isLive: false 
+    };
   }
 }
 
 export function getStockValue(symbol: string, shares: number, stocks: NseStock[]): number {
   const stock = stocks.find(s => s.symbol === symbol);
   if (!stock) return 0;
-  return +(stock.price * shares).toFixed(2);
+  return Math.round(stock.price * shares);
 }

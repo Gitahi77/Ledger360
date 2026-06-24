@@ -6,6 +6,8 @@ import {
   CartesianGrid, Tooltip, ResponsiveContainer, Legend,
   PieChart, Pie, Cell,
 } from 'recharts';
+import { fmtAdaptive, fmtCompact } from '@/lib/format';
+import { useRouter } from 'next/navigation';
 
 export type ChartMonthPoint = {
   month: string;
@@ -26,7 +28,7 @@ const DONUT_COLORS = [
 ];
 
 /* ── Tooltip components ───────────────────────────────────── */
-function FlowTip({ active, payload, label }: any) {
+function FlowTip({ active, payload, label, currency }: any) {
   if (!active || !payload?.length) return null;
   return (
     <div style={{ background: 'var(--surface-card)', border: '1px solid var(--border)', borderRadius: 8, padding: '0.625rem 0.875rem', boxShadow: 'var(--shadow-md)' }}>
@@ -34,9 +36,9 @@ function FlowTip({ active, payload, label }: any) {
       {payload.map((p: any) => (
         <div key={p.name} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.1rem' }}>
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: p.color, flexShrink: 0 }} />
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{p.name}:</span>
-          <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-primary)', fontFamily: 'Space Grotesk, sans-serif' }}>
-            KES {Number(p.value).toLocaleString()}
+          <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>{p.name}:</span>
+          <span style={{ fontSize: '0.8rem', fontWeight: 700, fontFamily: 'Space Grotesk, sans-serif' }}>
+            {fmtAdaptive(p.value, currency)}
           </span>
         </div>
       ))}
@@ -44,18 +46,18 @@ function FlowTip({ active, payload, label }: any) {
   );
 }
 
-function PieTip({ active, payload, total }: any) {
+function PieTip({ active, payload, total, currency }: any) {
   if (!active || !payload?.length) return null;
   return (
     <div style={{ background: 'var(--surface-card)', border: '1px solid var(--border)', borderRadius: 8, padding: '0.625rem 0.875rem', boxShadow: 'var(--shadow-md)' }}>
       <p style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>{payload[0].name}</p>
-      <p style={{ fontSize: '0.8rem', fontWeight: 700, fontFamily: 'Space Grotesk, sans-serif', color: 'var(--color-text-primary)' }}>KES {payload[0].value.toLocaleString()}</p>
+      <p style={{ fontSize: '0.8rem', fontWeight: 700, fontFamily: 'Space Grotesk, sans-serif', color: 'var(--color-text-primary)' }}>{fmtAdaptive(payload[0].value, currency)}</p>
       {total > 0 && <p style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)' }}>{((payload[0].value / total) * 100).toFixed(1)}% of spending</p>}
     </div>
   );
 }
 
-const tick = { fontSize: 10, fill: 'var(--color-text-secondary)', fontFamily: 'DM Sans, sans-serif' };
+const tick = { fontSize: 10, fill: 'var(--color-text-secondary)', fontFamily: 'Inter, sans-serif' };
 
 const RADIAN = Math.PI / 180;
 function PieLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) {
@@ -71,7 +73,8 @@ function PieLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) 
 }
 
 /* ── Cash Flow Area Chart ─────────────────────────────────── */
-export function CashFlowChart({ data }: { data: ChartMonthPoint[] }) {
+export function CashFlowChart({ data, currency = 'KES' }: { data: ChartMonthPoint[], currency?: string }) {
+  const router = useRouter();
   const chartData = data.map(d => ({
     label:    d.month,
     Income:   d.income,
@@ -80,7 +83,11 @@ export function CashFlowChart({ data }: { data: ChartMonthPoint[] }) {
 
   return (
     <ResponsiveContainer width="100%" height={210}>
-      <AreaChart data={chartData} margin={{ top: 4, right: 4, left: -28, bottom: 0 }}>
+      <AreaChart data={chartData} margin={{ top: 4, right: 4, left: -28, bottom: 0 }} onClick={(e) => {
+        if (e && e.activeLabel) {
+           router.push(`/transactions?search=${encodeURIComponent(e.activeLabel)}`);
+        }
+      }} style={{ cursor: 'pointer' }}>
         <defs>
           <linearGradient id="gIncome"  x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%"   stopColor="var(--chart-income)"  stopOpacity={0.22}/>
@@ -93,8 +100,8 @@ export function CashFlowChart({ data }: { data: ChartMonthPoint[] }) {
         </defs>
         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
         <XAxis dataKey="label" tick={tick} tickLine={false} axisLine={false} dy={6} />
-        <YAxis tick={tick} tickLine={false} axisLine={false} tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
-        <Tooltip content={<FlowTip />} />
+        <YAxis tick={tick} tickLine={false} axisLine={false} tickFormatter={v => fmtCompact(v, currency)} />
+        <Tooltip content={<FlowTip currency={currency} />} />
         <Legend iconType="circle" iconSize={7} wrapperStyle={{ fontSize: '0.75rem', paddingTop: 8 }} />
         <Area name="Income"   dataKey="Income"   type="monotone" stroke="var(--chart-income)"  strokeWidth={2.5} fill="url(#gIncome)"  activeDot={{ r: 4, strokeWidth: 0 }} />
         <Area name="Expenses" dataKey="Expenses" type="monotone" stroke="var(--chart-expense)" strokeWidth={2.5} fill="url(#gExpense)" activeDot={{ r: 4, strokeWidth: 0 }} />
@@ -104,7 +111,8 @@ export function CashFlowChart({ data }: { data: ChartMonthPoint[] }) {
 }
 
 /* ── Spending Donut Chart ─────────────────────────────────── */
-export function SpendingDonutChart({ data }: { data: DonutPoint[] }) {
+export function SpendingDonutChart({ data, currency = 'KES' }: { data: DonutPoint[], currency?: string }) {
+  const router = useRouter();
   const total = data.reduce((s, d) => s + d.value, 0);
 
   // Fallback empty state
@@ -125,10 +133,15 @@ export function SpendingDonutChart({ data }: { data: DonutPoint[] }) {
         <ResponsiveContainer width="100%" height={170}>
           <PieChart>
             <Pie data={colored} cx="50%" cy="50%" innerRadius={44} outerRadius={74}
-              paddingAngle={2} dataKey="value" stroke="none" labelLine={false} label={<PieLabel />}>
+              paddingAngle={2} dataKey="value" stroke="none" labelLine={false} label={<PieLabel />}
+              onClick={(e) => {
+                if (e && e.name) router.push(`/transactions?search=${encodeURIComponent(e.name)}`);
+              }}
+              style={{ cursor: 'pointer' }}
+            >
               {colored.map((d, i) => <Cell key={i} fill={d.color} />)}
             </Pie>
-            <Tooltip content={<PieTip total={total} />} />
+            <Tooltip content={<PieTip total={total} currency={currency} />} />
           </PieChart>
         </ResponsiveContainer>
       </div>
@@ -136,7 +149,7 @@ export function SpendingDonutChart({ data }: { data: DonutPoint[] }) {
         {colored.map(d => (
           <div key={d.name} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', minWidth: 0 }}>
             <div style={{ width: 7, height: 7, borderRadius: '50%', background: d.color, flexShrink: 0, boxShadow: `0 0 5px ${d.color}99` }} />
-            <span style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</span>
+            <span style={{ fontSize: '0.68rem', color: 'var(--color-text-secondary)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</span>
             <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--color-text-primary)', fontFamily: 'Space Grotesk, sans-serif', flexShrink: 0 }}>
               {d.pct}%
             </span>

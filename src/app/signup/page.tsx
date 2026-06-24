@@ -106,7 +106,7 @@ export default function SignupPage() {
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '0.4rem' }}>
                     {accountType === 'individual' ? 'Full Name' : 'Business Name'}
                   </label>
                   <input type="text" value={name} onChange={e => setName(e.target.value)} required placeholder={accountType === 'individual' ? 'Jane Mwangi' : 'Acme Ltd'}
@@ -114,7 +114,7 @@ export default function SignupPage() {
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>Currency</label>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '0.4rem' }}>Currency</label>
                   <select value={currency} onChange={e => setCurrency(e.target.value)} className="input-field" style={{ width: '100%', padding: '0.625rem 0.875rem', fontSize: '0.875rem' }}>
                     {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.code} — {c.name}</option>)}
                   </select>
@@ -129,13 +129,13 @@ export default function SignupPage() {
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>Email Address</label>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '0.4rem' }}>Email Address</label>
                   <input type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="jane@example.com"
                     className="input-field" style={{ width: '100%', padding: '0.625rem 0.875rem', fontSize: '0.875rem' }} />
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>Password <span style={{ color: 'var(--color-text-secondary)', fontWeight: 400 }}>(min 8 chars)</span></label>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '0.4rem' }}>Password <span style={{ color: 'var(--color-text-secondary)', fontWeight: 400 }}>(min 8 chars)</span></label>
                   <div style={{ position: 'relative' }}>
                     <input type={showPw ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} required minLength={8} placeholder="••••••••"
                       className="input-field" style={{ width: '100%', padding: '0.625rem 2.5rem 0.625rem 0.875rem', fontSize: '0.875rem' }} />

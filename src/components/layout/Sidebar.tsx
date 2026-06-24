@@ -89,9 +89,8 @@ export function Sidebar() {
           <button
             onClick={() => signOut({ callbackUrl: '/login' })}
             title="Sign out"
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', padding: '0.25rem', borderRadius: 4, display: 'flex', alignItems: 'center', flexShrink: 0, transition: 'color 0.15s' }}
-            onMouseOver={e => (e.currentTarget.style.color = 'var(--color-expense)')}
-            onMouseOut={e  => (e.currentTarget.style.color = 'var(--color-text-secondary)')}
+            className="sidebar-signout-btn"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem', borderRadius: 4, display: 'flex', alignItems: 'center', flexShrink: 0 }}
           >
             <LogOut size={14} />
           </button>
