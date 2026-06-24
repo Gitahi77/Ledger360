@@ -6,9 +6,21 @@ import { revalidatePath } from 'next/cache';
 import { requireAuth } from './_auth';
 import { getAccountBalances } from './accounts';
 import type { Category } from '@prisma/client';
+import { z } from 'zod';
+
+const PeriodSchema = z.enum(['this-week', 'this-month', 'this-year', 'all']);
+const TypeSchema = z.enum(['income', 'expense', 'transfer', 'savings', 'all']);
 
 /* ── List ─────────────────────────────────────────────────── */
-export async function getTransactions(period = 'this-month', type?: string) {
+export async function getTransactions(inputPeriod: unknown = 'this-month', inputType?: unknown) {
+  const GetTransactionsSchema = z.object({
+    period: PeriodSchema.default('this-month'),
+    type: TypeSchema.optional(),
+  });
+  const parsed = GetTransactionsSchema.safeParse({ period: inputPeriod, type: inputType });
+  if (!parsed.success) throw new Error('Invalid input');
+  const { period, type } = parsed.data;
+
   const user = await requireAuth();
   const { from, to } = periodDates(period);
 
@@ -24,7 +36,14 @@ export async function getTransactions(period = 'this-month', type?: string) {
 }
 
 /* ── Summary for period ───────────────────────────────────── */
-export async function getTransactionSummary(period = 'this-month') {
+export async function getTransactionSummary(inputPeriod: unknown = 'this-month') {
+  const GetSummarySchema = z.object({
+    period: PeriodSchema.default('this-month'),
+  });
+  const parsed = GetSummarySchema.safeParse({ period: inputPeriod });
+  if (!parsed.success) throw new Error('Invalid input');
+  const { period } = parsed.data;
+
   const user = await requireAuth();
   const { from, to } = periodDates(period);
 
@@ -128,7 +147,14 @@ export async function getMonthlyChartData() {
 }
 
 /* ── Category breakdown ───────────────────────────────────── */
-export async function getCategoryBreakdown(period = 'this-month') {
+export async function getCategoryBreakdown(inputPeriod: unknown = 'this-month') {
+  const GetCategoryBreakdownSchema = z.object({
+    period: PeriodSchema.default('this-month'),
+  });
+  const parsed = GetCategoryBreakdownSchema.safeParse({ period: inputPeriod });
+  if (!parsed.success) throw new Error('Invalid input');
+  const { period } = parsed.data;
+
   const user = await requireAuth();
   const { from, to } = periodDates(period);
 
@@ -155,7 +181,14 @@ export async function getCategoryBreakdown(period = 'this-month') {
 }
 
 /* ── Categories list ──────────────────────────────────────── */
-export async function getCategories(type?: 'income' | 'expense' | 'savings') {
+export async function getCategories(inputType?: unknown) {
+  const GetCategoriesSchema = z.object({
+    type: z.enum(['income', 'expense', 'savings']).optional(),
+  });
+  const parsed = GetCategoriesSchema.safeParse({ type: inputType });
+  if (!parsed.success) throw new Error('Invalid input');
+  const { type } = parsed.data;
+
   const user = await requireAuth();
   return prisma.category.findMany({
     where: {

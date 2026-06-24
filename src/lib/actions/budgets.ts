@@ -4,8 +4,18 @@ import { prisma } from '@/lib/prisma';
 import { periodDates } from '@/lib/dateUtils';
 import { revalidatePath } from 'next/cache';
 import { requireAuth } from './_auth';
+import { z } from 'zod';
 
-export async function getBudgetsWithSpend(period = 'this-month') {
+const PeriodSchema = z.enum(['this-week', 'this-month', 'this-year', 'all']);
+
+export async function getBudgetsWithSpend(inputPeriod: unknown = 'this-month') {
+  const GetBudgetsSchema = z.object({
+    period: PeriodSchema.default('this-month'),
+  });
+  const parsed = GetBudgetsSchema.safeParse({ period: inputPeriod });
+  if (!parsed.success) throw new Error('Invalid input');
+  const { period } = parsed.data;
+
   const user = await requireAuth();
   const { from, to } = periodDates(period);
 

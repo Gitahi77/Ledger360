@@ -61,7 +61,7 @@ IMPORTANT RULES:
 
 Return ONLY a valid JSON array. No markdown, no explanation.`;
 
-export async function parseMpesaSms(smsText: string): Promise<ParsedTransaction[]> {
+export async function parseMpesaSms(smsText: string, signal?: AbortSignal): Promise<ParsedTransaction[]> {
   const client = getClient();
   const model = client.getGenerativeModel({
     model: process.env.GEMINI_MODEL || 'gemini-1.5-flash',
@@ -69,7 +69,7 @@ export async function parseMpesaSms(smsText: string): Promise<ParsedTransaction[
     generationConfig: { responseMimeType: 'application/json', temperature: 0.1 },
   });
 
-  const result = await model.generateContent(`${SMS_PROMPT}\n\nSMS MESSAGES:\n${smsText}`);
+  const result = await model.generateContent(`${SMS_PROMPT}\n\nSMS MESSAGES:\n${smsText}`, { signal });
   const text = result.response.text().trim();
 
   try {
@@ -124,7 +124,8 @@ Return ONLY a valid JSON array. No markdown, no explanation. If no transactions 
 
 export async function parseDocumentWithGemini(
   fileBase64: string,
-  mimeType: string
+  mimeType: string,
+  signal?: AbortSignal
 ): Promise<ParsedDocTransaction[]> {
   const client = getClient();
   const model = client.getGenerativeModel({
@@ -136,7 +137,7 @@ export async function parseDocumentWithGemini(
   const result = await model.generateContent([
     DOC_PROMPT,
     { inlineData: { data: fileBase64, mimeType } },
-  ]);
+  ], { signal });
   const text = result.response.text().trim();
 
   try {

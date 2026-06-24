@@ -280,7 +280,7 @@ function parseMpesaStyle(text: string): RawRow[] {
 }
 
 /* ── Gemini Vision parser (uses GOOGLE_GENERATIVE_AI_API_KEY) ───── */
-async function parseWithAI(fileBuffer: ArrayBuffer, mimeType: string, userId: string): Promise<Record<string, unknown>[] | null> {
+async function parseWithAI(fileBuffer: ArrayBuffer, mimeType: string, userId: string, signal?: AbortSignal): Promise<Record<string, unknown>[] | null> {
   if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) return null;
   
   const rlAi = await checkLimit('ai', `ai:${userId}`);
@@ -292,9 +292,10 @@ async function parseWithAI(fileBuffer: ArrayBuffer, mimeType: string, userId: st
   try {
     const { parseDocumentWithGemini } = await import('@/lib/api/gemini');
     const base64 = Buffer.from(fileBuffer).toString('base64');
-    const results = await parseDocumentWithGemini(base64, mimeType);
+    const results = await parseDocumentWithGemini(base64, mimeType, signal);
     return results.length ? results : null;
   } catch (err) {
+    if (err instanceof Error && err.name === 'AbortError') throw err; // rethrow to be caught by main route handler
     console.error('[SmartUpload Gemini]', err);
     return null;
   }
@@ -345,6 +346,9 @@ export async function POST(request: Request) {
       );
     }
 
+    const controller = new AbortController();
+    const timeoutId  = setTimeout(() => controller.abort(), 55_000); // 5s before server timeout
+
     const clientMimeType = file ? (file.type || 'application/octet-stream') : 'text/plain';
     const fileName       = file ? (file.name?.toLowerCase() ?? '') : 'sms.txt';
     const magicBuffer    = file ? await file.slice(0, 100).arrayBuffer() : null;
@@ -394,7 +398,7 @@ export async function POST(request: Request) {
         
         const redactedSms = redactForAI(smsText);
         const { parseMpesaSms: parseMpesaSmsWithAI } = await import('@/lib/api/gemini');
-        transactions = await parseMpesaSmsWithAI(redactedSms);
+        transactions = await parseMpesaSmsWithAI(redactedSms, controller.signal);
         method = 'ai-sms';
       }
     }
@@ -426,7 +430,7 @@ export async function POST(request: Request) {
       }
 
         if (transactions.length === 0) {
-          const aiResult = await parseWithAI(fb, mimeType, userId);
+          const aiResult = await parseWithAI(fb, mimeType, userId, controller.signal);
           if (aiResult?.length) {
             transactions = aiResult;
             method = 'ai';
@@ -447,7 +451,7 @@ export async function POST(request: Request) {
       }
       const fb = await getFileBuffer();
       if (fb) {
-        const aiResult = await parseWithAI(fb, mimeType, userId);
+        const aiResult = await parseWithAI(fb, mimeType, userId, controller.signal);
         if (aiResult?.length) { transactions = aiResult; method = 'ai'; }
       }
     }
@@ -528,6 +532,7 @@ export async function POST(request: Request) {
       isTransfer: r.type === 'transfer'
     }));
 
+    clearTimeout(timeoutId);
     return NextResponse.json({ 
       success: true, 
       transactions: finalParsed,
@@ -536,6 +541,12 @@ export async function POST(request: Request) {
     });
 
   } catch (err: unknown) {
+    if (err instanceof Error && err.name === 'AbortError') {
+      return NextResponse.json(
+        { error: 'AI processing timed out. Please try again.' },
+        { status: 504 }
+      );
+    }
     // Log full error server-side; never expose internal details to client
     console.error('[SmartUpload]', err);
     return NextResponse.json(

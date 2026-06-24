@@ -26,6 +26,7 @@ function goalStyle(pct: number) {
     numColor: 'var(--color-income)',
     glow: 'rgba(34,197,94,0.35)',
     iconBg: 'var(--color-income-light)',
+    iconColor: 'var(--color-income)',
   };
   if (pct >= 70) return {
     label: 'Almost There',
@@ -35,6 +36,7 @@ function goalStyle(pct: number) {
     numColor: 'var(--teal)',
     glow: 'rgba(20,184,166,0.3)',
     iconBg: 'var(--teal-light)',
+    iconColor: 'var(--teal)',
   };
   if (pct >= 35) return {
     label: 'Building',
@@ -44,6 +46,7 @@ function goalStyle(pct: number) {
     numColor: 'var(--color-brand)',
     glow: 'rgba(59,130,246,0.35)',
     iconBg: 'var(--color-brand-light)',
+    iconColor: 'var(--color-brand)',
   };
   return {
     label: 'Early Stage',
@@ -53,6 +56,7 @@ function goalStyle(pct: number) {
     numColor: 'var(--sky)',
     glow: 'rgba(14,165,233,0.3)',
     iconBg: 'var(--sky-light)',
+    iconColor: 'var(--sky)',
   };
 }
 
