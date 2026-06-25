@@ -279,8 +279,8 @@ export function ReportsClient({
                   <Tooltip content={<Tip currency={currency} />} cursor={{ fill: 'var(--bg-hover)', opacity: 0.5 }} />
                   <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize:'0.8rem', paddingTop: 20, fontWeight: 600 }} />
                   {/* Monarch-style grouped bar chart for cash flow */}
-                  <Bar name="Income"   dataKey="Income"   fill="#10b981"  radius={[4,4,0,0]} barSize={32} onClick={(e: any) => { if(e?.payload?.label) handleDrillDown(String(e.payload.label)); }} style={{ cursor: 'pointer' }} />
-                  <Bar name="Spending" dataKey="Expenses" fill="#f43f5e" radius={[4,4,0,0]} barSize={32} onClick={(e: any) => { if(e?.payload?.label) handleDrillDown(String(e.payload.label)); }} style={{ cursor: 'pointer' }} />
+                  <Bar name="Income" dataKey="Income" fill="var(--chart-income)" radius={[4, 4, 0, 0]} barSize={32} onClick={(e: any) => { if(e?.payload?.label) handleDrillDown(String(e.payload.label)); }} style={{ cursor: 'pointer' }} />
+                  <Bar name="Spending" dataKey="Expenses" fill="var(--chart-expense)" radius={[4, 4, 0, 0]} barSize={32} onClick={(e: any) => { if(e?.payload?.label) handleDrillDown(String(e.payload.label)); }} style={{ cursor: 'pointer' }} />
                 </BarChart>
               </ResponsiveContainer>
             )}

@@ -231,9 +231,9 @@ export async function getReportCategories(period: string, type: 'expense' | 'inc
   const catMap = Object.fromEntries(cats.map(c => [c.id, c]));
   const total  = rows.reduce((s, r: AggRow) => s + (r._sum.baseAmountMinor ?? 0), 0);
 
-  const PALETTE = type === 'expense' 
-    ? ['#06b6d4','#f59e0b','#ef4444','#8b5cf6','#1d4ed8','#10b981']
-    : ['#10b981','#8b5cf6','#1d4ed8','#f59e0b','#ef4444','#06b6d4'];
+  const EXPENSE_PALETTE_HEX = ['#3b82f6','#f59e0b','#ef4444','#a855f7','#1d4ed8','#10b981'];
+  const INCOME_PALETTE_HEX  = ['#10b981','#a855f7','#1d4ed8','#f59e0b','#ef4444','#06b6d4'];
+  const PALETTE = type === 'expense' ? EXPENSE_PALETTE_HEX : INCOME_PALETTE_HEX;
 
   return rows.map((r: AggRow, i) => ({
     name:  catMap[r.categoryId]?.name ?? 'Other',

@@ -25,7 +25,6 @@ function CategoryModal({ category, onClose }: { category?: Category, onClose: ()
 
   const [name, setName] = useState(category?.name ?? '');
   const [type, setType] = useState(category?.type ?? 'expense');
-  const [icon, setIcon] = useState(category?.icon ?? '');
 
   const isEdit = Boolean(category);
 
@@ -36,9 +35,9 @@ function CategoryModal({ category, onClose }: { category?: Category, onClose: ()
 
     try {
       if (isEdit && category) {
-        await editCategory(category.id, { name, type, icon: icon || undefined });
+        await editCategory(category.id, { name, type });
       } else {
-        await createCategory({ name, type, icon: icon || undefined });
+        await createCategory({ name, type });
       }
       startT(() => router.refresh());
       onClose();
@@ -74,12 +73,18 @@ function CategoryModal({ category, onClose }: { category?: Category, onClose: ()
             </select>
           </div>
           <div>
-            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:700, textTransform: 'uppercase', letterSpacing: '0.05em', color:'var(--color-text-secondary)', marginBottom:'0.5rem' }}>Icon Identifier (Optional)</label>
-            <input className="input-field" style={{ width:'100%', padding:'0.65rem 0.85rem', fontSize:'0.9rem', borderRadius: 8, border: '1px solid var(--border)' }}
-              value={icon} onChange={e => setIcon(e.target.value)} placeholder="e.g. ti-shopping-cart" />
-            <p style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)', marginTop: '0.4rem', lineHeight: 1.4 }}>
-              Used to match Tabler Icons. If left blank, a default icon will be assigned based on the name.
+            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:700, textTransform: 'uppercase', letterSpacing: '0.05em', color:'var(--color-text-secondary)', marginBottom:'0.5rem' }}>Icon</label>
+            <p style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)' }}>
+              Icons are automatically assigned based on the category name.
+              Name your category after a common label (e.g. "Matatu", "NHIF",
+              "Supermarket") to get the right icon automatically.
             </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem', padding: '0.5rem', background: 'var(--bg-subtle)', borderRadius: 8 }}>
+              <DynamicCategoryIcon category={name} size={20} style={{ color: 'var(--color-brand)' }} />
+              <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
+                Preview based on name
+              </span>
+            </div>
           </div>
           
           <button type="submit" disabled={loading} className="btn btn-primary" style={{ width:'100%', justifyContent:'center', padding:'0.85rem', marginTop:'0.5rem', borderRadius: 8, fontSize: '0.9rem', fontWeight: 600 }}>
@@ -145,7 +150,7 @@ export function CategoriesClient({ initialCategories, currency }: { initialCateg
             <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem', margin: 0 }}>No {title.toLowerCase()} configured.</p>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
             {items.map(cat => (
               <div key={cat.id} className="card category-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderRadius: 12, transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)', cursor: 'default' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>

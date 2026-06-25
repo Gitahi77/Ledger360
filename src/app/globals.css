@@ -105,6 +105,7 @@
   /* Surfaces — near-white with subtle blue tint, airy and clean */
   --bg-app:     hsl(220, 33%, 97%);
   --surface-card:    hsl(0, 0%, 100%);
+  --surface-sunken:  hsl(220, 20%, 96%);
   --bg-sidebar: hsl(0, 0%, 100%);
   --bg-hover:   hsl(220, 20%, 94%);
   --bg-subtle:  hsl(220, 20%, 94%);
@@ -193,6 +194,7 @@
   /* Surfaces — deep blue-grey, calm and professional */
   --bg-app:     hsl(222, 47%, 8%);
   --surface-card:    hsl(222, 38%, 12%);
+  --surface-sunken:  hsl(222, 38%, 9%);
   --bg-sidebar: hsl(222, 42%, 10%);
   --bg-hover:   hsl(215, 30%, 16%);
   --bg-subtle:  hsl(215, 25%, 16%);
@@ -438,9 +440,10 @@ select, input { font-family: inherit; }
 .page-content { padding: 1.5rem 1.75rem; flex: 1; min-width: 0; overflow-x: hidden; }
 
 .page-container {
-  max-width: 1000px;
+  max-width: 1400px;
   margin: 0 auto;
   width: 100%;
+  padding: 0 1.5rem;
 }
 
 /* ── Cards ───────────────────────────────────────────── */
@@ -1590,6 +1593,18 @@ select, input { font-family: inherit; }
 .settings-sidebar-btn.active {
   background: var(--color-brand-light);
   color: var(--color-brand);
+  font-weight: 700;
+  border-left: 3px solid var(--color-brand);
+}
+
+/* Dark mode override specifically */
+[data-theme="dark"] .settings-sidebar-btn.active {
+  background: hsl(213, 60%, 20%);  /* slightly brighter than default */
+  border-left: 3px solid var(--color-brand);
+  color: hsl(213, 94%, 75%);       /* lighter blue text, more visible */
+}
+[data-theme="dark"] .settings-sidebar-btn:hover {
+  background: hsl(215, 30%, 20%);  /* visibly different from active */
 }
 .settings-content {
   flex: 1;
