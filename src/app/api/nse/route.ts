@@ -1,15 +1,16 @@
 // src/app/api/nse/route.ts
 // Server-side proxy for NSE stock prices
 // Copyright (c) 2024-present Eric Gitahi. All rights reserved.
-import { apiRoute } from '@/lib/api/respond';
+import { NextResponse } from 'next/server';
 import { getNseStocks } from '@/lib/api/nse';
 
 export const dynamic = 'force-dynamic';
 
-export const GET = apiRoute(
-  null,
-  async () => {
+export async function GET() {
+  try {
     const { stocks, isLive } = await getNseStocks();
-    return { stocks, isLive };
+    return NextResponse.json({ stocks, isLive });
+  } catch (err) {
+    return NextResponse.json({ stocks: [], isLive: false }, { status: 500 });
   }
-);
+}

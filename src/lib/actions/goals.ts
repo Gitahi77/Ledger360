@@ -27,9 +27,9 @@ export async function getGoals() {
     _sum: { baseAmountMinor: true },
   });
 
-  const transferMap = new Map(transferAgg.map(t => [t.goalId, t._sum.baseAmountMinor ?? 0]));
+  const transferMap = new Map(transferAgg.map((t: any) => [t.goalId, t._sum.baseAmountMinor ?? 0]));
 
-  return goals.map(g => {
+  return goals.map((g: any) => {
     return { ...g, currentAmountMinor: transferMap.get(g.id) ?? 0 };
   });
 }

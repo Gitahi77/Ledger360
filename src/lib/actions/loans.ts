@@ -34,12 +34,12 @@ export async function getLoansForUser(userId: string) {
     _sum: { baseAmountMinor: true, interestMinor: true }
   });
 
-  const transferMap = new Map(transferAgg.map(t => [
+  const transferMap = new Map(transferAgg.map((t: any) => [
     t.loanId,
     (t._sum.baseAmountMinor ?? 0) - (t._sum.interestMinor ?? 0)
   ]));
 
-  return loans.map(l => {
+  return loans.map((l: any) => {
     const due  = new Date(l.nextDue);
     const auto = due < today
       ? Math.floor((today.getTime() - due.getTime()) / 86_400_000)

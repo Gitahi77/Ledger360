@@ -70,7 +70,7 @@ export async function createTransfer(raw: unknown) {
     if (data.loanId) {
       const { getLoansForUser } = await import('@/lib/actions/loans');
       const loans = await getLoansForUser(user.id);
-      const loan = loans.find(l => l.id === data.loanId);
+      const loan = loans.find((l: any) => l.id === data.loanId);
       if (!loan) throw new Error('Please choose a valid loan.');
       
       // Auto-compute default interest (multiply before divide to prevent FP drift)
@@ -93,7 +93,7 @@ export async function createTransfer(raw: unknown) {
     if (fromAccount.type !== 'CREDIT_CARD') {
       const { getAccountBalances } = await import('@/lib/actions/accounts');
       const balances = await getAccountBalances(user.id);
-      const acc = balances.find(a => a.id === fromAccount.id);
+      const acc = balances.find((a: any) => a.id === fromAccount.id);
       if (acc && acc.balanceMinor - data.amountMinor < 0) {
         throw new Error(`Not enough money in ${fromAccount.name}. Available: ${fromAccount.currency} ${toMajor(acc.balanceMinor)}.`);
       }
@@ -180,7 +180,7 @@ export async function editTransfer(id: string, rawData: unknown) {
     if (data.loanId) {
       const { getLoansForUser } = await import('@/lib/actions/loans');
       const loans = await getLoansForUser(user.id);
-      const loan = loans.find(l => l.id === data.loanId);
+      const loan = loans.find((l: any) => l.id === data.loanId);
       if (!loan) return { error: 'Please choose a valid loan.' };
       
       // Headroom = outstanding + oldRepaymentAmount (if editing the SAME loan repayment)
@@ -203,7 +203,7 @@ export async function editTransfer(id: string, rawData: unknown) {
     if (fromAccount.type !== 'CREDIT_CARD') {
       const { getAccountBalances } = await import('@/lib/actions/accounts');
       const balances = await getAccountBalances(user.id);
-      const acc = balances.find(a => a.id === fromAccount.id);
+      const acc = balances.find((a: any) => a.id === fromAccount.id);
       if (acc) {
         // Effective Balance = currentBalance + oldAmount (if editing from the SAME account)
         const isSameAccount = oldTransfer.fromAccountId === data.fromAccountId;
@@ -219,7 +219,7 @@ export async function editTransfer(id: string, rawData: unknown) {
     if (data.loanId) {
       const { getLoansForUser } = await import('@/lib/actions/loans');
       const loans = await getLoansForUser(user.id);
-      const loan = loans.find(l => l.id === data.loanId);
+      const loan = loans.find((l: any) => l.id === data.loanId);
       if (loan) {
         const autoInterest = Math.round((loan.balanceMinor * loan.annualRate) / 1200);
         finalInterestMinor = data.interestMinor ?? autoInterest;

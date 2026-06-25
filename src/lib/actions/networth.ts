@@ -19,8 +19,8 @@ export async function getNetWorth() {
     getRates('USD')
   ]);
 
-  const cashAccounts = accounts.filter(a => a.type !== 'CREDIT_CARD' && a.balanceMinor >= 0);
-  const debtAccounts = accounts.filter(a => a.type === 'CREDIT_CARD' || a.balanceMinor < 0);
+  const cashAccounts = accounts.filter((a: any) => a.type !== 'CREDIT_CARD' && a.balanceMinor >= 0);
+  const debtAccounts = accounts.filter((a: any) => a.type === 'CREDIT_CARD' || a.balanceMinor < 0);
 
   const convert = (amount: number, currency?: string | null) => {
     const c = currency || userCurrency;
@@ -34,11 +34,11 @@ export async function getNetWorth() {
     return Math.round((amount * rateUser) / rateC);
   };
 
-  const totalCashMinor        = cashAccounts.reduce((s, a) => s + convert(a.balanceMinor, a.currency), 0);
-  const totalCardDebtMinor    = debtAccounts.reduce((s, a) => s + Math.abs(convert(a.balanceMinor, a.currency)), 0);
+  const totalCashMinor        = cashAccounts.reduce((s: any, a: any) => s + convert(a.balanceMinor, a.currency), 0);
+  const totalCardDebtMinor    = debtAccounts.reduce((s: any, a: any) => s + Math.abs(convert(a.balanceMinor, a.currency)), 0);
   
-  const totalAssetsMinor      = assets.reduce((s, a) => s + a.valueMinor, 0) + totalCashMinor;
-  const totalLiabilitiesMinor = loans.reduce((s, l) => s + l.balanceMinor, 0) + totalCardDebtMinor;
+  const totalAssetsMinor      = assets.reduce((s: any, a: any) => s + a.valueMinor, 0) + totalCashMinor;
+  const totalLiabilitiesMinor = loans.reduce((s: any, l: any) => s + l.balanceMinor, 0) + totalCardDebtMinor;
 
   return {
     assets,

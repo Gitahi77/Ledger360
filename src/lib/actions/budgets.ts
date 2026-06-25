@@ -54,7 +54,7 @@ export async function getBudgetsWithSpend(inputPeriod: unknown = 'this-month') {
     }
   }
 
-  const rolloverBudgets = budgets.filter(b => b.rollover);
+  const rolloverBudgets = budgets.filter((b: any) => b.rollover);
   const rolloverSpendMap = new Map<string, number>();
 
   if (rolloverBudgets.length > 0) {
@@ -80,7 +80,7 @@ export async function getBudgetsWithSpend(inputPeriod: unknown = 'this-month') {
     }
   }
 
-  return budgets.map(b => {
+  return budgets.map((b: any) => {
     let effectiveLimit = b.limitAmountMinor;
     let effectiveSpend = spendThisPeriodMap[b.categoryId] ?? 0;
 

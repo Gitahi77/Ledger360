@@ -154,9 +154,9 @@ export async function getMonthlyChartData() {
     months.push({ label: d.toLocaleString('default', { month: 'short' }), yr: d.getFullYear(), mo: d.getMonth() + 1 });
   }
 
-  return months.map(m => {
-    const inc = rows.find(r => r.yr === m.yr && r.mo === m.mo && r.type === 'income');
-    const exp = rows.find(r => r.yr === m.yr && r.mo === m.mo && r.type === 'expense');
+  return months.map((m: any) => {
+    const inc = rows.find((r: any) => r.yr === m.yr && r.mo === m.mo && r.type === 'income');
+    const exp = rows.find((r: any) => r.yr === m.yr && r.mo === m.mo && r.type === 'expense');
     return { month: m.label, income: Math.round(inc?.total ?? 0), expenses: Math.round(exp?.total ?? 0) };
   });
 }
@@ -184,7 +184,7 @@ export async function getCategoryBreakdown(inputPeriod: unknown = 'this-month') 
   const categories: Category[] = await prisma.category.findMany({
     where: { id: { in: rows.map((r: AggRow) => r.categoryId) } },
   });
-  const catMap = Object.fromEntries(categories.map(c => [c.id, c]));
+  const catMap = Object.fromEntries(categories.map((c: any) => [c.id, c]));
 
   const total = rows.reduce((s, r: AggRow) => s + (r._sum.baseAmountMinor ?? 0), 0);
   return rows.map((r: AggRow) => ({
@@ -249,7 +249,7 @@ export async function addTransaction(raw: unknown) {
   if (data.type === 'expense' && accountId) {
     const { toMajor } = await import('@/lib/money');
     const balances = await getAccountBalances(user.id);
-    const acc = balances.find(a => a.id === accountId);
+    const acc = balances.find((a: any) => a.id === accountId);
     if (acc && acc.type !== 'CREDIT_CARD' && acc.balanceMinor - data.baseAmountMinor < 0) {
       warning = `Warning: Not enough money in ${acc.name}. Available: ${acc.currency} ${toMajor(acc.balanceMinor)}.`;
     }
@@ -319,7 +319,7 @@ export async function importTransactions(rows: any[], targetAccountId: string) {
   // Pre-validate every row BEFORE touching the DB.
   // Reject any row with a non-finite or non-positive amount to prevent NaN/Infinity
   // reaching the database from malformed import files.
-  const validRows = rows.filter(r => {
+  const validRows = rows.filter((r: any) => {
     if (r.type !== 'income' && r.type !== 'expense') {
       console.warn('[importTransactions] Dropping non-income/expense row:', r.name, r.type);
       return false;
@@ -342,21 +342,21 @@ export async function importTransactions(rows: any[], targetAccountId: string) {
   // If the createMany fails, no orphaned categories are left behind.
   const createdIds = await prisma.$transaction(async (tx) => {
     // Resolve or create categories
-    const categoryNames = [...new Set(validRows.map(r => String(r.categoryName)))];
+    const categoryNames = [...new Set(validRows.map((r: any) => String(r.categoryName)))];
     const existingCats = await tx.category.findMany({ where: { userId: user.id, name: { in: categoryNames } } });
-    const catMap: Record<string, string> = Object.fromEntries(existingCats.map(c => [c.name, c.id]));
+    const catMap: Record<string, string> = Object.fromEntries(existingCats.map((c: any) => [c.name, c.id]));
 
     const newCatsToCreate = categoryNames
-      .filter(name => !catMap[name])
-      .map(name => {
-        const typeHint = validRows.find(r => r.categoryName === name)?.type === 'income' ? 'income' : 'expense';
+      .filter((name: any) => !catMap[name])
+      .map((name: any) => {
+        const typeHint = validRows.find((r: any) => r.categoryName === name)?.type === 'income' ? 'income' : 'expense';
         return { name, type: typeHint, userId: user.id };
       });
 
     if (newCatsToCreate.length > 0) {
       await tx.category.createMany({ data: newCatsToCreate, skipDuplicates: true });
       const newlyCreated = await tx.category.findMany({
-        where: { userId: user.id, name: { in: newCatsToCreate.map(c => c.name) } }
+        where: { userId: user.id, name: { in: newCatsToCreate.map((c: any) => c.name) } }
       });
       for (const cat of newlyCreated) {
         catMap[cat.name] = cat.id;
@@ -365,7 +365,7 @@ export async function importTransactions(rows: any[], targetAccountId: string) {
 
     // Bulk insert — all rows are already validated above
     await tx.transaction.createMany({
-      data: validRows.map(r => ({
+      data: validRows.map((r: any) => ({
         name:            String(r.name).slice(0, 120),
         baseAmountMinor: Math.abs(Number(r.baseAmountMinor)),
         type:            r.type as 'income' | 'expense',
@@ -390,7 +390,7 @@ export async function importTransactions(rows: any[], targetAccountId: string) {
       });
 
       // Return income rows to trigger auto-save outside the transaction
-      return validRows.filter(r => r.type === 'income');
+      return validRows.filter((r: any) => r.type === 'income');
     });
 
   // WO-15: Save-More-Tomorrow auto-save trigger for imported income rows.
@@ -411,7 +411,7 @@ export async function importTransactions(rows: any[], targetAccountId: string) {
     if (recentTxs.length > 0) {
       await triggerAutoSave(
         user.id,
-        recentTxs.map(tx => ({ id: tx.id, baseAmountMinor: tx.baseAmountMinor, date: tx.date })),
+        recentTxs.map((tx: any) => ({ id: tx.id, baseAmountMinor: tx.baseAmountMinor, date: tx.date })),
         user.currency || 'KES',
       );
     }
@@ -490,7 +490,7 @@ export async function editTransaction(id: string, rawData: unknown) {
     if (newType === 'expense' && newAccountId) {
       const { toMajor } = await import('@/lib/money');
       const balances = await getAccountBalances(user.id);
-      const acc = balances.find(a => a.id === newAccountId);
+      const acc = balances.find((a: any) => a.id === newAccountId);
       
       if (acc && acc.type !== 'CREDIT_CARD') {
         let effectiveBalance = acc.balanceMinor;

@@ -70,11 +70,11 @@ export async function getMonthlyTrend() {
     months.push({ label: d.toLocaleString('default', { month: 'short' }), yr: d.getFullYear(), mo: d.getMonth() + 1 });
   }
 
-  return months.map(m => {
-    const inc = rows.find(r => r.yr === m.yr && r.mo === m.mo && r.type === 'income');
-    const exp = rows.find(r => r.yr === m.yr && r.mo === m.mo && r.type === 'expense');
-    const sav = savingsRows.find(r => r.yr === m.yr && r.mo === m.mo);
-    const deb = debtRows.find(r => r.yr === m.yr && r.mo === m.mo);
+  return months.map((m: any) => {
+    const inc = rows.find((r: any) => r.yr === m.yr && r.mo === m.mo && r.type === 'income');
+    const exp = rows.find((r: any) => r.yr === m.yr && r.mo === m.mo && r.type === 'expense');
+    const sav = savingsRows.find((r: any) => r.yr === m.yr && r.mo === m.mo);
+    const deb = debtRows.find((r: any) => r.yr === m.yr && r.mo === m.mo);
     const income   = Math.round(inc?.total ?? 0);
     const expenses = Math.round((exp?.total ?? 0) + (deb?.interest ?? 0));
     const savings  = Math.round(sav?.total ?? 0);
@@ -143,9 +143,9 @@ export async function getReportSummary(period: string) {
   ]);
 
   const inc = income._sum.baseAmountMinor   ?? 0;
-  const sav = currentSavingsTransfers.reduce((sum, t) => sum + t.baseAmountMinor, 0);
+  const sav = currentSavingsTransfers.reduce((sum: any, t: any) => sum + t.baseAmountMinor, 0);
   
-  const currentDebtInfo = currentDebtTransfers.reduce((acc, t) => {
+  const currentDebtInfo = currentDebtTransfers.reduce((acc: any, t: any) => {
     acc.principal += (t.baseAmountMinor - t.interestMinor);
     acc.interest += t.interestMinor;
     return acc;
@@ -157,9 +157,9 @@ export async function getReportSummary(period: string) {
   const sr  = inc > 0 ? Math.round((sav / inc) * 100) : 0;
 
   const pInc = prevIncome._sum.baseAmountMinor   ?? 0;
-  const pSav = prevSavingsTransfers.reduce((sum, t) => sum + t.baseAmountMinor, 0);
+  const pSav = prevSavingsTransfers.reduce((sum: any, t: any) => sum + t.baseAmountMinor, 0);
   
-  const prevDebtInfo = prevDebtTransfers.reduce((acc, t) => {
+  const prevDebtInfo = prevDebtTransfers.reduce((acc: any, t: any) => {
     acc.principal += (t.baseAmountMinor - t.interestMinor);
     acc.interest += t.interestMinor;
     return acc;
@@ -228,7 +228,7 @@ export async function getReportCategories(period: string, type: 'expense' | 'inc
   if (rows.length === 0) return [];
 
   const cats: Category[] = await prisma.category.findMany({ where: { id: { in: rows.map((r: AggRow) => r.categoryId) } } });
-  const catMap = Object.fromEntries(cats.map(c => [c.id, c]));
+  const catMap = Object.fromEntries(cats.map((c: any) => [c.id, c]));
   const total  = rows.reduce((s, r: AggRow) => s + (r._sum.baseAmountMinor ?? 0), 0);
 
   const EXPENSE_PALETTE_HEX = ['#3b82f6','#f59e0b','#ef4444','#a855f7','#1d4ed8','#10b981'];

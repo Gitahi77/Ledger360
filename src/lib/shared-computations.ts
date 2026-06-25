@@ -7,7 +7,7 @@
  * Allows negative balance for overpayments, indicating credit.
  */
 export function computeLoanBalance(loanBalanceMinor: number, repaidAmountMinor: number): number {
-  return loanBalanceMinor - repaidAmountMinor;
+  return Math.max(0, loanBalanceMinor - repaidAmountMinor);
 }
 
 /**

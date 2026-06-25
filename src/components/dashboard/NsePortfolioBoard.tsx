@@ -75,6 +75,14 @@ export function NsePortfolioBoard() {
       </div>
 
       <div style={{ padding: '0 1.5rem' }}>
+        {!isLive && (
+          <div style={{ fontSize: '0.7rem', color: 'var(--color-pending)',
+                        padding: '0.5rem 1rem', background: 'var(--color-pending-light)',
+                        borderRadius: 6, marginBottom: '0.75rem' }}>
+            ⚠ Live market data unavailable. Showing reference prices only.
+            Portfolio valuations may be inaccurate.
+          </div>
+        )}
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', padding: '0.75rem 0', borderBottom: '1px solid var(--border)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-text-secondary)', fontWeight: 600 }}>
           <div>Symbol</div>
           <div style={{ textAlign: 'right' }}>Price (KES)</div>

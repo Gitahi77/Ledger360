@@ -19,12 +19,26 @@ export async function getRates(base: string = 'USD'): Promise<FxRates | null> {
     const toCurrencies = ['USD', 'EUR', 'GBP', 'ZAR', 'CHF', 'JPY', 'KES'].filter(c => c !== base).join(',');
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
+    
+    // v2 without provider param: auto-selects CBK for KES, ECB for USD/EUR/etc.
     const res = await fetch(
-      `https://api.frankfurter.dev/v2/latest?provider=cbk&from=${base}&to=${toCurrencies}`,
+      `https://api.frankfurter.dev/v2/latest?from=${base}&to=${toCurrencies}`,
       { next: { revalidate: 3600 }, signal: controller.signal }
     );
     clearTimeout(timeoutId);
-    if (!res.ok) throw new Error(`Frankfurter ${res.status}`);
+    
+    if (!res.ok) {
+      // v2 fallback: try v1 ECB as last resort (no KES support but better than nothing)
+      const fallbackRes = await fetch(
+        `https://api.frankfurter.app/latest?from=${base}&to=${toCurrencies.replace(',KES','').replace('KES,','')}`,
+        { next: { revalidate: 3600 } }
+      );
+      if (!fallbackRes.ok) throw new Error(`Both FX endpoints failed`);
+      const fallbackData = await fallbackRes.json();
+      _cache = { ...fallbackData, base, updatedAt: Date.now() };
+      return _cache;
+    }
+    
     const data = await res.json();
     _cache = { ...data, base, updatedAt: Date.now() };
     return _cache;

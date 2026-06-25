@@ -1548,7 +1548,8 @@ select, input { font-family: inherit; }
   }
   .hero-rate-badge {
     width: 100%;
-  margin: 0 auto;
+    margin: 0 auto;
+  }
 }
 @media (min-width: 768px) {
   .settings-container {
@@ -1568,6 +1569,7 @@ select, input { font-family: inherit; }
   .settings-sidebar {
     width: 240px;
     flex-direction: column;
+    align-items: stretch;
   }
 }
 .settings-sidebar-btn {

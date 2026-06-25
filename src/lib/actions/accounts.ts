@@ -29,7 +29,7 @@ function invalidateAccountPaths() {
 export async function getAccounts(): Promise<AccountWithBalance[]> {
   const user = await requireAuth();
   const all = await getAccountBalances(user.id);
-  return all.filter(a => !a.archived);
+  return all.filter((a: any) => !a.archived);
 }
 
 export async function getAccountBalances(userId: string): Promise<AccountWithBalance[]> {
@@ -71,12 +71,12 @@ export async function getAccountBalances(userId: string): Promise<AccountWithBal
     })
   ]);
 
-  const incMap = new Map(incGroup.map(g => [g.accountId, g._sum?.baseAmountMinor ?? 0]));
-  const expMap = new Map(expGroup.map(g => [g.accountId, g._sum?.baseAmountMinor ?? 0]));
-  const txOutMap = new Map(txOutGroup.map(g => [g.fromAccountId, g._sum?.amountMinor ?? 0]));
-  const txInMap = new Map(txInGroup.map(g => [g.toAccountId, g._sum?.amountMinor ?? 0]));
+  const incMap = new Map(incGroup.map((g: any) => [g.accountId, g._sum?.baseAmountMinor ?? 0]));
+  const expMap = new Map(expGroup.map((g: any) => [g.accountId, g._sum?.baseAmountMinor ?? 0]));
+  const txOutMap = new Map(txOutGroup.map((g: any) => [g.fromAccountId, g._sum?.amountMinor ?? 0]));
+  const txInMap = new Map(txInGroup.map((g: any) => [g.toAccountId, g._sum?.amountMinor ?? 0]));
 
-  return accounts.map(acc => {
+  return accounts.map((acc: any) => {
     const inc = incMap.get(acc.id) ?? 0;
     const exp = expMap.get(acc.id) ?? 0;
     const txOut = txOutMap.get(acc.id) ?? 0;

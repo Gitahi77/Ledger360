@@ -24,7 +24,7 @@ export const ACCOUNT_TYPE_ICONS: Record<AccountType, LucideIcon> = {
 
 export function DynamicAccountIcon({ type, className, style, size = 20 }: { type: AccountType, className?: string, style?: React.CSSProperties, size?: number }) {
   const Icon = ACCOUNT_TYPE_ICONS[type] || Wallet;
-  return <Icon className={className} style={style} size={size} />;
+  return <Icon className={className} style={style} size={size} strokeWidth={2} />;
 }
 
 export const TRANSACTION_CATEGORY_ICONS: Record<string, LucideIcon> = {
@@ -53,5 +53,5 @@ export const TRANSACTION_CATEGORY_ICONS: Record<string, LucideIcon> = {
 
 export function DynamicCategoryIcon({ category, className, style, size = 20 }: { category: string, className?: string, style?: React.CSSProperties, size?: number }) {
   const Icon = TRANSACTION_CATEGORY_ICONS[category] || MoreHorizontal;
-  return <Icon className={className} style={style} size={size} />;
+  return <Icon className={className} style={style} size={size} strokeWidth={2} />;
 }
