@@ -40,7 +40,7 @@ export function MobileNav() {
   return (
     <>
       <nav
-        className="mobile-nav"
+        className="mobile-nav md:hidden"
         style={{
           position: 'fixed',
           bottom: 0,
