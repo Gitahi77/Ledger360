@@ -10,7 +10,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 
 import { toMinor, toMajor } from '@/lib/money';
 
-type Asset = { id: string; name: string; category: string; valueMinor: number };
+type Asset = { id: string; name: string; category: string; valueMinor: number; symbol?: string | null };
 type Loan  = { id: string; name: string; balanceMinor: number; type: string };
 
 function NwChartTip({ active, payload, label, currency }: any) {
@@ -43,6 +43,7 @@ function AssetModal({ asset, onClose, currency }: { asset?: Asset; onClose: () =
   const [name,     setName]     = useState(asset?.name     ?? '');
   const [category, setCategory] = useState(asset?.category ?? 'Other');
   const [value,    setValue]    = useState(asset ? String(toMajor(asset.valueMinor)) : '');
+  const [symbol,   setSymbol]   = useState(asset?.symbol ?? '');
   const isEdit = Boolean(asset);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -54,8 +55,8 @@ function AssetModal({ asset, onClose, currency }: { asset?: Asset; onClose: () =
     }
     setLoading(true); setError('');
     try {
-      if (isEdit && asset) { await editAsset(asset.id, { name, category, valueMinor: toMinor(parsedValue) }); }
-      else { await addAsset({ name, category, valueMinor: toMinor(parsedValue) }); }
+      if (isEdit && asset) { await editAsset(asset.id, { name, category, valueMinor: toMinor(parsedValue), symbol: symbol || undefined }); }
+      else { await addAsset({ name, category, valueMinor: toMinor(parsedValue), symbol: symbol || undefined }); }
       startT(() => router.refresh()); onClose();
     } catch (err: any) { setError(err.message ?? 'Something went wrong.'); }
     finally { setLoading(false); }
@@ -73,6 +74,10 @@ function AssetModal({ asset, onClose, currency }: { asset?: Asset; onClose: () =
           <div>
             <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>Asset Name</label>
             <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }} value={name} onChange={e => setName(e.target.value)} required placeholder="e.g. Family Land Machakos" />
+          </div>
+          <div>
+            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>Ticker Symbol (Optional)</label>
+            <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem', textTransform: 'uppercase' }} value={symbol} onChange={e => setSymbol(e.target.value.toUpperCase())} placeholder="e.g. AAPL, BTC-USD" />
           </div>
           <div>
             <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>Category</label>

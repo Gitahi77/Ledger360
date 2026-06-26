@@ -67,14 +67,14 @@ export async function getAccountBalances(userId: string): Promise<AccountWithBal
     prisma.transfer.groupBy({
       by: ['toAccountId'],
       where: { userId },
-      _sum: { amountMinor: true }
+      _sum: { baseAmountMinor: true }
     })
   ]);
 
-  const incMap = new Map(incGroup.map((g: any) => [g.accountId, g._sum?.baseAmountMinor ?? 0]));
-  const expMap = new Map(expGroup.map((g: any) => [g.accountId, g._sum?.baseAmountMinor ?? 0]));
-  const txOutMap = new Map(txOutGroup.map((g: any) => [g.fromAccountId, g._sum?.amountMinor ?? 0]));
-  const txInMap = new Map(txInGroup.map((g: any) => [g.toAccountId, g._sum?.amountMinor ?? 0]));
+  const incMap = new Map(incGroup.map((g: any) => [g.accountId, Number(g._sum?.baseAmountMinor ?? 0)]));
+  const expMap = new Map(expGroup.map((g: any) => [g.accountId, Number(g._sum?.baseAmountMinor ?? 0)]));
+  const txOutMap = new Map(txOutGroup.map((g: any) => [g.fromAccountId, Number(g._sum?.amountMinor ?? 0)]));
+  const txInMap = new Map(txInGroup.map((g: any) => [g.toAccountId, Number(g._sum?.baseAmountMinor ?? 0)]));
 
   return accounts.map((acc: any) => {
     const inc = incMap.get(acc.id) ?? 0;
@@ -82,9 +82,9 @@ export async function getAccountBalances(userId: string): Promise<AccountWithBal
     const txOut = txOutMap.get(acc.id) ?? 0;
     const txIn = txInMap.get(acc.id) ?? 0;
 
-    const balanceMinor = acc.openingMinor + inc - exp - txOut + txIn;
+    const balanceMinor = Number(acc.openingMinor) + inc - exp - txOut + txIn;
       
-    return { ...acc, balanceMinor };
+    return { ...acc, openingMinor: Number(acc.openingMinor), balanceMinor };
   });
 }
 

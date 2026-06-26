@@ -149,8 +149,8 @@ export async function editTransfer(id: string, rawData: unknown) {
     if (!parsedId.success) return { error: 'Invalid input' };
     const validId = parsedId.data.id;
 
-    const { AddTransferSchema } = await import('@/lib/validation');
-    const parsedData = AddTransferSchema.safeParse(rawData);
+    const { EditTransferSchema } = await import('@/lib/validation');
+    const parsedData = EditTransferSchema.safeParse(rawData);
     if (!parsedData.success) return { error: 'Invalid input' };
     const data = parsedData.data;
 
@@ -158,17 +158,24 @@ export async function editTransfer(id: string, rawData: unknown) {
 
     const [oldTransfer, fromAccount, toAccount, goal] = await Promise.all([
       prisma.transfer.findFirst({ where: { id: validId, userId: user.id } }),
-      prisma.account.findFirst({ where: { id: data.fromAccountId, userId: user.id } }),
+      data.fromAccountId ? prisma.account.findFirst({ where: { id: data.fromAccountId, userId: user.id } }) : Promise.resolve(null),
       data.toAccountId ? prisma.account.findFirst({ where: { id: data.toAccountId, userId: user.id } }) : Promise.resolve(null),
       data.goalId ? prisma.goal.findFirst({ where: { id: data.goalId, userId: user.id } }) : Promise.resolve(null)
     ]);
 
     if (!oldTransfer) return { error: 'Transfer not found' };
-    if (!fromAccount) return { error: 'Please choose a valid From Account.' };
+    
+    // Default to old transfer's accounts if not provided in partial update
+    const effectiveFromAccountId = data.fromAccountId ?? oldTransfer.fromAccountId;
+    const effectiveToAccountId = data.toAccountId !== undefined ? data.toAccountId : oldTransfer.toAccountId;
+    
+    const effectiveFromAccount = data.fromAccountId ? fromAccount : await prisma.account.findFirst({ where: { id: effectiveFromAccountId as string, userId: user.id } });
+    if (!effectiveFromAccount) return { error: 'Please choose a valid From Account.' };
 
-    if (data.toAccountId) {
-      if (!toAccount) return { error: 'Please choose a valid To Account.' };
-      if (fromAccount.currency !== toAccount.currency) {
+    if (effectiveToAccountId) {
+      const effectiveToAccount = data.toAccountId ? toAccount : await prisma.account.findFirst({ where: { id: effectiveToAccountId as string, userId: user.id } });
+      if (!effectiveToAccount) return { error: 'Please choose a valid To Account.' };
+      if (effectiveFromAccount.currency !== effectiveToAccount.currency) {
         return { error: 'Multi-currency transfers are not yet supported. Both accounts must have the same currency.' };
       }
     }
@@ -177,41 +184,44 @@ export async function editTransfer(id: string, rawData: unknown) {
       return { error: 'Please choose a valid goal.' };
     }
 
-    if (data.loanId) {
+    const effectiveAmountMinor = data.amountMinor ?? Number(oldTransfer.amountMinor);
+
+    if (data.loanId || oldTransfer.loanId) {
+      const targetLoanId = data.loanId ?? oldTransfer.loanId;
       const { getLoansForUser } = await import('@/lib/actions/loans');
       const loans = await getLoansForUser(user.id);
-      const loan = loans.find((l: any) => l.id === data.loanId);
+      const loan = loans.find((l: any) => l.id === targetLoanId);
       if (!loan) return { error: 'Please choose a valid loan.' };
       
       // Headroom = outstanding + oldRepaymentAmount (if editing the SAME loan repayment)
-      const isSameLoan = oldTransfer.loanId === data.loanId;
+      const isSameLoan = oldTransfer.loanId === targetLoanId;
       
       let finalInterestMinor = 0;
-      const autoInterest = Math.round((loan.balanceMinor * loan.annualRate) / 1200);
-      finalInterestMinor = data.interestMinor ?? autoInterest;
+      const autoInterest = Math.round((Number(loan.balanceMinor) * loan.annualRate) / 1200);
+      finalInterestMinor = data.interestMinor ?? Number(oldTransfer.interestMinor);
       if (finalInterestMinor < 0) finalInterestMinor = 0;
 
-      const principal = data.amountMinor - finalInterestMinor;
-      const oldRepaymentPrincipal = isSameLoan ? (oldTransfer.baseAmountMinor - oldTransfer.interestMinor) : 0;
-      const headroom = loan.balanceMinor + oldRepaymentPrincipal;
+      const principal = effectiveAmountMinor - finalInterestMinor;
+      const oldRepaymentPrincipal = isSameLoan ? (Number(oldTransfer.baseAmountMinor) - Number(oldTransfer.interestMinor)) : 0;
+      const headroom = Number(loan.balanceMinor) + oldRepaymentPrincipal;
 
       if (principal > headroom) {
         return { error: `You can't pay more than you owe. This loan's remaining balance is  ${toMajor(headroom)}.` };
       }
     }
 
-    if (fromAccount.type !== 'CREDIT_CARD') {
+    if (effectiveFromAccount.type !== 'CREDIT_CARD') {
       const { getAccountBalances } = await import('@/lib/actions/accounts');
       const balances = await getAccountBalances(user.id);
-      const acc = balances.find((a: any) => a.id === fromAccount.id);
+      const acc = balances.find((a: any) => a.id === effectiveFromAccountId);
       if (acc) {
         // Effective Balance = currentBalance + oldAmount (if editing from the SAME account)
-        const isSameAccount = oldTransfer.fromAccountId === data.fromAccountId;
-        const oldAmount = isSameAccount ? oldTransfer.amountMinor : 0;
-        const effectiveBalance = acc.balanceMinor + oldAmount;
+        const isSameAccount = oldTransfer.fromAccountId === effectiveFromAccountId;
+        const oldAmount = isSameAccount ? Number(oldTransfer.amountMinor) : 0;
+        const effectiveBalance = Number(acc.balanceMinor) + oldAmount;
         
-        if (effectiveBalance - data.amountMinor < 0) {
-          return { error: `Not enough money in ${fromAccount.name}. Available: ${fromAccount.currency} ${toMajor(effectiveBalance)}.` };
+        if (effectiveBalance - effectiveAmountMinor < 0) {
+          return { error: `Not enough money in ${effectiveFromAccount.name}. Available: ${effectiveFromAccount.currency} ${toMajor(effectiveBalance)}.` };
         }
       }
     }
@@ -231,15 +241,15 @@ export async function editTransfer(id: string, rawData: unknown) {
       const { count } = await tx.transfer.updateMany({
         where: { id: validId, userId: user.id },
         data: {
-          fromAccountId: data.fromAccountId,
-          toAccountId: data.toAccountId || null,
-          amountMinor: data.amountMinor,
-          currency: fromAccount.currency,
-          baseAmountMinor: data.amountMinor,
-          date: new Date(data.date),
-          note: data.note,
-          goalId: data.goalId || null,
-          loanId: data.loanId || null,
+          fromAccountId: data.fromAccountId ?? oldTransfer.fromAccountId,
+          toAccountId: data.toAccountId !== undefined ? data.toAccountId : oldTransfer.toAccountId,
+          amountMinor: data.amountMinor ?? Number(oldTransfer.amountMinor),
+          currency: effectiveFromAccount.currency,
+          baseAmountMinor: data.amountMinor ?? Number(oldTransfer.baseAmountMinor),
+          date: data.date ? new Date(data.date) : oldTransfer.date,
+          note: data.note !== undefined ? data.note : oldTransfer.note,
+          goalId: data.goalId !== undefined ? data.goalId : oldTransfer.goalId,
+          loanId: data.loanId !== undefined ? data.loanId : oldTransfer.loanId,
           interestMinor: finalInterestMinor,
         },
       });

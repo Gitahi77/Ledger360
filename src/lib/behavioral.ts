@@ -72,7 +72,7 @@ export async function safeToSpend(userId: string, period: 'weekly' | 'monthly' |
         const historyMonths = Math.max(1, lastMonth - oldestMonth + 1);
         const divisor = Math.min(3, historyMonths);
         
-        expectedIncome = Math.round((trailingIncome._sum.baseAmountMinor ?? 0) / divisor);
+        expectedIncome = Math.round(Number(trailingIncome._sum.baseAmountMinor ?? 0) / divisor);
       }
 
       // If no history (or average is 0), fall back to current period actual income
@@ -81,7 +81,7 @@ export async function safeToSpend(userId: string, period: 'weekly' | 'monthly' |
           where: { userId, type: 'income', date: { gte: from, lte: to } },
           _sum: { baseAmountMinor: true }
         });
-        expectedIncome = currentIncomeRows._sum.baseAmountMinor ?? 0;
+        expectedIncome = Number(currentIncomeRows._sum.baseAmountMinor ?? 0);
       }
     }
   } else {
@@ -90,7 +90,7 @@ export async function safeToSpend(userId: string, period: 'weekly' | 'monthly' |
       where: { userId, type: 'income', date: { gte: from, lte: to } },
       _sum: { baseAmountMinor: true }
     });
-    expectedIncome = incomeRows._sum.baseAmountMinor ?? 0;
+    expectedIncome = Number(incomeRows._sum.baseAmountMinor ?? 0);
   }
 
   // 4. Planned Savings
@@ -122,7 +122,7 @@ export async function safeToSpend(userId: string, period: 'weekly' | 'monthly' |
     _sum: { baseAmountMinor: true }
   });
   
-  const spendThisPeriodMap = new Map(spendThisPeriodGroups.map(g => [g.categoryId, g._sum.baseAmountMinor ?? 0]));
+  const spendThisPeriodMap = new Map(spendThisPeriodGroups.map((g: any) => [g.categoryId, Number(g._sum.baseAmountMinor ?? 0)]));
 
   // Fetch unbudgeted spend in parallel with rollover queries
   const unbudgetedPromise = prisma.transaction.aggregate({
@@ -144,12 +144,12 @@ export async function safeToSpend(userId: string, period: 'weekly' | 'monthly' |
     })
   ));
   
-  const rolloverSpendMap = new Map(rolloverBudgets.map((b, i) => [b.id, rolloverSpends[i]._sum.baseAmountMinor ?? 0]));
+  const rolloverSpendMap = new Map(rolloverBudgets.map((b: any, i: number) => [b.id, Number(rolloverSpends[i]._sum.baseAmountMinor ?? 0)]));
 
   for (const b of budgets) {
-    baseEnvelopeLimits += b.limitAmountMinor;
+    baseEnvelopeLimits += Number(b.limitAmountMinor);
     const envelopeSpend = spendThisPeriodMap.get(b.categoryId) ?? 0;
-    const envelopeEffectiveLimit = b.limitAmountMinor;
+    const envelopeEffectiveLimit = Number(b.limitAmountMinor);
 
     if (b.rollover) {
       let periodsExisted = 1;
@@ -165,7 +165,7 @@ export async function safeToSpend(userId: string, period: 'weekly' | 'monthly' |
         }
       }
       
-      const cumulativeLimit = b.limitAmountMinor * periodsExisted;
+      const cumulativeLimit = Number(b.limitAmountMinor) * periodsExisted;
       const cumulativeSpend = rolloverSpendMap.get(b.id) ?? 0;
       
       envelopeOverspendPenalty += Math.max(0, cumulativeSpend - cumulativeLimit);
@@ -176,7 +176,7 @@ export async function safeToSpend(userId: string, period: 'weekly' | 'monthly' |
 
   // 7. Unbudgeted Spend
   const unbudgetedAgg = await unbudgetedPromise;
-  const unbudgetedSpendThisPeriod = unbudgetedAgg._sum.baseAmountMinor ?? 0;
+  const unbudgetedSpendThisPeriod = Number(unbudgetedAgg._sum.baseAmountMinor ?? 0);
 
   // 8. Final Math
   const discretionaryMinor = expectedIncome - baseEnvelopeLimits - plannedSavings - loanDue;

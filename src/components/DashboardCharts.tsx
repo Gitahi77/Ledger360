@@ -129,7 +129,7 @@ export function SpendingDonutChart({ data, currency = 'KES' }: { data: DonutPoin
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', minWidth: 0 }}>
-      <div style={{ filter: 'drop-shadow(0 6px 18px rgba(0,112,243,0.22))', overflow: 'visible' }}>
+      <div style={{ overflow: 'visible' }}>
         <ResponsiveContainer width="100%" height={170}>
           <PieChart>
             <Pie data={colored} cx="50%" cy="50%" innerRadius={44} outerRadius={74}

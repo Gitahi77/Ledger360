@@ -30,42 +30,46 @@ export function TransactionRow({
 }: TransactionRowProps) {
   return (
     <div
-      data-ledger-state={state}
-      className="transaction-row pressable"
+      className={`group flex items-center justify-between p-4 bg-card hover:bg-secondary/50 transition-colors cursor-pointer border-l-2 ${state === 'pending' ? 'border-warning/50' : 'border-transparent'}`}
       onClick={onClick}
     >
-      <div className="transaction-row-icon">
-        {icon}
+      <div className="flex items-center gap-4 flex-1 min-w-0">
+        {icon && (
+          <div className="shrink-0">
+            {icon}
+          </div>
+        )}
+        
+        <div className="flex flex-col min-w-0">
+          <p className="text-sm font-semibold text-foreground truncate">{title}</p>
+          <p className="text-xs text-muted-foreground truncate mt-0.5">{subtitle}</p>
+        </div>
       </div>
 
-      <div className="transaction-row-content">
-        <p className="transaction-row-title">{title}</p>
-        <p className="transaction-row-subtitle">{subtitle}</p>
-      </div>
-
-      <div className="transaction-row-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+      <div className="flex items-center gap-4 shrink-0 ml-4">
         <LedgerAmount amountMinor={amountMinor} type={type} />
-        {onEdit && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onEdit(); }}
-            className="transaction-row-edit"
-            aria-label="Edit Transaction"
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', minWidth: '44px', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          >
-            <Edit2 size={16} />
-          </button>
-        )}
-        {onDelete && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onDelete(); }}
-            disabled={isDeleting}
-            className="transaction-row-delete"
-            aria-label="Delete Transaction"
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', minWidth: '44px', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          >
-            {isDeleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
-          </button>
-        )}
+        
+        <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+          {onEdit && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onEdit(); }}
+              className="p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-md transition-colors"
+              aria-label="Edit Transaction"
+            >
+              <Edit2 size={16} />
+            </button>
+          )}
+          {onDelete && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+              disabled={isDeleting}
+              className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors disabled:opacity-50"
+              aria-label="Delete Transaction"
+            >
+              {isDeleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

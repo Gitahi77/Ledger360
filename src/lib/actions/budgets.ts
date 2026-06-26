@@ -58,30 +58,32 @@ export async function getBudgetsWithSpend(inputPeriod: unknown = 'this-month') {
   const rolloverSpendMap = new Map<string, number>();
 
   if (rolloverBudgets.length > 0) {
-    const rolloverPromises = rolloverBudgets.map(async b => {
-      const agg = await prisma.transaction.aggregate({
-        where: {
-          userId: user.id,
-          type: 'expense',
-          categoryId: b.categoryId,
-          date: { gte: b.createdAt, lte: to },
-          NOT: [
-            { name: { contains: 'VOIDED', mode: 'insensitive' } },
-            { name: { contains: 'pending', mode: 'insensitive' } }
-          ]
-        },
-        _sum: { baseAmountMinor: true }
-      });
-      return { id: b.id, sum: Number(agg._sum.baseAmountMinor ?? 0) };
+    const earliestCreated = new Date(Math.min(...rolloverBudgets.map((b: any) => b.createdAt.getTime())));
+    const categoryIds = rolloverBudgets.map((b: any) => b.categoryId);
+    
+    const rawSpends = await prisma.transaction.findMany({
+      where: {
+        userId: user.id,
+        type: 'expense',
+        categoryId: { in: categoryIds },
+        date: { gte: earliestCreated, lte: to },
+        NOT: [
+          { name: { contains: 'VOIDED', mode: 'insensitive' } },
+          { name: { contains: 'pending', mode: 'insensitive' } }
+        ]
+      },
+      select: { categoryId: true, date: true, baseAmountMinor: true }
     });
-    const results = await Promise.all(rolloverPromises);
-    for (const r of results) {
-      rolloverSpendMap.set(r.id, r.sum);
+
+    for (const b of rolloverBudgets) {
+      const budgetSpends = rawSpends.filter((tx: any) => tx.categoryId === b.categoryId && tx.date >= b.createdAt);
+      const sum = budgetSpends.reduce((acc: number, tx: any) => acc + Number(tx.baseAmountMinor), 0);
+      rolloverSpendMap.set(b.id, sum);
     }
   }
 
   return budgets.map((b: any) => {
-    let effectiveLimit = b.limitAmountMinor;
+    let effectiveLimit = Number(b.limitAmountMinor);
     let effectiveSpend = spendThisPeriodMap[b.categoryId] ?? 0;
 
     if (b.rollover) {
@@ -104,13 +106,13 @@ export async function getBudgetsWithSpend(inputPeriod: unknown = 'this-month') {
       
       const spendSinceCreated = rolloverSpendMap.get(b.id) ?? 0;
       const pastPeriods = periodsExisted - 1;
-      const pastLimit = b.limitAmountMinor * pastPeriods;
+      const pastLimit = Number(b.limitAmountMinor) * pastPeriods;
       const pastSpend = spendSinceCreated - effectiveSpend;
       const rolloverBalance = pastLimit - pastSpend;
 
       // Stop budget limit from inflating: just show this period's limit + rollover balance
       // If they overspent in the past, limit shrinks. If underspent, limit grows.
-      effectiveLimit = b.limitAmountMinor + rolloverBalance;
+      effectiveLimit = Number(b.limitAmountMinor) + rolloverBalance;
       effectiveSpend = effectiveSpend; // Show only this period's spend against the effective limit
     }
 
@@ -141,7 +143,7 @@ export async function addBudget(raw: unknown) {
     });
     if (!cat) return { error: 'Invalid category' };
 
-    await prisma.budget.create({ data: { ...data, rollover: (data as any).rollover ?? false, userId: user.id, limitAmountMinor: data.limitAmountMinor } });
+    await prisma.budget.create({ data: { ...data, rollover: (data as any).rollover ?? false, userId: user.id, limitAmountMinor: BigInt(data.limitAmountMinor) } });
     revalidatePath('/budgets');
     revalidatePath('/');
     return { success: true };
@@ -183,7 +185,7 @@ export async function editBudget(id: string, rawData: unknown) {
     }
     const { count } = await prisma.budget.updateMany({
       where: { id: validId, userId: user.id },
-      data: { ...data, limitAmountMinor: data.limitAmountMinor, rollover: data.rollover },
+      data: { ...data, limitAmountMinor: data.limitAmountMinor !== undefined ? BigInt(data.limitAmountMinor) : undefined, rollover: data.rollover },
     });
     if (count === 0) return { error: 'Budget not found or ownership failed' };
     revalidatePath('/budgets');

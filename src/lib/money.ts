@@ -7,7 +7,7 @@
  * Rounds to nearest integer to avoid floating-point drift.
  */
 export function toMinor(major: number): number {
-  return Math.round(major * 100);
+  return Math.round((major + Number.EPSILON) * 100);
 }
 
 /**

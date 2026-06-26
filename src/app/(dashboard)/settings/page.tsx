@@ -1,6 +1,6 @@
 // src/app/settings/page.tsx — Server Component
 // Loads both profile and saved preferences from DB before rendering the client.
-import { AppLayout } from '@/components/layout/AppLayout';
+
 import { getUserProfile } from '@/lib/actions/reports';
 import { getUserPreferences } from '@/lib/actions/settings';
 import { requireAuth } from '@/lib/actions/_auth';
@@ -32,7 +32,7 @@ export default async function Settings() {
   ]);
 
   return (
-    <AppLayout>
+    <>
       <SettingsClient
         initialName={profile?.name         ?? ''}
         initialEmail={profile?.email        ?? ''}
@@ -67,6 +67,6 @@ export default async function Settings() {
         accounts={accounts.map(a => ({ id: a.id, name: a.name, type: a.type, currency: a.currency }))}
         goals={goals}
       />
-    </AppLayout>
+    </>
   );
 }

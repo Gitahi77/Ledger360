@@ -63,7 +63,7 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
   }
   
   const incompleteGoals = activeGoals.filter(g => {
-    const currentAmountMinor = g.transfers.reduce((sum, t) => sum + t.baseAmountMinor, 0);
+    const currentAmountMinor = g.transfers.reduce((sum, t) => sum + Number(t.baseAmountMinor), 0);
     return currentAmountMinor < g.targetAmountMinor;
   });
   const topGoal = incompleteGoals[0] || null;
@@ -82,7 +82,7 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
     include: { toAccount: true }
   });
   
-  const savedThisMonthMinor = transfersThisMonth.reduce((acc, t) => acc + t.baseAmountMinor, 0);
+  const savedThisMonthMinor = transfersThisMonth.reduce((acc, t) => acc + Number(t.baseAmountMinor), 0);
   if (savedThisMonthMinor > 0) {
     insights.push({
       id: 'endowment-money-kept',
@@ -104,7 +104,7 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
         if (!lastMonthByCategory[t.categoryId]) {
           lastMonthByCategory[t.categoryId] = { totalAmt: 0, name: t.category.name };
         }
-        lastMonthByCategory[t.categoryId].totalAmt += t.baseAmountMinor;
+        lastMonthByCategory[t.categoryId].totalAmt += Number(t.baseAmountMinor);
       });
 
       const essentialRegex = /\b(rent|housing|mortgage|utility|utilities|electricity|water|loan|debt|health|medical|hospital|education|school|tuition|fees|insurance|sha|nhif|nssf)\b/i;
@@ -152,7 +152,7 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
         smallTxByCategory[t.categoryId] = { count: 0, totalAmt: 0, name: t.category.name };
       }
       smallTxByCategory[t.categoryId].count += 1;
-      smallTxByCategory[t.categoryId].totalAmt += t.baseAmountMinor;
+      smallTxByCategory[t.categoryId].totalAmt += Number(t.baseAmountMinor);
     }
   });
 
@@ -176,7 +176,7 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
     if (!pastByCategory[t.categoryId]) {
       pastByCategory[t.categoryId] = { totalAmt: 0, months: new Set() };
     }
-    pastByCategory[t.categoryId].totalAmt += t.baseAmountMinor;
+    pastByCategory[t.categoryId].totalAmt += Number(t.baseAmountMinor);
     pastByCategory[t.categoryId].months.add(monthKey(t.date));
   });
 
@@ -185,7 +185,7 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
     if (!currentByCategory[t.categoryId]) {
       currentByCategory[t.categoryId] = { totalAmt: 0, name: t.category.name };
     }
-    currentByCategory[t.categoryId].totalAmt += t.baseAmountMinor;
+    currentByCategory[t.categoryId].totalAmt += Number(t.baseAmountMinor);
   });
 
   for (const [catId, current] of Object.entries(currentByCategory)) {
@@ -200,8 +200,8 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
         const overspend = current.totalAmt - avgMonthlySpend;
         let description = `Your ${current.name} spending is ${pct}% above your typical monthly average.`;
         
-        if (topGoal && overspend >= 0.01 * topGoal.targetAmountMinor) {
-          const goalPct = Math.round((overspend / topGoal.targetAmountMinor) * 100);
+        if (topGoal && overspend >= 0.01 * Number(topGoal.targetAmountMinor)) {
+          const goalPct = Math.round((overspend / Number(topGoal.targetAmountMinor)) * 100);
           description += ` That difference is about ${goalPct}% of your ${topGoal.name} target.`;
         }
 
@@ -243,7 +243,7 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
     const todayDate = getDate(now);
 
     if (todayDate >= avgDate - 5 && todayDate <= avgDate + 5) {
-      const avgAmountMinor = matches.reduce((acc, t) => acc + t.baseAmountMinor, 0) / matches.length;
+      const avgAmountMinor = matches.reduce((acc, t) => acc + Number(t.baseAmountMinor), 0) / matches.length;
       const displayName = matches[0].name; // use original casing for display
       insights.push({
         id:          `recurring-${nameKey}`,
@@ -257,8 +257,8 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
 
   // ── CASHFLOW FORECAST ──────────────────────────────────────────────────────
   // Show expense-side warning even when income = 0 (e.g. student / new user).
-  const currentIncomeMinor  = currentMonthTx.filter(t => t.type === 'income').reduce((a, b) => a + b.baseAmountMinor, 0);
-  const currentExpenseMinor = currentMonthTx.filter(t => t.type === 'expense').reduce((a, b) => a + b.baseAmountMinor, 0);
+  const currentIncomeMinor  = currentMonthTx.filter(t => t.type === 'income').reduce((a, b) => a + Number(b.baseAmountMinor), 0);
+  const currentExpenseMinor = currentMonthTx.filter(t => t.type === 'expense').reduce((a, b) => a + Number(b.baseAmountMinor), 0);
 
   const daysPassed     = Math.max(getDate(now), 1);
   const daysInMonth    = getDaysInMonth(now);
@@ -300,17 +300,18 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
   // ── GOAL PROGRESS ALERTS ───────────────────────────────────────────────────
   if (prefs?.notifGoals !== false) {
     for (const goal of activeGoals) {
-      const currentAmountMinor = goal.transfers.reduce((sum, t) => sum + t.baseAmountMinor, 0);
-      if (currentAmountMinor >= goal.targetAmountMinor) {
+      const currentAmountMinor = goal.transfers.reduce((sum, t) => sum + Number(t.baseAmountMinor), 0);
+      const targetMinor = Number(goal.targetAmountMinor);
+      if (currentAmountMinor >= targetMinor) {
         insights.push({
           id: `goal-met-${goal.id}`,
           type: 'achievement',
           title: 'Goal Achieved! 🎉',
-          description: `You have reached your goal for ${goal.name}! (${currency} ${toMajor(goal.targetAmountMinor).toLocaleString()})`,
+          description: `You have reached your goal for ${goal.name}! (${currency} ${toMajor(targetMinor).toLocaleString()})`,
           severity: 'success',
         });
       } else {
-        const pct = Math.round((currentAmountMinor / goal.targetAmountMinor) * 100);
+        const pct = Math.round((currentAmountMinor / targetMinor) * 100);
         if (pct === 50 || pct === 75 || pct === 90) {
           insights.push({
             id: `goal-prog-${goal.id}-${pct}`,

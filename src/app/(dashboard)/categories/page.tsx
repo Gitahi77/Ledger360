@@ -1,7 +1,6 @@
 import { requireAuth } from '@/lib/actions/_auth';
 import { prisma } from '@/lib/prisma';
 import { CategoriesClient } from './CategoriesClient';
-import { AppLayout } from '@/components/layout/AppLayout';
 
 export const metadata = { title: 'Categories - Ledger360' };
 
@@ -25,13 +24,11 @@ export default async function CategoriesPage() {
   });
 
   return (
-    <AppLayout>
-      <div className="animate-in" style={{ padding: '1.25rem', maxWidth: 800, margin: '0 auto', width: '100%' }}>
-        <CategoriesClient 
-          initialCategories={categories} 
-          currency={dbUser?.currency ?? 'KES'} 
-        />
-      </div>
-    </AppLayout>
+    <div className="animate-in" style={{ padding: '1.25rem', maxWidth: 800, margin: '0 auto', width: '100%' }}>
+      <CategoriesClient 
+        initialCategories={categories} 
+        currency={dbUser?.currency ?? 'KES'} 
+      />
+    </div>
   );
 }

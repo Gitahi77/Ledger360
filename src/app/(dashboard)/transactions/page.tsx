@@ -1,5 +1,5 @@
 // src/app/transactions/page.tsx — Live Server Component
-import { AppLayout } from '@/components/layout/AppLayout';
+
 import { getTransactions, getCategories, getTransactionSummary } from '@/lib/actions/transactions';
 import { getAccounts } from '@/lib/actions/accounts';
 import { getTransfers } from '@/lib/actions/transfers';
@@ -42,7 +42,7 @@ export default async function Transactions({
   const mappedTransfers = transfers.map(t => ({
     id: t.id,
     name: 'Transfer',
-    baseAmountMinor: t.amountMinor,
+    baseAmountMinor: Number(t.amountMinor),
     type: 'transfer',
     date: t.date,
     note: t.note,
@@ -55,10 +55,15 @@ export default async function Transactions({
     toAccountId: t.toAccountId,
     goalId: t.goalId,
     loanId: t.loanId,
-    interestMinor: t.interestMinor,
+    interestMinor: t.interestMinor ? Number(t.interestMinor) : undefined,
   }));
 
-  const allItems = [...transactions, ...mappedTransfers]
+  const mappedTransactions = transactions.map(t => ({
+    ...t,
+    baseAmountMinor: Number(t.baseAmountMinor)
+  }));
+
+  const allItems = [...mappedTransactions, ...mappedTransfers]
     .filter(t => typeFilter === 'all' ? true : t.type === typeFilter)
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
@@ -67,13 +72,13 @@ export default async function Transactions({
     ? await getTransactions(period)
     : transactions;
 
-  const totalIncome  = allForPeriod.filter(t => t.type === 'income').reduce((s, t) => s + t.baseAmountMinor, 0);
-  const totalExpense = allForPeriod.filter(t => t.type === 'expense').reduce((s, t) => s + t.baseAmountMinor, 0);
+  const totalIncome  = allForPeriod.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.baseAmountMinor), 0);
+  const totalExpense = allForPeriod.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.baseAmountMinor), 0);
 
   const { moneyOut } = await getTransactionSummary(period);
 
   return (
-    <AppLayout>
+    <>
       <TransactionsClient
         transactions={allItems}
         categories={categories}
@@ -87,6 +92,6 @@ export default async function Transactions({
         goals={goals}
         loans={loans}
       />
-    </AppLayout>
+    </>
   );
 }

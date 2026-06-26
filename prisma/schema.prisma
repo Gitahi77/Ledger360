@@ -109,7 +109,7 @@ model Account {
   name         String
   type         AccountType   @default(CHECKING)
   currency     String
-  openingMinor Int           @default(0)
+  openingMinor BigInt        @default(0)
   archived     Boolean       @default(false)
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   transactions Transaction[]
@@ -159,7 +159,7 @@ model Category {
 model Transaction {
   id              String    @id @default(cuid())
   date            DateTime
-  baseAmountMinor Int // stored as integer minor units (cents)
+  baseAmountMinor BigInt // stored as integer minor units (cents)
   currency        String    @default("KES")
   type            String // "income" | "expense"
   name            String
@@ -186,7 +186,7 @@ model Budget {
   id               String @id @default(cuid())
   name             String
   period           String @default("monthly") // "weekly" | "monthly" | "yearly"
-  limitAmountMinor Int // stored as integer minor units (cents)
+  limitAmountMinor BigInt // stored as integer minor units (cents)
   rollover         Boolean @default(false)
   categoryId       String
   userId           String
@@ -204,7 +204,7 @@ model Goal {
   id                 String    @id @default(cuid())
   name               String
   category           String
-  targetAmountMinor  Int // stored as integer minor units (cents)
+  targetAmountMinor  BigInt // stored as integer minor units (cents)
   deadline           DateTime?
   userId             String
 
@@ -221,11 +221,11 @@ model Loan {
   name                String
   lender              String
   type                String // "Personal" | "Student" | "Mortgage" | "Credit Card" | "Informal"
-  originalAmountMinor Int // stored as integer minor units (cents)
-  balanceMinor        Int
+  originalAmountMinor BigInt // stored as integer minor units (cents)
+  balanceMinor        BigInt
   annualRate          Float    @default(0) // percentage, NOT money
   amortization        String   @default("REDUCING_BALANCE") // "REDUCING_BALANCE" | "FLAT_RATE"
-  monthlyPaymentMinor Int
+  monthlyPaymentMinor BigInt
   nextDue             DateTime
   userId              String
 
@@ -240,7 +240,8 @@ model Asset {
   id         String @id @default(cuid())
   name       String
   category   String // "Liquid" | "Investment" | "Property"
-  valueMinor Int // stored as integer minor units (cents)
+  valueMinor BigInt // stored as integer minor units (cents)
+  symbol     String? // Live ticker symbol
   userId     String
 
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -270,9 +271,9 @@ model Transfer {
   userId          String
   fromAccountId   String?
   toAccountId     String?
-  amountMinor     Int
+  amountMinor     BigInt
   currency        String
-  baseAmountMinor Int
+  baseAmountMinor BigInt
   fxRate          Decimal  @db.Decimal(10, 6)
   date            DateTime
   note            String?
@@ -280,7 +281,7 @@ model Transfer {
   goalId          String?
   sourceTransactionId String? @unique          // WO-15: idempotency — links auto-save to the income that triggered it
   loanId          String?
-  interestMinor   Int      @default(0)
+  interestMinor   BigInt      @default(0)
   createdAt       DateTime @default(now())
 
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -321,7 +322,7 @@ model ChamaDetails {
   id                 String   @id @default(cuid())
   accountId          String   @unique
   account            Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  monthlyContrib     Int      // KES cents
+  monthlyContrib     BigInt      // KES cents
   totalMembers       Int
   yourPayoutPosition Int      // e.g. position 3 of 12
   cycleStartDate     DateTime

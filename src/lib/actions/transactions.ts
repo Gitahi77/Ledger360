@@ -96,17 +96,17 @@ export async function getTransactionSummary(inputPeriod: unknown = 'this-month')
     })
   ]);
 
-  const inc = income._sum.baseAmountMinor ?? 0;
+  const inc = Number(income._sum.baseAmountMinor ?? 0);
   
-  const totalLoanInterest = transfersOut._sum.interestMinor ?? 0;
-  const exp = (expenses._sum.baseAmountMinor ?? 0) + totalLoanInterest;
-  const moneyOut = exp + (transfersOut._sum.baseAmountMinor ?? 0) - totalLoanInterest;
+  const totalLoanInterest = Number(transfersOut._sum.interestMinor ?? 0);
+  const exp = Number(expenses._sum.baseAmountMinor ?? 0) + totalLoanInterest;
+  const moneyOut = exp + Number(transfersOut._sum.baseAmountMinor ?? 0) - totalLoanInterest;
 
   // WO-16 / BUG-3: "savings" = sum of transfers that fund a goal OR go to a
   // savings/investment account, EXCLUDING loan repayments. Each qualifying
   // transfer is counted once even if it matches multiple conditions.
-  const savings = savingsTransfers._sum?.baseAmountMinor ?? 0;
-  const todaySpend = todaySpendAgg._sum.baseAmountMinor ?? 0;
+  const savings = Number(savingsTransfers._sum?.baseAmountMinor ?? 0);
+  const todaySpend = Number(todaySpendAgg._sum.baseAmountMinor ?? 0);
 
   return {
     income:     inc,
@@ -173,7 +173,6 @@ export async function getCategoryBreakdown(inputPeriod: unknown = 'this-month') 
   const user = await requireAuth();
   const { from, to } = periodDates(period);
 
-  type AggRow = { categoryId: string; _sum: { baseAmountMinor: number | null } };
   const rows = await prisma.transaction.groupBy({
     by: ['categoryId'],
     where: { userId: user.id, type: 'expense', date: { gte: from, lte: to } },
@@ -181,17 +180,18 @@ export async function getCategoryBreakdown(inputPeriod: unknown = 'this-month') 
     orderBy: { _sum: { baseAmountMinor: 'desc' } },
   });
 
+  const categoryIds = rows.map((r: any) => r.categoryId).filter((id): id is string => id !== null);
   const categories: Category[] = await prisma.category.findMany({
-    where: { id: { in: rows.map((r: AggRow) => r.categoryId) } },
+    where: { id: { in: categoryIds } },
   });
   const catMap = Object.fromEntries(categories.map((c: any) => [c.id, c]));
 
-  const total = rows.reduce((s, r: AggRow) => s + (r._sum.baseAmountMinor ?? 0), 0);
-  return rows.map((r: AggRow) => ({
-    name:  catMap[r.categoryId]?.name ?? r.categoryId,
-    icon:  catMap[r.categoryId]?.icon ?? 'other',
-    value: r._sum.baseAmountMinor ?? 0,
-    pct:   total > 0 ? Math.round(((r._sum.baseAmountMinor ?? 0) / total) * 100) : 0,
+  const total = rows.reduce((s, r: any) => s + Number(r._sum.baseAmountMinor ?? 0), 0);
+  return rows.map((r: any) => ({
+    name:  r.categoryId ? (catMap[r.categoryId]?.name ?? r.categoryId) : 'Other',
+    icon:  r.categoryId ? (catMap[r.categoryId]?.icon ?? 'other') : 'other',
+    value: Number(r._sum.baseAmountMinor ?? 0),
+    pct:   total > 0 ? Math.round((Number(r._sum.baseAmountMinor ?? 0) / total) * 100) : 0,
   }));
 }
 
@@ -262,7 +262,7 @@ export async function addTransaction(raw: unknown) {
     const createdTx = await tx.transaction.create({
       data: { 
         name: data.name,
-        baseAmountMinor: data.baseAmountMinor,
+        baseAmountMinor: BigInt(data.baseAmountMinor),
         type: data.type === 'income' ? 'income' : 'expense',
         categoryId: data.categoryId,
         accountId: accountId,
@@ -316,26 +316,38 @@ export async function importTransactions(rows: any[], targetAccountId: string) {
     const account = await prisma.account.findFirst({ where: { id: targetAccountId, userId: user.id } });
     if (!account) throw new Error('Selected account not found');
 
-  // Pre-validate every row BEFORE touching the DB.
-  // Reject any row with a non-finite or non-positive amount to prevent NaN/Infinity
-  // reaching the database from malformed import files.
-  const validRows = rows.filter((r: any) => {
-    if (r.type !== 'income' && r.type !== 'expense') {
-      console.warn('[importTransactions] Dropping non-income/expense row:', r.name, r.type);
-      return false;
-    }
-    const d = new Date(r.date);
-    if (isNaN(d.getTime())) {
-      console.warn('[importTransactions] Skipping row with invalid date:', r.date, r.name);
-      return false;
-    }
-    const amt = Math.abs(Number(r.baseAmountMinor));
-    if (!isFinite(amt) || amt <= 0) {
-      console.warn('[importTransactions] Skipping row with invalid amount:', r.baseAmountMinor, r.name);
-      return false;
-    }
-    return true;
+  const ImportRowSchema = z.object({
+    name: z.string().min(1).max(120),
+    baseAmountMinor: z.union([z.number(), z.string()]).transform(v => Math.abs(Number(v))),
+    type: z.enum(['income', 'expense']),
+    categoryName: z.string().min(1),
+    date: z.union([z.string(), z.date()]).transform(v => new Date(v)),
+    note: z.string().max(500).optional().nullable(),
+    importHash: z.string().optional().nullable(),
+    reference: z.string().optional().nullable(),
   });
+
+  const parsedArray = z.array(z.any()).safeParse(rows);
+  if (!parsedArray.success) throw new Error('Invalid payload');
+
+  const validRows: z.infer<typeof ImportRowSchema>[] = [];
+  for (const r of parsedArray.data) {
+    const res = ImportRowSchema.safeParse(r);
+    if (!res.success) {
+      console.warn('[importTransactions] Dropping invalid row:', r.name, res.error.issues);
+      continue;
+    }
+    const data = res.data;
+    if (isNaN(data.date.getTime())) {
+      console.warn('[importTransactions] Skipping invalid date:', r.date, r.name);
+      continue;
+    }
+    if (!isFinite(data.baseAmountMinor) || data.baseAmountMinor <= 0) {
+      console.warn('[importTransactions] Skipping invalid amount:', r.baseAmountMinor, r.name);
+      continue;
+    }
+    validRows.push(data);
+  }
   if (validRows.length === 0) throw new Error('No valid rows to import after filtering');
 
   // Use an interactive transaction so category resolution + bulk insert are atomic.
@@ -363,16 +375,15 @@ export async function importTransactions(rows: any[], targetAccountId: string) {
       }
     }
 
-    // Bulk insert — all rows are already validated above
     await tx.transaction.createMany({
       data: validRows.map((r: any) => ({
-        name:            String(r.name).slice(0, 120),
-        baseAmountMinor: Math.abs(Number(r.baseAmountMinor)),
-        type:            r.type as 'income' | 'expense',
-        categoryId:      catMap[String(r.categoryName)],
+        name:            r.name,
+        baseAmountMinor: BigInt(r.baseAmountMinor),
+        type:            r.type,
+        categoryId:      catMap[r.categoryName],
         accountId:       targetAccountId,
-        date:            new Date(r.date),
-        note:            r.note ? String(r.note).slice(0, 500) : undefined,
+        date:            r.date,
+        note:            r.note || undefined,
         userId:          user.id,
         importedAt:      new Date(),
         importHash:      r.importHash || null,
@@ -495,12 +506,12 @@ export async function editTransaction(id: string, rawData: unknown) {
       if (acc && acc.type !== 'CREDIT_CARD') {
         let effectiveBalance = acc.balanceMinor;
         if (oldTx.type === 'expense' && oldTx.accountId === newAccountId) {
-          effectiveBalance += oldTx.baseAmountMinor; // restore old amount
+          effectiveBalance += Number(oldTx.baseAmountMinor); // restore old amount
         } else if (oldTx.type === 'income' && oldTx.accountId === newAccountId) {
-          effectiveBalance -= oldTx.baseAmountMinor; // remove old income
+          effectiveBalance -= Number(oldTx.baseAmountMinor); // remove old income
         }
         
-        if (effectiveBalance - newAmount < 0) {
+        if (effectiveBalance - Number(newAmount) < 0) {
           warning = `Warning: Not enough money in ${acc.name}. Available: ${acc.currency} ${toMajor(effectiveBalance)}.`;
         }
       }

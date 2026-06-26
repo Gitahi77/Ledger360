@@ -1,5 +1,5 @@
 // src/app/budgets/page.tsx — Live Server Component
-import { AppLayout } from '@/components/layout/AppLayout';
+
 import { getBudgetsWithSpend } from '@/lib/actions/budgets';
 import { getCategories } from '@/lib/actions/transactions';
 import { BudgetsClient } from './BudgetsClient';
@@ -23,7 +23,7 @@ export default async function Budgets({
   const totalSpent    = budgets.reduce((s: number, b: any) => s + b.spent, 0);
 
   return (
-    <AppLayout>
+    <>
       <BudgetsClient
         budgets={budgets}
         categories={categories}
@@ -32,6 +32,6 @@ export default async function Budgets({
         period={period}
         currency={user.currency}
       />
-    </AppLayout>
+    </>
   );
 }

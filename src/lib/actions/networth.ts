@@ -37,12 +37,12 @@ export async function getNetWorth() {
   const totalCashMinor        = cashAccounts.reduce((s: any, a: any) => s + convert(a.balanceMinor, a.currency), 0);
   const totalCardDebtMinor    = debtAccounts.reduce((s: any, a: any) => s + Math.abs(convert(a.balanceMinor, a.currency)), 0);
   
-  const totalAssetsMinor      = assets.reduce((s: any, a: any) => s + a.valueMinor, 0) + totalCashMinor;
-  const totalLiabilitiesMinor = loans.reduce((s: any, l: any) => s + l.balanceMinor, 0) + totalCardDebtMinor;
+  const totalAssetsMinor      = assets.reduce((s: any, a: any) => s + Number(a.valueMinor), 0) + totalCashMinor;
+  const totalLiabilitiesMinor = loans.reduce((s: any, l: any) => s + Number(l.balanceMinor), 0) + totalCardDebtMinor;
 
   return {
-    assets,
-    liabilities:     loans,
+    assets: assets.map(a => ({ ...a, valueMinor: Number(a.valueMinor) })),
+    liabilities: loans.map(l => ({ ...l, balanceMinor: Number(l.balanceMinor) })),
     totalAssetsMinor,
     totalLiabilitiesMinor,
     totalCashMinor,
@@ -52,22 +52,22 @@ export async function getNetWorth() {
 }
 
 /* ── Add asset (Zod-validated) ────────────────────────────── */
-export async function addAsset(raw: { name: string; category: string; valueMinor: number }) {
+export async function addAsset(raw: { name: string; category: string; valueMinor: number; symbol?: string }) {
   const { AddAssetSchema } = await import('@/lib/validation');
   const data = AddAssetSchema.parse(raw);
   const user = await requireAuth();
-  await prisma.asset.create({ data: { ...data, userId: user.id, valueMinor: data.valueMinor } });
+  await prisma.asset.create({ data: { ...data, userId: user.id, valueMinor: BigInt(data.valueMinor), symbol: data.symbol } });
   revalidatePath('/net-worth');
   revalidatePath('/');
 }
 
-export async function editAsset(id: string, data: { name?: string; category?: string; valueMinor?: number }) {
+export async function editAsset(id: string, data: { name?: string; category?: string; valueMinor?: number; symbol?: string }) {
   const user = await requireAuth();
   if (!id) throw new Error('Missing id');
   
   const { count } = await prisma.asset.updateMany({
     where: { id, userId: user.id },
-    data,
+    data: { ...data, valueMinor: data.valueMinor !== undefined ? BigInt(data.valueMinor) : undefined },
   });
   if (count === 0) throw new Error('Asset not found or ownership failed');
   
@@ -87,38 +87,74 @@ export async function getNetWorthHistory(days: number) {
   const user = await requireAuth();
   const currentNw = (await getNetWorth()).netWorthMinor;
   
-  const flows = await prisma.$queryRaw<{ date: string; change: number }[]>`
-    SELECT 
-      DATE(date AT TIME ZONE 'Africa/Nairobi')::text AS date,
-      SUM(CASE WHEN type = 'income' THEN "baseAmountMinor" ELSE -"baseAmountMinor" END)::float AS change
-    FROM "Transaction"
-    WHERE "userId" = ${user.id} AND date >= CURRENT_DATE - (${days} * INTERVAL '1 day')
-    GROUP BY DATE(date AT TIME ZONE 'Africa/Nairobi')
-    ORDER BY date DESC
-  `;
+  const today = new Date();
+  const cutoff = new Date(today);
+  cutoff.setDate(today.getDate() - days);
+
+  const [txs, tfs] = await Promise.all([
+    prisma.transaction.findMany({
+      where: { userId: user.id, date: { gte: cutoff } },
+      select: { date: true, type: true, baseAmountMinor: true }
+    }),
+    prisma.transfer.findMany({
+      where: { userId: user.id, date: { gte: cutoff } },
+      select: { date: true, amountMinor: true, fromAccountId: true, toAccountId: true, loanId: true, interestMinor: true }
+    })
+  ]);
+
+  const toNairobiDateString = (d: Date) => {
+    const local = new Date(d.getTime() + 3 * 3600000);
+    return local.toISOString().split('T')[0];
+  };
+
+  const changeMap = new Map<string, number>();
+
+  for (const tx of txs) {
+    const dStr = toNairobiDateString(tx.date);
+    const amt = Number(tx.baseAmountMinor);
+    // Income increases NW, expense reduces NW
+    const delta = tx.type === 'income' ? amt : -amt;
+    changeMap.set(dStr, (changeMap.get(dStr) || 0) + delta);
+  }
+
+  for (const tf of tfs) {
+    const dStr = toNairobiDateString(tf.date);
+    const amt = Number(tf.amountMinor);
+    let delta = 0;
+
+    if (!tf.toAccountId && !tf.loanId && tf.fromAccountId) {
+      // Transfer OUT (off-book): reduces NW
+      delta = -amt;
+    } else if (!tf.fromAccountId && (tf.toAccountId || tf.loanId)) {
+      // Transfer IN (from off-book): increases NW
+      // If it's paying a loan, it reduces liability without reducing tracked cash, so NW increases.
+      delta = amt;
+    } else if (tf.fromAccountId && tf.loanId && tf.interestMinor) {
+      // Transfer to Loan WITH interest:
+      // Cash decreases by amt. Liability decreases by (amt - interest).
+      // Net change to NW = -interest
+      delta = -Number(tf.interestMinor);
+    }
+    
+    if (delta !== 0) {
+      changeMap.set(dStr, (changeMap.get(dStr) || 0) + delta);
+    }
+  }
 
   const history: { date: string; netWorthMinor: number }[] = [];
   let runningNw = currentNw;
   
-  const changeMap = new Map<string, number>();
-  for (const f of flows) {
-    changeMap.set(f.date, f.change);
-  }
-
-  const today = new Date();
   for (let i = 0; i <= days; i++) {
     const d = new Date(today);
     d.setDate(today.getDate() - i);
-    
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    const dateStr = `${yyyy}-${mm}-${dd}`;
+    const dateStr = toNairobiDateString(d);
     
     history.unshift({ date: dateStr, netWorthMinor: runningNw });
     
+    // To go backwards in time, subtract the change that happened ON this day
+    // from the running total to find what the NW was at the start of the day.
     const change = changeMap.get(dateStr) || 0;
-    runningNw -= Math.round(change);
+    runningNw -= change;
   }
 
   return history;

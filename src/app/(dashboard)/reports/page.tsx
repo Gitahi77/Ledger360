@@ -1,5 +1,5 @@
 // src/app/reports/page.tsx — Live Server Component
-import { AppLayout } from '@/components/layout/AppLayout';
+
 import { getMonthlyTrend, getReportSummary, getReportCategories } from '@/lib/actions/reports';
 import { ReportsClient } from './ReportsClient';
 import { requireAuth } from '@/lib/actions/_auth';
@@ -21,7 +21,7 @@ export default async function Reports({
   ]);
 
   return (
-    <AppLayout>
+    <>
       <ReportsClient
         period={period}
         trend={trend}
@@ -30,6 +30,6 @@ export default async function Reports({
         incomeCategories={incomeCategories}
         currency={user.currency}
       />
-    </AppLayout>
+    </>
   );
 }

@@ -1,5 +1,5 @@
 // src/app/goals/page.tsx — FULLY LIVE Server Component
-import { AppLayout } from '@/components/layout/AppLayout';
+
 import { getGoals } from '@/lib/actions/goals';
 import { getCategories } from '@/lib/actions/transactions';
 import { GoalsClient } from './GoalsClient';
@@ -12,12 +12,12 @@ export default async function Goals() {
     getCategories(),
   ]);
   return (
-    <AppLayout>
+    <>
       <GoalsClient 
         goals={goals}
         currency={user.currency}
         categories={categories}
       />
-    </AppLayout>
+    </>
   );
 }

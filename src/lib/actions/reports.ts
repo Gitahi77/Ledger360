@@ -142,30 +142,30 @@ export async function getReportSummary(period: string) {
     }),
   ]);
 
-  const inc = income._sum.baseAmountMinor   ?? 0;
-  const sav = currentSavingsTransfers.reduce((sum: any, t: any) => sum + t.baseAmountMinor, 0);
+  const inc = Number(income._sum.baseAmountMinor ?? 0);
+  const sav = currentSavingsTransfers.reduce((sum: any, t: any) => sum + Number(t.baseAmountMinor), 0);
   
   const currentDebtInfo = currentDebtTransfers.reduce((acc: any, t: any) => {
-    acc.principal += (t.baseAmountMinor - t.interestMinor);
-    acc.interest += t.interestMinor;
+    acc.principal += (Number(t.baseAmountMinor) - Number(t.interestMinor));
+    acc.interest += Number(t.interestMinor);
     return acc;
   }, { principal: 0, interest: 0 });
   const deb = currentDebtInfo.principal;
-  const exp = (expenses._sum.baseAmountMinor ?? 0) + currentDebtInfo.interest;
+  const exp = Number(expenses._sum.baseAmountMinor ?? 0) + currentDebtInfo.interest;
 
   const ncf = inc - exp - sav - deb;
   const sr  = inc > 0 ? Math.round((sav / inc) * 100) : 0;
 
-  const pInc = prevIncome._sum.baseAmountMinor   ?? 0;
-  const pSav = prevSavingsTransfers.reduce((sum: any, t: any) => sum + t.baseAmountMinor, 0);
+  const pInc = Number(prevIncome._sum.baseAmountMinor ?? 0);
+  const pSav = prevSavingsTransfers.reduce((sum: any, t: any) => sum + Number(t.baseAmountMinor), 0);
   
   const prevDebtInfo = prevDebtTransfers.reduce((acc: any, t: any) => {
-    acc.principal += (t.baseAmountMinor - t.interestMinor);
-    acc.interest += t.interestMinor;
+    acc.principal += (Number(t.baseAmountMinor) - Number(t.interestMinor));
+    acc.interest += Number(t.interestMinor);
     return acc;
   }, { principal: 0, interest: 0 });
   const pDeb = prevDebtInfo.principal;
-  const pExp = (prevExpenses._sum.baseAmountMinor ?? 0) + prevDebtInfo.interest;
+  const pExp = Number(prevExpenses._sum.baseAmountMinor ?? 0) + prevDebtInfo.interest;
 
   const pNcf = pInc - pExp - pSav - pDeb;
   const pSr  = pInc > 0 ? Math.round((pSav / pInc) * 100) : 0;
@@ -200,7 +200,7 @@ export async function getReportSummary(period: string) {
 }
 
 /* ── Category breakdown ───────────────────────────────────── */
-export async function getReportCategories(period: string, type: 'expense' | 'income' = 'expense') {
+export async function getReportCategories(period: string, type: 'expense' | 'income' = 'expense'): Promise<{ name: string; value: number; pct: number; color: string }[]> {
   const user = await requireAuth();
   const now  = new Date();
   let from: Date, to: Date;
@@ -216,7 +216,6 @@ export async function getReportCategories(period: string, type: 'expense' | 'inc
     to   = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
   }
 
-  type AggRow = { categoryId: string; _sum: { baseAmountMinor: number | null } };
   const rows = await prisma.transaction.groupBy({
     by: ['categoryId'],
     where: { userId: user.id, type: type, date: { gte: from, lte: to } },
@@ -225,20 +224,21 @@ export async function getReportCategories(period: string, type: 'expense' | 'inc
     take: 8,
   });
 
-  if (rows.length === 0) return [];
+  if (rows.length === 0) return [] as { name: string; value: number; pct: number; color: string }[];
 
-  const cats: Category[] = await prisma.category.findMany({ where: { id: { in: rows.map((r: AggRow) => r.categoryId) } } });
+  const categoryIds = rows.map((r: any) => r.categoryId).filter((id): id is string => id !== null);
+  const cats: Category[] = await prisma.category.findMany({ where: { id: { in: categoryIds } } });
   const catMap = Object.fromEntries(cats.map((c: any) => [c.id, c]));
-  const total  = rows.reduce((s, r: AggRow) => s + (r._sum.baseAmountMinor ?? 0), 0);
+  const total  = rows.reduce((s, r: any) => s + Number(r._sum.baseAmountMinor ?? 0), 0);
 
   const EXPENSE_PALETTE_HEX = ['#3b82f6','#f59e0b','#ef4444','#a855f7','#1d4ed8','#10b981'];
   const INCOME_PALETTE_HEX  = ['#10b981','#a855f7','#1d4ed8','#f59e0b','#ef4444','#06b6d4'];
   const PALETTE = type === 'expense' ? EXPENSE_PALETTE_HEX : INCOME_PALETTE_HEX;
 
-  return rows.map((r: AggRow, i) => ({
-    name:  catMap[r.categoryId]?.name ?? 'Other',
-    value: r._sum.baseAmountMinor ?? 0,
-    pct:   total > 0 ? Math.round(((r._sum.baseAmountMinor ?? 0) / total) * 100) : 0,
+  return rows.map((r: any, i) => ({
+    name:  r.categoryId ? (catMap[r.categoryId]?.name ?? 'Other') : 'Other',
+    value: Number(r._sum.baseAmountMinor ?? 0),
+    pct:   total > 0 ? Math.round((Number(r._sum.baseAmountMinor ?? 0) / total) * 100) : 0,
     color: PALETTE[i % PALETTE.length],
   }));
 }

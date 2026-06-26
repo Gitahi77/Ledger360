@@ -47,6 +47,18 @@ export const AddTransferSchema = z.object({
 });
 export type AddTransferInput = z.infer<typeof AddTransferSchema>;
 
+export const EditTransferSchema = z.object({
+  fromAccountId: z.string().min(1, 'From account is required'),
+  toAccountId:   z.string().optional().nullable(),
+  amountMinor:   kes('Amount'),
+  date:          z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD'),
+  note:          z.string().max(500, 'Note too long').optional(),
+  goalId:        z.string().optional().nullable(),
+  loanId:        z.string().optional().nullable(),
+  interestMinor: z.number().min(0, 'Interest cannot be negative').optional(),
+}).partial();
+export type EditTransferInput = z.infer<typeof EditTransferSchema>;
+
 /* ── Budgets ──────────────────────────────────────────────── */
 export const AddBudgetSchema = z.object({
   name:       z.string().min(1, 'Budget name is required').max(80),
@@ -86,6 +98,7 @@ export const AddAssetSchema = z.object({
   name:     z.string().min(1, 'Asset name is required').max(80),
   category: z.enum(['Property', 'Investment', 'Vehicle', 'Other']),
   valueMinor:    optKes('Asset value'),
+  symbol:   z.string().optional(),
 });
 export type AddAssetInput = z.infer<typeof AddAssetSchema>;
 

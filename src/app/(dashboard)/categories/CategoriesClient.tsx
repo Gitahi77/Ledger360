@@ -192,7 +192,7 @@ export function CategoriesClient({ initialCategories, currency }: { initialCateg
   };
 
   return (
-    <div className="page-container" style={{ maxWidth: 1100 }}>
+    <div className="page-container">
       {showAdd && <CategoryModal onClose={() => setShowAdd(false)} />}
       {editCat && <CategoryModal category={editCat} onClose={() => setEditCat(null)} />}
       

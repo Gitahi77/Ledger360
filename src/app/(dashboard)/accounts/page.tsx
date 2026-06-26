@@ -3,18 +3,18 @@ export const metadata = { title: 'Accounts ?" Ledger360' };
 
 import { requireAuth } from '@/lib/actions/_auth';
 import { getAccountBalances } from '@/lib/actions/accounts';
-import { AppLayout } from '@/components/layout/AppLayout';
 import { AccountsClient } from './AccountsClient';
 
 export default async function AccountsPage() {
   const user = await requireAuth();
-  // Fetch ALL accounts (including archived) to show in the UI list,
-  // where the user can manage them.
   const allAccounts = await getAccountBalances(user.id);
+  const mappedAccounts = allAccounts.map(a => ({
+    ...a,
+    openingMinor: Number(a.openingMinor),
+    balanceMinor: Number(a.balanceMinor)
+  }));
 
   return (
-    <AppLayout>
-      <AccountsClient accounts={allAccounts} currency={user.currency} />
-    </AppLayout>
+    <AccountsClient accounts={mappedAccounts} currency={user.currency} />
   );
 }

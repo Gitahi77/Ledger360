@@ -8,7 +8,7 @@ import { SmartUpload } from '@/components/SmartUpload';
 import { addTransaction, editTransaction, deleteTransaction } from '@/lib/actions/transactions';
 import { createTransfer, editTransfer, deleteTransfer } from '@/lib/actions/transfers';
 import { fmtAdaptive } from '@/lib/format';
-import { Plus, FileDown, X, Loader2, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, FileDown, X, Loader2, Search, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
 import { toMinor, toMajor } from '@/lib/money';
 import { TransactionRow } from '@/components/finance/TransactionRow';
 
@@ -91,7 +91,6 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
     setLoading(true); setError('');
     try {
       // Finance app invariant: NEVER store NaN or zero amounts.
-      // parseFloat on an empty string yields NaN which silently corrupts the ledger.
       const parsedAmount = parseFloat(amount);
       if (!amount || !isFinite(parsedAmount) || parsedAmount <= 0) {
         setError('Please enter a valid positive amount.'); setLoading(false); return;
@@ -127,42 +126,52 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
   }
 
   return (
-    <div className="modal-overlay" style={{ background: 'rgba(0, 0, 0, 0.6)', backdropFilter: 'none' }} onClick={() => onClose()}>
-      <div className="card animate-in" style={{ width:'100%', maxWidth:460, padding:'1.75rem', maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => onClose()}>
+      <div className="bg-card w-full max-w-lg rounded-2xl shadow-xl border border-border p-6 overflow-y-auto max-h-[90vh]" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
-          <h2 className="card-title" style={{ marginBottom:0 }}>{isEdit ? 'Edit Transaction' : 'Add Transaction'}</h2>
-          <button onClick={() => onClose()} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--color-text-secondary)', display:'flex' }}><X size={18}/></button>
+          <h2 className="text-xl font-bold text-foreground">{isEdit ? 'Edit Transaction' : 'Add Transaction'}</h2>
+          <button onClick={() => onClose()} className="p-2 text-muted-foreground hover:bg-secondary rounded-full transition-colors"><X size={18}/></button>
         </div>
-        {error && <div style={{ padding:'0.625rem', borderRadius:7, background:'var(--color-expense-light)', color:'var(--color-expense)', fontSize:'0.8rem', marginBottom:'1rem' }}>{error}</div>}
-        <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:'0.875rem' }}>
-          <div className="segmented-control" style={{ width:'100%' }}>
+        
+        {error && (
+          <div className="flex items-center gap-2 p-3 mb-5 text-sm font-medium text-destructive bg-destructive/10 rounded-lg">
+            <AlertTriangle size={16} /> {error}
+          </div>
+        )}
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="flex p-1 bg-secondary rounded-lg">
             {(['expense', 'income', 'transfer'] as const).map(t => (
               <button key={t} type="button" onClick={() => { setType(t); setCategoryId(''); }}
-                className={`segmented-btn ${type === t ? 'active' : ''}`} style={{ flex:1, justifyContent:'center' }}>
+                className={`flex-1 py-1.5 text-sm font-semibold rounded-md transition-all ${
+                  type === t ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                }`}>
                 {t === 'income' ? '+ Income' : t === 'expense' ? '− Expense' : '⇄ Transfer'}
               </button>
             ))}
           </div>
-          <div style={{ display:'flex', flexWrap:'wrap', gap:'0.75rem' }}>
+          
+          <div className="flex flex-col sm:flex-row gap-4">
             {type !== 'transfer' && (
-              <div style={{ flex: '1 1 180px' }}>
-                <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>Description</label>
-                <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
+              <div className="flex-1">
+                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Description</label>
+                <input className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
                   value={name} onChange={e => setName(e.target.value)} required placeholder="e.g. Naivas Grocery" />
               </div>
             )}
-            <div style={{ flex: type === 'transfer' ? '1 1 100%' : '1 1 180px' }}>
-              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>Amount ({currency})</label>
-              <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
+            <div className={type === 'transfer' ? 'w-full' : 'w-full sm:w-1/3'}>
+              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Amount ({currency})</label>
+              <input className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all font-mono"
                 type="number" inputMode="decimal" min="1" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} required placeholder="0.00" />
             </div>
           </div>
-          <div style={{ display:'flex', flexWrap:'wrap', gap:'0.75rem' }}>
+          
+          <div className="flex flex-col sm:flex-row gap-4">
             {type !== 'transfer' ? (
               <>
-                <div style={{ flex: '1 1 180px' }}>
-                  <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>Category</label>
-                  <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
+                <div className="flex-1">
+                  <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Category</label>
+                  <select className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
                     value={categoryId} onChange={e => setCategoryId(e.target.value)} required>
                     <option value="">Select…</option>
                     {filteredCats.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -171,9 +180,9 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
                     )}
                   </select>
                 </div>
-                <div style={{ flex: '1 1 180px' }}>
-                  <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>Account</label>
-                  <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
+                <div className="flex-1">
+                  <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Account</label>
+                  <select className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
                     value={accountId} onChange={e => setAccountId(e.target.value)} required>
                     <option value="">Select Account…</option>
                     {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
@@ -182,18 +191,18 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
               </>
             ) : (
               <>
-                <div style={{ flex: '1 1 180px' }}>
-                  <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>From Account</label>
-                  <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
+                <div className="flex-1">
+                  <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">From Account</label>
+                  <select className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
                     value={accountId} onChange={e => setAccountId(e.target.value)} required>
                     <option value="">Select From Account...</option>
                     {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
                   </select>
                 </div>
                 {!loanId && (
-                  <div style={{ flex: '1 1 180px' }}>
-                    <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>To Account</label>
-                    <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
+                  <div className="flex-1">
+                    <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">To Account</label>
+                    <select className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
                       value={toAccountId} onChange={e => setToAccountId(e.target.value)} required>
                       <option value="">Select To Account...</option>
                       {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
@@ -201,9 +210,9 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
                   </div>
                 )}
                 {goals.length > 0 && !loanId && (
-                  <div style={{ flex: '1 1 180px' }}>
-                    <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>Goal to Fund (Optional)</label>
-                    <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
+                  <div className="flex-1">
+                    <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Goal to Fund (Optional)</label>
+                    <select className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
                       value={goalId} onChange={e => setGoalId(e.target.value)}>
                       <option value="">None</option>
                       {goals.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
@@ -211,9 +220,9 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
                   </div>
                 )}
                 {loans.length > 0 && !goalId && (
-                  <div style={{ flex: '1 1 180px' }}>
-                    <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>Loan to Repay (Optional)</label>
-                    <select className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
+                  <div className="flex-1">
+                    <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Loan to Repay (Optional)</label>
+                    <select className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
                       value={loanId} onChange={e => setLoanId(e.target.value)}>
                       <option value="">None</option>
                       {loans.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
@@ -223,25 +232,27 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
               </>
             )}
           </div>
+          
           {type === 'transfer' && loanId && (
             <div>
-              <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>Interest Portion ({currency})</label>
-              <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
+              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Interest Portion ({currency})</label>
+              <input className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all font-mono"
                 type="number" inputMode="decimal" min="0" step="0.01" value={interestAmount} onChange={e => setInterestAmount(e.target.value)} required placeholder="0.00" />
             </div>
           )}
+          
           <div>
-            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>Date</label>
-            <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
+            <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Date</label>
+            <input className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
               type="date" value={date} onChange={e => setDate(e.target.value)} required />
           </div>
           <div>
-            <label style={{ display:'block', fontSize:'0.75rem', fontWeight:600, color:'var(--color-text-secondary)', marginBottom:'0.35rem' }}>Note <span style={{ fontWeight:400, color:'var(--color-text-secondary)' }}>(optional)</span></label>
-            <input className="input-field" style={{ width:'100%', padding:'0.55rem 0.75rem', fontSize:'0.85rem' }}
+            <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Note <span className="font-normal opacity-70">(optional)</span></label>
+            <input className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
               value={note} onChange={e => setNote(e.target.value)} placeholder="e.g. May salary" />
           </div>
-          <button type="submit" disabled={loading} className="btn btn-primary" style={{ width:'100%', justifyContent:'center', padding:'1.25rem', marginTop:'0.25rem' }}>
-            {loading ? <><Loader2 size={14} style={{ animation:'spin 1s linear infinite' }}/> Saving…</> : (isEdit ? 'Save Changes' : `Save ${type === 'income' ? 'Income' : type === 'expense' ? 'Expense' : 'Transfer'}`)}
+          <button type="submit" disabled={loading} className="w-full flex items-center justify-center py-2.5 px-4 bg-brand hover:bg-brand-dark text-white font-semibold rounded-lg transition-colors mt-2 disabled:opacity-50 disabled:cursor-not-allowed">
+            {loading ? <><Loader2 size={16} className="animate-spin mr-2"/> Saving…</> : (isEdit ? 'Save Changes' : `Save ${type === 'income' ? 'Income' : type === 'expense' ? 'Expense' : 'Transfer'}`)}
           </button>
         </form>
       </div>
@@ -316,40 +327,39 @@ export function TransactionsClient({
   const periodLabel = PERIOD_LABELS[period] ?? 'This Period';
 
   return (
-    <div className="page-container">
+    <div className="space-y-6">
       {showAdd && <TransactionModal categories={categories} accounts={accounts} goals={goals} loans={loans} currency={currency} onClose={(w) => { setShowAdd(false); if(w) setPageWarning(w); }} />}
       {editTx && <TransactionModal key={editTx.id} tx={editTx} categories={categories} accounts={accounts} goals={goals} loans={loans} currency={currency} onClose={(w) => { setEditTx(null); if(w) setPageWarning(w); }} />}
-      {showUpload && <div className="card mb-5 animate-in"><SmartUpload /></div>}
+      {showUpload && <div className="bg-card border border-border rounded-xl shadow-soft p-5 animate-in fade-in"><SmartUpload /></div>}
 
       {pageWarning && (
-        <div className="card animate-in mb-5 flex items-center justify-between" style={{ padding:'0.875rem 1.25rem', background:'var(--warning-light, rgb(255, 251, 235))', color:'var(--warning, rgb(180, 83, 9))', border:'1px solid var(--warning-border, rgb(252, 211, 77))' }}>
-          <span style={{ fontSize:'0.85rem', fontWeight:500 }}>{pageWarning}</span>
-          <button onClick={() => setPageWarning('')} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--warning, rgb(180, 83, 9))', display:'flex' }}><X size={16}/></button>
+        <div className="flex items-center justify-between p-4 bg-warning/10 border border-warning/20 text-warning rounded-xl">
+          <span className="text-sm font-medium">{pageWarning}</span>
+          <button onClick={() => setPageWarning('')} className="p-1 hover:bg-warning/20 rounded-md transition-colors"><X size={16}/></button>
         </div>
       )}
 
       {/* Toolbar */}
-      <div className="flex items-center justify-between mb-5 flex-wrap gap-3 animate-in">
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="segmented-control">
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+        <div className="flex items-center gap-3 flex-wrap flex-1">
+          <div className="flex p-1 bg-secondary rounded-lg">
             {(['all', 'income', 'expense', 'transfer'] as const).map(v => (
-              <button key={v} onClick={() => setParam('type', v)} className={`segmented-btn ${typeFilter === v ? 'active' : ''}`}>
+              <button key={v} onClick={() => setParam('type', v)} className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${typeFilter === v ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
                 {v === 'all' ? 'All' : v === 'income' ? 'Income' : v === 'expense' ? 'Expenses' : 'Transfers'}
               </button>
             ))}
           </div>
-          <div className="segmented-control">
+          <div className="flex p-1 bg-secondary rounded-lg">
             {(['this-week', 'this-month', 'this-year'] as const).map(v => (
-              <button key={v} onClick={() => setParam('period', v)} className={`segmented-btn ${period === v ? 'active' : ''}`}>
+              <button key={v} onClick={() => setParam('period', v)} className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${period === v ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
                 {v === 'this-week' ? 'Week' : v === 'this-month' ? 'Month' : 'Year'}
               </button>
             ))}
           </div>
-          <div style={{ position:'relative', flex: '1 1 200px' }}>
-            <Search size={14} style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', color:'var(--color-text-secondary)' }} />
+          <div className="relative flex-1 min-w-[200px]">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input 
-              className="input-field" 
-              style={{ width:'100%', padding:'0.45rem 0.75rem 0.45rem 2rem', fontSize:'0.85rem' }}
+              className="w-full py-1.5 pl-8 pr-3 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
               placeholder="Search..."
               value={searchQuery}
               onChange={e => { setSearchQuery(e.target.value); resetPagination(); }}
@@ -357,65 +367,56 @@ export function TransactionsClient({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button className="btn btn-outline" onClick={() => setShowUpload(v => !v)}><FileDown size={13}/> Import</button>
-          <button className="btn btn-primary" onClick={() => setShowAdd(true)}><Plus size={13}/> Add Entry</button>
+          <button className="flex items-center px-4 py-2 text-sm font-semibold text-muted-foreground bg-background border border-border rounded-lg hover:bg-secondary transition-colors" onClick={() => setShowUpload(v => !v)}>
+            <FileDown size={14} className="mr-1.5"/> Import
+          </button>
+          <button className="flex items-center px-4 py-2 text-sm font-semibold text-white bg-brand rounded-lg hover:bg-brand-dark transition-colors shadow-sm" onClick={() => setShowAdd(true)}>
+            <Plus size={14} className="mr-1.5"/> Add Entry
+          </button>
         </div>
       </div>
 
-      {/* Summary Hero — matches dashboard style exactly */}
-      <div className="dashboard-hero animate-in delay-1 mb-5">
-        <div className="dashboard-hero-grid">
-          {/* Primary: Net Balance */}
-          <div>
-            <p className="hero-label">Net Balance · {periodLabel}</p>
-            <p style={{
-              fontFamily:'Space Grotesk,sans-serif',
-              fontSize: Math.abs(net) > 9_999_999 ? '1.6rem' : Math.abs(net) > 999_999 ? '1.9rem' : '2.25rem',
-              fontWeight:800, letterSpacing:'-0.04em', lineHeight:1,
-              color: netPositive ? 'var(--hero-income)' : 'var(--hero-expense)',
-              whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
-            }}>
-                {netPositive ? '+' : '-'}{fmtAdaptive(Math.abs(net), currency)}
-            </p>
-            <p className="hero-sub">{transactions.length} transaction{transactions.length !== 1 ? 's' : ''} in period</p>
-          </div>
+      {/* Summary Hero — Monarch Style */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="col-span-1 md:col-span-2 bg-card border border-border rounded-xl p-6 shadow-soft flex flex-col justify-center">
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Net Balance · {periodLabel}</p>
+          <p className={`text-4xl md:text-5xl font-display font-bold tabular-nums tracking-tight ${netPositive ? 'text-success' : 'text-destructive'}`}>
+              {netPositive ? '+' : '-'}{fmtAdaptive(Math.abs(net), currency)}
+          </p>
+          <p className="text-sm font-medium text-muted-foreground mt-2">{transactions.length} transaction{transactions.length !== 1 ? 's' : ''} in period</p>
+        </div>
 
-          {/* Stat cards */}
-          <div className="hero-stats-grid">
-            <div className="hero-stat-card">
-              <p className="hero-label">{periodLabel} Income</p>
-              <p className="hero-stat-value tabular" style={{ color:'var(--hero-income)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{fmtAdaptive(totalIncome, currency)}</p>
-              <p className="hero-sub">{totalIncome > 0 ? '+ Coming in' : 'No income yet'}</p>
+        <div className="flex flex-col gap-4">
+          <div className="bg-success/5 border border-success/20 rounded-xl p-4 shadow-sm flex items-center justify-between">
+            <div>
+              <p className="text-xs font-bold text-success uppercase tracking-wider mb-1">{periodLabel} Income</p>
+              <p className="text-xl font-bold text-foreground tabular-nums">{fmtAdaptive(totalIncome, currency)}</p>
             </div>
-            <div className="hero-stat-card">
-              <p className="hero-label">{PERIOD_LABELS[period] || 'All Time'} Money Out</p>
-              <p className="hero-stat-value tabular" style={{ color:'var(--hero-expense)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{fmtAdaptive(moneyOut, currency)}</p>
-              <p className="hero-sub">- Going out</p>
-            </div>
-            <div className="hero-stat-card">
-              <p className="hero-label">Transactions</p>
-              <p className="hero-stat-value tabular" style={{ color:'white' }}>{transactions.length}</p>
-              <p className="hero-sub">in period</p>
+          </div>
+          <div className="bg-destructive/5 border border-destructive/20 rounded-xl p-4 shadow-sm flex items-center justify-between">
+            <div>
+              <p className="text-xs font-bold text-destructive uppercase tracking-wider mb-1">{PERIOD_LABELS[period] || 'All Time'} Money Out</p>
+              <p className="text-xl font-bold text-foreground tabular-nums">{fmtAdaptive(moneyOut, currency)}</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Transaction list */}
-      <div className="card animate-in delay-2">
+      <div className="bg-card border border-border rounded-xl shadow-soft overflow-hidden">
         {transactions.length === 0 ? (
-          <div style={{ textAlign:'left', padding:'3rem', color:'var(--color-text-secondary)' }}>
-            <div style={{ fontSize:'2rem', marginBottom:'0.5rem' }}>📭</div>
-            <div style={{ fontWeight:600 }}>No transactions in this period</div>
+          <div className="text-center py-16 text-muted-foreground">
+            <div className="text-4xl mb-3">📭</div>
+            <div className="text-sm font-medium">No transactions in this period</div>
           </div>
         ) : filteredTxs.length === 0 ? (
-          <div style={{ textAlign:'left', padding:'3rem', color:'var(--color-text-secondary)' }}>
-            <div style={{ fontSize:'2rem', marginBottom:'0.5rem' }}>🔍</div>
-            <div style={{ fontWeight:600 }}>No matching transactions found</div>
+          <div className="text-center py-16 text-muted-foreground">
+            <div className="text-4xl mb-3">🔍</div>
+            <div className="text-sm font-medium">No matching transactions found</div>
           </div>
         ) : (
           <>
-            <div style={{ display:'flex', flexDirection:'column' }}>
+            <div className="divide-y divide-border/50">
               {paginatedTxs.map(tx => (
                 <TransactionRow
                   key={tx.id}
@@ -424,8 +425,8 @@ export function TransactionsClient({
                   amountMinor={tx.baseAmountMinor}
                   type={tx.type}
                   icon={
-                    <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--bg-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <DynamicCategoryIcon category={tx.category?.name || 'Other'} size={20} style={{ color: 'var(--color-text-secondary)' }} />
+                    <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0">
+                      <DynamicCategoryIcon category={tx.category?.name || 'Other'} size={20} className="text-muted-foreground" />
                     </div>
                   }
                   state={tx.type === 'pending' ? 'pending' : undefined}
@@ -437,27 +438,25 @@ export function TransactionsClient({
               ))}
             </div>
             {totalPages > 1 && (
-              <div className="flex items-center justify-between" style={{ padding: '1rem', borderTop: '1px solid var(--border)' }}>
-                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
+              <div className="flex items-center justify-between p-4 border-t border-border bg-secondary/30">
+                <div className="text-xs font-medium text-muted-foreground">
                   Showing {(currentPage - 1) * PAGE_SIZE + 1} to {Math.min(currentPage * PAGE_SIZE, filteredTxs.length)} of {filteredTxs.length}
                 </div>
                 <div className="flex items-center gap-2">
                   <button 
-                    className="btn btn-outline" 
+                    className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed" 
                     disabled={currentPage === 1}
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    style={{ padding: '0.4rem', background: 'none' }}
                   >
                     <ChevronLeft size={16} />
                   </button>
-                  <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--color-text-primary)' }}>
+                  <span className="text-xs font-semibold text-foreground">
                     Page {currentPage} of {totalPages}
                   </span>
                   <button 
-                    className="btn btn-outline" 
+                    className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed" 
                     disabled={currentPage === totalPages}
                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    style={{ padding: '0.4rem', background: 'none' }}
                   >
                     <ChevronRight size={16} />
                   </button>

@@ -357,10 +357,10 @@ export function SettingsClient({
           <Globe size={16} /> Preferences
         </button>
         <button className={`settings-sidebar-btn ${['security'].includes(openSection || '') ? 'active' : ''}`} onClick={() => setOpenSection('security')}>
-          <ShieldCheck size={16} /> Account Management
+          <ShieldCheck size={16} /> Account & Security
         </button>
         <button className={`settings-sidebar-btn ${['data', 'help'].includes(openSection || '') ? 'active' : ''}`} onClick={() => setOpenSection('data')}>
-          <Database size={16} /> Data & Privacy
+          <Database size={16} /> Audit Logs & Data
         </button>
       </div>
 

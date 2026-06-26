@@ -52,7 +52,7 @@ export async function ChamaBoard() {
                   </p>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <p style={{ fontSize: '0.9rem', fontWeight: 700, margin: 0, fontFamily: 'Space Grotesk, sans-serif' }}>{formatKES(chama.monthlyContrib)}</p>
+                  <p style={{ fontSize: '0.9rem', fontWeight: 700, margin: 0, fontFamily: 'Space Grotesk, sans-serif' }}>{formatKES(Number(chama.monthlyContrib))}</p>
                   <p style={{ fontSize: '0.65rem', color: 'var(--color-text-secondary)', margin: 0 }}>monthly target</p>
                 </div>
               </div>
@@ -69,7 +69,7 @@ export async function ChamaBoard() {
                   <Target size={14} color="var(--color-income)" />
                   <div>
                     <p style={{ fontSize: '0.65rem', color: 'var(--color-text-secondary)', margin: 0 }}>Current Balance</p>
-                    <p style={{ fontSize: '0.75rem', fontWeight: 600, margin: 0 }}>{formatKES(balanceMap.get(chama.account.id) ?? 0)}</p>
+                    <p style={{ fontSize: '0.75rem', fontWeight: 600, margin: 0 }}>{formatKES(Number(balanceMap.get(chama.account.id) ?? 0))}</p>
                   </div>
                 </div>
               </div>
