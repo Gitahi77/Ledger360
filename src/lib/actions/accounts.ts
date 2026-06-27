@@ -1,4 +1,3 @@
-'use server';
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/actions/_auth';
 import { z } from 'zod';
@@ -89,6 +88,7 @@ export async function getAccountBalances(userId: string): Promise<AccountWithBal
 }
 
 export async function createAccount(rawData: unknown) {
+  'use server';
   try {
     const user = await requireAuth();
     const parsed = AccountSchema.safeParse(rawData);
@@ -125,6 +125,7 @@ export async function createAccount(rawData: unknown) {
 }
 
 export async function updateAccount(id: string, rawData: unknown) {
+  'use server';
   const user = await requireAuth();
   try {
     const parsedId = DeleteSchema.safeParse({ id });
@@ -167,6 +168,7 @@ export async function updateAccount(id: string, rawData: unknown) {
 }
 
 export async function deleteAccount(id: string) {
+  'use server';
   const user = await requireAuth();
   try {
     const parsedId = DeleteSchema.safeParse({ id });

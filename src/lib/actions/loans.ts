@@ -1,5 +1,4 @@
 // src/lib/actions/loans.ts
-'use server';
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { requireAuth } from './_auth';
@@ -58,6 +57,7 @@ export async function getLoans() {
 
 /* ── Add (Zod-validated) ──────────────────────────────────── */
 export async function addLoan(raw: unknown) {
+  'use server';
   try {
     const { AddLoanSchema } = await import('@/lib/validation');
     const parsed = AddLoanSchema.safeParse(raw);
@@ -108,6 +108,7 @@ export async function addLoan(raw: unknown) {
 }
 
 export async function deleteLoan(id: string) {
+  'use server';
   const user = await requireAuth();
   try {
     const parsedId = DeleteSchema.safeParse({ id });
@@ -125,6 +126,7 @@ export async function deleteLoan(id: string) {
 }
 
 export async function editLoan(id: string, rawData: unknown) {
+  'use server';
   const user = await requireAuth();
   try {
     const parsedId = DeleteSchema.safeParse({ id });

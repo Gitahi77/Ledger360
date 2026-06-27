@@ -1,5 +1,4 @@
 // src/lib/actions/reports.ts
-'use server';
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { requireAuth } from './_auth';
@@ -261,6 +260,7 @@ export async function getUserProfile() {
  *  requiring a re-login.
  */
 export async function updateProfile(raw: { name: string; currency: string; accountType: string }) {
+  'use server';
   const { UpdateProfileSchema } = await import('@/lib/validation');
   const data = UpdateProfileSchema.parse(raw);
   const user = await requireAuth();

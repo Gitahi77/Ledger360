@@ -1,5 +1,3 @@
-'use server';
-
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/actions/_auth';
 import { revalidatePath } from 'next/cache';
@@ -39,6 +37,7 @@ export async function getTransfers(period?: 'this-month' | 'last-30-days' | 'all
 
 /* ── Add (Zod-validated) ──────────────────────────────────── */
 export async function createTransfer(raw: unknown) {
+  'use server';
   try {
     const { AddTransferSchema } = await import('@/lib/validation');
     const parsed = AddTransferSchema.safeParse(raw);
@@ -143,6 +142,7 @@ export async function createTransfer(raw: unknown) {
 }
 
 export async function editTransfer(id: string, rawData: unknown) {
+  'use server';
   const user = await requireAuth();
   try {
     const parsedId = DeleteSchema.safeParse({ id });
@@ -279,6 +279,7 @@ export async function editTransfer(id: string, rawData: unknown) {
 
 /* ── Delete (atomic — no TOCTOU race) ────────────────────── */
 export async function deleteTransfer(id: string) {
+  'use server';
   const user = await requireAuth();
   try {
     const parsedId = DeleteSchema.safeParse({ id });

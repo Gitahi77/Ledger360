@@ -1,7 +1,6 @@
 // src/lib/actions/settings.ts
 // All Settings-related server actions.
 // These are separate from reports.ts to keep concerns clean.
-'use server';
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { requireAuth } from './_auth';
@@ -31,6 +30,7 @@ const AppearanceSchema = z.object({
 
 /* ── Save appearance settings ─────────────────────────────── */
 export async function saveAppearance(raw: z.infer<typeof AppearanceSchema>) {
+  'use server';
   const data = AppearanceSchema.parse(raw);
   const user = await requireAuth();
   await prisma.userPreferences.upsert({
@@ -43,6 +43,7 @@ export async function saveAppearance(raw: z.infer<typeof AppearanceSchema>) {
 
 /* ── Save preferences ─────────────────────────────────────── */
 export async function savePreferences(raw: z.infer<typeof PrefsSchema>) {
+  'use server';
   const data = PrefsSchema.parse(raw);
   const user = await requireAuth();
   await prisma.userPreferences.upsert({
@@ -58,6 +59,7 @@ export async function savePreferences(raw: z.infer<typeof PrefsSchema>) {
 
 /* ── Save notification preferences ───────────────────────── */
 export async function saveNotifications(raw: z.infer<typeof NotifSchema>) {
+  'use server';
   const data = NotifSchema.parse(raw);
   const user = await requireAuth();
 
@@ -86,6 +88,7 @@ export async function getUserPreferences() {
 
 /* ── Export all user data as JSON ─────────────────────────── */
 export async function exportUserData() {
+  'use server';
   const user = await requireAuth();
   const [transactions, budgets, goals, loans, assets, categories, accounts, transfers] = await Promise.all([
     prisma.transaction.findMany({ where: { userId: user.id }, include: { category: true }, orderBy: { date: 'desc' } }),
@@ -102,6 +105,7 @@ export async function exportUserData() {
 
 /* ── Delete all user financial data (keeps account) ─────── */
 export async function deleteAllUserData() {
+  'use server';
   const user = await requireAuth();
 
   // Wrap every delete in a single transaction so the wipe is all-or-nothing.
@@ -136,6 +140,7 @@ export async function deleteAllUserData() {
 
 /* ── Delete Account (wipes user from DB) ────────────────── */
 export async function deleteUserAccount() {
+  'use server';
   const user = await requireAuth();
   // With onDelete: Cascade on the schema, deleting the user deletes all their data.
   await prisma.user.delete({

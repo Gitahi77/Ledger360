@@ -3,8 +3,6 @@
 // Manages SavingsPlan CRUD, lazy rate escalation, and auto-save trigger.
 // Every auto-save is a Transfer with source='SAVE_MORE_TOMORROW' —
 // transparent and reversible (B-0). In-app modelling only.
-'use server';
-
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/actions/_auth';
 import { revalidatePath } from 'next/cache';
@@ -66,6 +64,7 @@ export async function getSavingsPlan() {
 
 /* ── Upsert plan ──────────────────────────────────────────── */
 export async function upsertSavingsPlan(raw: unknown) {
+  'use server';
   const user = await requireAuth();
   try {
     const parsed = UpsertSavingsPlanSchema.safeParse(raw);
@@ -150,6 +149,7 @@ export async function upsertSavingsPlan(raw: unknown) {
 
 /* ── Toggle active ────────────────────────────────────────── */
 export async function toggleSavingsPlan(active: unknown) {
+  'use server';
   const user = await requireAuth();
   try {
     const parsed = z.boolean().safeParse(active);
@@ -196,6 +196,7 @@ export async function getRecentAutoSaves() {
 
 /* ── Delete plan ──────────────────────────────────────────── */
 export async function deleteSavingsPlan() {
+  'use server';
   const user = await requireAuth();
   try {
     await prisma.$transaction(async (tx) => {

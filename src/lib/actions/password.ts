@@ -1,5 +1,3 @@
-'use server';
-
 import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
 import * as argon2 from '@node-rs/argon2';
@@ -7,8 +5,12 @@ import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+import { z } from 'zod';
+
 // Request password reset (Generates token and logs to console)
-export async function requestPasswordReset(email: string) {
+export async function requestPasswordReset(rawEmail: string) {
+  'use server';
+  const email = z.string().email().max(128).parse(rawEmail);
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) {
     // Return success to prevent email enumeration attacks
@@ -57,7 +59,11 @@ export async function requestPasswordReset(email: string) {
   return { success: true };
 }
 
-export async function resetPassword(token: string, newPassword: string) {
+export async function resetPassword(rawToken: string, rawNewPassword: string) {
+  'use server';
+  const token = z.string().max(128).parse(rawToken);
+  const newPassword = z.string().min(8).max(128).parse(rawNewPassword);
+
   const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
 
   const user = await prisma.user.findFirst({

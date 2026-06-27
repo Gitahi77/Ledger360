@@ -1,5 +1,4 @@
 // src/lib/actions/goals.ts
-'use server';
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { requireAuth } from './_auth';
@@ -36,6 +35,7 @@ export async function getGoals() {
 
 /* ── Add (Zod-validated) ──────────────────────────────────── */
 export async function addGoal(raw: unknown) {
+  'use server';
   try {
     const { AddGoalSchema } = await import('@/lib/validation');
     const parsed = AddGoalSchema.safeParse(raw);
@@ -61,6 +61,7 @@ export async function addGoal(raw: unknown) {
 }
 
 export async function deleteGoal(id: string) {
+  'use server';
   const user = await requireAuth();
   try {
     const parsedId = DeleteSchema.safeParse({ id });
@@ -78,6 +79,7 @@ export async function deleteGoal(id: string) {
 }
 
 export async function editGoal(id: string, rawData: unknown) {
+  'use server';
   const user = await requireAuth();
   try {
     const parsedId = DeleteSchema.safeParse({ id });

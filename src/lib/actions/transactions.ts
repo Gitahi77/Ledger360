@@ -1,5 +1,4 @@
 // src/lib/actions/transactions.ts
-'use server';
 import { prisma } from '@/lib/prisma';
 import { periodDates } from '@/lib/dateUtils';
 import { revalidatePath } from 'next/cache';
@@ -216,6 +215,7 @@ export async function getCategories(inputType?: unknown) {
 
 /* ── Add (Zod-validated) ──────────────────────────────────── */
 export async function addTransaction(raw: unknown) {
+  'use server';
   try {
     const { AddTransactionSchema } = await import('@/lib/validation');
     const parsed = AddTransactionSchema.safeParse(raw);
@@ -306,6 +306,7 @@ export async function addTransaction(raw: unknown) {
   }
 }
 export async function importTransactions(rows: any[], targetAccountId: string) {
+  'use server';
   try {
     const user = await requireAuth();
     if (!Array.isArray(rows) || rows.length === 0) throw new Error('No rows to import');
@@ -439,6 +440,7 @@ export async function importTransactions(rows: any[], targetAccountId: string) {
 
 /* ── Delete (atomic — no TOCTOU race) ────────────────────── */
 export async function deleteTransaction(id: string) {
+  'use server';
   const user = await requireAuth();
   try {
     const parsed = DeleteSchema.safeParse({ id });
@@ -471,6 +473,7 @@ export async function deleteTransaction(id: string) {
 
 /* ── Edit (atomic ownership check) ────────────────────────── */
 export async function editTransaction(id: string, rawData: unknown) {
+  'use server';
   const user = await requireAuth();
   try {
     const parsedId = DeleteSchema.safeParse({ id });

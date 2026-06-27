@@ -1,39 +1,36 @@
 const fs = require('fs');
 const path = require('path');
 
-const dashDir = path.join(__dirname, 'src', 'app', '(dashboard)');
+const dir = 'src/lib/actions';
+const files = fs.readdirSync(dir).filter(f => f.endsWith('.ts') && f !== '_auth.ts');
 
-function walk(dir) {
-  let results = [];
-  const list = fs.readdirSync(dir);
-  list.forEach(function(file) {
-    file = path.join(dir, file);
-    const stat = fs.statSync(file);
-    if (stat && stat.isDirectory()) { 
-      results = results.concat(walk(file));
-    } else { 
-      if (file.endsWith('page.tsx')) {
-        results.push(file);
-      }
+let processed = 0;
+let modifiedFunctions = [];
+
+for (const file of files) {
+  const filePath = path.join(dir, file);
+  let content = fs.readFileSync(filePath, 'utf8');
+  
+  // Remove file-level 'use server'
+  content = content.replace(/^['"]use server['"];?\s*/gm, '');
+
+  // Find all exported async functions
+  const regex = /export\s+async\s+function\s+([a-zA-Z0-9_]+)\s*\([^)]*\)\s*\{/g;
+  
+  content = content.replace(regex, (match, funcName) => {
+    // If it starts with 'get', it's a data fetcher, don't make it a server action.
+    if (funcName.startsWith('get')) {
+      return match;
     }
+    
+    modifiedFunctions.push(funcName);
+    // Otherwise it's a mutation, so inject 'use server'; inside
+    return match + '\n  \'use server\';';
   });
-  return results;
+
+  fs.writeFileSync(filePath, content);
+  processed++;
 }
 
-const pages = walk(dashDir);
-
-for (const page of pages) {
-  let content = fs.readFileSync(page, 'utf8');
-  
-  // Remove import
-  content = content.replace(/import\s+\{\s*AppLayout\s*\}\s+from\s+['"]@\/components\/layout\/AppLayout['"];?\n?/g, '');
-  
-  // Replace <AppLayout> with <>
-  content = content.replace(/<AppLayout>/g, '<>');
-  
-  // Replace </AppLayout> with </>
-  content = content.replace(/<\/AppLayout>/g, '</>');
-
-  fs.writeFileSync(page, content, 'utf8');
-  console.log(`Cleaned ${page}`);
-}
+console.log('Processed ' + processed + ' files.');
+console.log('Added use server to:', modifiedFunctions.join(', '));

@@ -161,7 +161,7 @@ describe('Save-More-Tomorrow (WO-15)', () => {
 
       await triggerAutoSave(
         'user-1',
-        [{ id: 'tx-2', baseAmountMinor: 100000n, date: new Date() }],
+        [{ id: 'tx-2', baseAmountMinor: 100000, date: new Date() }],
         'KES',
       );
 
@@ -194,7 +194,7 @@ describe('Save-More-Tomorrow (WO-15)', () => {
 
     const result = await triggerAutoSave(
       'user-1',
-      [{ id: 'tx-3', baseAmountMinor: 100000n, date: new Date() }],
+      [{ id: 'tx-3', baseAmountMinor: 100000, date: new Date() }],
       'KES',
     );
 
@@ -207,13 +207,13 @@ describe('Save-More-Tomorrow (WO-15)', () => {
     const plan = makePlan();
     vi.mocked(prisma.savingsPlan.findUnique).mockResolvedValue(plan as any);
     vi.mocked(getAccountBalances).mockResolvedValue([
-      { id: 'acc-mpesa', type: 'MPESA', balanceMinor: 1000000, userId: 'user-1', name: 'M-Pesa', currency: 'KES', openingMinor: 0, archived: false, createdAt: new Date() },
+      { id: 'acc-mpesa', type: 'MPESA', balanceMinor: 1000000, userId: 'user-1', name: 'M-Pesa', currency: 'KES', openingMinor: 0n, archived: false, createdAt: new Date() },
     ]);
 
     // First call succeeds
     await triggerAutoSave(
       'user-1',
-      [{ id: 'tx-dup', baseAmountMinor: 100000n, date: new Date() }],
+      [{ id: 'tx-dup', baseAmountMinor: 100000, date: new Date() }],
       'KES',
     );
     expect(prisma.transfer.createMany).toHaveBeenCalledTimes(1);
@@ -225,7 +225,7 @@ describe('Save-More-Tomorrow (WO-15)', () => {
 
     const result = await triggerAutoSave(
       'user-1',
-      [{ id: 'tx-dup', baseAmountMinor: 100000n, date: new Date() }],
+      [{ id: 'tx-dup', baseAmountMinor: 100000, date: new Date() }],
       'KES',
     );
 
@@ -238,7 +238,7 @@ describe('Save-More-Tomorrow (WO-15)', () => {
     const plan = makePlan();
     vi.mocked(prisma.savingsPlan.findUnique).mockResolvedValue(plan as any);
     vi.mocked(getAccountBalances).mockResolvedValue([
-      { id: 'acc-mpesa', type: 'MPESA', balanceMinor: 1000000, userId: 'user-1', name: 'M-Pesa', currency: 'KES', openingMinor: 0, archived: false, createdAt: new Date() },
+      { id: 'acc-mpesa', type: 'MPESA', balanceMinor: 1000000, userId: 'user-1', name: 'M-Pesa', currency: 'KES', openingMinor: 0n, archived: false, createdAt: new Date() },
     ]);
 
     // Simulate a random DB error
@@ -249,7 +249,7 @@ describe('Save-More-Tomorrow (WO-15)', () => {
     // Should NOT throw — returns a warning string
     const result = await triggerAutoSave(
       'user-1',
-      [{ id: 'tx-fail', baseAmountMinor: 100000n, date: new Date() }],
+      [{ id: 'tx-fail', baseAmountMinor: 100000, date: new Date() }],
       'KES',
     );
 
@@ -262,12 +262,12 @@ describe('Save-More-Tomorrow (WO-15)', () => {
     const plan = makePlan();
     vi.mocked(prisma.savingsPlan.findUnique).mockResolvedValue(plan as any);
     vi.mocked(getAccountBalances).mockResolvedValue([
-      { id: 'acc-mpesa', type: 'MPESA', balanceMinor: 1000000, userId: 'user-1', name: 'M-Pesa', currency: 'KES', openingMinor: 0, archived: false, createdAt: new Date() },
+      { id: 'acc-mpesa', type: 'MPESA', balanceMinor: 1000000, userId: 'user-1', name: 'M-Pesa', currency: 'KES', openingMinor: 0n, archived: false, createdAt: new Date() },
     ]);
 
     await triggerAutoSave(
       'user-1',
-      [{ id: 'tx-sav', baseAmountMinor: 100000n, date: new Date() }],
+      [{ id: 'tx-sav', baseAmountMinor: 100000, date: new Date() }],
       'KES',
     );
 
@@ -298,12 +298,12 @@ describe('Save-More-Tomorrow (WO-15)', () => {
     const planWithGoal = makePlan({ goalId: 'goal-1' });
     vi.mocked(prisma.savingsPlan.findUnique).mockResolvedValue(planWithGoal as any);
     vi.mocked(getAccountBalances).mockResolvedValue([
-      { id: 'acc-mpesa', type: 'MPESA', balanceMinor: 1000000, userId: 'user-1', name: 'M-Pesa', currency: 'KES', openingMinor: 0, archived: false, createdAt: new Date() },
+      { id: 'acc-mpesa', type: 'MPESA', balanceMinor: 1000000, userId: 'user-1', name: 'M-Pesa', currency: 'KES', openingMinor: 0n, archived: false, createdAt: new Date() },
     ]);
 
     await triggerAutoSave(
       'user-1',
-      [{ id: 'tx-report', baseAmountMinor: 50000n, date: new Date() }],
+      [{ id: 'tx-report', baseAmountMinor: 50000, date: new Date() }],
       'KES',
     );
 
@@ -352,7 +352,7 @@ describe('Save-More-Tomorrow (WO-15)', () => {
     // Income date is BEFORE plan creation
     const result = await triggerAutoSave(
       'user-1',
-      [{ id: 'tx-old', baseAmountMinor: 100000n, date: new Date('2026-05-15') }],
+      [{ id: 'tx-old', baseAmountMinor: 100000, date: new Date('2026-05-15') }],
       'KES',
     );
 
@@ -372,7 +372,7 @@ describe('Save-More-Tomorrow (WO-15)', () => {
 
     const result = await triggerAutoSave(
       'user-1',
-      [{ id: 'tx-broke', baseAmountMinor: 100000n, date: new Date() }],
+      [{ id: 'tx-broke', baseAmountMinor: 100000, date: new Date() }],
       'KES',
     );
 

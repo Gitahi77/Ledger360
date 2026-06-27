@@ -1,5 +1,4 @@
 // src/lib/actions/budgets.ts
-'use server';
 import { prisma } from '@/lib/prisma';
 import { periodDates } from '@/lib/dateUtils';
 import { revalidatePath } from 'next/cache';
@@ -131,6 +130,7 @@ export async function getBudgetsWithSpend(inputPeriod: unknown = 'this-month') {
 
 /* ── Add (Zod-validated) ──────────────────────────────────── */
 export async function addBudget(raw: unknown) {
+  'use server';
   try {
     const { AddBudgetSchema } = await import('@/lib/validation');
     const parsed = AddBudgetSchema.safeParse(raw);
@@ -154,6 +154,7 @@ export async function addBudget(raw: unknown) {
 }
 
 export async function deleteBudget(id: string) {
+  'use server';
   const user = await requireAuth();
   try {
     const parsedId = DeleteSchema.safeParse({ id });
@@ -171,6 +172,7 @@ export async function deleteBudget(id: string) {
 }
 
 export async function editBudget(id: string, rawData: unknown) {
+  'use server';
   const user = await requireAuth();
   try {
     const parsedId = DeleteSchema.safeParse({ id });

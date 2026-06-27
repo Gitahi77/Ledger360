@@ -1,5 +1,3 @@
-'use server';
-
 import { requireAuth } from './_auth';
 import { prisma } from '@/lib/prisma';
 
@@ -16,6 +14,7 @@ const DeleteSchema = z.object({
 });
 
 export async function createCategory(rawData: unknown) {
+  'use server';
   const user = await requireAuth();
 
   try {
@@ -47,6 +46,7 @@ export async function createCategory(rawData: unknown) {
 }
 
 export async function editCategory(id: string, rawData: unknown) {
+  'use server';
   const user = await requireAuth();
 
   try {
@@ -90,6 +90,7 @@ export async function editCategory(id: string, rawData: unknown) {
 }
 
 export async function deleteCategory(id: string) {
+  'use server';
   const user = await requireAuth();
 
   try {
