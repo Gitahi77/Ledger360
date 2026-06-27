@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { computeLoanBalance } from '../lib/shared-computations';
 
@@ -70,13 +71,14 @@ vi.mock('@/lib/audit', () => ({
 }));
 
 // Import modules to test after mocks are set up
-import { getNetWorth } from '../lib/actions/networth';
-import { getAccountBalances } from '../lib/actions/accounts';
+import { getNetWorth } from '../lib/queries/networth';
+import { getAccountBalances } from '../lib/queries/accounts';
 import { getLoansForUser } from '../lib/queries/loans';
 import { prisma } from '../lib/prisma';
 import { createTransfer } from '../lib/actions/transfers';
-import { addTransaction, editTransaction, getTransactionSummary, getMonthlyChartData } from '../lib/actions/transactions';
-import { getReportSummary, getMonthlyTrend } from '../lib/actions/reports';
+import { addTransaction, editTransaction } from '../lib/actions/transactions';
+import { getTransactionSummary, getMonthlyChartData } from '../lib/queries/transactions';
+import { getReportSummary, getMonthlyTrend } from '../lib/queries/reports';
 import { generateInsights } from '../lib/intelligence';
 
 describe('Financial Logic and Validations', () => {

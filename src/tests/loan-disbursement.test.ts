@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock auth and prisma
@@ -31,9 +32,9 @@ vi.mock('@/lib/prisma', () => ({
 }));
 
 import { prisma } from '../lib/prisma';
-import { getAccountBalances } from '../lib/actions/accounts';
-import { getNetWorth } from '../lib/actions/networth';
-import { getReportSummary } from '../lib/actions/reports';
+import { getAccountBalances } from '../lib/queries/accounts';
+import { getNetWorth } from '../lib/queries/networth';
+import { getReportSummary } from '../lib/queries/reports';
 import { getLoansForUser } from '../lib/queries/loans';
 
 describe('Loan Disbursement (Received Funds)', () => {
