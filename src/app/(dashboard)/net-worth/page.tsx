@@ -1,6 +1,6 @@
 // src/app/net-worth/page.tsx — Live Server Component
 
-import { getNetWorth, getNetWorthHistory } from '@/lib/actions/networth';
+import { getNetWorth, getNetWorthHistory } from '@/lib/queries/networth';
 import { NetWorthClient } from './NetWorthClient';
 import { requireAuth } from '@/lib/actions/_auth';
 

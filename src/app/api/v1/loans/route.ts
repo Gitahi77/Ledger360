@@ -1,5 +1,6 @@
 import { apiRoute } from '@/lib/api/respond';
-import { getLoans, addLoan } from '@/lib/actions/loans';
+import { addLoan } from '@/lib/actions/loans';
+import { getLoans } from '@/lib/queries/loans';
 import { AddLoanSchema } from '@/lib/validation';
 
 export const GET = apiRoute(

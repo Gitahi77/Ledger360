@@ -1,5 +1,6 @@
 import { apiRoute } from '@/lib/api/respond';
-import { getTransactions, addTransaction } from '@/lib/actions/transactions';
+import { addTransaction } from '@/lib/actions/transactions';
+import { getTransactions } from '@/lib/queries/transactions';
 import { AddTransactionSchema } from '@/lib/validation';
 import { z } from 'zod';
 

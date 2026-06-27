@@ -1,3 +1,5 @@
+'use server';
+
 import { requireAuth } from './_auth';
 import { prisma } from '@/lib/prisma';
 

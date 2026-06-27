@@ -1,5 +1,6 @@
 import { apiRoute } from '@/lib/api/respond';
-import { getBudgetsWithSpend, addBudget } from '@/lib/actions/budgets';
+import { addBudget } from '@/lib/actions/budgets';
+import { getBudgetsWithSpend } from '@/lib/queries/budgets';
 import { AddBudgetSchema } from '@/lib/validation';
 
 export const GET = apiRoute(

@@ -1,7 +1,7 @@
 // src/app/goals/page.tsx — FULLY LIVE Server Component
 
-import { getGoals } from '@/lib/actions/goals';
-import { getCategories } from '@/lib/actions/transactions';
+import { getGoals } from '@/lib/queries/goals';
+import { getCategories } from '@/lib/queries/transactions';
 import { GoalsClient } from './GoalsClient';
 import { requireAuth } from '@/lib/actions/_auth';
 

@@ -48,7 +48,7 @@ export class RateLimiter {
   }
 }
 
-// ── Shared singleton limiters ────────────────────────────────
+// -- Shared singleton limiters --------------------------------
 // These are module-level singletons, shared across requests in the same process.
 
 /** Login: max 10 attempts per IP per 15 minutes */
@@ -66,7 +66,7 @@ export const aiLimiter = new RateLimiter({ windowMs: 60 * 60_000, max: 15 });
 /** API endpoints: max 60 requests per minute */
 export const apiLimiter = new RateLimiter({ windowMs: 60_000, max: 60 });
 
-// ── Distributed limiters (Upstash Redis) ─────────────────────
+// -- Distributed limiters (Upstash Redis) ---------------------
 const hasRedis = !!process.env.UPSTASH_REDIS_REST_URL && !!process.env.UPSTASH_REDIS_REST_TOKEN;
 const redis = hasRedis ? Redis.fromEnv() : null;
 

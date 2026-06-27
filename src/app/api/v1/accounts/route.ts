@@ -1,5 +1,6 @@
 import { apiRoute } from '@/lib/api/respond';
-import { getAccounts, createAccount } from '@/lib/actions/accounts';
+import { createAccount } from '@/lib/actions/accounts';
+import { getAccounts } from '@/lib/queries/accounts';
 import { AccountType } from '@prisma/client';
 import { z } from 'zod';
 

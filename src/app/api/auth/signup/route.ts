@@ -8,7 +8,7 @@ import { prisma } from '@/lib/prisma';
 import { DEFAULT_CATEGORIES } from '@/lib/constants/categories';
 import { checkLimit } from '@/lib/rateLimit';
 
-// ── Input validation schema ───────────────────────────────────────────────
+// -- Input validation schema -----------------------------------------------
 const SignupSchema = z.object({
   name:        z.string().min(1, 'Name is required').max(80, 'Name too long'),
   email:       z.string().email('Invalid email address').max(254),
@@ -20,7 +20,7 @@ const SignupSchema = z.object({
 });
 
 export async function POST(req: Request) {
-  // ── Rate limiting (by IP) ─────────────────────────────────────────────
+  // -- Rate limiting (by IP) ---------------------------------------------
   const headersList = await headers();
   const ip = headersList.get('x-forwarded-for')?.split(',')[0].trim() ?? 'unknown';
   const rl = await checkLimit('signup', `signup:${ip}`);
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    // ── Zod validation ────────────────────────────────────────────────────
+    // -- Zod validation ----------------------------------------------------
     const parsed = SignupSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
@@ -50,7 +50,7 @@ export async function POST(req: Request) {
     // Normalise email to prevent case-sensitive duplicate accounts
     const normalisedEmail = email.toLowerCase().trim();
 
-    // ── Constant-time duplicate check ─────────────────────────────────────
+    // -- Constant-time duplicate check -------------------------------------
     // We always run bcrypt.hash even when email exists to equalise timing
     // and prevent email enumeration via response time differences.
     const [existing, hashed] = await Promise.all([

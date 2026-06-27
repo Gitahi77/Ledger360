@@ -45,7 +45,7 @@ const ACCENTS = [
   { label: 'Amber',      value: '#D35400' },
 ];
 
-/* ── Shared sub-components ────────────────────────────────── */
+/* -- Shared sub-components ---------------------------------- */
 function Row({ label, desc, children }: { label: string; desc?: string; children: React.ReactNode }) {
   return (
     <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0.875rem 0', borderBottom:'1px solid var(--border-light)', gap:'1rem', flexWrap:'wrap' }}>
@@ -124,7 +124,7 @@ function SaveRow({ saving, saved, error }: { saving: boolean; saved: boolean; er
   );
 }
 
-/* ── Accordion header ─────────────────────────────────────── */
+/* -- Accordion header --------------------------------------- */
 function AccordionHeader({ section, isOpen, onClick }: {
   section: typeof SECTIONS[number]; isOpen: boolean; onClick: () => void;
 }) {
@@ -179,7 +179,7 @@ function AccordionPanel({ children }: { children: React.ReactNode }) {
   );
 }
 
-/* ── Main Settings Client ─────────────────────────────────── */
+/* -- Main Settings Client ----------------------------------- */
 export function SettingsClient({
   initialName, initialEmail, initialCurrency, initialAccountType,
   initialPrefs, logs, savingsPlan, autoSaves, accounts, goals,
@@ -269,7 +269,7 @@ export function SettingsClient({
     }
   }
 
-  // ── Save handlers ────────────────────────────────────────────
+  // -- Save handlers --------------------------------------------
   async function handleSaveProfile(e: React.FormEvent) {
     e.preventDefault();
     await withSave(setProfileState, async () => {

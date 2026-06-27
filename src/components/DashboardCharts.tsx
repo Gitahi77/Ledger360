@@ -21,13 +21,13 @@ export type DonutPoint = {
   pct: number;
 };
 
-/* ── Shared chart colours ─────────────────────────────────── */
+/* -- Shared chart colours ----------------------------------- */
 const DONUT_COLORS = [
   'var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)',
   'var(--chart-5)', 'var(--chart-6)', 'var(--chart-income)', 'var(--chart-savings)'
 ];
 
-/* ── Tooltip components ───────────────────────────────────── */
+/* -- Tooltip components ------------------------------------- */
 function FlowTip({ active, payload, label, currency }: any) {
   if (!active || !payload?.length) return null;
   return (
@@ -72,7 +72,7 @@ function PieLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) 
   );
 }
 
-/* ── Cash Flow Area Chart ─────────────────────────────────── */
+/* -- Cash Flow Area Chart ----------------------------------- */
 export function CashFlowChart({ data, currency = 'KES' }: { data: ChartMonthPoint[], currency?: string }) {
   const router = useRouter();
   const chartData = data.map(d => ({
@@ -110,7 +110,7 @@ export function CashFlowChart({ data, currency = 'KES' }: { data: ChartMonthPoin
   );
 }
 
-/* ── Spending Donut Chart ─────────────────────────────────── */
+/* -- Spending Donut Chart ----------------------------------- */
 export function SpendingDonutChart({ data, currency = 'KES' }: { data: DonutPoint[], currency?: string }) {
   const router = useRouter();
   const total = data.reduce((s, d) => s + d.value, 0);

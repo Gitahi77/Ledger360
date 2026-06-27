@@ -34,7 +34,7 @@ import { prisma } from '../lib/prisma';
 import { getAccountBalances } from '../lib/actions/accounts';
 import { getNetWorth } from '../lib/actions/networth';
 import { getReportSummary } from '../lib/actions/reports';
-import { getLoansForUser } from '../lib/actions/loans';
+import { getLoansForUser } from '../lib/queries/loans';
 
 describe('Loan Disbursement (Received Funds)', () => {
   beforeEach(() => {

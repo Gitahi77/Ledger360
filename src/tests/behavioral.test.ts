@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { prisma } from '@/lib/prisma';
 import { safeToSpend } from '@/lib/behavioral';
-import { getLoansForUser } from '@/lib/actions/loans';
+import { getLoansForUser } from '@/lib/queries/loans';
 
 vi.mock('@/lib/prisma', () => ({
   prisma: {
@@ -12,7 +12,7 @@ vi.mock('@/lib/prisma', () => ({
   }
 }));
 
-vi.mock('@/lib/actions/loans', () => ({
+vi.mock('@/lib/queries/loans', () => ({
   getLoansForUser: vi.fn()
 }));
 

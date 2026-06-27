@@ -18,7 +18,7 @@ import {
   TrendingUp, Pause, Play, PiggyBank, Info,
 } from 'lucide-react';
 
-/* ── Types ────────────────────────────────────────────────── */
+/* -- Types -------------------------------------------------- */
 type Account = { id: string; name: string; type: string; currency: string };
 type Goal    = { id: string; name: string };
 type Plan    = {
@@ -44,7 +44,7 @@ type AutoSave = {
   toAccount?:   { name: string; currency: string } | null;
 };
 
-/* ── Shared sub-components ────────────────────────────────── */
+/* -- Shared sub-components ---------------------------------- */
 function Row({ label, desc, children }: { label: string; desc?: string; children: React.ReactNode }) {
   return (
     <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0.875rem 0', borderBottom:'1px solid var(--border-light)', gap:'1rem', flexWrap:'wrap' }}>
@@ -76,7 +76,7 @@ function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: (
   );
 }
 
-/* ── Main Component ───────────────────────────────────────── */
+/* -- Main Component ----------------------------------------- */
 export function SavingsAutomationSection({
   plan: initialPlan,
   accounts,

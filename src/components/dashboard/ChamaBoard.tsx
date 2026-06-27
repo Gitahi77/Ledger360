@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/actions/_auth';
-import { getAccountBalances } from '@/lib/actions/accounts';
+import { getAccountBalances } from '@/lib/queries/accounts';
 import { Users, Calendar, Target, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { formatKES } from '@/lib/format';

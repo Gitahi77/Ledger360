@@ -10,6 +10,7 @@ import { prisma } from './prisma';
 import {
   startOfMonth, subMonths, getDate, getDaysInMonth,
 } from 'date-fns';
+import { getLoansForUser } from './queries/loans';
 import { toMajor } from '@/lib/money';
 import type { Transaction, Category, Goal, Transfer } from '@prisma/client';
 
@@ -53,7 +54,7 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
   const currentMonthTx = transactions.filter(t => t.date >= thisMonthStart);
   const pastMonthsTx   = transactions.filter(t => t.date <  thisMonthStart);
 
-  // ── ACTIVE GOALS (For Anomalies & Goal Progress) ───────────────────────────
+  // -- ACTIVE GOALS (For Anomalies & Goal Progress) ---------------------------
   let activeGoals: (Goal & { transfers: Transfer[] })[] = [];
   if (prefs?.notifGoals !== false) {
     activeGoals = await prisma.goal.findMany({ 
@@ -68,7 +69,7 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
   });
   const topGoal = incompleteGoals[0] || null;
 
-  // ── ENDOWMENT FRAMING (MONEY KEPT) ─────────────────────────────────────────
+  // -- ENDOWMENT FRAMING (MONEY KEPT) -----------------------------------------
   const transfersThisMonth = await prisma.transfer.findMany({
     where: {
       userId,
@@ -93,7 +94,7 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
     });
   }
 
-  // ── FRESH START ────────────────────────────────────────────────────────────
+  // -- FRESH START ------------------------------------------------------------
   if (getDate(now) <= 5) {
     const previousMonthStart = subMonths(thisMonthStart, 1);
     const lastMonthTx = pastMonthsTx.filter(t => t.date >= previousMonthStart && t.date < thisMonthStart);
@@ -138,7 +139,7 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
     }
   }
 
-  // ── SMALL LEAKS (WO-17) ────────────────────────────────────────────────────
+  // -- SMALL LEAKS (WO-17) ----------------------------------------------------
   const SMALL_LEAK_LIMIT_MINOR = 50000;      // Max 500 major units per tx
   const SMALL_LEAK_MIN_COUNT = 5;            // At least 5 transactions
   const SMALL_LEAK_MIN_TOTAL_MINOR = 150000; // Total must be >= 1500 major units
@@ -168,7 +169,7 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
     }
   }
 
-  // ── ANOMALY DETECTION ──────────────────────────────────────────────────────
+  // -- ANOMALY DETECTION ------------------------------------------------------
   // Key by categoryId (stable) instead of category name (can be renamed).
   // Track which months each category had spend so the average is per-month.
   const pastByCategory: Record<string, { totalAmt: number; months: Set<string> }> = {};
@@ -216,7 +217,7 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
     }
   }
 
-  // ── RECURRING BILL DETECTION ───────────────────────────────────────────────
+  // -- RECURRING BILL DETECTION -----------------------------------------------
   // Case-insensitive name matching so "Netflix" and "NETFLIX" are the same bill.
   const pastExpenses = pastMonthsTx.filter(t => t.type === 'expense');
   const nameGroups: Record<string, typeof pastExpenses> = {};
@@ -255,7 +256,7 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
     }
   }
 
-  // ── CASHFLOW FORECAST ──────────────────────────────────────────────────────
+  // -- CASHFLOW FORECAST ------------------------------------------------------
   // Show expense-side warning even when income = 0 (e.g. student / new user).
   const currentIncomeMinor  = currentMonthTx.filter(t => t.type === 'income').reduce((a, b) => a + Number(b.baseAmountMinor), 0);
   const currentExpenseMinor = currentMonthTx.filter(t => t.type === 'expense').reduce((a, b) => a + Number(b.baseAmountMinor), 0);
@@ -297,7 +298,7 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
     }
   }
 
-  // ── GOAL PROGRESS ALERTS ───────────────────────────────────────────────────
+  // -- GOAL PROGRESS ALERTS ---------------------------------------------------
   if (prefs?.notifGoals !== false) {
     for (const goal of activeGoals) {
       const currentAmountMinor = goal.transfers.reduce((sum, t) => sum + Number(t.baseAmountMinor), 0);
@@ -325,9 +326,9 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
     }
   }
 
-  // ── LOAN DUE ALERTS ────────────────────────────────────────────────────────
+  // -- LOAN DUE ALERTS --------------------------------------------------------
   if (prefs?.notifLoanDue !== false) {
-    const { getLoansForUser } = await import('@/lib/actions/loans');
+    const { getLoansForUser } = await import('@/lib/queries/loans');
     const allLoans = await getLoansForUser(userId);
     const activeLoans = allLoans.filter(l => l.balanceMinor > 0);
     for (const loan of activeLoans) {

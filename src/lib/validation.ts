@@ -3,14 +3,14 @@
 // Compatible with Zod v4 (z.number() API change — use .check() for custom messages).
 import { z } from 'zod';
 
-/* ── Shared primitives ────────────────────────────────────── */
+/* -- Shared primitives -------------------------------------- */
 const kes = (label = 'Amount') =>
   z.number().positive(`${label} must be greater than 0`);
 
 const optKes = (label = 'Amount') =>
   z.number().min(0, `${label} cannot be negative`);
 
-/* ── Transactions ─────────────────────────────────────────── */
+/* -- Transactions ------------------------------------------- */
 export const AddTransactionSchema = z.object({
   name:       z.string().min(1, 'Description is required').max(120, 'Description too long'),
   baseAmountMinor:     kes('Amount'),
@@ -22,7 +22,7 @@ export const AddTransactionSchema = z.object({
 });
 export type AddTransactionInput = z.infer<typeof AddTransactionSchema>;
 
-/* ── Transfers ────────────────────────────────────────────── */
+/* -- Transfers ---------------------------------------------- */
 export const AddTransferSchema = z.object({
   fromAccountId: z.string().min(1, 'From account is required'),
   toAccountId:   z.string().optional().nullable(),
@@ -59,7 +59,7 @@ export const EditTransferSchema = z.object({
 }).partial();
 export type EditTransferInput = z.infer<typeof EditTransferSchema>;
 
-/* ── Budgets ──────────────────────────────────────────────── */
+/* -- Budgets ------------------------------------------------ */
 export const AddBudgetSchema = z.object({
   name:       z.string().min(1, 'Budget name is required').max(80),
   categoryId: z.string().min(1, 'Category is required'),
@@ -68,7 +68,7 @@ export const AddBudgetSchema = z.object({
 });
 export type AddBudgetInput = z.infer<typeof AddBudgetSchema>;
 
-/* ── Goals ────────────────────────────────────────────────── */
+/* -- Goals -------------------------------------------------- */
 export const AddGoalSchema = z.object({
   name:          z.string().min(1, 'Goal name is required').max(80),
   category:      z.string().min(1),
@@ -77,7 +77,7 @@ export const AddGoalSchema = z.object({
 });
 export type AddGoalInput = z.infer<typeof AddGoalSchema>;
 
-/* ── Loans ────────────────────────────────────────────────── */
+/* -- Loans -------------------------------------------------- */
 export const AddLoanSchema = z.object({
   name:        z.string().min(1, 'Loan name is required').max(80),
   lender:      z.string().min(1, 'Lender is required').max(80),
@@ -93,7 +93,7 @@ export const AddLoanSchema = z.object({
 });
 export type AddLoanInput = z.infer<typeof AddLoanSchema>;
 
-/* ── Assets ───────────────────────────────────────────────── */
+/* -- Assets ------------------------------------------------- */
 export const AddAssetSchema = z.object({
   name:     z.string().min(1, 'Asset name is required').max(80),
   category: z.enum(['Property', 'Investment', 'Vehicle', 'Other']),
@@ -102,14 +102,14 @@ export const AddAssetSchema = z.object({
 });
 export type AddAssetInput = z.infer<typeof AddAssetSchema>;
 
-/* ── Profile ──────────────────────────────────────────────── */
+/* -- Profile ------------------------------------------------ */
 export const UpdateProfileSchema = z.object({
   name:        z.string().min(1, 'Name is required').max(80),
   currency:    z.enum(['KES']),
   accountType: z.enum(['individual', 'freelancer', 'small_business']),
 });
 
-/* ── Savings Plan (WO-15) ─────────────────────────────────── */
+/* -- Savings Plan (WO-15) ----------------------------------- */
 export const UpsertSavingsPlanSchema = z.object({
   fromAccountId: z.string().min(1, 'Source account is required'),
   toAccountId:   z.string().min(1, 'Destination account is required'),

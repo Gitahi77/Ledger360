@@ -1,6 +1,6 @@
 // src/app/reports/page.tsx — Live Server Component
 
-import { getMonthlyTrend, getReportSummary, getReportCategories } from '@/lib/actions/reports';
+import { getMonthlyTrend, getReportSummary, getReportCategories } from '@/lib/queries/reports';
 import { ReportsClient } from './ReportsClient';
 import { requireAuth } from '@/lib/actions/_auth';
 

@@ -2,7 +2,7 @@
 export const metadata = { title: 'Accounts ?" Ledger360' };
 
 import { requireAuth } from '@/lib/actions/_auth';
-import { getAccountBalances } from '@/lib/actions/accounts';
+import { getAccountBalances } from '@/lib/queries/accounts';
 import { AccountsClient } from './AccountsClient';
 
 export default async function AccountsPage() {

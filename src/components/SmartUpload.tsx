@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { UploadCloud, Loader2, CheckCircle2, AlertCircle, ChevronRight, X, Smartphone, FileText } from 'lucide-react';
 import { importTransactions } from '@/lib/actions/transactions';
-import { getAccounts } from '@/lib/actions/accounts';
 import { MpesaSmsInput } from '@/components/MpesaSmsInput';
 import { toMinor } from '@/lib/money';
 
@@ -16,7 +15,7 @@ type ParsedRow = {
 type UploadState = 'idle' | 'uploading' | 'reviewing' | 'importing' | 'done' | 'error';
 type Tab = 'file' | 'sms';
 
-export function SmartUpload({ onDone }: { onDone?: () => void }) {
+export function SmartUpload({ onDone, initialAccounts = [] }: { onDone?: () => void, initialAccounts?: any[] }) {
   const [state,     setState]    = useState<UploadState>('idle');
   const [tab,       setTab]      = useState<Tab>('file');
   const [progress,  setProgress] = useState(0);
@@ -26,17 +25,15 @@ export function SmartUpload({ onDone }: { onDone?: () => void }) {
   const [errMsg,    setErrMsg]   = useState('');
   const [isDragging,setDragging] = useState(false);
   const [aiConsent, setAiConsent]= useState(false);
-  const [accounts,  setAccounts] = useState<any[]>([]);
-  const [accountId, setAccountId]= useState<string>('');
+  const [accounts,  setAccounts] = useState<any[]>(initialAccounts);
+  const [accountId, setAccountId]= useState<string>(initialAccounts.length > 0 ? initialAccounts[0].id : '');
 
   useEffect(() => {
-    getAccounts().then(accs => {
-      setAccounts(accs);
-      if (accs.length > 0) setAccountId(accs[0].id);
-    }).catch(console.error);
-  }, []);
+    setAccounts(initialAccounts);
+    if (initialAccounts.length > 0 && !accountId) setAccountId(initialAccounts[0].id);
+  }, [initialAccounts]);
 
-  /* ── Upload & parse ─────────────────────────────────────── */
+  /* -- Upload & parse --------------------------------------- */
   async function processFile(file: File) {
     setState('uploading');
     setProgress(0);
@@ -74,7 +71,7 @@ export function SmartUpload({ onDone }: { onDone?: () => void }) {
     }
   }
 
-  /* ── Confirm import ──────────────────────────────────────── */
+  /* -- Confirm import ---------------------------------------- */
   async function confirmImport() {
     setState('importing');
     const toImport = rows.filter((r, i) => selected.has(i) && !r.isTransfer);
@@ -97,7 +94,7 @@ export function SmartUpload({ onDone }: { onDone?: () => void }) {
     setSelected(s => { const n = new Set(s); n.has(i) ? n.delete(i) : n.add(i); return n; });
   }
 
-  /* ── SMS import handler ──────────────────────────────────── */
+  /* -- SMS import handler ------------------------------------ */
   async function handleSmsImport(txs: Array<{ name: string; date: string; amount: number; type: 'income' | 'expense'; category: string; fee?: number }>) {
     if (!accountId) {
       setErrMsg('Please select an account first.');
@@ -124,7 +121,7 @@ export function SmartUpload({ onDone }: { onDone?: () => void }) {
     }
   }
 
-  /* ── Idle / drop zone ─────────────────────────────────────── */
+  /* -- Idle / drop zone --------------------------------------- */
   if (state === 'idle' || state === 'error') return (
     <div>
       {/* Tab bar */}
@@ -234,7 +231,7 @@ export function SmartUpload({ onDone }: { onDone?: () => void }) {
   );
 
 
-  /* ── Uploading ───────────────────────────────────────────── */
+  /* -- Uploading --------------------------------------------- */
   if (state === 'uploading') return (
     <div style={{ textAlign: 'center', padding: '2rem' }}>
       <Loader2 size={40} color="var(--color-brand)" style={{ margin: '0 auto 1rem', animation: 'spin 1s linear infinite' }} />
@@ -251,7 +248,7 @@ export function SmartUpload({ onDone }: { onDone?: () => void }) {
     </div>
   );
 
-  /* ── Review ──────────────────────────────────────────────── */
+  /* -- Review ------------------------------------------------ */
   if (state === 'reviewing') return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.875rem', flexWrap: 'wrap', gap: '0.5rem' }}>
@@ -332,7 +329,7 @@ export function SmartUpload({ onDone }: { onDone?: () => void }) {
     </div>
   );
 
-  /* ── Importing ───────────────────────────────────────────── */
+  /* -- Importing --------------------------------------------- */
   if (state === 'importing') return (
     <div style={{ textAlign: 'center', padding: '2rem' }}>
       <Loader2 size={32} color="var(--color-brand)" style={{ margin: '0 auto 0.875rem', animation: 'spin 1s linear infinite' }} />
@@ -340,7 +337,7 @@ export function SmartUpload({ onDone }: { onDone?: () => void }) {
     </div>
   );
 
-  /* ── Done ─────────────────────────────────────────────────── */
+  /* -- Done --------------------------------------------------- */
   return (
     <div style={{ textAlign: 'center', padding: '2rem' }}>
       <CheckCircle2 size={40} color="var(--color-income)" style={{ margin: '0 auto 0.875rem' }} />

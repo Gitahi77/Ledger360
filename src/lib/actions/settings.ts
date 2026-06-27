@@ -1,3 +1,5 @@
+'use server';
+
 // src/lib/actions/settings.ts
 // All Settings-related server actions.
 // These are separate from reports.ts to keep concerns clean.
@@ -6,7 +8,7 @@ import { revalidatePath } from 'next/cache';
 import { requireAuth } from './_auth';
 import { z } from 'zod';
 
-/* ── Validation schemas ───────────────────────────────────── */
+/* -- Validation schemas ------------------------------------- */
 const PrefsSchema = z.object({
   dateFormat:    z.enum(['DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD']),
   weekStartDay:  z.enum(['Monday', 'Sunday']),
@@ -28,7 +30,7 @@ const AppearanceSchema = z.object({
   smoothAnims:    z.boolean(),
 });
 
-/* ── Save appearance settings ─────────────────────────────── */
+/* -- Save appearance settings ------------------------------- */
 export async function saveAppearance(raw: z.infer<typeof AppearanceSchema>) {
   'use server';
   const data = AppearanceSchema.parse(raw);
@@ -41,7 +43,7 @@ export async function saveAppearance(raw: z.infer<typeof AppearanceSchema>) {
   revalidatePath('/settings');
 }
 
-/* ── Save preferences ─────────────────────────────────────── */
+/* -- Save preferences --------------------------------------- */
 export async function savePreferences(raw: z.infer<typeof PrefsSchema>) {
   'use server';
   const data = PrefsSchema.parse(raw);
@@ -57,7 +59,7 @@ export async function savePreferences(raw: z.infer<typeof PrefsSchema>) {
   revalidatePath('/reports');
 }
 
-/* ── Save notification preferences ───────────────────────── */
+/* -- Save notification preferences ------------------------- */
 export async function saveNotifications(raw: z.infer<typeof NotifSchema>) {
   'use server';
   const data = NotifSchema.parse(raw);
@@ -80,13 +82,10 @@ export async function saveNotifications(raw: z.infer<typeof NotifSchema>) {
   revalidatePath('/settings');
 }
 
-/* ── Get all user preferences ─────────────────────────────── */
-export async function getUserPreferences() {
-  const user = await requireAuth();
-  return prisma.userPreferences.findUnique({ where: { userId: user.id } });
-}
+/* -- Get all user preferences ------------------------------- */
 
-/* ── Export all user data as JSON ─────────────────────────── */
+
+/* -- Export all user data as JSON --------------------------- */
 export async function exportUserData() {
   'use server';
   const user = await requireAuth();
@@ -103,7 +102,7 @@ export async function exportUserData() {
   return { transactions, budgets, goals, loans, assets, categories, accounts, transfers, exportedAt: new Date().toISOString() };
 }
 
-/* ── Delete all user financial data (keeps account) ─────── */
+/* -- Delete all user financial data (keeps account) ------- */
 export async function deleteAllUserData() {
   'use server';
   const user = await requireAuth();
@@ -138,7 +137,7 @@ export async function deleteAllUserData() {
   revalidatePath('/settings');
 }
 
-/* ── Delete Account (wipes user from DB) ────────────────── */
+/* -- Delete Account (wipes user from DB) ------------------ */
 export async function deleteUserAccount() {
   'use server';
   const user = await requireAuth();

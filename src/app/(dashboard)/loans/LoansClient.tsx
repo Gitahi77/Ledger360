@@ -39,7 +39,7 @@ function loanStyle(l: Loan) {
   };
 }
 
-/* ── Add Loan Modal ───────────────────────────────────────── */
+/* -- Add Loan Modal ----------------------------------------- */
 function LoanModal({ loan, accounts, onClose, currency }: { loan?: Loan; accounts: {id: string, name: string}[]; onClose: () => void; currency: string }) {
   const router     = useRouter();
   const [, startT] = useTransition();
@@ -215,7 +215,7 @@ function LoanModal({ loan, accounts, onClose, currency }: { loan?: Loan; account
   );
 }
 
-/* ── Expanded Forecast Panel (Interactive Extra Payment Simulator) ── */
+/* -- Expanded Forecast Panel (Interactive Extra Payment Simulator) -- */
 function ExpandedForecast({ loan, monthsLeft, totalInterest, currency }: { loan: Loan; monthsLeft: number; totalInterest: number; currency: string }) {
   const [extraPayment, setExtraPayment] = useState(0);
 
@@ -298,7 +298,7 @@ function ExpandedForecast({ loan, monthsLeft, totalInterest, currency }: { loan:
 
 
 
-/* ── Main Client Component ────────────────────────────────── */
+/* -- Main Client Component ---------------------------------- */
 export function LoansClient({ loans, currency, categories = [], accounts = [] }: { loans: Loan[], currency: string, categories?: { id: string; name: string }[], accounts?: {id: string, name: string}[] }) {
   const router     = useRouter();
   const [, startT] = useTransition();

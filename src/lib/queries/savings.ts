@@ -1,5 +1,3 @@
-'use server';
-
 // src/lib/actions/savings.ts
 // Save-More-Tomorrow commitment device (B-5, WO-15).
 // Manages SavingsPlan CRUD, lazy rate escalation, and auto-save trigger.
@@ -37,158 +35,55 @@ function advanceEscalation(plan: {
 }
 
 /* -- Get plan (with lazy escalation applied) ---------------- */
+export async function getSavingsPlan() {
+  const user = await requireAuth();
 
+  const plan = await prisma.savingsPlan.findUnique({
+    where: { userId: user.id },
+    include: {
+      fromAccount: { select: { id: true, name: true, type: true, currency: true } },
+      toAccount:   { select: { id: true, name: true, type: true, currency: true } },
+      goal:        { select: { id: true, name: true } },
+    },
+  });
+
+  if (!plan) return null;
+
+  // Lazy escalation: advance rate if nextEscalation is past
+  const esc = advanceEscalation(plan);
+  if (esc.changed) {
+    await prisma.savingsPlan.updateMany({
+      where: { id: plan.id, userId: user.id },
+      data: { currentRatePct: esc.currentRatePct, nextEscalation: esc.nextEscalation },
+    });
+    return { ...plan, currentRatePct: esc.currentRatePct, nextEscalation: esc.nextEscalation };
+  }
+
+  return plan;
+}
 
 /* -- Upsert plan -------------------------------------------- */
-export async function upsertSavingsPlan(raw: unknown) {
-  'use server';
-  const user = await requireAuth();
-  try {
-    const parsed = UpsertSavingsPlanSchema.safeParse(raw);
-    if (!parsed.success) return { error: 'Invalid input' };
-    const data = parsed.data;
 
-    const [fromAccount, toAccount] = await Promise.all([
-      prisma.account.findFirst({ where: { id: data.fromAccountId, userId: user.id } }),
-      prisma.account.findFirst({ where: { id: data.toAccountId, userId: user.id } }),
-    ]);
-    if (!fromAccount) return { error: 'Please choose a valid source account.' };
-    if (!toAccount) return { error: 'Please choose a valid destination account.' };
-
-    const isSavingsAccount = ['SAVINGS', 'BROKERAGE', 'CRYPTO', 'SACCO_DEPOSIT'].includes(toAccount.type);
-    if (!isSavingsAccount && !data.goalId) {
-      return { error: 'The destination must be a savings or investment account, or you must select a goal.' };
-    }
-
-    if (data.goalId) {
-      const goal = await prisma.goal.findFirst({ where: { id: data.goalId, userId: user.id } });
-      if (!goal) return { error: 'Please choose a valid goal.' };
-    }
-
-    await prisma.$transaction(async (tx) => {
-      const existing = await tx.savingsPlan.findUnique({ where: { userId: user.id } });
-
-      if (existing) {
-        const { count } = await tx.savingsPlan.updateMany({
-          where: { id: existing.id, userId: user.id },
-          data: {
-            fromAccountId:  data.fromAccountId,
-            toAccountId:    data.toAccountId,
-            goalId:         data.goalId || null,
-            baseRatePct:    data.baseRatePct,
-            escalationPct:  data.escalationPct,
-            maxRatePct:     data.maxRatePct,
-            active:         data.active,
-          },
-        });
-        if (count === 0) throw new Error('Plan not found or unauthorized');
-      } else {
-        const prefs = await tx.userPreferences.findUnique({ where: { userId: user.id } });
-        const seedRate = prefs?.savingRate ?? data.baseRatePct;
-
-        const nextEsc = new Date();
-        nextEsc.setMonth(nextEsc.getMonth() + 1);
-
-        await tx.savingsPlan.create({
-          data: {
-            userId:         user.id,
-            fromAccountId:  data.fromAccountId,
-            toAccountId:    data.toAccountId,
-            goalId:         data.goalId || null,
-            baseRatePct:    data.baseRatePct,
-            escalationPct:  data.escalationPct,
-            maxRatePct:     data.maxRatePct,
-            currentRatePct: Math.min(seedRate, data.maxRatePct),
-            nextEscalation: nextEsc,
-            active:         data.active,
-          },
-        });
-      }
-
-      await tx.auditLog.create({
-        data: {
-          userId: user.id,
-          action: existing ? 'UPDATE' : 'CREATE',
-          resource: 'SavingsPlan',
-          metadata: JSON.stringify({ active: data.active }),
-        }
-      });
-    });
-
-    revalidatePath('/settings');
-    revalidatePath('/');
-    return { success: true };
-  } catch (error) {
-    console.error('[upsertSavingsPlan]', error);
-    return { error: 'An unexpected error occurred. Please try again.' };
-  }
-}
 
 /* -- Toggle active ------------------------------------------ */
-export async function toggleSavingsPlan(active: unknown) {
-  'use server';
-  const user = await requireAuth();
-  try {
-    const parsed = z.boolean().safeParse(active);
-    if (!parsed.success) return { error: 'Invalid input' };
 
-    await prisma.$transaction(async (tx) => {
-      const { count } = await tx.savingsPlan.updateMany({
-        where: { userId: user.id },
-        data: { active: parsed.data },
-      });
-      if (count === 0) throw new Error('No savings plan found.');
-
-      await tx.auditLog.create({
-        data: {
-          userId: user.id,
-          action: 'UPDATE',
-          resource: 'SavingsPlan',
-          metadata: JSON.stringify({ active: parsed.data }),
-        }
-      });
-    });
-
-    revalidatePath('/settings');
-    return { success: true };
-  } catch (error) {
-    console.error('[toggleSavingsPlan]', error);
-    return { error: 'An unexpected error occurred. Please try again.' };
-  }
-}
 
 /* -- Get recent auto-saves for UI --------------------------- */
-
+export async function getRecentAutoSaves() {
+  const user = await requireAuth();
+  return prisma.transfer.findMany({
+    where: { userId: user.id, source: 'SAVE_MORE_TOMORROW' },
+    include: {
+      fromAccount: { select: { name: true, currency: true } },
+      toAccount:   { select: { name: true, currency: true } },
+    },
+    orderBy: { date: 'desc' },
+    take: 20,
+  });
+}
 
 /* -- Delete plan -------------------------------------------- */
-export async function deleteSavingsPlan() {
-  'use server';
-  const user = await requireAuth();
-  try {
-    await prisma.$transaction(async (tx) => {
-      const { count } = await tx.savingsPlan.deleteMany({
-        where: { userId: user.id },
-      });
-      if (count === 0) throw new Error('No savings plan found.');
 
-      await tx.auditLog.create({
-        data: {
-          userId: user.id,
-          action: 'DELETE',
-          resource: 'SavingsPlan',
-          metadata: JSON.stringify({}),
-        }
-      });
-    });
-
-    revalidatePath('/settings');
-    revalidatePath('/');
-    return { success: true };
-  } catch (error) {
-    console.error('[deleteSavingsPlan]', error);
-    return { error: 'An unexpected error occurred. Please try again.' };
-  }
-}
 
 /* -- Auto-save trigger (called from addTransaction / importTransactions) -- */
 // Design point 3: self-contained prisma.transfer.create (like loan disbursement).

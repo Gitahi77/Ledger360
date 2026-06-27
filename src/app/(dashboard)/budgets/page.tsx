@@ -1,7 +1,7 @@
 // src/app/budgets/page.tsx — Live Server Component
 
-import { getBudgetsWithSpend } from '@/lib/actions/budgets';
-import { getCategories } from '@/lib/actions/transactions';
+import { getBudgetsWithSpend } from '@/lib/queries/budgets';
+import { getCategories } from '@/lib/queries/transactions';
 import { BudgetsClient } from './BudgetsClient';
 import { requireAuth } from '@/lib/actions/_auth';
 

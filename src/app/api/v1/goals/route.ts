@@ -1,5 +1,6 @@
 import { apiRoute } from '@/lib/api/respond';
-import { getGoals, addGoal } from '@/lib/actions/goals';
+import { addGoal } from '@/lib/actions/goals';
+import { getGoals } from '@/lib/queries/goals';
 import { AddGoalSchema } from '@/lib/validation';
 
 export const GET = apiRoute(

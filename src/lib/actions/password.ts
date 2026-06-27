@@ -1,3 +1,5 @@
+'use server';
+
 import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
 import * as argon2 from '@node-rs/argon2';

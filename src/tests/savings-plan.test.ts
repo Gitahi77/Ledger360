@@ -3,7 +3,7 @@
 // Tests all 9 acceptance criteria including the date-guard and insufficient-funds-skip.
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-/* ── Mock dependencies ────────────────────────────────────── */
+/* -- Mock dependencies -------------------------------------- */
 vi.mock('@/lib/actions/_auth', () => ({
   requireAuth: vi.fn().mockResolvedValue({ id: 'user-1', currency: 'KES' }),
 }));
@@ -60,12 +60,12 @@ vi.mock('@/lib/prisma', () => ({
   }
 }));
 
-/* ── Imports after mocks ──────────────────────────────────── */
+/* -- Imports after mocks ------------------------------------ */
 import { triggerAutoSave, upsertSavingsPlan } from '../lib/actions/savings';
 import { getAccountBalances } from '../lib/actions/accounts';
 import { prisma } from '../lib/prisma';
 
-/* ── Helper: build a mock plan ────────────────────────────── */
+/* -- Helper: build a mock plan ------------------------------ */
 function makePlan(overrides: Record<string, unknown> = {}) {
   const now = new Date();
   const future = new Date(now);
@@ -93,7 +93,7 @@ describe('Save-More-Tomorrow (WO-15)', () => {
     vi.clearAllMocks();
   });
 
-  /* ── Test 1: Rate escalates correctly ──────────────────── */
+  /* -- Test 1: Rate escalates correctly -------------------- */
   describe('Lazy Escalation', () => {
     it('rate escalates by escalationPct for each elapsed period', async () => {
       // Plan with nextEscalation 3 months in the past
@@ -141,7 +141,7 @@ describe('Save-More-Tomorrow (WO-15)', () => {
       );
     });
 
-    /* ── Test 2: Rate caps at max ────────────────────────── */
+    /* -- Test 2: Rate caps at max -------------------------- */
     it('rate caps at maxRatePct and does not exceed it', async () => {
       // Plan with nextEscalation 10 months ago, but max is 20
       const tenMonthsAgo = new Date();
@@ -187,7 +187,7 @@ describe('Save-More-Tomorrow (WO-15)', () => {
     });
   });
 
-  /* ── Test 3: Paused plan fires nothing ─────────────────── */
+  /* -- Test 3: Paused plan fires nothing ------------------- */
   it('paused plan (active=false) does NOT create an auto-save', async () => {
     const plan = makePlan({ active: false });
     vi.mocked(prisma.savingsPlan.findUnique).mockResolvedValue(plan as any);
@@ -202,7 +202,7 @@ describe('Save-More-Tomorrow (WO-15)', () => {
     expect(prisma.transfer.createMany).not.toHaveBeenCalled();
   });
 
-  /* ── Test 4: One income = one auto-save (idempotent) ──── */
+  /* -- Test 4: One income = one auto-save (idempotent) ---- */
   it('idempotent: duplicate trigger for same income returns null, no second transfer', async () => {
     const plan = makePlan();
     vi.mocked(prisma.savingsPlan.findUnique).mockResolvedValue(plan as any);
@@ -233,7 +233,7 @@ describe('Save-More-Tomorrow (WO-15)', () => {
     expect(result).toBeNull();
   });
 
-  /* ── Test 5: Failed auto-save does NOT block income ────── */
+  /* -- Test 5: Failed auto-save does NOT block income ------ */
   it('a failed auto-save returns a warning string, never throws', async () => {
     const plan = makePlan();
     vi.mocked(prisma.savingsPlan.findUnique).mockResolvedValue(plan as any);
@@ -257,7 +257,7 @@ describe('Save-More-Tomorrow (WO-15)', () => {
     expect(result).toContain('Database connection lost');
   });
 
-  /* ── Test 6: Auto-save counts as Savings in dashboard ──── */
+  /* -- Test 6: Auto-save counts as Savings in dashboard ---- */
   it('auto-save transfer has loanId=null + savings destination = included in savings metric', async () => {
     const plan = makePlan();
     vi.mocked(prisma.savingsPlan.findUnique).mockResolvedValue(plan as any);
@@ -290,7 +290,7 @@ describe('Save-More-Tomorrow (WO-15)', () => {
     );
   });
 
-  /* ── Test 7: Auto-save counts as Savings in reports ────── */
+  /* -- Test 7: Auto-save counts as Savings in reports ------ */
   // This test verifies the same property from the reports perspective.
   // The reports SQL uses: loanId IS NULL AND (goalId IS NOT NULL OR toAccount.type IN savings/investment)
   // Our transfer meets this because toAccount.type = 'savings' and loanId is null.
@@ -321,7 +321,7 @@ describe('Save-More-Tomorrow (WO-15)', () => {
     );
   });
 
-  /* ── Test 8: Destination validation rejects non-savings without goal ── */
+  /* -- Test 8: Destination validation rejects non-savings without goal -- */
   it('rejects non-savings destination with no goal', async () => {
     // Mock accounts: from = bank, to = bank (not savings/investment)
     vi.mocked(prisma.account.findFirst)
@@ -342,7 +342,7 @@ describe('Save-More-Tomorrow (WO-15)', () => {
     expect(res).toEqual({ error: expect.stringMatching(/savings or investment account/) });
   });
 
-  /* ── Test 9: Income dated before plan creation does NOT trigger ── */
+  /* -- Test 9: Income dated before plan creation does NOT trigger -- */
   it('income dated before SavingsPlan.createdAt does NOT trigger an auto-save', async () => {
     const plan = makePlan({
       createdAt: new Date('2026-06-01'),
@@ -360,7 +360,7 @@ describe('Save-More-Tomorrow (WO-15)', () => {
     expect(prisma.transfer.createMany).not.toHaveBeenCalled();
   });
 
-  /* ── Test 10: Insufficient funds skips gracefully ──────── */
+  /* -- Test 10: Insufficient funds skips gracefully -------- */
   it('skips auto-save with warning when source account has insufficient funds', async () => {
     const plan = makePlan();
     vi.mocked(prisma.savingsPlan.findUnique).mockResolvedValue(plan as any);

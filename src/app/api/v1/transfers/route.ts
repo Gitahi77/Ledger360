@@ -1,5 +1,6 @@
 import { apiRoute } from '@/lib/api/respond';
-import { getTransfers, createTransfer } from '@/lib/actions/transfers';
+import { createTransfer } from '@/lib/actions/transfers';
+import { getTransfers } from '@/lib/queries/transfers';
 import { AddTransferSchema } from '@/lib/validation';
 import { z } from 'zod';
 

@@ -20,7 +20,7 @@ const SAFETY = [
   { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
 ];
 
-/* ─── M-Pesa SMS Parser ─────────────────────────────────────── */
+/* --- M-Pesa SMS Parser --------------------------------------- */
 export const ParsedTransactionSchema = z.object({
   name: z.string(),
   date: z.string(),
@@ -91,7 +91,7 @@ export async function parseMpesaSms(smsText: string, signal?: AbortSignal): Prom
   }
 }
 
-/* ─── Document / Image Parser (replaces OpenAI Vision) ─────── */
+/* --- Document / Image Parser (replaces OpenAI Vision) ------- */
 export const ParsedDocTransactionSchema = z.object({
   name: z.string(),
   date: z.string(),
@@ -159,7 +159,7 @@ export async function parseDocumentWithGemini(
   }
 }
 
-/* ─── Simple text prompt ─────────────────────────────────────── */
+/* --- Simple text prompt --------------------------------------- */
 export async function geminiPrompt(prompt: string): Promise<string> {
   const client = getClient();
   const model = client.getGenerativeModel({

@@ -35,7 +35,7 @@ function getActualMimeType(buffer: ArrayBuffer | null, fallbackMime: string, fil
   return fallbackMime;
 }
 
-/* ── Category keyword map ────────────────────────────────── */
+/* -- Category keyword map ---------------------------------- */
 const CATEGORY_RULES: { pattern: RegExp; category: string; type: 'income' | 'expense' | 'transfer' }[] = [
   // Income
   { pattern: /salary|payroll|wage|pay slip/i,         category: 'Salary',           type: 'income'  },
@@ -72,7 +72,7 @@ function autoCategory(description: string, amount: number): { category: string; 
   return { category: amount > 0 ? 'Income' : 'General', type: amount > 0 ? 'income' : 'expense' };
 }
 
-/* ── Normalise a raw row from any parser ─────────────────── */
+/* -- Normalise a raw row from any parser ------------------- */
 interface RawRow {
   date: string;
   description: string;
@@ -94,7 +94,7 @@ function rowToTransaction(row: RawRow) {
   };
 }
 
-/* ── Parse a date string flexibly ────────────────────────── */
+/* -- Parse a date string flexibly -------------------------- */
 function parseDate(raw: string): string | null {
   if (!raw) return null;
   // Try several date string formats
@@ -112,7 +112,7 @@ function parseDate(raw: string): string | null {
   return null;
 }
 
-/* ── CSV / plain-text parser ─────────────────────────────── */
+/* -- CSV / plain-text parser ------------------------------- */
 function parseCSVText(text: string): RawRow[] {
   const lines = text.trim().split('\n').filter(l => l.trim());
   if (lines.length < 2) return [];
@@ -184,7 +184,7 @@ function parseCSVText(text: string): RawRow[] {
   return rows;
 }
 
-/* ── Excel parser (.xlsx / .xls) ─────────────────────────── */
+/* -- Excel parser (.xlsx / .xls) --------------------------- */
 async function parseExcel(buffer: ArrayBuffer): Promise<RawRow[]> {
   const ExcelJS = await import('exceljs');
   const workbook = new ExcelJS.Workbook();
@@ -208,7 +208,7 @@ async function parseExcel(buffer: ArrayBuffer): Promise<RawRow[]> {
   return parseCSVText(csvRows.join('\n'));
 }
 
-/* ── PDF text extractor ──────────────────────────────────── */
+/* -- PDF text extractor ------------------------------------ */
 async function parsePDF(buffer: ArrayBuffer): Promise<RawRow[]> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -228,7 +228,7 @@ async function parsePDF(buffer: ArrayBuffer): Promise<RawRow[]> {
   }
 }
 
-/* ── M-Pesa statement line-by-line parser ────────────────── */
+/* -- M-Pesa statement line-by-line parser ------------------ */
 function parseMpesaStyle(text: string): RawRow[] {
   // M-Pesa PDFs look like:
   // 17/05/2026 QJK34RFT Payment to Till 123456 NAIVAS -2,500.00 48,230.00
@@ -279,7 +279,7 @@ function parseMpesaStyle(text: string): RawRow[] {
   return rows;
 }
 
-/* ── Gemini Vision parser (uses GOOGLE_GENERATIVE_AI_API_KEY) ───── */
+/* -- Gemini Vision parser (uses GOOGLE_GENERATIVE_AI_API_KEY) ----- */
 async function parseWithAI(fileBuffer: ArrayBuffer, mimeType: string, userId: string, signal?: AbortSignal): Promise<Record<string, unknown>[] | null> {
   if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) return null;
   
@@ -301,7 +301,7 @@ async function parseWithAI(fileBuffer: ArrayBuffer, mimeType: string, userId: st
   }
 }
 
-/* ── Zod schema to validate each transaction row before DB insert ── */
+/* -- Zod schema to validate each transaction row before DB insert -- */
 const UploadRowSchema = z.object({
   date:      z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date'),
   name:      z.string().min(1).max(200),
@@ -315,7 +315,7 @@ const UploadRowSchema = z.object({
 import { parseMpesaSms as parseDeterministicSms, parseMpesaPdfStatement } from '@/lib/parsers/mpesa';
 import { redactForAI } from '@/lib/api/redact';
 
-/* ── Main route handler ──────────────────────────────────── */
+/* -- Main route handler ------------------------------------ */
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
@@ -323,7 +323,7 @@ export async function POST(request: Request) {
   }
   const userId = (session.user as { id?: string }).id as string;
 
-  // ── Rate limiting ──────────────────────────────────────────
+  // -- Rate limiting ------------------------------------------
   const rl = await checkLimit('upload', `upload:${userId}`);
   if (!rl.ok) {
     return NextResponse.json(
@@ -472,7 +472,7 @@ export async function POST(request: Request) {
       }, { status: 422 });
     }
 
-    // ── Validate every row with Zod before touching the DB ─────
+    // -- Validate every row with Zod before touching the DB -----
     const validRows = transactions.filter((t: RowData) => {
       const result = UploadRowSchema.safeParse(t);
       if (!result.success) {

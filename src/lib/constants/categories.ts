@@ -9,7 +9,7 @@ export type CategorySeed = {
 };
 
 export const DEFAULT_CATEGORIES: CategorySeed[] = [
-  // ── Income ──────────────────────────────────────
+  // -- Income --------------------------------------
   { name: 'Salary',           type: 'income',  icon: 'salary'        },
   { name: 'Freelance',        type: 'income',  icon: 'freelance'     },
   { name: 'Business Income',  type: 'income',  icon: 'business'      },
@@ -18,7 +18,7 @@ export const DEFAULT_CATEGORIES: CategorySeed[] = [
   { name: 'Side Hustle',      type: 'income',  icon: 'side-hustle'   },
   { name: 'Gift / Bonus',     type: 'income',  icon: 'gift'          },
 
-  // ── Expense ─────────────────────────────────────
+  // -- Expense -------------------------------------
   { name: 'Rent',             type: 'expense', icon: 'rent'          },
   { name: 'Food & Grocery',   type: 'expense', icon: 'groceries'     },
   { name: 'Transport',        type: 'expense', icon: 'transport'     },
@@ -37,7 +37,7 @@ export const DEFAULT_CATEGORIES: CategorySeed[] = [
   { name: 'Subscriptions',    type: 'expense', icon: 'netflix'       },
   { name: 'Miscellaneous',    type: 'expense', icon: 'other'         },
 
-  // ── Savings ─────────────────────────────────────
+  // -- Savings -------------------------------------
   { name: 'Savings Transfer', type: 'savings', icon: 'savings'       },
   { name: 'Emergency Fund',   type: 'savings', icon: 'emergency'     },
 ];

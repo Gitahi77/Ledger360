@@ -1,8 +1,8 @@
 // src/app/loans/page.tsx — Live Server Component
 
-import { getLoans } from '@/lib/actions/loans';
-import { getAccountBalances } from '@/lib/actions/accounts';
-import { getCategories } from '@/lib/actions/transactions';
+import { getLoans } from '@/lib/queries/loans';
+import { getAccountBalances } from '@/lib/queries/accounts';
+import { getCategories } from '@/lib/queries/transactions';
 import { LoansClient } from './LoansClient';
 import { requireAuth } from '@/lib/actions/_auth';
 

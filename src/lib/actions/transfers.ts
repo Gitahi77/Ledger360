@@ -1,3 +1,5 @@
+'use server';
+
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/actions/_auth';
 import { revalidatePath } from 'next/cache';
@@ -7,35 +9,10 @@ import { z } from 'zod';
 
 const DeleteSchema = z.object({ id: z.string().cuid() });
 
-/* ── Fetch ────────────────────────────────────────────────── */
-export async function getTransfers(period?: 'this-month' | 'last-30-days' | 'all-time') {
-  const user = await requireAuth();
+/* -- Fetch -------------------------------------------------- */
 
-  // Basic date filtering
-  let dateFilter = {};
-  if (period === 'this-month') {
-    const now = getNairobiNow();
-    dateFilter = { gte: new Date(now.getFullYear(), now.getMonth(), 1) };
-  } else if (period === 'last-30-days') {
-    const d = getNairobiNow();
-    d.setDate(d.getDate() - 30);
-    dateFilter = { gte: d };
-  }
 
-  return prisma.transfer.findMany({
-    where: { 
-      userId: user.id,
-      ...(Object.keys(dateFilter).length > 0 ? { date: dateFilter } : {})
-    },
-    include: {
-      fromAccount: { select: { name: true, currency: true } },
-      toAccount: { select: { name: true, currency: true } },
-    },
-    orderBy: { date: 'desc' },
-  });
-}
-
-/* ── Add (Zod-validated) ──────────────────────────────────── */
+/* -- Add (Zod-validated) ------------------------------------ */
 export async function createTransfer(raw: unknown) {
   'use server';
   try {
@@ -67,7 +44,7 @@ export async function createTransfer(raw: unknown) {
 
     let finalInterestMinor = 0;
     if (data.loanId) {
-      const { getLoansForUser } = await import('@/lib/actions/loans');
+      const { getLoansForUser } = await import('@/lib/queries/loans');
       const loans = await getLoansForUser(user.id);
       const loan = loans.find((l: any) => l.id === data.loanId);
       if (!loan) throw new Error('Please choose a valid loan.');
@@ -188,7 +165,7 @@ export async function editTransfer(id: string, rawData: unknown) {
 
     if (data.loanId || oldTransfer.loanId) {
       const targetLoanId = data.loanId ?? oldTransfer.loanId;
-      const { getLoansForUser } = await import('@/lib/actions/loans');
+      const { getLoansForUser } = await import('@/lib/queries/loans');
       const loans = await getLoansForUser(user.id);
       const loan = loans.find((l: any) => l.id === targetLoanId);
       if (!loan) return { error: 'Please choose a valid loan.' };
@@ -227,7 +204,7 @@ export async function editTransfer(id: string, rawData: unknown) {
     }
     let finalInterestMinor = 0;
     if (data.loanId) {
-      const { getLoansForUser } = await import('@/lib/actions/loans');
+      const { getLoansForUser } = await import('@/lib/queries/loans');
       const loans = await getLoansForUser(user.id);
       const loan = loans.find((l: any) => l.id === data.loanId);
       if (loan) {
@@ -277,7 +254,7 @@ export async function editTransfer(id: string, rawData: unknown) {
   }
 }
 
-/* ── Delete (atomic — no TOCTOU race) ────────────────────── */
+/* -- Delete (atomic — no TOCTOU race) ---------------------- */
 export async function deleteTransfer(id: string) {
   'use server';
   const user = await requireAuth();

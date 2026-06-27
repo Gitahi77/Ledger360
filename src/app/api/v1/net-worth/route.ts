@@ -1,5 +1,5 @@
 import { apiRoute } from '@/lib/api/respond';
-import { getNetWorth } from '@/lib/actions/networth';
+import { getNetWorth } from '@/lib/queries/networth';
 
 export const GET = apiRoute(
   null,

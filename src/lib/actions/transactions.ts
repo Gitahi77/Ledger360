@@ -1,3 +1,5 @@
+'use server';
+
 // src/lib/actions/transactions.ts
 import { prisma } from '@/lib/prisma';
 import { periodDates } from '@/lib/dateUtils';
@@ -24,196 +26,22 @@ const EditTransactionSchema = z.object({
   note: z.string().max(500).optional(),
 });
 
-/* ── List ─────────────────────────────────────────────────── */
-export async function getTransactions(inputPeriod: unknown = 'this-month', inputType?: unknown) {
-  const GetTransactionsSchema = z.object({
-    period: PeriodSchema.default('this-month'),
-    type: TypeSchema.optional(),
-  });
-  const parsed = GetTransactionsSchema.safeParse({ period: inputPeriod, type: inputType });
-  if (!parsed.success) throw new Error('Invalid input');
-  const { period, type } = parsed.data;
+/* -- List --------------------------------------------------- */
 
-  const user = await requireAuth();
-  const { from, to } = periodDates(period);
 
-  return prisma.transaction.findMany({
-    where: {
-      userId: user.id,
-      date: { gte: from, lte: to },
-      ...(type && type !== 'all' ? { type } : {}),
-    },
-    include: { category: true },
-    orderBy: { date: 'desc' },
-  });
-}
+/* -- Summary for period ------------------------------------- */
 
-/* ── Summary for period ───────────────────────────────────── */
-export async function getTransactionSummary(inputPeriod: unknown = 'this-month') {
-  const GetSummarySchema = z.object({
-    period: PeriodSchema.default('this-month'),
-  });
-  const parsed = GetSummarySchema.safeParse({ period: inputPeriod });
-  if (!parsed.success) throw new Error('Invalid input');
-  const { period } = parsed.data;
 
-  const user = await requireAuth();
-  const { from, to } = periodDates(period);
+/* -- Monthly chart data (last 6 months) — single query ------ */
 
-  let prevFrom: Date, prevTo: Date;
-  if (period === 'this-week') {
-    const prevD = new Date(from); prevD.setDate(prevD.getDate() - 7);
-    prevFrom = prevD;
-    prevTo = new Date(from.getTime() - 1);
-  } else if (period === 'this-year') {
-    prevFrom = new Date(from.getFullYear() - 1, 0, 1);
-    prevTo = new Date(from.getFullYear() - 1, 11, 31, 23, 59, 59, 999);
-  } else {
-    prevFrom = new Date(from.getFullYear(), from.getMonth() - 1, 1);
-    prevTo = new Date(from.getFullYear(), from.getMonth(), 0, 23, 59, 59, 999);
-  }
 
-  const startOfToday = new Date(to.getFullYear(), to.getMonth(), to.getDate(), 0, 0, 0, 0);
+/* -- Category breakdown ------------------------------------- */
 
-  const [income, expenses, transfersOut, savingsTransfers, todaySpendAgg] = await Promise.all([
-    prisma.transaction.aggregate({ where: { userId: user.id, type: 'income',   date: { gte: from, lte: to } }, _sum: { baseAmountMinor: true } }),
-    prisma.transaction.aggregate({ where: { userId: user.id, type: 'expense',  date: { gte: from, lte: to } }, _sum: { baseAmountMinor: true } }),
-    prisma.transfer.aggregate({
-      where: { userId: user.id, toAccountId: null, date: { gte: from, lte: to } },
-      _sum: { baseAmountMinor: true, interestMinor: true }
-    }),
-    prisma.transfer.aggregate({
-      where: {
-        userId: user.id, date: { gte: from, lte: to }, loanId: null,
-        OR: [{ goalId: { not: null } }, { toAccount: { type: { in: ['SAVINGS', 'BROKERAGE', 'CRYPTO', 'SACCO_DEPOSIT'] } } }],
-      },
-      _sum: { baseAmountMinor: true },
-    }),
-    prisma.transaction.aggregate({
-      where: { userId: user.id, type: 'expense', date: { gte: startOfToday, lte: to } },
-      _sum: { baseAmountMinor: true }
-    })
-  ]);
 
-  const inc = Number(income._sum.baseAmountMinor ?? 0);
-  
-  const totalLoanInterest = Number(transfersOut._sum.interestMinor ?? 0);
-  const exp = Number(expenses._sum.baseAmountMinor ?? 0) + totalLoanInterest;
-  const moneyOut = exp + Number(transfersOut._sum.baseAmountMinor ?? 0) - totalLoanInterest;
+/* -- Categories list ---------------------------------------- */
 
-  // WO-16 / BUG-3: "savings" = sum of transfers that fund a goal OR go to a
-  // savings/investment account, EXCLUDING loan repayments. Each qualifying
-  // transfer is counted once even if it matches multiple conditions.
-  const savings = Number(savingsTransfers._sum?.baseAmountMinor ?? 0);
-  const todaySpend = Number(todaySpendAgg._sum.baseAmountMinor ?? 0);
 
-  return {
-    income:     inc,
-    expenses:   exp,
-    moneyOut:   moneyOut,
-    savings,
-    savingRate: inc > 0 ? Math.round((savings / inc) * 100) : 0,
-    todaySpend,
-  };
-}
-
-/* ── Monthly chart data (last 6 months) — single query ────── */
-export async function getMonthlyChartData() {
-  const user  = await requireAuth();
-  const now   = new Date();
-
-  const nowNairobi = new Date(now.toLocaleString("en-US", { timeZone: "Africa/Nairobi" }));
-  const nYr = nowNairobi.getFullYear();
-  const nMo = nowNairobi.getMonth();
-
-  const start = new Date(Date.UTC(nYr, nMo - 5, 1, -3, 0, 0));
-  const end   = new Date(Date.UTC(nYr, nMo + 1, 0, 20, 59, 59, 999));
-
-  type Row = { yr: number; mo: number; type: string; total: number };
-  // "AT TIME ZONE" correctly converts timestamptz to local wall-clock time.
-  const rows: Row[] = await prisma.$queryRaw`
-    SELECT
-      EXTRACT(YEAR  FROM (date AT TIME ZONE 'Africa/Nairobi'))::int  AS yr,
-      EXTRACT(MONTH FROM (date AT TIME ZONE 'Africa/Nairobi'))::int  AS mo,
-      type,
-      SUM("baseAmountMinor")::float  AS total
-    FROM "Transaction"
-    WHERE
-      "userId" = ${user.id}
-      AND type IN ('income','expense')
-      AND date >= ${start}
-      AND date <= ${end}
-    GROUP BY yr, mo, type
-    ORDER BY yr, mo
-  `;
-
-  const months: { label: string; yr: number; mo: number }[] = [];
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date(nYr, nMo - i, 1);
-    months.push({ label: d.toLocaleString('default', { month: 'short' }), yr: d.getFullYear(), mo: d.getMonth() + 1 });
-  }
-
-  return months.map((m: any) => {
-    const inc = rows.find((r: any) => r.yr === m.yr && r.mo === m.mo && r.type === 'income');
-    const exp = rows.find((r: any) => r.yr === m.yr && r.mo === m.mo && r.type === 'expense');
-    return { month: m.label, income: Math.round(inc?.total ?? 0), expenses: Math.round(exp?.total ?? 0) };
-  });
-}
-
-/* ── Category breakdown ───────────────────────────────────── */
-export async function getCategoryBreakdown(inputPeriod: unknown = 'this-month') {
-  const GetCategoryBreakdownSchema = z.object({
-    period: PeriodSchema.default('this-month'),
-  });
-  const parsed = GetCategoryBreakdownSchema.safeParse({ period: inputPeriod });
-  if (!parsed.success) throw new Error('Invalid input');
-  const { period } = parsed.data;
-
-  const user = await requireAuth();
-  const { from, to } = periodDates(period);
-
-  const rows = await prisma.transaction.groupBy({
-    by: ['categoryId'],
-    where: { userId: user.id, type: 'expense', date: { gte: from, lte: to } },
-    _sum: { baseAmountMinor: true },
-    orderBy: { _sum: { baseAmountMinor: 'desc' } },
-  });
-
-  const categoryIds = rows.map((r: any) => r.categoryId).filter((id): id is string => id !== null);
-  const categories: Category[] = await prisma.category.findMany({
-    where: { id: { in: categoryIds } },
-  });
-  const catMap = Object.fromEntries(categories.map((c: any) => [c.id, c]));
-
-  const total = rows.reduce((s, r: any) => s + Number(r._sum.baseAmountMinor ?? 0), 0);
-  return rows.map((r: any) => ({
-    name:  r.categoryId ? (catMap[r.categoryId]?.name ?? r.categoryId) : 'Other',
-    icon:  r.categoryId ? (catMap[r.categoryId]?.icon ?? 'other') : 'other',
-    value: Number(r._sum.baseAmountMinor ?? 0),
-    pct:   total > 0 ? Math.round((Number(r._sum.baseAmountMinor ?? 0) / total) * 100) : 0,
-  }));
-}
-
-/* ── Categories list ──────────────────────────────────────── */
-export async function getCategories(inputType?: unknown) {
-  const GetCategoriesSchema = z.object({
-    type: z.enum(['income', 'expense', 'savings']).optional(),
-  });
-  const parsed = GetCategoriesSchema.safeParse({ type: inputType });
-  if (!parsed.success) throw new Error('Invalid input');
-  const { type } = parsed.data;
-
-  const user = await requireAuth();
-  return prisma.category.findMany({
-    where: {
-      userId: user.id,
-      ...(type ? { type } : {}),
-    },
-    orderBy: { name: 'asc' },
-  });
-}
-
-/* ── Add (Zod-validated) ──────────────────────────────────── */
+/* -- Add (Zod-validated) ------------------------------------ */
 export async function addTransaction(raw: unknown) {
   'use server';
   try {
@@ -319,7 +147,7 @@ export async function importTransactions(rows: any[], targetAccountId: string) {
 
   const ImportRowSchema = z.object({
     name: z.string().min(1).max(120),
-    baseAmountMinor: z.union([z.number(), z.string()]).transform(v => Math.abs(Number(v))),
+    baseAmountMinor: z.union([z.number(), z.string()]).transform(v => Math.round(Math.abs(Number(v)))),
     type: z.enum(['income', 'expense']),
     categoryName: z.string().min(1),
     date: z.union([z.string(), z.date()]).transform(v => new Date(v)),
@@ -438,7 +266,7 @@ export async function importTransactions(rows: any[], targetAccountId: string) {
   }
 }
 
-/* ── Delete (atomic — no TOCTOU race) ────────────────────── */
+/* -- Delete (atomic — no TOCTOU race) ---------------------- */
 export async function deleteTransaction(id: string) {
   'use server';
   const user = await requireAuth();
@@ -471,7 +299,7 @@ export async function deleteTransaction(id: string) {
   }
 }
 
-/* ── Edit (atomic ownership check) ────────────────────────── */
+/* -- Edit (atomic ownership check) -------------------------- */
 export async function editTransaction(id: string, rawData: unknown) {
   'use server';
   const user = await requireAuth();

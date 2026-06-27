@@ -43,7 +43,7 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials, req) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        // ── Rate limit by IP ──────────────────────────────────────────────
+        // -- Rate limit by IP ----------------------------------------------
         const forwardedFor = req?.headers?.['x-forwarded-for'];
         const ip = (typeof forwardedFor === 'string' ? forwardedFor.split(',')[0].trim() : undefined) ?? 'unknown';
         const rl = await checkLimit('login', `login:${ip}`);

@@ -16,7 +16,7 @@ type Goal = {
   deadline: Date | null;
 };
 
-/* ── Status: fully token-based, no hardcoded hex ──────────── */
+/* -- Status: fully token-based, no hardcoded hex ------------ */
 function goalStyle(pct: number) {
   if (pct >= 100) return {
     label: 'Achieved',
@@ -60,7 +60,7 @@ function goalStyle(pct: number) {
   };
 }
 
-/* ── Add Goal Modal ───────────────────────────────────────── */
+/* -- Add Goal Modal ----------------------------------------- */
 function GoalModal({ goal, onClose, currency }: { goal?: Goal; onClose: () => void; currency: string }) {
   const router     = useRouter();
   const [, startT] = useTransition();
@@ -147,7 +147,7 @@ function GoalModal({ goal, onClose, currency }: { goal?: Goal; onClose: () => vo
   );
 }
 
-/* ── Main Client Component ────────────────────────────────── */
+/* -- Main Client Component ---------------------------------- */
 export function GoalsClient({ goals, currency, categories = [] }: { goals: Goal[], currency: string, categories?: { id: string; name: string }[] }) {
   const router     = useRouter();
   const [, startT] = useTransition();

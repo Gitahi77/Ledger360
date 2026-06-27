@@ -10,7 +10,7 @@ vi.mock('@/lib/actions/accounts', () => ({
   getAccountBalances: vi.fn()
 }));
 
-vi.mock('@/lib/actions/loans', () => ({
+vi.mock('@/lib/queries/loans', () => ({
   getLoansForUser: vi.fn()
 }));
 
@@ -72,7 +72,7 @@ vi.mock('@/lib/audit', () => ({
 // Import modules to test after mocks are set up
 import { getNetWorth } from '../lib/actions/networth';
 import { getAccountBalances } from '../lib/actions/accounts';
-import { getLoansForUser } from '../lib/actions/loans';
+import { getLoansForUser } from '../lib/queries/loans';
 import { prisma } from '../lib/prisma';
 import { createTransfer } from '../lib/actions/transfers';
 import { addTransaction, editTransaction, getTransactionSummary, getMonthlyChartData } from '../lib/actions/transactions';

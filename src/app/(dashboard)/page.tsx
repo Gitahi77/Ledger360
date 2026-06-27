@@ -8,10 +8,10 @@ import { Suspense } from 'react';
 
 import { CashFlowChart, SpendingDonutChart } from '@/components/DashboardCharts';
 import { PeriodSelectorClient } from '@/components/PeriodSelectorClient';
-import { getTransactionSummary, getMonthlyChartData, getCategoryBreakdown } from '@/lib/actions/transactions';
-import { getBudgetsWithSpend } from '@/lib/actions/budgets';
-import { getLoans } from '@/lib/actions/loans';
-import { getNetWorth } from '@/lib/actions/networth';
+import { getTransactionSummary, getMonthlyChartData, getCategoryBreakdown } from '@/lib/queries/transactions';
+import { getBudgetsWithSpend } from '@/lib/queries/budgets';
+import { getLoans } from '@/lib/queries/loans';
+import { getNetWorth } from '@/lib/queries/networth';
 import { safeToSpend } from '@/lib/behavioral';
 import { TrendingUp, TrendingDown, ArrowRight, AlertTriangle, Wallet, Target, PiggyBank, CreditCard } from 'lucide-react';
 import Link from 'next/link';
@@ -75,7 +75,7 @@ export default async function Dashboard({
   return (
     <div className="space-y-6">
 
-      {/* ── Page Header ──────────────────────────────────────── */}
+      {/* -- Page Header ---------------------------------------- */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-display font-bold tracking-tight text-foreground">{greeting}, {firstName} 👋</h1>
@@ -88,17 +88,17 @@ export default async function Dashboard({
         </div>
       </div>
 
-      {/* ── AI Insights Strip ─────────────────────────────────── */}
+      {/* -- AI Insights Strip ----------------------------------- */}
       <div>
         <InsightsFeed initialInsights={insights} />
       </div>
 
-      {/* ── Safe to Spend Banner ──────────────────────────────── */}
+      {/* -- Safe to Spend Banner -------------------------------- */}
       <div>
         <SafeToSpendCard data={safeToSpendData} currency={currency} />
       </div>
 
-      {/* ── Net Worth Hero ────────────────────────────────────── */}
+      {/* -- Net Worth Hero -------------------------------------- */}
       <div className="bg-gradient-to-br from-brand/5 to-transparent border border-brand/10 rounded-2xl p-6 md:p-8 relative overflow-hidden flex flex-col md:flex-row md:items-end justify-between gap-6 shadow-soft">
         <div className="absolute -top-24 -right-24 w-64 h-64 bg-brand/5 rounded-full blur-3xl pointer-events-none" />
         <div className="relative z-10">
@@ -131,7 +131,7 @@ export default async function Dashboard({
         </div>
       </div>
 
-      {/* ── 4-KPI Strip ───────────────────────────────────────── */}
+      {/* -- 4-KPI Strip ----------------------------------------- */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           {
@@ -180,7 +180,7 @@ export default async function Dashboard({
         ))}
       </div>
 
-      {/* ── Charts Row ────────────────────────────────────────── */}
+      {/* -- Charts Row ------------------------------------------ */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-card border border-border rounded-xl p-5 shadow-soft min-w-0">
           <div className="flex items-center justify-between mb-4">
@@ -201,7 +201,7 @@ export default async function Dashboard({
         </div>
       </div>
 
-      {/* ── Budgets + Loans + Forecast ────────────────────────── */}
+      {/* -- Budgets + Loans + Forecast -------------------------- */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Budget Status */}
@@ -297,7 +297,7 @@ export default async function Dashboard({
         </div>
       </div>
 
-      {/* ── Investments & Chamas Row ──────────────────────────── */}
+      {/* -- Investments & Chamas Row ---------------------------- */}
       <div className="grid grid-cols-1 gap-6">
         <NsePortfolioBoard />
         <Suspense fallback={<div className="h-[200px] bg-card border border-border rounded-xl animate-pulse" />}>
@@ -305,7 +305,7 @@ export default async function Dashboard({
         </Suspense>
       </div>
 
-      {/* ── Live FX Rates ─────────────────────────────────────── */}
+      {/* -- Live FX Rates --------------------------------------- */}
       <div>
         <FxTicker currency={currency} />
       </div>

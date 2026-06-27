@@ -1,13 +1,13 @@
 // src/app/transactions/page.tsx — Live Server Component
 
-import { getTransactions, getCategories, getTransactionSummary } from '@/lib/actions/transactions';
-import { getAccounts } from '@/lib/actions/accounts';
-import { getTransfers } from '@/lib/actions/transfers';
+import { getTransactions, getCategories, getTransactionSummary } from '@/lib/queries/transactions';
+import { getAccounts } from '@/lib/queries/accounts';
+import { getTransfers } from '@/lib/queries/transfers';
 import { TransactionsClient } from './TransactionsClient';
 import { requireAuth } from '@/lib/actions/_auth';
 
-import { getGoals } from '@/lib/actions/goals';
-import { getLoans } from '@/lib/actions/loans';
+import { getGoals } from '@/lib/queries/goals';
+import { getLoans } from '@/lib/queries/loans';
 
 export default async function Transactions({
   searchParams,

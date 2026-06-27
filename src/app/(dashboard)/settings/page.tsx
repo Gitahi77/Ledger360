@@ -1,13 +1,13 @@
 // src/app/settings/page.tsx — Server Component
 // Loads both profile and saved preferences from DB before rendering the client.
 
-import { getUserProfile } from '@/lib/actions/reports';
-import { getUserPreferences } from '@/lib/actions/settings';
+import { getUserProfile } from '@/lib/queries/reports';
+import { getUserPreferences } from '@/lib/queries/settings';
 import { requireAuth } from '@/lib/actions/_auth';
 import { prisma } from '@/lib/prisma';
 import { SettingsClient } from './SettingsClient';
-import { getSavingsPlan, getRecentAutoSaves } from '@/lib/actions/savings';
-import { getAccounts } from '@/lib/actions/accounts';
+import { getSavingsPlan, getRecentAutoSaves } from '@/lib/queries/savings';
+import { getAccounts } from '@/lib/queries/accounts';
 
 export const metadata = {
   title: 'Settings — Ledger360',

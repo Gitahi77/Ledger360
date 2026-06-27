@@ -40,7 +40,7 @@ export function MobileNav() {
   return (
     <>
       <nav
-        className="mobile-nav md:hidden"
+        className="mobile-nav grid grid-cols-5 items-center md:hidden"
         style={{
           position: 'fixed',
           bottom: 0,
@@ -51,9 +51,6 @@ export function MobileNav() {
           borderTop: '1px solid var(--border)',
           paddingBottom: 'env(safe-area-inset-bottom, 0px)',
           zIndex: 999,
-          display: 'grid',
-          gridTemplateColumns: 'repeat(5, 1fr)',
-          alignItems: 'center',
         }}
       >
         {MAIN_ITEMS.map(item => {

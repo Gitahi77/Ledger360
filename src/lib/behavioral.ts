@@ -1,6 +1,6 @@
 // src/lib/behavioral.ts
 import { prisma } from '@/lib/prisma';
-import { getLoansForUser } from './actions/loans';
+import { getLoansForUser } from './queries/loans';
 import type { Budget } from '@prisma/client';
 
 export async function safeToSpend(userId: string, period: 'weekly' | 'monthly' | 'yearly' = 'monthly'): Promise<{
