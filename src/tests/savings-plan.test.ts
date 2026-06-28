@@ -63,7 +63,7 @@ vi.mock('@/lib/prisma', () => ({
 
 /* -- Imports after mocks ------------------------------------ */
 import { triggerAutoSave, upsertSavingsPlan } from '../lib/actions/savings';
-import { getAccountBalances } from '../lib/queries/accounts';
+import { getAccountBalances } from '../lib/actions/accounts';
 import { prisma } from '../lib/prisma';
 
 /* -- Helper: build a mock plan ------------------------------ */

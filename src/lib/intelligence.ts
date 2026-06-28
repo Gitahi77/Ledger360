@@ -330,7 +330,7 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
   if (prefs?.notifLoanDue !== false) {
     const { getLoansForUser } = await import('@/lib/queries/loans');
     const allLoans = await getLoansForUser(userId);
-    const activeLoans = allLoans.filter(l => l.balanceMinor > 0);
+    const activeLoans = allLoans.filter(l => Number(l.balanceMinor) > 0);
     for (const loan of activeLoans) {
       const dueDate = new Date(loan.nextDue);
       const diffTime = dueDate.getTime() - now.getTime();

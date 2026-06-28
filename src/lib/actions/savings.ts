@@ -268,8 +268,8 @@ export async function triggerAutoSave(
     const { getAccountBalances } = await import('@/lib/actions/accounts');
     const balances = await getAccountBalances(userId);
     const sourceAcc = balances.find((a: any) => a.id === plan.fromAccountId);
-    if (sourceAcc && sourceAcc.type !== 'CREDIT_CARD' && sourceAcc.balanceMinor < totalNeeded) {
-      return `Auto-save skipped: not enough funds in ${sourceAcc.name ?? 'source account'} (available: ${sourceAcc.currency} ${(sourceAcc.balanceMinor / 100).toFixed(2)}, needed: ${(totalNeeded / 100).toFixed(2)}).`;
+    if (sourceAcc && sourceAcc.type !== 'CREDIT_CARD' && Number(sourceAcc.balanceMinor) < totalNeeded) {
+      return `Auto-save skipped: not enough funds in ${sourceAcc.name ?? 'source account'} (available: ${sourceAcc.currency} ${(Number(sourceAcc.balanceMinor) / 100).toFixed(2)}, needed: ${(totalNeeded / 100).toFixed(2)}).`;
     }
 
     // 5. Create transfers in bulk, ignoring conflicts for idempotency

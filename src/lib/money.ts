@@ -13,16 +13,17 @@ export function toMinor(major: number): number {
 /**
  * Convert minor units (1250) back to major (12.50) for display only.
  */
-export function toMajor(minor: number): number {
-  return minor / 100;
+export function toMajor(minor: number | bigint): number {
+  return Number(minor) / 100;
 }
 
 /**
  * Type-guard: assert a value is a safe integer (minor units).
  * Use at API boundaries before writing to DB.
  */
-export function assertMinor(value: number, label = 'amount'): void {
-  if (!Number.isInteger(value)) {
+export function assertMinor(value: bigint | number, label = 'amount'): void {
+  const n = Number(value);
+  if (!Number.isInteger(n)) {
     throw new Error(`${label} must be an integer (minor units), got ${value}`);
   }
 }

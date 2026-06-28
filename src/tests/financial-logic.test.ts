@@ -72,7 +72,7 @@ vi.mock('@/lib/audit', () => ({
 
 // Import modules to test after mocks are set up
 import { getNetWorth } from '../lib/queries/networth';
-import { getAccountBalances } from '../lib/queries/accounts';
+import { getAccountBalances } from '../lib/actions/accounts';
 import { getLoansForUser } from '../lib/queries/loans';
 import { prisma } from '../lib/prisma';
 import { createTransfer } from '../lib/actions/transfers';
