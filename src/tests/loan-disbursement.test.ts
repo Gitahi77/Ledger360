@@ -54,7 +54,7 @@ describe('Loan Disbursement (Received Funds)', () => {
 
     // Mock transfers for getAccountBalances
     vi.mocked(prisma.transfer.groupBy).mockImplementation((async (args: any) => {
-      if (args.by?.includes('toAccountId')) return [{ toAccountId: 'acc-1', _sum: { amountMinor: LOAN_AMOUNT } }];
+      if (args.by?.includes('toAccountId')) return [{ toAccountId: 'acc-1', _sum: { baseAmountMinor: LOAN_AMOUNT } }];
       if (args.by?.includes('fromAccountId')) return [];
       return [];
     }) as any);

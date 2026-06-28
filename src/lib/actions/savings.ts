@@ -236,7 +236,7 @@ export async function triggerAutoSave(
     let totalNeeded = 0;
 
     for (const tx of validIncomes) {
-      const autoSaveMinor = Math.round(tx.baseAmountMinor * rate / 100);
+      const autoSaveMinor = Math.round(Number(tx.baseAmountMinor) * rate / 100);
       if (autoSaveMinor > 0) {
         transfersToCreate.push({
           userId,

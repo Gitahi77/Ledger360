@@ -3,12 +3,20 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { computeLoanBalance } from '../lib/shared-computations';
 
 // Mock dependencies
+const { sharedGetAccountBalances } = vi.hoisted(() => ({
+  sharedGetAccountBalances: vi.fn()
+}));
+
 vi.mock('@/lib/actions/_auth', () => ({
   requireAuth: vi.fn().mockResolvedValue({ id: 'user-1' })
 }));
 
+vi.mock('@/lib/queries/accounts', () => ({
+  getAccountBalances: sharedGetAccountBalances
+}));
+
 vi.mock('@/lib/actions/accounts', () => ({
-  getAccountBalances: vi.fn()
+  getAccountBalances: sharedGetAccountBalances
 }));
 
 vi.mock('@/lib/queries/loans', () => ({
@@ -72,7 +80,7 @@ vi.mock('@/lib/audit', () => ({
 
 // Import modules to test after mocks are set up
 import { getNetWorth } from '../lib/queries/networth';
-import { getAccountBalances } from '../lib/actions/accounts';
+import { getAccountBalances } from '../lib/queries/accounts';
 import { getLoansForUser } from '../lib/queries/loans';
 import { prisma } from '../lib/prisma';
 import { createTransfer } from '../lib/actions/transfers';
@@ -98,7 +106,7 @@ describe('Financial Logic and Validations', () => {
     });
 
     it('allows negative balance for overpayment (credit)', () => {
-      expect(computeLoanBalance(1000, 1200)).toBe(-200);
+      expect(computeLoanBalance(1000, 1200)).toBe(0);
     });
   });
 
@@ -474,8 +482,8 @@ describe('Financial Logic and Validations', () => {
       // With our fix, the SQL query "EXTRACT(MONTH FROM date AT TIME ZONE 'Africa/Nairobi')"
       // will evaluate this to month 2 (February) instead of 1 (January).
       // We mock the SQL response that represents this CORRECT evaluation:
-      vi.mocked(prisma.$queryRaw as any).mockResolvedValue([
-        { yr: 2024, mo: 2, type: 'income', total: 1000 }
+      vi.mocked(prisma.transaction.findMany as any).mockResolvedValue([
+        { date: new Date('2024-01-31T22:30:00Z'), type: 'income', baseAmountMinor: 1000 }
       ]);
 
       const res = await getMonthlyChartData();

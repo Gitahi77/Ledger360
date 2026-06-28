@@ -125,7 +125,7 @@ describe('Save-More-Tomorrow (WO-15)', () => {
         expect.objectContaining({
           data: expect.arrayContaining([
             expect.objectContaining({
-              amountMinor: 18000n,
+              amountMinor: 18000,
               source: 'SAVE_MORE_TOMORROW',
             }),
           ]),
@@ -172,7 +172,7 @@ describe('Save-More-Tomorrow (WO-15)', () => {
         expect.objectContaining({
           data: expect.arrayContaining([
             expect.objectContaining({
-              amountMinor: 20000n,
+              amountMinor: 20000,
             }),
           ]),
         }),
