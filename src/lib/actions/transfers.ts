@@ -50,7 +50,7 @@ export async function createTransfer(raw: unknown) {
       if (!loan) throw new Error('Please choose a valid loan.');
       
       // Auto-compute default interest (multiply before divide to prevent FP drift)
-      const autoInterest = Math.round((loan.balanceMinor * loan.annualRate) / 1200);
+      const autoInterest = Math.round((Number(loan.balanceMinor) * loan.annualRate) / 1200);
       finalInterestMinor = data.interestMinor ?? autoInterest;
 
       // Server-side validation
@@ -60,7 +60,7 @@ export async function createTransfer(raw: unknown) {
       }
       
       const principal = data.amountMinor - finalInterestMinor;
-      if (principal > loan.balanceMinor) {
+      if (principal > Number(loan.balanceMinor)) {
         throw new Error(`You can't pay more than you owe. This loan's remaining balance is  ${toMajor(loan.balanceMinor)}.`);
       }
     }
@@ -70,7 +70,7 @@ export async function createTransfer(raw: unknown) {
       const { getAccountBalances } = await import('@/lib/actions/accounts');
       const balances = await getAccountBalances(user.id);
       const acc = balances.find((a: any) => a.id === fromAccount.id);
-      if (acc && acc.balanceMinor - data.amountMinor < 0) {
+      if (acc && Number(acc.balanceMinor) - data.amountMinor < 0) {
         throw new Error(`Not enough money in ${fromAccount.name}. Available: ${fromAccount.currency} ${toMajor(acc.balanceMinor)}.`);
       }
     }
@@ -208,7 +208,7 @@ export async function editTransfer(id: string, rawData: unknown) {
       const loans = await getLoansForUser(user.id);
       const loan = loans.find((l: any) => l.id === data.loanId);
       if (loan) {
-        const autoInterest = Math.round((loan.balanceMinor * loan.annualRate) / 1200);
+        const autoInterest = Math.round((Number(loan.balanceMinor) * loan.annualRate) / 1200);
         finalInterestMinor = data.interestMinor ?? autoInterest;
         if (finalInterestMinor < 0) finalInterestMinor = 0;
       }

@@ -1,13 +1,11 @@
 // src/lib/shared-computations.ts
 
 /**
- * Computes the outstanding balance of a loan based on its initial/opening balance
- * and the sum of all its repayment transfers.
- * 
- * Allows negative balance for overpayments, indicating credit.
+ * Returns the outstanding loan balance after repayments.
+ * Clamps at 0 — overpayments do not produce negative balances.
  */
 export function computeLoanBalance(loanBalanceMinor: number, repaidAmountMinor: number): number {
-  return loanBalanceMinor - repaidAmountMinor;
+  return Math.max(0, loanBalanceMinor - repaidAmountMinor);
 }
 
 /**
