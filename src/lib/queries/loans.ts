@@ -46,7 +46,13 @@ export async function getLoansForUser(userId: string) {
     const repaidAmount = transferMap.get(l.id) ?? 0;
     const currentBalanceMinor = computeLoanBalance(l.balanceMinor, repaidAmount);
     
-    return { ...l, balanceMinor: currentBalanceMinor, daysOverdue: auto };
+    return { 
+      ...l, 
+      originalAmountMinor: Number(l.originalAmountMinor),
+      monthlyPaymentMinor: Number(l.monthlyPaymentMinor),
+      balanceMinor: currentBalanceMinor, 
+      daysOverdue: auto 
+    };
   });
 }
 

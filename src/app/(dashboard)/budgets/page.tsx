@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 // src/app/budgets/page.tsx — Live Server Component
 
 import { getBudgetsWithSpend } from '@/lib/queries/budgets';
@@ -35,3 +36,4 @@ export default async function Budgets({
     </>
   );
 }
+

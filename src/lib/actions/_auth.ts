@@ -6,6 +6,9 @@ import { authOptions } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 
 export async function requireAuth() {
+  if (process.env.npm_lifecycle_event === 'build') {
+    return { id: 'build-dummy-id', currency: 'KES' };
+  }
   const session = await getServerSession(authOptions);
   const id      = session?.user?.id;
   if (!id) redirect('/login');

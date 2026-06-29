@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 // src/app/transactions/page.tsx — Live Server Component
 
 import { getTransactions, getCategories, getTransactionSummary } from '@/lib/queries/transactions';
@@ -95,3 +96,4 @@ export default async function Transactions({
     </>
   );
 }
+

@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 // src/app/goals/page.tsx — FULLY LIVE Server Component
 
 import { getGoals } from '@/lib/queries/goals';
@@ -21,3 +22,4 @@ export default async function Goals() {
     </>
   );
 }
+

@@ -15,7 +15,9 @@ type ParsedRow = {
 type UploadState = 'idle' | 'uploading' | 'reviewing' | 'importing' | 'done' | 'error';
 type Tab = 'file' | 'sms';
 
-export function SmartUpload({ onDone, initialAccounts = [] }: { onDone?: () => void, initialAccounts?: any[] }) {
+const EMPTY_ACCOUNTS: any[] = [];
+
+export function SmartUpload({ onDone, initialAccounts = EMPTY_ACCOUNTS }: { onDone?: () => void, initialAccounts?: any[] }) {
   const [state,     setState]    = useState<UploadState>('idle');
   const [tab,       setTab]      = useState<Tab>('file');
   const [progress,  setProgress] = useState(0);

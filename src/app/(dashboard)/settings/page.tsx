@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 // src/app/settings/page.tsx — Server Component
 // Loads both profile and saved preferences from DB before rendering the client.
 
@@ -70,3 +71,4 @@ export default async function Settings() {
     </>
   );
 }
+

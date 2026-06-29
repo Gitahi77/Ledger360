@@ -37,7 +37,7 @@ export async function getTransactions(inputPeriod: unknown = 'this-month', input
   const user = await requireAuth();
   const { from, to } = periodDates(period);
 
-  return prisma.transaction.findMany({
+  const txs = await prisma.transaction.findMany({
     where: {
       userId: user.id,
       date: { gte: from, lte: to },
@@ -46,6 +46,11 @@ export async function getTransactions(inputPeriod: unknown = 'this-month', input
     include: { category: true },
     orderBy: { date: 'desc' },
   });
+
+  return txs.map((t: any) => ({
+    ...t,
+    baseAmountMinor: Number(t.baseAmountMinor),
+  }));
 }
 
 /* -- Summary for period ------------------------------------- */
@@ -179,10 +184,13 @@ export async function getCategoryBreakdown(inputPeriod: unknown = 'this-month') 
   });
 
   const categoryIds = rows.map((r: any) => r.categoryId).filter((id): id is string => id !== null);
-  const categories: Category[] = await prisma.category.findMany({
-    where: { id: { in: categoryIds } },
-  });
-  const catMap = Object.fromEntries(categories.map((c: any) => [c.id, c]));
+  let catMap: Record<string, any> = {};
+  if (categoryIds.length > 0) {
+    const categories: Category[] = await prisma.category.findMany({
+      where: { id: { in: categoryIds } },
+    });
+    catMap = Object.fromEntries(categories.map((c: any) => [c.id, c]));
+  }
 
   const total = rows.reduce((s, r: any) => s + Number(r._sum.baseAmountMinor ?? 0), 0);
   return rows.map((r: any) => ({

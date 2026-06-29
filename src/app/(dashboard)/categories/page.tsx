@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { requireAuth } from '@/lib/actions/_auth';
 import { prisma } from '@/lib/prisma';
 import { CategoriesClient } from './CategoriesClient';
@@ -32,3 +33,4 @@ export default async function CategoriesPage() {
     </div>
   );
 }
+

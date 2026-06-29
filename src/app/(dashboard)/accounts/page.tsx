@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 // src/app/accounts/page.tsx
 export const metadata = { title: 'Accounts ?" Ledger360' };
 
@@ -18,3 +19,4 @@ export default async function AccountsPage() {
     <AccountsClient accounts={mappedAccounts} currency={user.currency} />
   );
 }
+

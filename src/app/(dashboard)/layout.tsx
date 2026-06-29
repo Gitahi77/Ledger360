@@ -1,4 +1,5 @@
 import { requireAuth } from '@/lib/actions/_auth';
+export const dynamic = 'force-dynamic';
 import { AppLayout } from '@/components/layout/AppLayout';
 
 export default async function DashboardLayout({

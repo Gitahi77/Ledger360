@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 // src/app/net-worth/page.tsx — Live Server Component
 
 import { getNetWorth, getNetWorthHistory } from '@/lib/queries/networth';
@@ -26,3 +27,4 @@ export default async function NetWorthPage() {
     </>
   );
 }
+

@@ -2,11 +2,13 @@
 import { Redis } from '@upstash/redis';
 
 // We share the same Upstash Redis instance as the rate limiter
-const redis = Redis.fromEnv();
+const hasRedis = !!process.env.UPSTASH_REDIS_REST_URL && !!process.env.UPSTASH_REDIS_REST_TOKEN;
+const redis = hasRedis ? Redis.fromEnv() : null;
 
 export type IdempotencyStatus = 'PROCESSING' | 'COMPLETED';
 
 export async function checkIdempotency(key: string): Promise<{ status: IdempotencyStatus, response?: any } | null> {
+  if (!redis) return null;
   try {
     const cached = await redis.get<any>(key);
     
@@ -30,6 +32,7 @@ export async function checkIdempotency(key: string): Promise<{ status: Idempoten
 }
 
 export async function lockIdempotencyKey(key: string): Promise<boolean> {
+  if (!redis) return true; // Fail open if no redis
   try {
     // nx: true ensures this only sets if the key does NOT exist
     const result = await redis.set(key, 'PROCESSING', { nx: true, ex: 86400 });
@@ -41,6 +44,7 @@ export async function lockIdempotencyKey(key: string): Promise<boolean> {
 }
 
 export async function saveIdempotencyResponse(key: string, response: any): Promise<void> {
+  if (!redis) return;
   try {
     // Overwrite the 'PROCESSING' lock with the actual response, keep 24h expiry
     await redis.set(key, response, { ex: 86400 });
@@ -50,6 +54,7 @@ export async function saveIdempotencyResponse(key: string, response: any): Promi
 }
 
 export async function releaseIdempotencyLock(key: string): Promise<void> {
+  if (!redis) return;
   try {
     await redis.del(key);
   } catch (error) {

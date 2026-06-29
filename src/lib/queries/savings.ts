@@ -71,7 +71,7 @@ export async function getSavingsPlan() {
 /* -- Get recent auto-saves for UI --------------------------- */
 export async function getRecentAutoSaves() {
   const user = await requireAuth();
-  return prisma.transfer.findMany({
+  const saves = await prisma.transfer.findMany({
     where: { userId: user.id, source: 'SAVE_MORE_TOMORROW' },
     include: {
       fromAccount: { select: { name: true, currency: true } },
@@ -80,6 +80,13 @@ export async function getRecentAutoSaves() {
     orderBy: { date: 'desc' },
     take: 20,
   });
+
+  return saves.map(s => ({
+    ...s,
+    baseAmountMinor: Number(s.baseAmountMinor),
+    amountMinor: Number(s.amountMinor),
+    interestMinor: Number(s.interestMinor),
+  }));
 }
 
 /* -- Delete plan -------------------------------------------- */

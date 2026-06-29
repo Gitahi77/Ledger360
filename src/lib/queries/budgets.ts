@@ -57,24 +57,28 @@ export async function getBudgetsWithSpend(inputPeriod: unknown = 'this-month') {
   const rolloverSpendMap = new Map<string, number>();
 
   if (rolloverBudgets.length > 0) {
-    await Promise.all(
-      rolloverBudgets.map(async (b: any) => {
-        const agg = await prisma.transaction.aggregate({
-          where: {
-            userId: user.id,
-            type: 'expense',
-            categoryId: b.categoryId,
-            date: { gte: b.createdAt, lte: to },
-            NOT: [
-              { name: { contains: 'VOIDED', mode: 'insensitive' } },
-              { name: { contains: 'pending', mode: 'insensitive' } }
-            ]
-          },
-          _sum: { baseAmountMinor: true }
-        });
-        rolloverSpendMap.set(b.id, Number(agg._sum.baseAmountMinor ?? 0));
-      })
-    );
+    const minDate = new Date(Math.min(...rolloverBudgets.map((b: any) => b.createdAt.getTime())));
+    const categoryIds = rolloverBudgets.map((b: any) => b.categoryId).filter(Boolean);
+
+    const txs = await prisma.transaction.findMany({
+      where: {
+        userId: user.id,
+        type: 'expense',
+        categoryId: { in: categoryIds },
+        date: { gte: minDate, lte: to },
+        NOT: [
+          { name: { contains: 'VOIDED', mode: 'insensitive' } },
+          { name: { contains: 'pending', mode: 'insensitive' } }
+        ]
+      },
+      select: { categoryId: true, date: true, baseAmountMinor: true }
+    });
+
+    for (const b of rolloverBudgets) {
+      const budgetTxs = txs.filter(tx => tx.categoryId === b.categoryId && tx.date >= b.createdAt);
+      const totalSpend = budgetTxs.reduce((sum, tx) => sum + Number(tx.baseAmountMinor), 0);
+      rolloverSpendMap.set(b.id, totalSpend);
+    }
   }
 
   return budgets.map((b: any) => {

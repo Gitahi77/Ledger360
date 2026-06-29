@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 // src/app/(dashboard)/page.tsx — Monarch-inspired premium dashboard layout
 export const metadata = {
   title: 'Dashboard — Ledger360',
@@ -46,7 +47,7 @@ export default async function Dashboard({
     : 'this-month';
 
   const user = await requireAuth();
-  const session = await getServerSession(authOptions);
+  const session = process.env.npm_lifecycle_event === 'build' ? null : await getServerSession(authOptions);
   const currency = user.currency;
   const firstName = (session?.user?.name ?? '').split(' ')[0] || 'there';
 
@@ -313,3 +314,4 @@ export default async function Dashboard({
     </div>
   );
 }
+

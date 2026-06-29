@@ -22,7 +22,7 @@ export async function getTransfers(period?: 'this-month' | 'last-30-days' | 'all
     dateFilter = { gte: d };
   }
 
-  return prisma.transfer.findMany({
+  const transfers = await prisma.transfer.findMany({
     where: { 
       userId: user.id,
       ...(Object.keys(dateFilter).length > 0 ? { date: dateFilter } : {})
@@ -33,6 +33,12 @@ export async function getTransfers(period?: 'this-month' | 'last-30-days' | 'all
     },
     orderBy: { date: 'desc' },
   });
+
+  return transfers.map(t => ({
+    ...t,
+    baseAmountMinor: Number(t.baseAmountMinor),
+    interestMinor: Number(t.interestMinor),
+  }));
 }
 
 /* -- Add (Zod-validated) ------------------------------------ */

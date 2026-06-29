@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 // src/app/reports/page.tsx — Live Server Component
 
 import { getMonthlyTrend, getReportSummary, getReportCategories } from '@/lib/queries/reports';
@@ -33,3 +34,4 @@ export default async function Reports({
     </>
   );
 }
+

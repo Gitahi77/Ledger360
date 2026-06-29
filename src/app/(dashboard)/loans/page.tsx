@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 // src/app/loans/page.tsx — Live Server Component
 
 import { getLoans } from '@/lib/queries/loans';
@@ -19,3 +20,4 @@ export default async function Loans() {
     </>
   );
 }
+
