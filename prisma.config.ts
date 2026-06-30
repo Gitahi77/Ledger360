@@ -13,6 +13,19 @@ export default defineConfig({
   },
   datasource: {
     // For Prisma CLI (db push, migrate): use DIRECT_DATABASE_URL (non-pooled)
-    url: process.env['DIRECT_DATABASE_URL'] ?? process.env['DATABASE_URL'] ?? '',
+    // We append connect_timeout=30 to allow Neon databases to wake up from scale-to-zero
+    url: (() => {
+      const dbUrl = process.env['DIRECT_DATABASE_URL'] ?? process.env['DATABASE_URL'] ?? '';
+      if (!dbUrl) return '';
+      try {
+        const urlObj = new URL(dbUrl);
+        if (!urlObj.searchParams.has('connect_timeout')) {
+          urlObj.searchParams.set('connect_timeout', '30');
+        }
+        return urlObj.toString();
+      } catch {
+        return dbUrl;
+      }
+    })(),
   },
 });
