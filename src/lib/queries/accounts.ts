@@ -25,15 +25,18 @@ function invalidateAccountPaths() {
   revalidatePath('/net-worth');
 }
 
-export async function getAccounts(): Promise<AccountWithBalance[]> {
+import { mapAccountToDTO, type AccountDTO } from '@/lib/mappers/accounts';
+
+export async function getAccounts(): Promise<AccountDTO[]> {
   const user = await requireAuth();
   const all = await getAccountBalances(user.id);
   return all.filter((a: any) => !a.archived);
 }
 
-export async function getAccountBalances(userId: string): Promise<AccountWithBalance[]> {
-  const accounts: Account[] = await prisma.account.findMany({ 
+export async function getAccountBalances(userId: string): Promise<AccountDTO[]> {
+  const accounts = await prisma.account.findMany({ 
     where: { userId },
+    include: { chamaDetails: true },
     orderBy: { createdAt: 'asc' } 
   });
 
@@ -83,7 +86,7 @@ export async function getAccountBalances(userId: string): Promise<AccountWithBal
 
     const balanceMinor = Number(acc.openingMinor) + inc - exp - txOut + txIn;
       
-    return { ...acc, openingMinor: Number(acc.openingMinor), balanceMinor };
+    return mapAccountToDTO({ ...acc, balanceMinor });
   });
 }
 

@@ -5,6 +5,7 @@ import { requireAuth } from '../actions/_auth';
 import { getAccountBalances } from './accounts';
 import { getLoansForUser } from './loans';
 import { getRates } from '@/lib/api/frankfurter';
+import { mapAssetToDTO } from '@/lib/mappers/assets';
 
 export async function getNetWorth() {
   const user = await requireAuth();
@@ -40,8 +41,8 @@ export async function getNetWorth() {
   const totalLiabilitiesMinor = loans.reduce((s: any, l: any) => s + Number(l.balanceMinor), 0) + totalCardDebtMinor;
 
   return {
-    assets: assets.map(a => ({ ...a, valueMinor: Number(a.valueMinor) })),
-    liabilities: loans.map(l => ({ ...l, balanceMinor: Number(l.balanceMinor) })),
+    assets: assets.map(mapAssetToDTO),
+    liabilities: loans, // getLoansForUser already returns LoanDTO[]
     totalAssetsMinor,
     totalLiabilitiesMinor,
     totalCashMinor,

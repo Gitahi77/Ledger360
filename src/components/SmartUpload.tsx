@@ -27,13 +27,13 @@ export function SmartUpload({ onDone, initialAccounts = EMPTY_ACCOUNTS }: { onDo
   const [errMsg,    setErrMsg]   = useState('');
   const [isDragging,setDragging] = useState(false);
   const [aiConsent, setAiConsent]= useState(false);
-  const [accounts,  setAccounts] = useState<any[]>(initialAccounts);
   const [accountId, setAccountId]= useState<string>(initialAccounts.length > 0 ? initialAccounts[0].id : '');
 
   useEffect(() => {
-    setAccounts(initialAccounts);
-    if (initialAccounts.length > 0 && !accountId) setAccountId(initialAccounts[0].id);
-  }, [initialAccounts]);
+    if (initialAccounts.length > 0 && !accountId) {
+      setAccountId(initialAccounts[0].id);
+    }
+  }, [initialAccounts, accountId]);
 
   /* -- Upload & parse --------------------------------------- */
   async function processFile(file: File) {
@@ -165,7 +165,7 @@ export function SmartUpload({ onDone, initialAccounts = EMPTY_ACCOUNTS }: { onDo
           style={{ width: '100%' }}
         >
           <option value="" disabled>Select an account...</option>
-          {accounts.map(acc => (
+          {initialAccounts.map(acc => (
             <option key={acc.id} value={acc.id}>{acc.name} ({acc.currency})</option>
           ))}
         </select>

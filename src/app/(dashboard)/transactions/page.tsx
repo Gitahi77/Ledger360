@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 export const dynamic = 'force-dynamic';
 // src/app/transactions/page.tsx — Live Server Component
 
@@ -43,9 +44,9 @@ export default async function Transactions({
   const mappedTransfers = transfers.map(t => ({
     id: t.id,
     name: 'Transfer',
-    baseAmountMinor: Number(t.amountMinor),
+    baseAmountMinor: t.amountMinor, // it's already a number
     type: 'transfer',
-    date: t.date,
+    date: t.date, // already an ISO string
     note: t.note,
     category: {
       id: 'transfer',
@@ -56,13 +57,10 @@ export default async function Transactions({
     toAccountId: t.toAccountId,
     goalId: t.goalId,
     loanId: t.loanId,
-    interestMinor: t.interestMinor ? Number(t.interestMinor) : undefined,
+    interestMinor: t.interestMinor,
   }));
 
-  const mappedTransactions = transactions.map(t => ({
-    ...t,
-    baseAmountMinor: Number(t.baseAmountMinor)
-  }));
+  const mappedTransactions = transactions;
 
   const allItems = [...mappedTransactions, ...mappedTransfers]
     .filter(t => typeFilter === 'all' ? true : t.type === typeFilter)
@@ -80,19 +78,21 @@ export default async function Transactions({
 
   return (
     <>
-      <TransactionsClient
-        transactions={allItems}
-        categories={categories}
-        accounts={accounts}
-        totalIncome={totalIncome}
-        totalExpense={totalExpense}
-        moneyOut={moneyOut}
-        period={period}
-        typeFilter={typeFilter}
-        currency={user.currency}
-        goals={goals}
-        loans={loans}
-      />
+      <Suspense fallback={<div className="p-8 text-center text-muted-foreground animate-pulse">Loading transactions...</div>}>
+        <TransactionsClient
+          transactions={allItems}
+          categories={categories}
+          accounts={accounts}
+          totalIncome={totalIncome}
+          totalExpense={totalExpense}
+          moneyOut={moneyOut}
+          period={period}
+          typeFilter={typeFilter}
+          currency={user.currency}
+          goals={goals}
+          loans={loans}
+        />
+      </Suspense>
     </>
   );
 }

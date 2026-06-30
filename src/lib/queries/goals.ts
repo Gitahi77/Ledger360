@@ -5,6 +5,8 @@ import { requireAuth } from '../actions/_auth';
 import type { Goal } from '@prisma/client';
 import { z } from 'zod';
 
+import { mapGoalToDTO, type GoalDTO } from '@/lib/mappers/goals';
+
 const DeleteSchema = z.object({ id: z.string().cuid() });
 const EditGoalSchema = z.object({
   name: z.string().optional(),
@@ -13,7 +15,7 @@ const EditGoalSchema = z.object({
   deadline: z.string().optional().nullable(),
 });
 
-export async function getGoals() {
+export async function getGoals(): Promise<GoalDTO[]> {
   const user = await requireAuth();
   const goals: Goal[] = await prisma.goal.findMany({
     where: { userId: user.id },
@@ -29,11 +31,10 @@ export async function getGoals() {
   const transferMap = new Map(transferAgg.map((t: any) => [t.goalId, t._sum.baseAmountMinor ?? 0]));
 
   return goals.map((g: any) => {
-    return { 
-      ...g, 
-      targetAmountMinor: Number(g.targetAmountMinor),
-      currentAmountMinor: transferMap.get(g.id) ?? 0 
-    };
+    return mapGoalToDTO({
+      ...g,
+      currentAmountMinor: transferMap.get(g.id) ?? 0
+    });
   });
 }
 

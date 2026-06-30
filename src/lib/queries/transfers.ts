@@ -4,11 +4,12 @@ import { revalidatePath } from 'next/cache';
 import { logActivity } from '@/lib/audit';
 import { getNairobiNow } from '@/lib/dateUtils';
 import { z } from 'zod';
+import { mapTransferToDTO, type TransferDTO } from '@/lib/mappers/transfers';
 
 const DeleteSchema = z.object({ id: z.string().cuid() });
 
 /* -- Fetch -------------------------------------------------- */
-export async function getTransfers(period?: 'this-month' | 'last-30-days' | 'all-time') {
+export async function getTransfers(period?: 'this-month' | 'last-30-days' | 'all-time'): Promise<TransferDTO[]> {
   const user = await requireAuth();
 
   // Basic date filtering
@@ -34,11 +35,7 @@ export async function getTransfers(period?: 'this-month' | 'last-30-days' | 'all
     orderBy: { date: 'desc' },
   });
 
-  return transfers.map(t => ({
-    ...t,
-    baseAmountMinor: Number(t.baseAmountMinor),
-    interestMinor: Number(t.interestMinor),
-  }));
+  return transfers.map(mapTransferToDTO);
 }
 
 /* -- Add (Zod-validated) ------------------------------------ */

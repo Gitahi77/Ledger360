@@ -6,6 +6,7 @@ import { requireAuth } from '../actions/_auth';
 import { getAccountBalances } from './accounts';
 import type { Category } from '@prisma/client';
 import { z } from 'zod';
+import { mapTransactionToDTO } from '@/lib/mappers/transactions';
 
 const PeriodSchema = z.enum(['this-week', 'this-month', 'this-year', 'all']);
 const TypeSchema = z.enum(['income', 'expense', 'transfer', 'savings', 'all']);
@@ -47,10 +48,7 @@ export async function getTransactions(inputPeriod: unknown = 'this-month', input
     orderBy: { date: 'desc' },
   });
 
-  return txs.map((t: any) => ({
-    ...t,
-    baseAmountMinor: Number(t.baseAmountMinor),
-  }));
+  return txs.map(mapTransactionToDTO);
 }
 
 /* -- Summary for period ------------------------------------- */

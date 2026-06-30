@@ -66,19 +66,28 @@ export async function getReportCategories(period: string, type: 'expense' | 'inc
  *  so currency/accountType changes propagate to all pages without
  *  requiring a re-login.
  */
-export async function updateProfile(raw: { name: string; currency: string; accountType: string }) {
+import { logger } from '@/lib/logger';
+import type { ActionResult } from '@/lib/types/action-result';
+
+export async function updateProfile(raw: { name: string; currency: string; accountType: string }): Promise<ActionResult> {
   'use server';
-  const { UpdateProfileSchema } = await import('@/lib/validation');
-  const data = UpdateProfileSchema.parse(raw);
-  const user = await requireAuth();
-  await prisma.user.update({ where: { id: user.id }, data });
-  // Revalidate all paths that display user-specific data
-  revalidatePath('/settings');
-  revalidatePath('/');
-  revalidatePath('/transactions');
-  revalidatePath('/budgets');
-  revalidatePath('/goals');
-  revalidatePath('/loans');
-  revalidatePath('/net-worth');
-  revalidatePath('/reports');
+  try {
+    const { UpdateProfileSchema } = await import('@/lib/validation');
+    const data = UpdateProfileSchema.parse(raw);
+    const user = await requireAuth();
+    await prisma.user.update({ where: { id: user.id }, data });
+    // Revalidate all paths that display user-specific data
+    revalidatePath('/settings');
+    revalidatePath('/');
+    revalidatePath('/transactions');
+    revalidatePath('/budgets');
+    revalidatePath('/goals');
+    revalidatePath('/loans');
+    revalidatePath('/net-worth');
+    revalidatePath('/reports');
+    return { success: true, data: undefined };
+  } catch (error) {
+    const errorId = logger.server(error, { action: 'updateProfile', raw });
+    return { success: false, error: 'Failed to update profile', errorId };
+  }
 }

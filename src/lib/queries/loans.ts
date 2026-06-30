@@ -6,6 +6,8 @@ import { computeLoanBalance } from '@/lib/shared-computations';
 import type { Loan } from '@prisma/client';
 import { z } from 'zod';
 
+import { mapLoanToDTO, type LoanDTO } from '@/lib/mappers/loans';
+
 const DeleteSchema = z.object({ id: z.string().cuid() });
 const EditLoanSchema = z.object({
   name: z.string().optional(),
@@ -19,7 +21,7 @@ const EditLoanSchema = z.object({
   nextDue: z.string().optional(),
 });
 
-export async function getLoansForUser(userId: string) {
+export async function getLoansForUser(userId: string): Promise<LoanDTO[]> {
   const today = new Date();
 
   const loans = await prisma.loan.findMany({
@@ -46,17 +48,15 @@ export async function getLoansForUser(userId: string) {
     const repaidAmount = transferMap.get(l.id) ?? 0;
     const currentBalanceMinor = computeLoanBalance(l.balanceMinor, repaidAmount);
     
-    return { 
+    return mapLoanToDTO({ 
       ...l, 
-      originalAmountMinor: Number(l.originalAmountMinor),
-      monthlyPaymentMinor: Number(l.monthlyPaymentMinor),
       balanceMinor: currentBalanceMinor, 
       daysOverdue: auto 
-    };
+    });
   });
 }
 
-export async function getLoans() {
+export async function getLoans(): Promise<LoanDTO[]> {
   const user = await requireAuth();
   return getLoansForUser(user.id);
 }

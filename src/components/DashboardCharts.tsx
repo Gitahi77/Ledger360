@@ -72,9 +72,25 @@ function PieLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) 
   );
 }
 
+export function EmptyChartState({ title }: { title: string }) {
+  return (
+    <div style={{ textAlign: 'center', padding: '2.5rem 1rem', color: 'var(--color-text-secondary)', background: 'var(--surface-card)', borderRadius: 12, border: '1px dashed var(--border)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+      <div style={{ fontSize: '2rem', marginBottom: '0.75rem', opacity: 0.5 }}>📊</div>
+      <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>No data to display</div>
+      <div style={{ fontSize: '0.75rem', marginTop: '0.25rem' }}>{title}</div>
+    </div>
+  );
+}
+
 /* -- Cash Flow Area Chart ----------------------------------- */
 export function CashFlowChart({ data, currency = 'KES' }: { data: ChartMonthPoint[], currency?: string }) {
   const router = useRouter();
+  
+  const hasData = data.some(d => d.income > 0 || d.expenses > 0);
+  if (!hasData) {
+    return <div style={{ height: 210 }}><EmptyChartState title="Record some income or expenses to see your cash flow trend." /></div>;
+  }
+
   const chartData = data.map(d => ({
     label:    d.month,
     Income:   d.income,
@@ -116,11 +132,10 @@ export function SpendingDonutChart({ data, currency = 'KES' }: { data: DonutPoin
   const total = data.reduce((s, d) => s + d.value, 0);
 
   // Fallback empty state
-  if (data.length === 0) {
+  if (data.length === 0 || total === 0) {
     return (
-      <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-secondary)' }}>
-        <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📊</div>
-        <div style={{ fontSize: '0.8rem' }}>No expense data yet</div>
+      <div style={{ height: 210 }}>
+        <EmptyChartState title="Record some expenses to see your spending breakdown." />
       </div>
     );
   }

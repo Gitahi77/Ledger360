@@ -8,7 +8,7 @@ export function SafeToSpendCard({
   data,
   currency,
 }: {
-  data: {
+  data?: {
     discretionaryMinor: number;
     remainingMinor: number;
     perDayMinor: number;
@@ -21,10 +21,40 @@ export function SafeToSpendCard({
       unbudgetedSpendThisPeriod: number;
       envelopeOverspendPenalty: number;
     };
-  };
+  } | null;
   currency: string;
 }) {
   const [expanded, setExpanded] = useState(false);
+
+  if (!data) {
+    return (
+      <div 
+        className="card animate-in mb-5" 
+        style={{ 
+          background: 'var(--surface-card)', 
+          color: 'var(--color-text-secondary)', 
+          border: '1px dashed var(--border)',
+          padding: '1.5rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '1rem'
+        }}
+      >
+        <ShieldCheck size={24} opacity={0.5} />
+        <div>
+          <div style={{ fontSize: '0.85rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Safe to Spend
+          </div>
+          <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
+            Unavailable
+          </div>
+          <div style={{ fontSize: '0.75rem', marginTop: '0.25rem' }}>
+            Not enough data to calculate your safe to spend limit.
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const { remainingMinor, perDayMinor, daysLeft, breakdown } = data;
   const isSafe = remainingMinor >= 0;
