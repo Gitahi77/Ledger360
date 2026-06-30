@@ -63,7 +63,7 @@ export default async function Dashboard({
     safeToSpend(user.id, period as Parameters<typeof safeToSpend>[1]),
   ]);
 
-  const overdueLoanCount = loans.filter(l => l.daysOverdue > 0).length;
+  const overdueLoanCount = loans.filter(l => (l.daysOverdue ?? 0) > 0).length;
   const now          = new Date();
   const monthsLeft   = Math.max(0, 11 - now.getMonth());
   const projected    = Math.max(0, Number(summary.savings) * monthsLeft + Number(netWorth.netWorthMinor));
@@ -270,7 +270,7 @@ export default async function Dashboard({
                 {loans.slice(0, 3).map(l => (
                   <div key={l.id} className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground truncate max-w-[60%]">{l.name}</span>
-                    <span className={`font-bold tabular-nums ${l.daysOverdue > 0 ? 'text-destructive' : 'text-foreground'}`}>
+                    <span className={`font-bold tabular-nums ${(l.daysOverdue ?? 0) > 0 ? 'text-destructive' : 'text-foreground'}`}>
                       {fmtAdaptive(l.balanceMinor, currency)}
                     </span>
                   </div>

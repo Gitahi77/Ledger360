@@ -14,8 +14,8 @@ import { TransactionRow } from '@/components/finance/TransactionRow';
 
 type Tx = {
   id: string; name: string; baseAmountMinor: number; type: string;
-  date: Date; note: string | null;
-  category: { id: string; name: string; icon: string | null };
+  date: string; note: string | null;
+  category?: { id: string; name: string; icon: string | null } | null;
   fromAccountId?: string | null;
   toAccountId?: string | null;
   goalId?: string | null;
@@ -55,7 +55,7 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
   const [name,       setName]       = useState(tx?.name ?? '');
   const [amount,     setAmount]     = useState(tx ? (toMajor(tx.baseAmountMinor)).toString() : '');
   const [type,       setType]       = useState<'income' | 'expense' | 'transfer'>(tx ? (tx.type as 'income' | 'expense' | 'transfer') : 'expense');
-  const [categoryId, setCategoryId] = useState(tx?.category.id ?? '');
+  const [categoryId, setCategoryId] = useState(tx?.category?.id ?? '');
   
   const initialAccountId = tx?.type === 'transfer' ? (tx.fromAccountId ?? accounts[0]?.id ?? '') : (('accountId' in (tx || {}) ? (tx as unknown as { accountId: string }).accountId : null) ?? accounts[0]?.id ?? '');
   const [accountId,  setAccountId]  = useState(initialAccountId);

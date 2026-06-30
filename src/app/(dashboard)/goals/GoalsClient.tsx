@@ -12,8 +12,8 @@ import { toMinor, toMajor } from '@/lib/money';
 
 type Goal = {
   id: string; name: string; category: string;
-  targetAmountMinor: number; currentAmountMinor: number;
-  deadline: Date | null;
+  targetAmountMinor: number; currentAmountMinor?: number;
+  deadline: string | null;
 };
 
 /* -- Status: fully token-based, no hardcoded hex ------------ */
@@ -156,10 +156,10 @@ export function GoalsClient({ goals, currency, categories = [] }: { goals: Goal[
   const [celebrating,  setCelebrate]    = useState<string | null>(null);
   const [deletingId,   setDeletingId]   = useState<string | null>(null);
 
-  const totalSaved  = goals.reduce((s, g) => s + g.currentAmountMinor, 0);
+  const totalSaved  = goals.reduce((s, g) => s + (g.currentAmountMinor ?? 0), 0);
   const totalTarget = goals.reduce((s, g) => s + g.targetAmountMinor,  0);
-  const achieved    = goals.filter(g => g.currentAmountMinor >= g.targetAmountMinor).length;
-  const almostThere = goals.filter(g => { const p = (g.currentAmountMinor/g.targetAmountMinor)*100; return p >= 70 && p < 100; }).length;
+  const achieved    = goals.filter(g => (g.currentAmountMinor ?? 0) >= g.targetAmountMinor).length;
+  const almostThere = goals.filter(g => { const p = ((g.currentAmountMinor ?? 0)/g.targetAmountMinor)*100; return p >= 70 && p < 100; }).length;
   const overallPct  = totalTarget > 0 ? Math.min(100, Math.round((totalSaved/totalTarget)*100)) : 0;
 
   async function handleDelete(id: string) {
@@ -239,10 +239,10 @@ export function GoalsClient({ goals, currency, categories = [] }: { goals: Goal[
           {goals.map((g, i) => {
             // Guard against division-by-zero when targetAmountMinor is 0
             const pct  = g.targetAmountMinor > 0
-              ? Math.min(100, Math.round((g.currentAmountMinor / g.targetAmountMinor) * 100))
+              ? Math.min(100, Math.round(((g.currentAmountMinor ?? 0) / g.targetAmountMinor) * 100))
               : 0;
             const st   = goalStyle(pct);
-            const left = Math.max(0, g.targetAmountMinor - g.currentAmountMinor);
+            const left = Math.max(0, g.targetAmountMinor - (g.currentAmountMinor ?? 0));
             const deadlineLabel = g.deadline
               ? new Date(g.deadline).toLocaleDateString('en-GB', { month:'short', year:'numeric' })
               : 'No deadline';
@@ -293,12 +293,12 @@ export function GoalsClient({ goals, currency, categories = [] }: { goals: Goal[
                   <div style={{ minWidth:0, flex:1, marginRight:'0.5rem' }}>
                     <div style={{
                       fontFamily:'Space Grotesk,sans-serif',
-                      fontSize: g.currentAmountMinor > 9_999_99900 ? '1.1rem' : g.currentAmountMinor > 999_99900 ? '1.25rem' : '1.5rem',
+                      fontSize: (g.currentAmountMinor ?? 0) > 9_999_99900 ? '1.1rem' : (g.currentAmountMinor ?? 0) > 999_99900 ? '1.25rem' : '1.5rem',
                       fontWeight:800, color:st.numColor,
                       letterSpacing:'-0.04em', lineHeight:1.1,
                       whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
                     }}>
-                      {fmtAdaptive(g.currentAmountMinor, currency)}
+                      {fmtAdaptive((g.currentAmountMinor ?? 0), currency)}
                     </div>
                     <div style={{ fontSize:'0.7rem', color:'var(--color-text-secondary)', marginTop:'0.2rem', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
                       of {fmtAdaptive(g.targetAmountMinor, currency)}

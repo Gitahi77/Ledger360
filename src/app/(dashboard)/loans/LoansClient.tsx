@@ -12,13 +12,14 @@ type Loan = {
   id: string; name: string; lender: string; type: string;
   originalAmountMinor: number; balanceMinor: number; annualRate: number;
   amortization: string;
-  monthlyPaymentMinor: number; nextDue: Date; daysOverdue: number;
+  monthlyPaymentMinor: number; nextDue: string; daysOverdue?: number;
 };
 
 // All colours via CSS token vars — adapts to light and dark automatically
 function loanStyle(l: Loan) {
+  const overdueDays = l.daysOverdue ?? 0;
   const paidPct = Math.min(100, Math.round(((l.originalAmountMinor - l.balanceMinor) / l.originalAmountMinor) * 100));
-  if (l.daysOverdue > 0) return {
+  if (overdueDays > 0) return {
     badge: 'badge-danger',  label: 'Overdue',
     color: 'var(--color-expense)',  barGrad: 'linear-gradient(90deg,var(--color-expense),hsl(0,78%,72%))',
     glow: 'rgba(220,38,38,0.5)', paidPct,
@@ -26,7 +27,7 @@ function loanStyle(l: Loan) {
   // Due Soon only fires for FUTURE dates within 7 days — not past dates
   const nextDueDate = new Date(l.nextDue);
   const now = new Date();
-  if (l.daysOverdue === 0 && nextDueDate >= now && nextDueDate < new Date(Date.now() + 7 * 86400000))
+  if (overdueDays === 0 && nextDueDate >= now && nextDueDate < new Date(Date.now() + 7 * 86400000))
     return {
       badge: 'badge-warning', label: 'Due Soon',
       color: 'var(--warning)', barGrad: 'linear-gradient(90deg,var(--warning),hsl(38,92%,68%))',
@@ -310,7 +311,7 @@ export function LoansClient({ loans, currency, categories = [], accounts = [] }:
   const totalDebtMinor     = loans.reduce((s, l) => s + l.balanceMinor, 0);
   const totalOriginalMinor = loans.reduce((s, l) => s + l.originalAmountMinor, 0);
   const totalMonthlyMinor  = loans.reduce((s, l) => s + l.monthlyPaymentMinor, 0);
-  const overdue       = loans.filter(l => l.daysOverdue > 0).length;
+  const overdue       = loans.filter(l => (l.daysOverdue ?? 0) > 0).length;
   const paidPct       = totalOriginalMinor > 0 ? Math.min(100, Math.round(((totalOriginalMinor - totalDebtMinor) / totalOriginalMinor) * 100)) : 0;
 
   async function handleDelete(id: string) {
@@ -413,8 +414,8 @@ export function LoansClient({ loans, currency, categories = [], accounts = [] }:
                 {/* Header */}
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
-                    <div style={{ width:36, height:36, borderRadius:8, background: l.daysOverdue > 0 ? 'var(--color-expense-light)' : 'var(--color-brand-light)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                      {l.daysOverdue > 0 ? <AlertTriangle size={16} color="var(--color-expense)" /> : <CreditCard size={16} color="var(--color-brand)" />}
+                    <div style={{ width:36, height:36, borderRadius:8, background: (l.daysOverdue ?? 0) > 0 ? 'var(--color-expense-light)' : 'var(--color-brand-light)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                      {(l.daysOverdue ?? 0) > 0 ? <AlertTriangle size={16} color="var(--color-expense)" /> : <CreditCard size={16} color="var(--color-brand)" />}
                     </div>
                     <div>
                       <div style={{ fontWeight:700, fontSize:'0.9rem', color:'var(--color-text-primary)' }}>{l.name}</div>
@@ -467,9 +468,9 @@ export function LoansClient({ loans, currency, categories = [], accounts = [] }:
                     </div>
                     <div>
                       <div style={{ fontSize:'0.65rem', color:'var(--color-text-secondary)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em' }}>Next Due</div>
-                      <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, fontSize:'0.85rem', color: l.daysOverdue > 0 ? 'var(--color-expense)' : 'var(--color-text-primary)' }}>
+                      <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, fontSize:'0.85rem', color: (l.daysOverdue ?? 0) > 0 ? 'var(--color-expense)' : 'var(--color-text-primary)' }}>
                         {new Date(l.nextDue).toLocaleDateString('en-GB', { day:'numeric', month:'short' })}
-                        {l.daysOverdue > 0 && <span style={{ fontSize:'0.7rem', marginLeft:4 }}>({l.daysOverdue}d late)</span>}
+                        {(l.daysOverdue ?? 0) > 0 && <span style={{ fontSize:'0.7rem', marginLeft:4 }}>({l.daysOverdue}d late)</span>}
                       </div>
                     </div>
                     <div>

@@ -28,8 +28,8 @@ export default function ResetPasswordClient() {
     
     try {
       const result = await resetPassword(token, password);
-      if (result.error) {
-        setError(result.error);
+      if (!result.success) {
+        setError(result.error || 'Failed to reset password');
         setLoading(false);
         return;
       }
