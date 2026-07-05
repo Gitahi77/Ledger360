@@ -9,9 +9,9 @@ vi.mock('@/lib/actions/_auth', () => ({
   requireAuth: vi.fn().mockResolvedValue({ id: 'user-1', currency: 'KES' }),
 }));
 
-vi.mock('@/lib/actions/accounts', () => ({
-  getAccountBalances: vi.fn(),
+vi.mock('@/lib/queries/accounts', () => ({
   getAccounts: vi.fn().mockResolvedValue([]),
+  getAccountBalances: vi.fn().mockResolvedValue([]),
 }));
 
 vi.mock('next/cache', () => ({
@@ -63,7 +63,7 @@ vi.mock('@/lib/prisma', () => ({
 
 /* -- Imports after mocks ------------------------------------ */
 import { triggerAutoSave, upsertSavingsPlan } from '../lib/actions/savings';
-import { getAccountBalances } from '../lib/actions/accounts';
+import { getAccountBalances } from '@/lib/queries/accounts';
 import { prisma } from '../lib/prisma';
 
 /* -- Helper: build a mock plan ------------------------------ */

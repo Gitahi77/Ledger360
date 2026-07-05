@@ -265,7 +265,7 @@ export async function triggerAutoSave(
     if (transfersToCreate.length === 0) return null;
 
     // 4. Balance check
-    const { getAccountBalances } = await import('@/lib/actions/accounts');
+    const { getAccountBalances } = await import('@/lib/queries/accounts');
     const balances = await getAccountBalances(userId);
     const sourceAcc = balances.find((a: any) => a.id === plan.fromAccountId);
     if (sourceAcc && sourceAcc.type !== 'CREDIT_CARD' && Number(sourceAcc.balanceMinor) < totalNeeded) {
