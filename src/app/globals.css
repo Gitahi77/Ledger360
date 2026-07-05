@@ -106,6 +106,54 @@
     --chart-4: hsl(258, 60%, 55%);
     --chart-5: hsl(172, 58%, 40%);
     --chart-6: hsl(0, 72%, 50%);
+
+    /* ── Bridge Tokens ─────────────────────────────────────────────────────────
+       Components migrated from the old CSS system still reference these names.
+       These aliases point to the Tailwind v4 semantic equivalents.
+       Do not remove until every component is migrated to Tailwind classes.     */
+
+    /* Financial semantics */
+    --color-expense:       hsl(var(--destructive));
+    --color-expense-light: hsl(var(--destructive) / 0.12);
+    --color-expense-grad:  linear-gradient(135deg, hsl(var(--destructive)), hsl(var(--destructive) / 0.7));
+    --color-income:        hsl(var(--success));
+    --color-income-light:  hsl(var(--success) / 0.12);
+    --color-income-text:   hsl(var(--success));
+    --color-pending:       hsl(var(--warning));
+    --color-pending-light: hsl(var(--warning) / 0.12);
+    --hero-income:         hsl(var(--success));
+    --hero-expense:        hsl(var(--destructive));
+    --hero-warning:        hsl(var(--warning));
+    --hero-text-muted:     rgba(255, 255, 255, 0.7);
+    --warning-light:       hsl(var(--warning) / 0.12);
+
+    /* Surface & interaction */
+    --bg-hover:            hsl(var(--secondary));
+    --bg-subtle:           hsl(var(--secondary));
+    --surface-card-hover:  hsl(var(--secondary));
+    --surface-sunken:      hsl(var(--secondary));
+
+    /* Border */
+    --border-light:        hsl(var(--border));
+    --border-color:        hsl(var(--border));
+
+    /* Shadows */
+    --shadow-sm:           0 1px 3px rgba(0, 0, 0, 0.06);
+    --shadow-md:           0 4px 12px rgba(0, 0, 0, 0.09);
+    --shadow-lg:           0 8px 24px rgba(0, 0, 0, 0.14);
+
+    /* Brand gradients */
+    --color-brand-grad:    linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-dark)));
+
+    /* Kenya-specific */
+    --color-mpesa:         #1E8449;
+
+    /* Colour aliases for older components */
+    --teal:                hsl(var(--brand));
+    --teal-light:          hsl(var(--brand-light));
+    --sky:                 hsl(var(--brand-light));
+    --sky-light:           hsl(var(--brand-light));
+    --background-rgb:      220, 33%, 97%;
   }
 
   /* Strict Dark Mode Override (Monarch / Midnight Tone) */
@@ -162,6 +210,15 @@
     --chart-4: hsl(258, 70%, 72%);
     --chart-5: hsl(172, 66%, 50%);
     --chart-6: hsl(0, 78%, 62%);
+
+    --surface-sunken:      hsl(var(--secondary));
+    --bg-subtle:           hsl(var(--secondary));
+    --bg-hover:            hsl(var(--secondary));
+    --shadow-sm:           0 1px 3px rgba(0, 0, 0, 0.25);
+    --shadow-md:           0 4px 12px rgba(0, 0, 0, 0.4);
+    --shadow-lg:           0 8px 24px rgba(0, 0, 0, 0.55);
+    --hero-text-muted:     rgba(255, 255, 255, 0.65);
+    --background-rgb:      222, 47%, 8%;
   }
 }
 

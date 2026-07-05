@@ -15,16 +15,16 @@ export interface NseStock {
 
 // Well-known NSE stocks with fallback prices (KES, approx 2025)
 export const NSE_STOCKS_FALLBACK: NseStock[] = [
-  { symbol: 'SCOM',  name: 'Safaricom PLC',      price: 14.00, change: 0, changePct: 0 },
-  { symbol: 'EQTY',  name: 'Equity Group',        price: 45.00, change: 0, changePct: 0 },
-  { symbol: 'KCB',   name: 'KCB Group PLC',       price: 38.00, change: 0, changePct: 0 },
-  { symbol: 'EABL',  name: 'East African Breweries', price: 140.00, change: 0, changePct: 0 },
-  { symbol: 'COOP',  name: 'Co-op Bank',          price: 14.50, change: 0, changePct: 0 },
-  { symbol: 'STBIC', name: 'Stanbic Holdings',    price: 110.00, change: 0, changePct: 0 },
-  { symbol: 'KPLC',  name: 'Kenya Power',         price: 1.80,  change: 0, changePct: 0 },
-  { symbol: 'BAMB',  name: 'Bamburi Cement',      price: 65.00, change: 0, changePct: 0 },
-  { symbol: 'CABL',  name: 'East African Cables', price: 2.50,  change: 0, changePct: 0 },
-  { symbol: 'NSE',   name: 'Nairobi Securities Exchange', price: 10.00, change: 0, changePct: 0 },
+  { symbol: 'SCOM',  name: 'Safaricom PLC',      price: 1400, change: 0, changePct: 0 },
+  { symbol: 'EQTY',  name: 'Equity Group',        price: 4500, change: 0, changePct: 0 },
+  { symbol: 'KCB',   name: 'KCB Group PLC',       price: 3800, change: 0, changePct: 0 },
+  { symbol: 'EABL',  name: 'East African Breweries', price: 14000, change: 0, changePct: 0 },
+  { symbol: 'COOP',  name: 'Co-op Bank',          price: 1450, change: 0, changePct: 0 },
+  { symbol: 'STBIC', name: 'Stanbic Holdings',    price: 11000, change: 0, changePct: 0 },
+  { symbol: 'KPLC',  name: 'Kenya Power',         price: 180,  change: 0, changePct: 0 },
+  { symbol: 'BAMB',  name: 'Bamburi Cement',      price: 6500, change: 0, changePct: 0 },
+  { symbol: 'CABL',  name: 'East African Cables', price: 250,  change: 0, changePct: 0 },
+  { symbol: 'NSE',   name: 'Nairobi Securities Exchange', price: 1000, change: 0, changePct: 0 },
 ];
 
 let _cache: { stocks: NseStock[]; updatedAt: number } | null = null;
@@ -45,8 +45,8 @@ export async function getNseStocks(): Promise<{ stocks: NseStock[]; isLive: bool
       return {
         symbol: symbol,
         name: q.shortName ?? fallback?.name ?? symbol,
-        price: Math.round((q.regularMarketPrice ?? fallback?.price ?? 0) * 100),
-        change: Math.round((q.regularMarketChange ?? 0) * 100),
+        price: q.regularMarketPrice ? Math.round(q.regularMarketPrice * 100) : (fallback?.price ?? 0),
+        change: q.regularMarketChange ? Math.round(q.regularMarketChange * 100) : 0,
         changePct: q.regularMarketChangePercent ?? 0,
         volume: q.regularMarketVolume ?? 0,
       };
@@ -60,11 +60,7 @@ export async function getNseStocks(): Promise<{ stocks: NseStock[]; isLive: bool
   } catch (err) {
     console.warn('[NSE] Using fallback prices:', err);
     return { 
-      stocks: NSE_STOCKS_FALLBACK.map(s => ({
-        ...s,
-        price: Math.round(s.price * 100),
-        change: Math.round(s.change * 100)
-      })), 
+      stocks: NSE_STOCKS_FALLBACK, 
       isLive: false 
     };
   }
