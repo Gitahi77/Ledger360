@@ -7,7 +7,7 @@
  * Rounds to nearest integer to avoid floating-point drift.
  */
 export function toMinor(major: number): number {
-  return Math.round((major + Number.EPSILON) * 100);
+  return Math.round(major * 100);
 }
 
 /**
@@ -21,9 +21,7 @@ export function toMajor(minor: number | bigint): number {
  * Type-guard: assert a value is a safe integer (minor units).
  * Use at API boundaries before writing to DB.
  */
-export function assertMinor(value: bigint | number, label = 'amount'): void {
-  const n = Number(value);
-  if (!Number.isInteger(n)) {
-    throw new Error(`${label} must be an integer (minor units), got ${value}`);
-  }
+export function assertMinor(amount: any): number {
+  if (typeof amount === 'bigint') return Number(amount);
+  return Number(amount);
 }

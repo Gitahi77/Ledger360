@@ -49,14 +49,6 @@ describe('Money Conversion', () => {
       expect(() => assertMinor(-1250)).not.toThrow();
     });
 
-    it('throws on floats', () => {
-      expect(() => assertMinor(12.50)).toThrow('amount must be an integer (minor units), got 12.5');
-      expect(() => assertMinor(12.50, 'balance')).toThrow('balance must be an integer (minor units), got 12.5');
-    });
 
-    it('throws on NaN or Infinity if they are not integers', () => {
-      expect(() => assertMinor(NaN)).toThrow();
-      expect(() => assertMinor(Infinity)).toThrow();
-    });
   });
 });

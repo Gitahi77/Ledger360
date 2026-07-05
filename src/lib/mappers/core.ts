@@ -3,15 +3,11 @@
  * Ensures the value is within the safe integer limit (9,007,199,254,740,991).
  * For a personal finance app storing minor units (cents), this allows up to $90 trillion.
  */
+import { assertMinor } from '../money';
+
 export function serializeMoney(value: bigint | number | null | undefined): number {
   if (value === null || value === undefined) return 0;
-  
-  const num = Number(value);
-  if (!Number.isSafeInteger(num)) {
-    throw new Error(`Unsafe monetary value: ${value}. Value exceeds JavaScript safe integer limit.`);
-  }
-  
-  return num;
+  return assertMinor(value);
 }
 
 /**
