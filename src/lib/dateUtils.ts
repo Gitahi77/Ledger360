@@ -47,6 +47,7 @@ export function periodDates(period: string): { from: Date; to: Date } {
   } else if (period === 'this-year') {
     from = new Date(`${yr}-01-01T00:00:00+03:00`);
   } else {
+    // 'all' and 'all-time' both mean: fetch everything from the beginning
     from = new Date('2000-01-01T00:00:00Z');
   }
   return { from, to };

@@ -11,7 +11,7 @@ const isDev = process.env.NODE_ENV !== "production";
 const nextConfig: NextConfig = {
   // ── Server packages that need Node.js fs/native modules ─────────────────
   // serverExternalPackages prevents Edge/Webpack from bundling Node.js-only packages.
-  serverExternalPackages: ["pdf-parse", "bcryptjs"],
+  serverExternalPackages: ["pdf-parse", "bcryptjs", "@node-rs/argon2"],
 
   // ── HTTP Security Headers ────────────────────────────────────────────────
   // Applied to every response. Covers OWASP Top-10 browser-side risks.

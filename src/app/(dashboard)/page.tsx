@@ -51,17 +51,31 @@ export default async function Dashboard({
   const currency = user.currency;
   const firstName = (session?.user?.name ?? '').split(' ')[0] || 'there';
 
-  const [summary, budgets, loans, netWorth, chartData, donutData, insights, prefs, safeToSpendData] = await Promise.all([
-    getTransactionSummary(period),
-    getBudgetsWithSpend(period),
-    getLoans(),
-    getNetWorth(),
-    getMonthlyChartData(),
-    getCategoryBreakdown(period),
-    import('@/lib/intelligence').then(m => m.generateInsights(user.id, user.currency)),
-    prisma.userPreferences.findUnique({ where: { userId: user.id } }),
-    safeToSpend(user.id, period as Parameters<typeof safeToSpend>[1]),
-  ]);
+  let summary, budgets, loans, netWorth, chartData, donutData, insights, prefs, safeToSpendData;
+  try {
+    [summary, budgets, loans, netWorth, chartData, donutData, insights, prefs, safeToSpendData] =
+      await Promise.all([
+        getTransactionSummary(period),
+        getBudgetsWithSpend(period),
+        getLoans(),
+        getNetWorth(),
+        getMonthlyChartData(),
+        getCategoryBreakdown(period),
+        import('@/lib/intelligence')
+          .then(m => m.generateInsights(user.id, user.currency))
+          .catch(() => []),   // AI insights are non-critical — fail silently
+        prisma.userPreferences.findUnique({ where: { userId: user.id } }),
+        safeToSpend(user.id, period === 'this-week' ? 'weekly' : period === 'this-year' ? 'yearly' : 'monthly'),
+      ]);
+  } catch (err) {
+    console.error('[Dashboard] Data fetch failed:', err);
+    // Redirect to an error page or show a minimal fallback
+    // For now, return a minimal dashboard rather than a 500
+    summary = { income: 0, expenses: 0, savings: 0, savingRate: 0, moneyOut: 0, todaySpend: 0 };
+    budgets = []; loans = []; chartData = []; donutData = []; insights = [];
+    netWorth = { netWorthMinor: 0, totalAssetsMinor: 0, totalLiabilitiesMinor: 0, totalCashMinor: 0 };
+    prefs = null; safeToSpendData = { discretionaryMinor: 0, remainingMinor: 0, perDayMinor: 0, daysLeft: 0, breakdown: {} as any };
+  }
 
   const overdueLoanCount = loans.filter(l => (l.daysOverdue ?? 0) > 0).length;
   const now          = new Date();

@@ -8,7 +8,7 @@ import type { Category } from '@prisma/client';
 import { z } from 'zod';
 import { mapTransactionToDTO } from '@/lib/mappers/transactions';
 
-const PeriodSchema = z.enum(['this-week', 'this-month', 'this-year', 'all']);
+const PeriodSchema = z.enum(['this-week', 'this-month', 'this-year', 'all', 'all-time']);
 const TypeSchema = z.enum(['income', 'expense', 'transfer', 'savings', 'all']);
 
 const DeleteSchema = z.object({

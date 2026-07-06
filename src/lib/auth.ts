@@ -6,7 +6,7 @@
 //   - JWT refresh on session update to pick up profile changes
 import NextAuth, { type NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { PrismaAdapter } from '@auth/prisma-adapter';
+
 import bcrypt from 'bcryptjs';
 import * as argon2 from '@node-rs/argon2';
 import { prisma } from './prisma';
@@ -22,7 +22,6 @@ if (!process.env.NEXTAUTH_SECRET) {
 }
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma) as any,
   session: {
     strategy: 'jwt',
     // 7-day lifetime — shorter than default 30 days, appropriate for finance

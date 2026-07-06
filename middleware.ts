@@ -17,7 +17,11 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  const token = await getToken({
+    req,
+    secret: process.env.NEXTAUTH_SECRET,
+    secureCookie: process.env.NEXTAUTH_URL?.startsWith('https') ?? !!process.env.VERCEL,
+  });
 
   if (!token) {
     const loginUrl = new URL('/login', req.url);
