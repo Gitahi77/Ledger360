@@ -1,10 +1,10 @@
-export const dynamic = 'force-dynamic';
+
 import type { Metadata } from 'next';
 import { Inter, Space_Grotesk } from 'next/font/google';
 import './globals.css';
 import { Providers } from '@/components/Providers';
-import NextTopLoader from 'nextjs-toploader';
-import Script from 'next/script';
+
+export const dynamic = 'force-dynamic';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' });
 const spaceGrotesk = Space_Grotesk({
@@ -30,10 +30,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning className={`${inter.variable} ${spaceGrotesk.variable} font-sans`}>
       <head>
-        {/* Theme flicker prevention */}
-        <Script id="theme-flicker-prevention" strategy="beforeInteractive">
-          {`(function(){try{var t=localStorage.getItem('theme');document.documentElement.setAttribute('data-theme',t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light')}catch(e){}})();`}
-        </Script>
+        <script
+          id="theme-flicker-prevention"
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('theme');document.documentElement.setAttribute('data-theme',t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light')}catch(e){}})();`,
+          }}
+        />
       </head>
       <body>
         <Providers>{children}</Providers>

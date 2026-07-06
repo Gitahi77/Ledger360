@@ -1,0 +1,1 @@
+export default function GlobalError({ reset }: { reset: () = }) { return ( <html lang=" "en^^>^<body^>^<h2^>Error^</h2^>^<button onClick={reset}^>Try again^</button^>^</body^>^</html^> ); } >> src\app\global-error.tsx
