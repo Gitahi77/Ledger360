@@ -5,7 +5,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { addAsset, editAsset, deleteAsset } from '@/lib/actions/networth';
 import { fmtAdaptive } from '@/lib/format';
-import { Plus, Trash2, Loader2, X, Home, Car, Briefcase, PiggyBank, Gem, BarChart3, Edit2 } from 'lucide-react';
+import { Plus, Trash2, Loader2, X, Home, Car, Gem, BarChart3, Edit2 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 import { toMinor, toMajor } from '@/lib/money';
@@ -13,7 +13,7 @@ import { toMinor, toMajor } from '@/lib/money';
 type Asset = { id: string; name: string; category: string; valueMinor: number; symbol?: string | null };
 type Loan  = { id: string; name: string; balanceMinor: number; type: string };
 
-function NwChartTip({ active, payload, label, currency }: any) {
+function NwChartTip({ active, payload, label, currency }: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
   if (!active || !payload?.length) return null;
   return (
     <div style={{ background:'var(--surface-card)', border:'1px solid var(--border)', borderRadius:8, padding:'0.625rem 0.875rem', boxShadow:'var(--shadow-md)' }}>
@@ -58,7 +58,7 @@ function AssetModal({ asset, onClose, currency }: { asset?: Asset; onClose: () =
       if (isEdit && asset) { await editAsset(asset.id, { name, category, valueMinor: toMinor(parsedValue), symbol: symbol || undefined }); }
       else { await addAsset({ name, category, valueMinor: toMinor(parsedValue), symbol: symbol || undefined }); }
       startT(() => router.refresh()); onClose();
-    } catch (err: any) { setError(err.message ?? 'Something went wrong.'); }
+    } catch (err: any) { setError(err.message ?? 'Something went wrong.'); } // eslint-disable-line @typescript-eslint/no-explicit-any
     finally { setLoading(false); }
   }
 
@@ -191,7 +191,7 @@ export function NetWorthClient({ assets, liabilities, totalAssetsMinor, totalLia
             {['1M', '3M', '1Y', 'ALL'].map(t => (
               <button 
                 key={t}
-                onClick={() => setTimeframe(t as any)}
+                onClick={() => setTimeframe(t as any)} // eslint-disable-line @typescript-eslint/no-explicit-any
                 style={{ 
                   background: timeframe === t ? 'var(--surface-card)' : 'transparent',
                   border: timeframe === t ? '1px solid var(--border)' : '1px solid transparent',

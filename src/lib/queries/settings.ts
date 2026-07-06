@@ -1,3 +1,4 @@
+
 // src/lib/actions/settings.ts
 // All Settings-related server actions.
 // These are separate from reports.ts to keep concerns clean.

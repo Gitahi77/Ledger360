@@ -51,7 +51,8 @@ export default async function Dashboard({
   const currency = user.currency;
   const firstName = (session?.user?.name ?? '').split(' ')[0] || 'there';
 
-  let summary, budgets, loans, netWorth, chartData, donutData, insights, prefs, safeToSpendData;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let summary: any, budgets: any[], loans: any[], netWorth: any, chartData: any[], donutData: any[], insights: any[], prefs: any, safeToSpendData: any;
   try {
     [summary, budgets, loans, netWorth, chartData, donutData, insights, prefs, safeToSpendData] =
       await Promise.all([

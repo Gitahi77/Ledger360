@@ -5,8 +5,8 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { addGoal, editGoal, deleteGoal } from '@/lib/actions/goals';
 import { DynamicCategoryIcon } from '@/lib/icons';
-import { fmtAdaptive, fmtFull, fmtPct } from '@/lib/format';
-import { Plus, CheckCircle2, TrendingUp, Trash2, Loader2, X, PiggyBank, Info } from 'lucide-react';
+import { fmtAdaptive } from '@/lib/format';
+import { Plus, CheckCircle2, Trash2, Loader2, X, PiggyBank, Info } from 'lucide-react';
 import { inflationAdjustedTarget, yearsUntil } from '@/lib/api/inflation';
 import { toMinor, toMajor } from '@/lib/money';
 
@@ -98,7 +98,7 @@ function GoalModal({ goal, onClose, currency }: { goal?: Goal; onClose: () => vo
       }
       startT(() => router.refresh());
       onClose();
-    } catch (err: any) {
+    } catch (err: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
       setError(err.message ?? 'Something went wrong.');
     } finally { setLoading(false); }
   }
@@ -148,7 +148,7 @@ function GoalModal({ goal, onClose, currency }: { goal?: Goal; onClose: () => vo
 }
 
 /* -- Main Client Component ---------------------------------- */
-export function GoalsClient({ goals, currency, categories = [] }: { goals: Goal[], currency: string, categories?: { id: string; name: string }[] }) {
+export function GoalsClient({ goals, currency }: { goals: Goal[], currency: string }) {
   const router     = useRouter();
   const [, startT] = useTransition();
   const [showAdd,      setShowAdd]      = useState(false);

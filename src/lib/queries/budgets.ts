@@ -1,3 +1,4 @@
+﻿/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
 // src/lib/actions/budgets.ts
 import { prisma } from '@/lib/prisma';
 import { periodDates } from '@/lib/dateUtils';

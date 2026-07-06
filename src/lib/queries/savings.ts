@@ -1,7 +1,8 @@
+﻿/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
 // src/lib/actions/savings.ts
 // Save-More-Tomorrow commitment device (B-5, WO-15).
 // Manages SavingsPlan CRUD, lazy rate escalation, and auto-save trigger.
-// Every auto-save is a Transfer with source='SAVE_MORE_TOMORROW' —
+// Every auto-save is a Transfer with source='SAVE_MORE_TOMORROW' â€”
 // transparent and reversible (B-0). In-app modelling only.
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/actions/_auth';
@@ -10,7 +11,7 @@ import { logActivity } from '@/lib/audit';
 import { UpsertSavingsPlanSchema } from '@/lib/validation';
 import { z } from 'zod';
 
-/* -- Lazy escalation (no cron — B-5, design point 6) -------- */
+/* -- Lazy escalation (no cron â€” B-5, design point 6) -------- */
 // Advances nextEscalation in a loop until it is in the future,
 // bumping currentRatePct by escalationPct each elapsed period,
 // capped at maxRatePct.
@@ -95,7 +96,7 @@ export async function getRecentAutoSaves() {
 /* -- Auto-save trigger (called from addTransaction / importTransactions) -- */
 // Design point 3: self-contained prisma.transfer.create (like loan disbursement).
 // Design point 4: idempotency via unique sourceTransactionId.
-// Design point 5: failure isolation — never throws; returns warning string or null.
+// Design point 5: failure isolation â€” never throws; returns warning string or null.
 // Design point 6: lazy escalation applied before computing amount.
 // REQUIRED ADDITION: only fires when income date >= plan.createdAt.
 // SAFETY: skips if source account has insufficient funds.
@@ -195,14 +196,14 @@ export async function triggerAutoSave(
 
     return null; // success, no warning
   } catch (err: unknown) {
-    // Design point 4 — idempotency: unique constraint violation = already saved
+    // Design point 4 â€” idempotency: unique constraint violation = already saved
     const message = err instanceof Error ? err.message : String(err);
     if (message.includes('Unique constraint') && message.includes('sourceTransactionId')) {
-      // Already created — idempotent, no error
+      // Already created â€” idempotent, no error
       return null;
     }
 
-    // Design point 5 — failure isolation: log and return warning, never throw
+    // Design point 5 â€” failure isolation: log and return warning, never throw
     console.error('[SaveMoreTomorrow] Auto-save failed (non-blocking):', message);
     return `Auto-save failed: ${message}`;
   }

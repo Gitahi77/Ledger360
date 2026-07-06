@@ -4,8 +4,8 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { addLoan, editLoan, deleteLoan } from '@/lib/actions/loans';
-import { fmtAdaptive, formatKES } from '@/lib/format';
-import { Plus, Trash2, Loader2, X, CreditCard, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
+import { formatKES } from '@/lib/format';
+import { Plus, Trash2, Loader2, X, CreditCard, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import { toMinor, toMajor } from '@/lib/money';
 
 type Loan = {
@@ -41,7 +41,7 @@ function loanStyle(l: Loan) {
 }
 
 /* -- Add Loan Modal ----------------------------------------- */
-function LoanModal({ loan, accounts, onClose, currency }: { loan?: Loan; accounts: {id: string, name: string}[]; onClose: () => void; currency: string }) {
+function LoanModal({ loan, accounts, onClose, currency }: { loan?: Loan; accounts: {id: string, name: string}[]; onClose: () => void; currency?: string; }) {
   const router     = useRouter();
   const [, startT] = useTransition();
   const [loading, setLoading] = useState(false);
@@ -105,7 +105,7 @@ function LoanModal({ loan, accounts, onClose, currency }: { loan?: Loan; account
       }
       startT(() => router.refresh());
       onClose();
-    } catch (err: any) {
+    } catch (err: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
       setError(err.message ?? 'Something went wrong.');
     } finally { setLoading(false); }
   }
@@ -300,7 +300,7 @@ function ExpandedForecast({ loan, monthsLeft, totalInterest, currency }: { loan:
 
 
 /* -- Main Client Component ---------------------------------- */
-export function LoansClient({ loans, currency, categories = [], accounts = [] }: { loans: Loan[], currency: string, categories?: { id: string; name: string }[], accounts?: {id: string, name: string}[] }) {
+export function LoansClient({ loans, currency, accounts = [] }: { loans: Loan[], currency: string, accounts?: {id: string, name: string}[] }) {
   const router     = useRouter();
   const [, startT] = useTransition();
   const [showAdd,     setShowAdd]     = useState(false);

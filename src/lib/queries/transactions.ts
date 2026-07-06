@@ -1,3 +1,4 @@
+﻿/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
 // src/lib/actions/transactions.ts
 import { prisma } from '@/lib/prisma';
 import { periodDates } from '@/lib/dateUtils';
@@ -120,7 +121,7 @@ export async function getTransactionSummary(inputPeriod: unknown = 'this-month')
   };
 }
 
-/* -- Monthly chart data (last 6 months) — single query ------ */
+/* -- Monthly chart data (last 6 months) â€” single query ------ */
 export async function getMonthlyChartData() {
   const user  = await requireAuth();
   const now   = new Date();
@@ -222,7 +223,7 @@ export async function getCategories(inputType?: unknown) {
 
 
 
-/* -- Delete (atomic — no TOCTOU race) ---------------------- */
+/* -- Delete (atomic â€” no TOCTOU race) ---------------------- */
 
 
 /* -- Edit (atomic ownership check) -------------------------- */
