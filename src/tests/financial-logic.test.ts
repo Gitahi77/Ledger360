@@ -343,7 +343,7 @@ describe('Financial Logic and Validations', () => {
     it('rejects loan overpayment but allows exact payoff via createTransfer', async () => {
       // Setup
       vi.mocked(getAccountBalances).mockResolvedValue([{ id: 'acc-1', type: 'CHECKING', balanceMinor: 5000, userId: 'user-1', name: 'Bank', currency: 'KES', openingMinor: 0n, archived: false, createdAt: new Date() }]);
-      vi.mocked(prisma.account.findFirst).mockResolvedValue({ id: 'acc-1', type: 'CHECKING', currency: 'KES', userId: 'user-1', name: 'Bank', openingMinor: 0, archived: false, createdAt: new Date() } as any);
+      vi.mocked(prisma.account.update).mockResolvedValue({ id: 'acc-1', type: 'CHECKING', currency: 'KES', userId: 'user-1', name: 'Bank', openingMinor: 0, archived: false, createdAt: new Date() } as any);
       vi.mocked(getLoansForUser).mockResolvedValue([
         { id: 'loan-1', balanceMinor: 1000n, userId: 'user-1', name: 'Personal Loan', lender: 'Bank', type: 'personal', amortization: 'REDUCING_BALANCE', originalAmountMinor: 1000n, annualRate: 10, monthlyPaymentMinor: 250n, nextDue: new Date(), createdAt: new Date(), daysOverdue: 0 }
       ]);
@@ -412,7 +412,7 @@ describe('Financial Logic and Validations', () => {
 
   describe('Loan Interest Split', () => {
     it('splits loan payment into interest and principal correctly and caps interest', async () => {
-      vi.mocked(prisma.account.findFirst).mockResolvedValue({ id: 'acc-1', type: 'CHECKING', currency: 'KES', userId: 'user-1', name: 'Bank' } as any);
+      vi.mocked(prisma.account.update).mockResolvedValue({ id: 'acc-1', type: 'CHECKING', currency: 'KES', userId: 'user-1', name: 'Bank' } as any);
       vi.mocked(getAccountBalances).mockResolvedValue({ success: true, data: [{ id: 'acc-1', balanceMinor: 5000, type: 'CHECKING', currency: 'KES', name: 'Bank', userId: 'user-1' } as any] });
       
       const mockLoan = { id: 'loan-1', balanceMinor: 120000, annualRate: 10, userId: 'user-1' };
