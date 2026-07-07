@@ -126,7 +126,7 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => onClose()}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={() => onClose()}>
       <div className="bg-card w-full max-w-lg rounded-2xl shadow-xl border border-border p-6 overflow-y-auto max-h-[90vh]" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-xl font-bold text-foreground">{isEdit ? 'Edit Transaction' : 'Add Transaction'}</h2>
@@ -262,7 +262,7 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
 
 export function TransactionsClient({
   transactions, categories, accounts, totalIncome, totalExpense, moneyOut,
-  period, typeFilter, currency, goals, loans
+  period, typeFilter, currency, goals = [], loans = []
 }: Props) {
   const router     = useRouter();
   const params     = useSearchParams();
@@ -281,11 +281,11 @@ export function TransactionsClient({
   const PAGE_SIZE = 25;
 
   // Derived state for filtering and pagination
-  const filteredTxs = transactions.filter(tx => {
+  const filteredTxs = (transactions || []).filter(tx => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     return (
-      tx.name.toLowerCase().includes(q) ||
+      tx.name?.toLowerCase().includes(q) ||
       tx.category?.name?.toLowerCase().includes(q) ||
       (tx.note && tx.note.toLowerCase().includes(q)) ||
       String(toMajor(tx.baseAmountMinor)).includes(q)
@@ -327,134 +327,171 @@ export function TransactionsClient({
   const periodLabel = PERIOD_LABELS[period] ?? 'This Period';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {showAdd && <TransactionModal categories={categories} accounts={accounts} goals={goals} loans={loans} currency={currency} onClose={(w) => { setShowAdd(false); if(w) setPageWarning(w); }} />}
       {editTx && <TransactionModal key={editTx.id} tx={editTx} categories={categories} accounts={accounts} goals={goals} loans={loans} currency={currency} onClose={(w) => { setEditTx(null); if(w) setPageWarning(w); }} />}
-      {showUpload && <div className="bg-card border border-border rounded-xl shadow-soft p-5 animate-in fade-in"><SmartUpload /></div>}
+      {showUpload && <div className="bg-card border border-border rounded-xl shadow-md p-5 animate-in fade-in slide-in-from-top-4 duration-300"><SmartUpload /></div>}
 
       {pageWarning && (
-        <div className="flex items-center justify-between p-4 bg-warning/10 border border-warning/20 text-warning rounded-xl">
-          <span className="text-sm font-medium">{pageWarning}</span>
-          <button onClick={() => setPageWarning('')} className="p-1 hover:bg-warning/20 rounded-md transition-colors"><X size={16}/></button>
+        <div className="flex items-center justify-between p-4 bg-warning/10 border border-warning/30 text-warning rounded-xl shadow-sm animate-in fade-in duration-300">
+          <div className="flex items-center gap-3">
+            <AlertTriangle size={18} />
+            <span className="text-sm font-medium">{pageWarning}</span>
+          </div>
+          <button onClick={() => setPageWarning('')} className="p-1.5 hover:bg-warning/20 rounded-md transition-colors"><X size={16}/></button>
         </div>
       )}
 
       {/* Toolbar */}
       <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
         <div className="flex items-center gap-3 flex-wrap flex-1">
-          <div className="flex p-1 bg-secondary rounded-lg">
+          <div className="flex p-1 bg-secondary/60 rounded-xl border border-border/50 shadow-sm backdrop-blur-sm">
             {(['all', 'income', 'expense', 'transfer'] as const).map(v => (
-              <button key={v} onClick={() => setParam('type', v)} className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${typeFilter === v ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
-                {v === 'all' ? 'All' : v === 'income' ? 'Income' : v === 'expense' ? 'Expenses' : 'Transfers'}
+              <button key={v} onClick={() => setParam('type', v)} className={`px-4 py-2 text-[0.8rem] font-semibold rounded-lg transition-all duration-300 ${typeFilter === v ? 'bg-card text-foreground shadow-sm border border-border/50' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}>
+                {v === 'all' ? 'All Types' : v === 'income' ? 'Income' : v === 'expense' ? 'Expenses' : 'Transfers'}
               </button>
             ))}
           </div>
-          <div className="flex p-1 bg-secondary rounded-lg">
+          <div className="flex p-1 bg-secondary/60 rounded-xl border border-border/50 shadow-sm backdrop-blur-sm">
             {(['this-week', 'this-month', 'this-year'] as const).map(v => (
-              <button key={v} onClick={() => setParam('period', v)} className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${period === v ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+              <button key={v} onClick={() => setParam('period', v)} className={`px-4 py-2 text-[0.8rem] font-semibold rounded-lg transition-all duration-300 ${period === v ? 'bg-card text-foreground shadow-sm border border-border/50' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}>
                 {v === 'this-week' ? 'Week' : v === 'this-month' ? 'Month' : 'Year'}
               </button>
             ))}
           </div>
-          <div className="relative flex-1 min-w-[200px]">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <div className="relative flex-1 min-w-[220px]">
+            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input 
-              className="w-full py-1.5 pl-8 pr-3 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
-              placeholder="Search..."
+              className="w-full py-2 pl-10 pr-4 bg-card/50 backdrop-blur-sm border border-border/60 rounded-xl text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all shadow-sm"
+              placeholder="Search transactions..."
               value={searchQuery}
               onChange={e => { setSearchQuery(e.target.value); resetPagination(); }}
             />
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button className="flex items-center px-4 py-2 text-sm font-semibold text-muted-foreground bg-background border border-border rounded-lg hover:bg-secondary transition-colors" onClick={() => setShowUpload(v => !v)}>
-            <FileDown size={14} className="mr-1.5"/> Import
+        <div className="flex items-center gap-3">
+          <button className="flex items-center px-4 py-2.5 text-[0.85rem] font-semibold text-foreground bg-card border border-border rounded-xl hover:bg-secondary transition-all shadow-sm" onClick={() => setShowUpload(v => !v)}>
+            <FileDown size={16} className="mr-2 text-muted-foreground"/> Import CSV
           </button>
-          <button className="flex items-center px-4 py-2 text-sm font-semibold text-white bg-brand rounded-lg hover:bg-brand-dark transition-colors shadow-sm" onClick={() => setShowAdd(true)}>
-            <Plus size={14} className="mr-1.5"/> Add Entry
+          <button className="flex items-center px-4 py-2.5 text-[0.85rem] font-semibold text-white rounded-xl transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5" 
+            style={{ background: 'linear-gradient(135deg, var(--color-brand), hsl(220, 80%, 65%))' }} 
+            onClick={() => setShowAdd(true)}>
+            <Plus size={16} className="mr-2"/> New Transaction
           </button>
         </div>
       </div>
 
-      {/* Summary Hero — Monarch Style */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="col-span-1 md:col-span-2 bg-card border border-border rounded-xl p-6 shadow-soft flex flex-col justify-center">
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Net Balance · {periodLabel}</p>
-          <p className={`text-4xl md:text-5xl font-display font-bold tabular-nums tracking-tight ${netPositive ? 'text-success' : 'text-destructive'}`}>
-              {netPositive ? '+' : '-'}{fmtAdaptive(Math.abs(net), currency)}
-          </p>
-          <p className="text-sm font-medium text-muted-foreground mt-2">{transactions.length} transaction{transactions.length !== 1 ? 's' : ''} in period</p>
+      {/* Summary Hero — Premium Style */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className="col-span-1 md:col-span-2 rounded-2xl p-7 shadow-md flex flex-col justify-center relative overflow-hidden" style={{ background: 'var(--surface-card)', border: '1px solid var(--border)' }}>
+          <div style={{ position: 'absolute', top: '-50%', left: '-10%', width: '150%', height: '200%', background: netPositive ? 'radial-gradient(circle at right, rgba(22,163,74,0.04), transparent 60%)' : 'radial-gradient(circle at right, rgba(220,38,38,0.04), transparent 60%)', pointerEvents: 'none' }} />
+          
+          <div className="relative z-10">
+            <p className="text-[0.7rem] font-bold text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full" style={{ background: netPositive ? 'var(--color-income)' : 'var(--color-expense)' }}></span>
+              Net Flow · {periodLabel}
+            </p>
+            <p className="font-display font-extrabold tabular-nums tracking-tight" style={{ 
+              fontSize: 'clamp(2.5rem, 5vw, 3.5rem)', 
+              lineHeight: 1.1,
+              background: netPositive ? 'linear-gradient(90deg, var(--color-income), hsl(152,65%,62%))' : 'linear-gradient(90deg, var(--color-expense), hsl(0,78%,72%))',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              textShadow: '0 4px 12px rgba(0,0,0,0.05)'
+            }}>
+                {netPositive ? '+' : '−'}{fmtAdaptive(Math.abs(net), currency)}
+            </p>
+            <div className="flex items-center gap-3 mt-4">
+              <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-secondary text-muted-foreground">
+                {(transactions || []).length} transactions
+              </span>
+            </div>
+          </div>
         </div>
 
         <div className="flex flex-col gap-4">
-          <div className="bg-success/5 border border-success/20 rounded-xl p-4 shadow-sm flex items-center justify-between">
-            <div>
-              <p className="text-xs font-bold text-success uppercase tracking-wider mb-1">{periodLabel} Income</p>
-              <p className="text-xl font-bold text-foreground tabular-nums">{fmtAdaptive(totalIncome, currency)}</p>
+          <div className="rounded-2xl p-5 shadow-sm flex items-center justify-between relative overflow-hidden transition-all duration-300 hover:shadow-md" style={{ background: 'var(--surface-card)', border: '1px solid var(--border)' }}>
+            <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--color-income)]" />
+            <div className="pl-2 relative z-10 w-full">
+              <p className="text-[0.7rem] font-bold text-muted-foreground uppercase tracking-widest mb-1.5 flex items-center justify-between">
+                <span>{periodLabel} Income</span>
+                <span className="text-[var(--color-income)] bg-[var(--color-income-light)] px-2 py-0.5 rounded-full">+</span>
+              </p>
+              <p className="text-2xl font-bold text-foreground tabular-nums tracking-tight">{fmtAdaptive(totalIncome, currency)}</p>
             </div>
           </div>
-          <div className="bg-destructive/5 border border-destructive/20 rounded-xl p-4 shadow-sm flex items-center justify-between">
-            <div>
-              <p className="text-xs font-bold text-destructive uppercase tracking-wider mb-1">{PERIOD_LABELS[period] || 'All Time'} Money Out</p>
-              <p className="text-xl font-bold text-foreground tabular-nums">{fmtAdaptive(moneyOut, currency)}</p>
+          <div className="rounded-2xl p-5 shadow-sm flex items-center justify-between relative overflow-hidden transition-all duration-300 hover:shadow-md" style={{ background: 'var(--surface-card)', border: '1px solid var(--border)' }}>
+            <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--color-expense)]" />
+            <div className="pl-2 relative z-10 w-full">
+              <p className="text-[0.7rem] font-bold text-muted-foreground uppercase tracking-widest mb-1.5 flex items-center justify-between">
+                <span>{PERIOD_LABELS[period] || 'All Time'} Outflow</span>
+                <span className="text-[var(--color-expense)] bg-[var(--color-expense-light)] px-2 py-0.5 rounded-full">−</span>
+              </p>
+              <p className="text-2xl font-bold text-foreground tabular-nums tracking-tight">{fmtAdaptive(moneyOut, currency)}</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Transaction list */}
-      <div className="bg-card border border-border rounded-xl shadow-soft overflow-hidden">
-        {transactions.length === 0 ? (
-          <div className="text-center py-16 text-muted-foreground">
-            <div className="text-4xl mb-3">📭</div>
-            <div className="text-sm font-medium">No transactions in this period</div>
+      <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden relative">
+        {(!transactions || transactions.length === 0) ? (
+          <div className="text-center py-24 text-muted-foreground">
+            <div className="text-5xl mb-4">📭</div>
+            <div className="text-[0.95rem] font-semibold text-foreground">No transactions found</div>
+            <div className="text-sm mt-1">There is no activity in this period.</div>
           </div>
         ) : filteredTxs.length === 0 ? (
-          <div className="text-center py-16 text-muted-foreground">
-            <div className="text-4xl mb-3">🔍</div>
-            <div className="text-sm font-medium">No matching transactions found</div>
+          <div className="text-center py-24 text-muted-foreground">
+            <div className="text-5xl mb-4">🔍</div>
+            <div className="text-[0.95rem] font-semibold text-foreground">No matching results</div>
+            <div className="text-sm mt-1">Try adjusting your search or filters.</div>
           </div>
         ) : (
           <>
-            <div className="divide-y divide-border/50">
-              {paginatedTxs.map(tx => (
-                <TransactionRow
-                  key={tx.id}
-                  title={tx.name}
-                  subtitle={tx.note ? `${tx.category?.name || 'Uncategorized'} • ${tx.note}` : (tx.category?.name || 'Uncategorized')}
-                  amountMinor={tx.baseAmountMinor}
-                  type={tx.type}
-                  icon={
-                    <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center shrink-0">
-                      <DynamicCategoryIcon category={tx.category?.name || 'Other'} size={20} className="text-muted-foreground" />
-                    </div>
-                  }
-                  state={tx.type === 'pending' ? 'pending' : undefined}
-                  onClick={() => setEditTx(tx)}
-                  onDelete={() => handleDelete(tx.id, tx.type)}
-                  onEdit={() => setEditTx(tx)}
-                  isDeleting={deletingId === tx.id}
-                />
+            <div className="divide-y divide-border/60">
+              {paginatedTxs.map((tx, index) => (
+                <div key={tx.id} className="animate-in fade-in slide-in-from-left-2 duration-300" style={{ animationDelay: `${index * 30}ms`, animationFillMode: 'both' }}>
+                  <TransactionRow
+                    title={tx.name}
+                    subtitle={tx.note ? `${tx.category?.name || 'Uncategorized'} • ${tx.note}` : (tx.category?.name || 'Uncategorized')}
+                    amountMinor={tx.baseAmountMinor}
+                    type={tx.type}
+                    icon={
+                      <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 shadow-sm" style={{ 
+                        background: tx.type === 'income' ? 'hsl(var(--success) / 0.15)' : tx.type === 'transfer' ? 'hsl(var(--secondary))' : 'hsl(var(--destructive) / 0.15)',
+                        color: tx.type === 'income' ? 'hsl(var(--success))' : tx.type === 'transfer' ? 'hsl(var(--muted-foreground))' : 'hsl(var(--destructive))'
+                      }}>
+                        <DynamicCategoryIcon category={tx.category?.name || 'Other'} size={22} className="opacity-90" />
+                      </div>
+                    }
+                    state={tx.type === 'pending' ? 'pending' : undefined}
+                    onClick={() => setEditTx(tx)}
+                    onDelete={() => handleDelete(tx.id, tx.type)}
+                    onEdit={() => setEditTx(tx)}
+                    isDeleting={deletingId === tx.id}
+                  />
+                </div>
               ))}
             </div>
             {totalPages > 1 && (
-              <div className="flex items-center justify-between p-4 border-t border-border bg-secondary/30">
-                <div className="text-xs font-medium text-muted-foreground">
-                  Showing {(currentPage - 1) * PAGE_SIZE + 1} to {Math.min(currentPage * PAGE_SIZE, filteredTxs.length)} of {filteredTxs.length}
+              <div className="flex items-center justify-between p-4 border-t border-border bg-secondary/20 backdrop-blur-sm">
+                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Showing {(currentPage - 1) * PAGE_SIZE + 1} - {Math.min(currentPage * PAGE_SIZE, filteredTxs.length)} of {filteredTxs.length}
                 </div>
                 <div className="flex items-center gap-2">
                   <button 
-                    className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed" 
+                    className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-card border border-transparent hover:border-border rounded-lg transition-all shadow-sm disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:border-transparent disabled:cursor-not-allowed" 
                     disabled={currentPage === 1}
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                   >
                     <ChevronLeft size={16} />
                   </button>
-                  <span className="text-xs font-semibold text-foreground">
-                    Page {currentPage} of {totalPages}
+                  <span className="text-xs font-bold text-foreground bg-card border border-border px-3 py-1.5 rounded-lg shadow-sm">
+                    {currentPage} / {totalPages}
                   </span>
                   <button 
-                    className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed" 
+                    className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-card border border-transparent hover:border-border rounded-lg transition-all shadow-sm disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:border-transparent disabled:cursor-not-allowed" 
                     disabled={currentPage === totalPages}
                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                   >
