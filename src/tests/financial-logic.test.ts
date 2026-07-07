@@ -51,7 +51,8 @@ vi.mock('@/lib/prisma', () => ({
     },
     loan: {
       findFirst: vi.fn(),
-      findMany: vi.fn()
+      findMany: vi.fn(),
+      update: vi.fn()
     },
     goal: {
       findMany: vi.fn().mockResolvedValue([])
