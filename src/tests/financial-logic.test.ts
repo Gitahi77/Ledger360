@@ -347,7 +347,7 @@ describe('Financial Logic and Validations', () => {
       vi.mocked(getLoansForUser).mockResolvedValue([
         { id: 'loan-1', balanceMinor: 1000n, userId: 'user-1', name: 'Personal Loan', lender: 'Bank', type: 'personal', amortization: 'REDUCING_BALANCE', originalAmountMinor: 1000n, annualRate: 10, monthlyPaymentMinor: 250n, nextDue: new Date(), createdAt: new Date(), daysOverdue: 0 }
       ]);
-      vi.mocked(prisma.loan.findFirst).mockResolvedValue({ id: 'loan-1', balanceMinor: 1000, userId: 'user-1', name: 'Personal Loan', lender: 'Bank', type: 'personal', amortization: 'REDUCING_BALANCE', annualRate: 10, monthlyPaymentMinor: 250, nextDue: new Date(), createdAt: new Date() } as any);
+      vi.mocked(prisma.loan.update).mockResolvedValue({ id: 'loan-1', balanceMinor: 1000, userId: 'user-1', name: 'Personal Loan', lender: 'Bank', type: 'personal', amortization: 'REDUCING_BALANCE', annualRate: 10, monthlyPaymentMinor: 250, nextDue: new Date(), createdAt: new Date() } as any);
 
       // Overpayment should return error
       const overpaymentRes = await createTransfer({
