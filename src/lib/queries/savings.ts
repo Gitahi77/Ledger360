@@ -1,4 +1,4 @@
-﻿/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
 // src/lib/actions/savings.ts
 // Save-More-Tomorrow commitment device (B-5, WO-15).
 // Manages SavingsPlan CRUD, lazy rate escalation, and auto-save trigger.
@@ -169,7 +169,9 @@ export async function triggerAutoSave(
 
     // 4. Balance check
     const { getAccountBalances } = await import('@/lib/actions/accounts');
-    const balances = await getAccountBalances(userId);
+    const balancesResult = await getAccountBalances(userId);
+    if (!balancesResult.success) throw new Error('Failed to fetch account balances for auto-save');
+    const balances = balancesResult.data;
     const sourceAcc = balances.find((a: any) => a.id === plan.fromAccountId);
     if (sourceAcc && sourceAcc.type !== 'CREDIT_CARD' && sourceAcc.balanceMinor < totalNeeded) {
       return `Auto-save skipped: not enough funds in ${sourceAcc.name ?? 'source account'} (available: ${sourceAcc.currency} ${(sourceAcc.balanceMinor / 100).toFixed(2)}, needed: ${(totalNeeded / 100).toFixed(2)}).`;

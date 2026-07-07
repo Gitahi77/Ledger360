@@ -1,0 +1,5 @@
+docs(ui): initialize Storybook component catalog
+
+- configure Next.js Storybook
+- add accessibility addon
+- document primitive components

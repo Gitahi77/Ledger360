@@ -1,5 +1,5 @@
 import type { Asset } from '@prisma/client';
-import { serializeMoney, serializeDate } from './core';
+import { toMoneyDTO, toDateDTO } from './core';
 
 export type AssetDTO = {
   id: string;
@@ -17,10 +17,10 @@ export function mapAssetToDTO(asset: Asset): AssetDTO {
     id: asset.id,
     name: asset.name,
     category: asset.category,
-    valueMinor: serializeMoney(asset.valueMinor),
+    valueMinor: toMoneyDTO(asset.valueMinor),
     symbol: asset.symbol,
     userId: asset.userId,
-    updatedAt: serializeDate(asset.updatedAt) as string,
-    createdAt: serializeDate(asset.createdAt) as string,
+    updatedAt: toDateDTO(asset.updatedAt) as string,
+    createdAt: toDateDTO(asset.createdAt) as string,
   };
 }

@@ -19,6 +19,12 @@ vi.mock('@/lib/actions/accounts', () => ({
   getAccountBalances: sharedGetAccountBalances
 }));
 
+vi.mock('@/lib/domain/services/BalanceService', () => ({
+  BalanceService: {
+    getEnrichedAccounts: sharedGetAccountBalances
+  }
+}));
+
 vi.mock('@/lib/queries/loans', () => ({
   getLoansForUser: vi.fn()
 }));
@@ -37,7 +43,8 @@ vi.mock('@/lib/prisma', () => ({
     $queryRaw: vi.fn(),
     account: {
       findFirst: vi.fn(),
-      findMany: vi.fn()
+      findMany: vi.fn(),
+      update: vi.fn()
     },
     asset: {
       findMany: vi.fn()
@@ -53,6 +60,7 @@ vi.mock('@/lib/prisma', () => ({
       findFirst: vi.fn()
     },
     transfer: {
+      findUnique: vi.fn(),
       create: vi.fn().mockResolvedValue({ id: 'transfer-mocked' }),
       findMany: vi.fn().mockResolvedValue([]),
       aggregate: vi.fn().mockResolvedValue({ _sum: { baseAmountMinor: 0 } })
@@ -379,7 +387,7 @@ describe('Financial Logic and Validations', () => {
     it('computes effective balance correctly when editing a transaction', async () => {
       // Current balance is 500, but that includes a 300 expense we are editing.
       // So effective balance before the new edit is 500 + 300 = 800.
-      vi.mocked(getAccountBalances).mockResolvedValue([{ id: 'acc-1', type: 'CHECKING', balanceMinor: 500, userId: 'user-1', name: 'Bank', currency: 'KES', openingMinor: 0n, archived: false, createdAt: new Date() }]);
+      vi.mocked(getAccountBalances).mockResolvedValue({ success: true, data: [{ id: 'acc-1', type: 'CHECKING', balanceMinor: 500, userId: 'user-1', name: 'Bank', currency: 'KES', openingMinor: 0n, archived: false, createdAt: new Date() }] });
       
       vi.mocked(prisma.transaction.findFirst).mockResolvedValue({
         id: 'clrq9xyz00000123456789abc', type: 'expense', baseAmountMinor: 300, accountId: 'acc-1', userId: 'user-1', name: 'Lunch', categoryId: 'cat-1', date: new Date(), note: null, createdAt: new Date()
@@ -405,7 +413,7 @@ describe('Financial Logic and Validations', () => {
   describe('Loan Interest Split', () => {
     it('splits loan payment into interest and principal correctly and caps interest', async () => {
       vi.mocked(prisma.account.findFirst).mockResolvedValue({ id: 'acc-1', type: 'CHECKING', currency: 'KES', userId: 'user-1', name: 'Bank' } as any);
-      vi.mocked(getAccountBalances).mockResolvedValue([{ id: 'acc-1', balanceMinor: 5000, type: 'CHECKING', currency: 'KES', name: 'Bank', userId: 'user-1' } as any]);
+      vi.mocked(getAccountBalances).mockResolvedValue({ success: true, data: [{ id: 'acc-1', balanceMinor: 5000, type: 'CHECKING', currency: 'KES', name: 'Bank', userId: 'user-1' } as any] });
       
       const mockLoan = { id: 'loan-1', balanceMinor: 120000, annualRate: 10, userId: 'user-1' };
       vi.mocked(getLoansForUser).mockResolvedValue([mockLoan as any]);

@@ -1,5 +1,5 @@
 import type { Transaction, Category } from '@prisma/client';
-import { serializeMoney, serializeDate } from './core';
+import { toMoneyDTO, toDateDTO } from './core';
 
 export type TransactionDTO = {
   id: string;
@@ -17,15 +17,28 @@ export type TransactionDTO = {
   reference: string | null;
   createdAt: string;
   category?: Category | null;
+  
+  // Normalization Metadata (Presentation/AI layers)
+  normalizedMerchantName?: string;
+  merchantConfidence?: number;
+  categoryConfidence?: number;
+  isVerified?: boolean;
 };
 
 export function mapTransactionToDTO(
-  transaction: Transaction & { category?: Category | null }
+  transaction: Transaction & { category?: Category | null },
+  metadataOrIndex?: {
+    normalizedMerchantName?: string;
+    merchantConfidence?: number;
+    categoryConfidence?: number;
+    isVerified?: boolean;
+  } | number
 ): TransactionDTO {
+  const metadata = typeof metadataOrIndex === 'number' ? undefined : metadataOrIndex;
   return {
     id: transaction.id,
-    date: serializeDate(transaction.date) as string,
-    baseAmountMinor: serializeMoney(transaction.baseAmountMinor),
+    date: toDateDTO(transaction.date) as string,
+    baseAmountMinor: toMoneyDTO(transaction.baseAmountMinor),
     currency: transaction.currency,
     type: transaction.type,
     name: transaction.name,
@@ -33,10 +46,15 @@ export function mapTransactionToDTO(
     categoryId: transaction.categoryId,
     accountId: transaction.accountId,
     userId: transaction.userId,
-    importedAt: serializeDate(transaction.importedAt),
+    importedAt: toDateDTO(transaction.importedAt),
     importHash: transaction.importHash,
     reference: transaction.reference,
-    createdAt: serializeDate(transaction.createdAt) as string,
+    createdAt: toDateDTO(transaction.createdAt) as string,
     category: transaction.category,
+    
+    normalizedMerchantName: metadata?.normalizedMerchantName,
+    merchantConfidence: metadata?.merchantConfidence,
+    categoryConfidence: metadata?.categoryConfidence,
+    isVerified: metadata?.isVerified,
   };
 }

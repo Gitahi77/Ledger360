@@ -5,7 +5,7 @@
  */
 import { assertMinor } from '../money';
 
-export function serializeMoney(value: bigint | number | null | undefined): number {
+export function toMoneyDTO(value: bigint | number | null | undefined): number {
   if (value === null || value === undefined) return 0;
   return assertMinor(value);
 }
@@ -15,7 +15,7 @@ export function serializeMoney(value: bigint | number | null | undefined): numbe
  * Next.js Server Components passing props to Client Components should avoid raw Dates where possible,
  * to prevent hydration mismatches and edge-case serialization bugs.
  */
-export function serializeDate(date: Date | string | null | undefined): string | null {
+export function toDateDTO(date: Date | string | null | undefined): string | null {
   if (!date) return null;
   if (typeof date === 'string') return date;
   return date.toISOString();

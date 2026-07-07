@@ -1,5 +1,5 @@
 import type { Loan } from '@prisma/client';
-import { serializeMoney, serializeDate } from './core';
+import { toMoneyDTO, toDateDTO } from './core';
 
 export type LoanDTO = {
   id: string;
@@ -25,14 +25,14 @@ export function mapLoanToDTO(
     name: loan.name,
     lender: loan.lender,
     type: loan.type,
-    originalAmountMinor: serializeMoney(loan.originalAmountMinor),
-    balanceMinor: serializeMoney(loan.balanceMinor),
+    originalAmountMinor: toMoneyDTO(loan.originalAmountMinor),
+    balanceMinor: toMoneyDTO(loan.balanceMinor),
     annualRate: Number(loan.annualRate),
     amortization: loan.amortization,
-    monthlyPaymentMinor: serializeMoney(loan.monthlyPaymentMinor),
-    nextDue: serializeDate(loan.nextDue) as string,
+    monthlyPaymentMinor: toMoneyDTO(loan.monthlyPaymentMinor),
+    nextDue: toDateDTO(loan.nextDue) as string,
     userId: loan.userId,
-    createdAt: serializeDate(loan.createdAt) as string,
+    createdAt: toDateDTO(loan.createdAt) as string,
     daysOverdue: loan.daysOverdue,
   };
 }

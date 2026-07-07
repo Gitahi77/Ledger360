@@ -1,5 +1,5 @@
 import type { Account, ChamaDetails } from '@prisma/client';
-import { serializeMoney, serializeDate } from './core';
+import { toMoneyDTO, toDateDTO } from './core';
 
 export type AccountDTO = {
   id: string;
@@ -11,11 +11,14 @@ export type AccountDTO = {
   archived: boolean;
   createdAt: string;
   chamaDetails?: ChamaDetails | null;
-  balanceMinor?: number; // Only present if enriched by getAccountBalances
+  balanceMinor: number;
+  displayBalance: string;
+  isOverdrawn: boolean;
+  availableBalanceMinor: number;
 };
 
 export function mapAccountToDTO(
-  account: Account & { chamaDetails?: ChamaDetails | null, balanceMinor?: bigint | number }
+  account: import('../domain/services/BalanceService').EnrichedAccountData
 ): AccountDTO {
   return {
     id: account.id,
@@ -23,10 +26,13 @@ export function mapAccountToDTO(
     name: account.name,
     type: account.type,
     currency: account.currency,
-    openingMinor: serializeMoney(account.openingMinor),
+    openingMinor: toMoneyDTO(account.openingMinor),
     archived: account.archived,
-    createdAt: serializeDate(account.createdAt) as string,
+    createdAt: toDateDTO(account.createdAt) as string,
     chamaDetails: account.chamaDetails,
-    balanceMinor: account.balanceMinor !== undefined ? serializeMoney(account.balanceMinor) : undefined,
+    balanceMinor: toMoneyDTO(account.balanceMinor),
+    displayBalance: account.displayBalance,
+    isOverdrawn: account.isOverdrawn,
+    availableBalanceMinor: toMoneyDTO(account.availableBalanceMinor),
   };
 }

@@ -27,83 +27,51 @@ function invalidateAccountPaths() {
   revalidatePath('/net-worth');
 }
 
-export async function getAccounts(): Promise<AccountWithBalance[]> {
-  const user = await requireAuth();
-  const all = await getAccountBalances(user.id);
-  return all.filter((a: any) => !a.archived);
+import { BalanceService } from '../domain/services/BalanceService';
+import { mapAccountToDTO, AccountDTO } from '../mappers/accounts';
+import { ActionResult } from '../types/action-result';
+
+export async function getAccounts(): Promise<ActionResult<AccountDTO[]>> {
+  try {
+    const user = await requireAuth();
+    const enrichedAccounts = await BalanceService.getEnrichedAccounts(user.id);
+    
+    const dtos = enrichedAccounts
+      .filter(a => !a.archived)
+      .map(mapAccountToDTO);
+
+    return { success: true, data: dtos };
+  } catch (error) {
+    console.error('[getAccounts] Error:', error);
+    return { success: false, code: 'UNKNOWN', message: 'Failed to retrieve accounts' };
+  }
 }
 
-export async function getAccountBalances(userId: string): Promise<AccountWithBalance[]> {
-  const accounts: Account[] = await prisma.account.findMany({ 
-    where: { userId },
-    orderBy: { createdAt: 'asc' } 
-  });
-
-  if (accounts.length === 0) return [];
-
-  const txWhere = {
-    userId,
-    NOT: [
-      { name: { contains: 'VOIDED', mode: 'insensitive' as const } },
-      { name: { contains: 'pending', mode: 'insensitive' as const } }
-    ]
-  };
-
-  const [incGroup, expGroup, txOutGroup, txInGroup] = await Promise.all([
-    prisma.transaction.groupBy({
-      by: ['accountId'],
-      where: { ...txWhere, type: 'income' },
-      _sum: { baseAmountMinor: true }
-    }),
-    prisma.transaction.groupBy({
-      by: ['accountId'],
-      where: { ...txWhere, type: 'expense' },
-      _sum: { baseAmountMinor: true }
-    }),
-    prisma.transfer.groupBy({
-      by: ['fromAccountId'],
-      where: { userId },
-      _sum: { amountMinor: true }
-    }),
-    prisma.transfer.groupBy({
-      by: ['toAccountId'],
-      where: { userId },
-      _sum: { baseAmountMinor: true }
-    })
-  ]);
-
-  const incMap = new Map(incGroup.map((g: any) => [g.accountId, Number(g._sum?.baseAmountMinor ?? 0)]));
-  const expMap = new Map(expGroup.map((g: any) => [g.accountId, Number(g._sum?.baseAmountMinor ?? 0)]));
-  const txOutMap = new Map(txOutGroup.map((g: any) => [g.fromAccountId, Number(g._sum?.amountMinor ?? 0)]));
-  const txInMap = new Map(txInGroup.map((g: any) => [g.toAccountId, Number(g._sum?.baseAmountMinor ?? 0)]));
-
-  return accounts.map((acc: any) => {
-    const inc = incMap.get(acc.id) ?? 0;
-    const exp = expMap.get(acc.id) ?? 0;
-    const txOut = txOutMap.get(acc.id) ?? 0;
-    const txIn = txInMap.get(acc.id) ?? 0;
-
-    const balanceMinor = Number(acc.openingMinor) + inc - exp - txOut + txIn;
-      
-    return { ...acc, openingMinor: Number(acc.openingMinor), balanceMinor };
-  });
+export async function getAccountBalances(userId: string): Promise<ActionResult<AccountDTO[]>> {
+  try {
+    const enrichedAccounts = await BalanceService.getEnrichedAccounts(userId);
+    const dtos = enrichedAccounts.map(mapAccountToDTO);
+    return { success: true, data: dtos };
+  } catch (error) {
+    console.error('[getAccountBalances] Error:', error);
+    return { success: false, code: 'UNKNOWN', message: 'Failed to compute balances' };
+  }
 }
 
-export async function createAccount(rawData: unknown) {
+export async function createAccount(rawData: unknown): Promise<ActionResult<AccountDTO>> {
   'use server';
   try {
     const user = await requireAuth();
     const parsed = AccountSchema.safeParse(rawData);
-    if (!parsed.success) return { error: 'Invalid input' };
+    if (!parsed.success) return { success: false, code: 'VALIDATION_ERROR', message: 'Invalid input' };
     const valid = parsed.data;
 
     const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const account = await tx.account.create({
-        data: {
-          ...valid,
-          currency: user.currency || 'KES',
-          userId: user.id,
-        },
+      const { createAccountRecord } = await import('../repositories/accounts');
+      const account = await createAccountRecord(tx, {
+        ...valid,
+        currency: user.currency || 'KES',
+        userId: user.id,
       });
 
       await tx.auditLog.create({
@@ -119,35 +87,43 @@ export async function createAccount(rawData: unknown) {
     });
 
     invalidateAccountPaths();
-    return { success: true, account: result };
+    
+    const { Money } = await import('../domain/money/Money');
+    const { MoneyFormatter } = await import('../domain/money/MoneyFormatter');
+    
+    // We mock the balance as 0 (or openingMinor) for a newly created account
+    const initialMoney = Money.fromMinor(result.openingMinor, result.currency);
+    const enrichedAccount = {
+      ...result,
+      openingMinor: Number(result.openingMinor),
+      balanceMinor: initialMoney.minorUnits,
+      displayBalance: MoneyFormatter.format(initialMoney),
+      isOverdrawn: initialMoney.isNegative(),
+      availableBalanceMinor: initialMoney.minorUnits
+    };
+    
+    return { success: true, data: mapAccountToDTO(enrichedAccount as any) };
   } catch (error) {
     console.error('[createAccount]', error);
-    return { error: 'An unexpected error occurred. Please try again.' };
+    return { success: false, code: 'UNKNOWN', message: 'An unexpected error occurred.' };
   }
 }
 
-export async function updateAccount(id: string, rawData: unknown) {
+export async function updateAccount(id: string, rawData: unknown): Promise<ActionResult<AccountDTO>> {
   'use server';
-  const user = await requireAuth();
   try {
+    const user = await requireAuth();
     const parsedId = DeleteSchema.safeParse({ id });
-    if (!parsedId.success) return { error: 'Invalid input' };
+    if (!parsedId.success) return { success: false, code: 'VALIDATION_ERROR', message: 'Invalid ID' };
     const validId = parsedId.data.id;
 
-    // We can use partial parsing since it's an update
     const parsedData = AccountSchema.partial().safeParse(rawData);
-    if (!parsedData.success) return { error: 'Invalid input' };
+    if (!parsedData.success) return { success: false, code: 'VALIDATION_ERROR', message: 'Invalid input' };
     const data = parsedData.data;
 
     const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const { count } = await tx.account.updateMany({
-        where: { id: validId, userId: user.id },
-        data,
-      });
-      
-      if (count === 0) throw new Error('Account not found or unauthorized');
-
-      const updated = await tx.account.findUnique({ where: { id: validId } });
+      const { updateAccountRecord } = await import('../repositories/accounts');
+      const updated = await updateAccountRecord(tx, validId, user.id, data);
 
       await tx.auditLog.create({
         data: {
@@ -162,19 +138,36 @@ export async function updateAccount(id: string, rawData: unknown) {
     });
 
     invalidateAccountPaths();
-    return { success: true, account: result };
-  } catch (error) {
+    
+    const { Money } = await import('../domain/money/Money');
+    const { MoneyFormatter } = await import('../domain/money/MoneyFormatter');
+
+    const initialMoney = Money.fromMinor(result.openingMinor, result.currency);
+    const enrichedAccount = {
+      ...result,
+      openingMinor: Number(result.openingMinor),
+      balanceMinor: initialMoney.minorUnits, // Should ideally re-aggregate
+      displayBalance: MoneyFormatter.format(initialMoney),
+      isOverdrawn: initialMoney.isNegative(),
+      availableBalanceMinor: initialMoney.minorUnits
+    };
+    
+    return { success: true, data: mapAccountToDTO(enrichedAccount as any) };
+  } catch (error: any) {
     console.error('[updateAccount]', error);
-    return { error: 'An unexpected error occurred. Please try again.' };
+    if (error.message === 'Account not found') {
+      return { success: false, code: 'NOT_FOUND', message: 'Account not found or unauthorized' };
+    }
+    return { success: false, code: 'UNKNOWN', message: 'An unexpected error occurred.' };
   }
 }
 
-export async function deleteAccount(id: string) {
+export async function deleteAccount(id: string): Promise<ActionResult<void>> {
   'use server';
-  const user = await requireAuth();
   try {
+    const user = await requireAuth();
     const parsedId = DeleteSchema.safeParse({ id });
-    if (!parsedId.success) return { error: 'Invalid input' };
+    if (!parsedId.success) return { success: false, code: 'VALIDATION_ERROR', message: 'Invalid ID' };
     const validId = parsedId.data.id;
 
     // Block deletion if transactions or transfers exist
@@ -183,16 +176,14 @@ export async function deleteAccount(id: string) {
       prisma.transfer.count({ where: { fromAccountId: validId, userId: user.id } }),
       prisma.transfer.count({ where: { toAccountId: validId, userId: user.id } })
     ]);
+    
     if (txCount > 0 || transferFromCount > 0 || transferToCount > 0) {
-      return { error: 'Cannot delete account with existing transactions or transfers. Please reassign them first.' };
+      return { success: false, code: 'CONFLICT', message: 'Cannot delete account with existing transactions or transfers. Please reassign them first.' };
     }
 
     await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const { count } = await tx.account.deleteMany({
-        where: { id: validId, userId: user.id }
-      });
-
-      if (count === 0) throw new Error('Account not found or unauthorized');
+      const { deleteAccountRecord } = await import('../repositories/accounts');
+      await deleteAccountRecord(tx, validId, user.id);
 
       await tx.auditLog.create({
         data: {
@@ -205,9 +196,9 @@ export async function deleteAccount(id: string) {
     });
 
     invalidateAccountPaths();
-    return { success: true };
+    return { success: true, data: undefined };
   } catch (error) {
     console.error('[deleteAccount]', error);
-    return { error: 'An unexpected error occurred. Please try again.' };
+    return { success: false, code: 'UNKNOWN', message: 'An unexpected error occurred.' };
   }
 }
