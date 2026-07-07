@@ -46,6 +46,12 @@
   --font-display: var(--font-space-grotesk), Space Grotesk, sans-serif;
   
   --shadow-soft: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+
+  /* Ledger360 Semantic Tokens */
+  --color-finance-positive: hsl(var(--finance-positive));
+  --color-finance-negative: hsl(var(--finance-negative));
+  --color-finance-neutral: hsl(var(--finance-neutral));
+  --color-surface-base: hsl(var(--surface-base));
 }
 
 @layer base {
@@ -91,6 +97,12 @@
     --warning-foreground: 28 85% 28%;
     
     --radius: 1rem;
+
+    /* Ledger360 Semantic Token Values (Light) */
+    --finance-positive: 161 69% 37%; /* Calm Forest Green */
+    --finance-negative: 215 16% 40%; /* Muted Slate, never Red for expected expenses */
+    --finance-neutral: 215 20% 84%;
+    --surface-base: 220 33% 97%;
 
     /* Legacy Map (Ensures existing charts & inline styles don't break during transition) */
     --surface-card: hsl(var(--card));
@@ -196,6 +208,12 @@
     --warning: 38 88% 56%;
     --warning-foreground: 38 90% 78%;
 
+    /* Ledger360 Semantic Token Values (Dark) */
+    --finance-positive: 161 69% 45%; 
+    --finance-negative: 215 16% 60%; 
+    --finance-neutral: 215 27% 22%;
+    --surface-base: 222 47% 8%;
+
     /* Legacy Map for Dark Mode */
     --surface-card: hsl(var(--card));
     --bg-app: hsl(var(--background));
@@ -231,6 +249,12 @@
   }
   a {
     @apply text-inherit no-underline;
+  }
+}
+
+@layer utilities {
+  .text-balance-hero {
+    @apply font-display text-4xl sm:text-5xl font-extrabold tracking-tight;
   }
 }
 

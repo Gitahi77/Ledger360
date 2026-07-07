@@ -1,0 +1,51 @@
+import * as React from "react";
+import { cn } from "@/lib/ui/cn";
+import { buttonVariants } from "./button.variants";
+import type { VariantProps } from "class-variance-authority";
+import { Loader2 } from "lucide-react";
+
+export interface ButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+    VariantProps<typeof buttonVariants> {
+  asChild?: boolean;
+  loading?: boolean;
+  iconLeft?: React.ReactNode;
+  iconRight?: React.ReactNode;
+}
+
+export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  (
+    {
+      className,
+      variant,
+      size,
+      fullWidth,
+      asChild = false,
+      loading = false,
+      disabled,
+      iconLeft,
+      iconRight,
+      children,
+      ...props
+    },
+    ref
+  ) => {
+    // Note: Radix Slot is normally used for asChild, but keeping it simple with raw HTML element if not installed
+    const Comp = asChild ? (props as any).as : "button";
+    
+    return (
+      <Comp
+        className={cn(buttonVariants({ variant, size, fullWidth, className }))}
+        ref={ref}
+        disabled={disabled || loading}
+        {...props}
+      >
+        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
+        {!loading && iconLeft && <span className="mr-2">{iconLeft}</span>}
+        {children}
+        {!loading && iconRight && <span className="ml-2">{iconRight}</span>}
+      </Comp>
+    );
+  }
+);
+Button.displayName = "Button";
