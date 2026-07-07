@@ -1,13 +1,13 @@
 import { TransferService } from '../lib/domain/transfers/TransferService';
 import { prisma } from '../lib/prisma';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
 import { getTransferByIdempotencyKey } from '../lib/repositories/transfers';
 import { randomBytes } from 'crypto';
 
 // Mocks
 vi.mock('../lib/prisma', () => ({
   prisma: {
-    $transaction: vi.fn(async (cb: any) => cb(prisma)),
+    $transaction: vi.fn(async (cb: (tx: typeof prisma) => Promise<unknown>) => cb(prisma)),
     account: { update: vi.fn(), findUnique: vi.fn() },
     transfer: { create: vi.fn(), findUnique: vi.fn(), aggregate: vi.fn() },
     transaction: { aggregate: vi.fn() },
@@ -37,7 +37,7 @@ describe('Transfer Integrity & Institutional Standards', () => {
         idempotencyKey: mockKey
       };
       
-      vi.mocked(getTransferByIdempotencyKey).mockResolvedValue(existingRecord as any);
+      vi.mocked(getTransferByIdempotencyKey).mockResolvedValue(existingRecord as unknown as ReturnType<typeof getTransferByIdempotencyKey> extends Promise<infer U> ? U : never);
 
       const req = {
         idempotencyKey: mockKey,
@@ -59,7 +59,7 @@ describe('Transfer Integrity & Institutional Standards', () => {
   describe('Failure Injection', () => {
     it('rolls back the entire transaction if the ledger creation fails', async () => {
       // Simulate transaction logic
-      (prisma.$transaction as jest.Mock).mockImplementation(async (callback) => {
+      (prisma.$transaction as Mock).mockImplementation(async (callback: (tx: typeof prisma) => Promise<unknown>) => {
         // We throw midway simulating a DB network error
         throw new Error('Database network failure during INSERT');
       });
