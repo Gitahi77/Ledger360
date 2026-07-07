@@ -1,0 +1,6 @@
+feat(ui): establish semantic design token system
+
+- introduce finance semantic colors
+- migrate global typography tokens
+- add spacing variables
+- prepare theme architecture

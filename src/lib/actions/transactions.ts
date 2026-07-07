@@ -41,7 +41,6 @@ const EditTransactionSchema = z.object({
 /* -- Categories list ---------------------------------------- */
 
 
-/* -- Add (Zod-validated) ------------------------------------ */
 export async function addTransaction(raw: unknown) {
   'use server';
   try {
@@ -51,86 +50,79 @@ export async function addTransaction(raw: unknown) {
     const data = parsed.data;
     const user = await requireAuth();
 
-    // RLS-equivalent: validate category belongs to this user
-    const cat = await prisma.category.findFirst({
-      where: { id: data.categoryId, userId: user.id },
-    });
-  if (!cat) throw new Error('Please choose a valid category.');
-
-  // Find a default account if not provided
-  let accountId = data.accountId;
-  if (accountId) {
-    const acc = await prisma.account.findFirst({ where: { id: accountId, userId: user.id } });
-    if (!acc) throw new Error('Target account not found or access denied.');
-  } else {
-    const firstAccount = await prisma.account.findFirst({ where: { userId: user.id }, orderBy: { createdAt: 'asc' }});
-    if (firstAccount) accountId = firstAccount.id;
-    else {
-      const fallback = await prisma.account.create({ data: { userId: user.id, name: 'Default Account', type: 'CHECKING', currency: 'KES' }});
-      accountId = fallback.id;
-    }
-  }
-
-  let warning: string | undefined;
-
-  // Overdraft prevention
-  if (data.type === 'expense' && accountId) {
-    const { toMajor } = await import('@/lib/money');
-    const balances = await getAccountBalances(user.id);
-    const acc = balances.find((a: any) => a.id === accountId);
-    if (acc && acc.type !== 'CREDIT_CARD' && acc.balanceMinor - data.baseAmountMinor < 0) {
-      warning = `Warning: Not enough money in ${acc.name}. Available: ${acc.currency} ${toMajor(acc.balanceMinor)}.`;
-    }
-  }
-
-  // Security Audit
-  const { logActivity } = await import('@/lib/audit');
-
-  const newTx = await prisma.$transaction(async (tx) => {
-    const createdTx = await tx.transaction.create({
-      data: { 
-        name: data.name,
-        baseAmountMinor: BigInt(data.baseAmountMinor),
-        type: data.type === 'income' ? 'income' : 'expense',
-        categoryId: data.categoryId,
-        accountId: accountId,
-        note: data.note,
-        date: new Date(data.date), 
-        userId: user.id 
-      },
-    });
-
-    await tx.auditLog.create({
-      data: {
-        userId: user.id,
-        action: 'CREATE',
-        resource: 'Transaction',
-        metadata: JSON.stringify({ txId: createdTx.id, amount: data.baseAmountMinor, name: data.name }),
+    let accountId = data.accountId;
+    if (!accountId) {
+      const firstAccount = await prisma.account.findFirst({ where: { userId: user.id }, orderBy: { createdAt: 'asc' }});
+      if (firstAccount) accountId = firstAccount.id;
+      else {
+        const fallback = await prisma.account.create({ data: { userId: user.id, name: 'Default Account', type: 'CHECKING', currency: 'KES' }});
+        accountId = fallback.id;
       }
-    });
+    }
 
-    return createdTx;
-  });
+    const { TransactionService } = await import('../domain/services/TransactionService');
+    const { Money } = await import('../domain/money/Money');
+    const { createTransactionRecord, getCategoryByNameOrId } = await import('../repositories/transactions');
+    
+    // Fallback to KES if no currency available on user
+    const currency = user.currency || 'KES';
+    const moneyAmount = Money.fromMinor(data.baseAmountMinor, currency);
 
-  // WO-15: Save-More-Tomorrow auto-save trigger (design point 3, 5)
-  // Only fires for income; best-effort — failure never blocks the income.
-  let autoSaveWarning: string | null = null;
-  if (data.type === 'income') {
-    const { triggerAutoSave } = await import('@/lib/actions/savings');
-    autoSaveWarning = await triggerAutoSave(
-      user.id,
-      [{ id: newTx.id, baseAmountMinor: data.baseAmountMinor, date: new Date(data.date) }],
-      user.currency || 'KES',
+    // Overdraft prevention
+    let warning: string | undefined;
+    if (data.type === 'expense' && accountId) {
+      const { BalanceService } = await import('../domain/services/BalanceService');
+      const balances = await BalanceService.getEnrichedAccounts(user.id);
+      const acc = balances.find((a: any) => a.id === accountId);
+      if (acc && acc.type !== 'CREDIT_CARD' && acc.balanceMinor - data.baseAmountMinor < 0) {
+        warning = `Warning: Not enough money in ${acc.name}. Available: ${acc.displayBalance}.`;
+      }
+    }
+
+    // 1. Process Domain Logic (Validation, Normalization, Classification)
+    const { persistencePayload } = TransactionService.processNewTransaction(
+      accountId,
+      moneyAmount,
+      data.type === 'income' ? 'income' : 'expense',
+      data.name,
+      new Date(data.date),
+      data.note,
+      data.categoryId // Used as explicit hint if provided
     );
-  }
+
+    // 2. Persist to Repository
+    const newTx = await prisma.$transaction(async (tx) => {
+      // Resolve category
+      let resolvedCategoryId = data.categoryId;
+      if (persistencePayload.categoryHint && !resolvedCategoryId) {
+        const cat = await getCategoryByNameOrId(user.id, persistencePayload.categoryHint, persistencePayload.type);
+        resolvedCategoryId = cat.id;
+      }
+
+      const createdTx = await createTransactionRecord(tx, {
+        ...persistencePayload,
+        categoryId: resolvedCategoryId,
+        userId: user.id
+      });
+
+      await tx.auditLog.create({
+        data: {
+          userId: user.id,
+          action: 'CREATE_LEDGER_ENTRY',
+          resource: 'Transaction',
+          metadata: JSON.stringify({ txId: createdTx.id, amount: data.baseAmountMinor, name: data.name }),
+        }
+      });
+
+      return createdTx;
+    });
 
     revalidatePath('/transactions');
     revalidatePath('/');
-    const warnings = [warning, autoSaveWarning].filter(Boolean).join(' ');
-    return { warning: warnings || undefined, success: true };
-  } catch (error) {
+    return { success: true, warning };
+  } catch (error: any) {
     console.error('[addTransaction]', error);
-    return { error: 'An unexpected error occurred. Please try again.' };
+    return { error: error.message || 'An unexpected error occurred. Please try again.' };
   }
 }
 export async function importTransactions(rows: any[], targetAccountId: string) {
@@ -331,10 +323,11 @@ export async function editTransaction(id: string, rawData: unknown) {
 
     if (newType === 'expense' && newAccountId) {
       const { toMajor } = await import('@/lib/money');
-      const balances = await getAccountBalances(user.id);
-      const acc = balances.find((a: any) => a.id === newAccountId);
-      
-      if (acc && acc.type !== 'CREDIT_CARD') {
+      const balancesResult = await getAccountBalances(user.id);
+      if (balancesResult.success) {
+        const acc = balancesResult.data.find((a: any) => a.id === newAccountId);
+        
+        if (acc && acc.type !== 'CREDIT_CARD') {
         let effectiveBalance = acc.balanceMinor;
         if (oldTx.type === 'expense' && oldTx.accountId === newAccountId) {
           effectiveBalance += Number(oldTx.baseAmountMinor); // restore old amount
@@ -345,6 +338,7 @@ export async function editTransaction(id: string, rawData: unknown) {
         if (effectiveBalance - Number(newAmount) < 0) {
           warning = `Warning: Not enough money in ${acc.name}. Available: ${acc.currency} ${toMajor(effectiveBalance)}.`;
         }
+      }
       }
     }
 

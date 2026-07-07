@@ -1,5 +1,5 @@
 import type { Transfer, Account, Goal, Loan } from '@prisma/client';
-import { serializeMoney, serializeDate } from './core';
+import { toMoneyDTO, toDateDTO } from './core';
 
 export type TransferDTO = {
   id: string;
@@ -22,6 +22,19 @@ export type TransferDTO = {
   toAccount?: { name: string; currency: string } | null;
 };
 
+export type TransferResultDTO = {
+  status: 'completed' | 'rejected' | 'pending';
+  transferId?: string;
+  amountMinor?: number;
+  feeMinor?: number;
+  interestMinor?: number;
+  referenceNumber?: string;
+  updatedSourceBalanceMinor?: number;
+  updatedDestinationBalanceMinor?: number;
+  remainingLoanBalanceMinor?: number;
+};
+
+
 export function mapTransferToDTO(
   transfer: Transfer & { 
     fromAccount?: Pick<Account, 'name' | 'currency'> | null,
@@ -33,18 +46,18 @@ export function mapTransferToDTO(
     userId: transfer.userId,
     fromAccountId: transfer.fromAccountId,
     toAccountId: transfer.toAccountId,
-    amountMinor: serializeMoney(transfer.amountMinor),
+    amountMinor: toMoneyDTO(transfer.amountMinor),
     currency: transfer.currency,
-    baseAmountMinor: serializeMoney(transfer.baseAmountMinor),
+    baseAmountMinor: toMoneyDTO(transfer.baseAmountMinor),
     fxRate: Number(transfer.fxRate),
-    date: serializeDate(transfer.date) as string,
+    date: toDateDTO(transfer.date) as string,
     note: transfer.note,
     source: transfer.source,
     goalId: transfer.goalId,
     sourceTransactionId: transfer.sourceTransactionId,
     loanId: transfer.loanId,
-    interestMinor: serializeMoney(transfer.interestMinor),
-    createdAt: serializeDate(transfer.createdAt) as string,
+    interestMinor: toMoneyDTO(transfer.interestMinor),
+    createdAt: toDateDTO(transfer.createdAt) as string,
     fromAccount: transfer.fromAccount,
     toAccount: transfer.toAccount,
   };

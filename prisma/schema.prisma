@@ -119,7 +119,7 @@ model Account {
   savingsPlanTo   SavingsPlan[] @relation("SavingsPlanTo")
   chamaDetails ChamaDetails?
   createdAt    DateTime      @default(now())
-
+  updatedAt    DateTime      @updatedAt @default(now())
   @@index([userId])
 }
 
@@ -232,6 +232,7 @@ model Loan {
 
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt @default(now())
   transfers Transfer[]
 
   @@index([userId])
@@ -284,8 +285,8 @@ model Transfer {
   sourceTransaction   Transaction? @relation("AutoSaveRelation", fields: [sourceTransactionId], references: [id], onDelete: Cascade)
   loanId          String?
   interestMinor   BigInt      @default(0)
+  idempotencyKey  String?     @unique
   createdAt       DateTime @default(now())
-
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   fromAccount Account? @relation("TransferFrom", fields: [fromAccountId], references: [id], onDelete: Restrict)
   toAccount   Account? @relation("TransferTo", fields: [toAccountId], references: [id], onDelete: Restrict)

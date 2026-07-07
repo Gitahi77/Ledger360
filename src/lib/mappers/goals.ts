@@ -1,5 +1,5 @@
 import type { Goal } from '@prisma/client';
-import { serializeMoney, serializeDate } from './core';
+import { toMoneyDTO, toDateDTO } from './core';
 
 export type GoalDTO = {
   id: string;
@@ -19,10 +19,10 @@ export function mapGoalToDTO(
     id: goal.id,
     name: goal.name,
     category: goal.category,
-    targetAmountMinor: serializeMoney(goal.targetAmountMinor),
-    deadline: serializeDate(goal.deadline),
+    targetAmountMinor: toMoneyDTO(goal.targetAmountMinor),
+    deadline: toDateDTO(goal.deadline),
     userId: goal.userId,
-    createdAt: serializeDate(goal.createdAt) as string,
-    currentAmountMinor: goal.currentAmountMinor !== undefined ? serializeMoney(goal.currentAmountMinor) : undefined,
+    createdAt: toDateDTO(goal.createdAt) as string,
+    currentAmountMinor: goal.currentAmountMinor !== undefined ? toMoneyDTO(goal.currentAmountMinor) : undefined,
   };
 }

@@ -49,3 +49,6 @@ mingit/
 tsc_output.txt
 tsc_errors.txt
 *.log
+
+*storybook.log
+storybook-static
