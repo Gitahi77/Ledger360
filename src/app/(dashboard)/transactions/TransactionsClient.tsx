@@ -10,6 +10,16 @@ import { createTransfer, editTransfer, deleteTransfer } from '@/lib/actions/tran
 import { fmtAdaptive } from '@/lib/format';
 import { Plus, FileDown, X, Loader2, Search, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
 import { toMinor, toMajor } from '@/lib/money';
+import { Grid } from '@/components/layout/grid';
+import { Stack } from '@/components/layout/stack';
+import { Surface } from '@/components/ui/surface';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { FinancialMetric } from '@/components/finance/metrics/FinancialMetric';
+import { CurrencyDisplay } from '@/components/finance/display/currency-display';
 import { TransactionRow } from '@/components/finance/TransactionRow';
 
 type Tx = {
@@ -154,13 +164,13 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
           <div className="flex flex-col sm:flex-row gap-4">
             {type !== 'transfer' && (
               <div className="flex-1">
-                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Description</label>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Description</Label>
                 <input className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
                   value={name} onChange={e => setName(e.target.value)} required placeholder="e.g. Naivas Grocery" />
               </div>
             )}
             <div className={type === 'transfer' ? 'w-full' : 'w-full sm:w-1/3'}>
-              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Amount ({currency})</label>
+              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Amount ({currency})</Label>
               <input className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all font-mono"
                 type="number" inputMode="decimal" min="1" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} required placeholder="0.00" />
             </div>
@@ -170,7 +180,7 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
             {type !== 'transfer' ? (
               <>
                 <div className="flex-1">
-                  <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Category</label>
+                  <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Category</Label>
                   <select className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
                     value={categoryId} onChange={e => setCategoryId(e.target.value)} required>
                     <option value="">Select…</option>
@@ -181,7 +191,7 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
                   </select>
                 </div>
                 <div className="flex-1">
-                  <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Account</label>
+                  <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Account</Label>
                   <select className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
                     value={accountId} onChange={e => setAccountId(e.target.value)} required>
                     <option value="">Select Account…</option>
@@ -192,7 +202,7 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
             ) : (
               <>
                 <div className="flex-1">
-                  <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">From Account</label>
+                  <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">From Account</Label>
                   <select className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
                     value={accountId} onChange={e => setAccountId(e.target.value)} required>
                     <option value="">Select From Account...</option>
@@ -201,7 +211,7 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
                 </div>
                 {!loanId && (
                   <div className="flex-1">
-                    <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">To Account</label>
+                    <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">To Account</Label>
                     <select className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
                       value={toAccountId} onChange={e => setToAccountId(e.target.value)} required>
                       <option value="">Select To Account...</option>
@@ -211,7 +221,7 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
                 )}
                 {goals.length > 0 && !loanId && (
                   <div className="flex-1">
-                    <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Goal to Fund (Optional)</label>
+                    <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Goal to Fund (Optional)</Label>
                     <select className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
                       value={goalId} onChange={e => setGoalId(e.target.value)}>
                       <option value="">None</option>
@@ -221,7 +231,7 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
                 )}
                 {loans.length > 0 && !goalId && (
                   <div className="flex-1">
-                    <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Loan to Repay (Optional)</label>
+                    <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Loan to Repay (Optional)</Label>
                     <select className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
                       value={loanId} onChange={e => setLoanId(e.target.value)}>
                       <option value="">None</option>
@@ -235,19 +245,19 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
           
           {type === 'transfer' && loanId && (
             <div>
-              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Interest Portion ({currency})</label>
+              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Interest Portion ({currency})</Label>
               <input className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all font-mono"
                 type="number" inputMode="decimal" min="0" step="0.01" value={interestAmount} onChange={e => setInterestAmount(e.target.value)} required placeholder="0.00" />
             </div>
           )}
           
           <div>
-            <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Date</label>
+            <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Date</Label>
             <input className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
               type="date" value={date} onChange={e => setDate(e.target.value)} required />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Note <span className="font-normal opacity-70">(optional)</span></label>
+            <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Note <span className="font-normal opacity-70">(optional)</span></Label>
             <input className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
               value={note} onChange={e => setNote(e.target.value)} placeholder="e.g. May salary" />
           </div>
@@ -343,95 +353,69 @@ export function TransactionsClient({
       )}
 
       {/* Toolbar */}
-      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
-        <div className="flex items-center gap-3 flex-wrap flex-1">
-          <div className="flex p-1 bg-secondary/60 rounded-xl border border-border/50 shadow-sm backdrop-blur-sm">
+      <Stack gap="md" className="xl:flex-row xl:items-center justify-between">
+        <Stack gap="sm" className="flex-row items-center flex-wrap flex-1">
+          <Surface variant="glass" className="flex p-1 rounded-xl">
             {(['all', 'income', 'expense', 'transfer'] as const).map(v => (
               <button key={v} onClick={() => setParam('type', v)} className={`px-4 py-2 text-[0.8rem] font-semibold rounded-lg transition-all duration-300 ${typeFilter === v ? 'bg-card text-foreground shadow-sm border border-border/50' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}>
                 {v === 'all' ? 'All Types' : v === 'income' ? 'Income' : v === 'expense' ? 'Expenses' : 'Transfers'}
               </button>
             ))}
-          </div>
-          <div className="flex p-1 bg-secondary/60 rounded-xl border border-border/50 shadow-sm backdrop-blur-sm">
+          </Surface>
+          <Surface variant="glass" className="flex p-1 rounded-xl">
             {(['this-week', 'this-month', 'this-year'] as const).map(v => (
               <button key={v} onClick={() => setParam('period', v)} className={`px-4 py-2 text-[0.8rem] font-semibold rounded-lg transition-all duration-300 ${period === v ? 'bg-card text-foreground shadow-sm border border-border/50' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}>
                 {v === 'this-week' ? 'Week' : v === 'this-month' ? 'Month' : 'Year'}
               </button>
             ))}
-          </div>
+          </Surface>
           <div className="relative flex-1 min-w-[220px]">
             <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input 
-              className="w-full py-2 pl-10 pr-4 bg-card/50 backdrop-blur-sm border border-border/60 rounded-xl text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all shadow-sm"
+            <Input 
+              className="w-full pl-10"
               placeholder="Search transactions..."
               value={searchQuery}
               onChange={e => { setSearchQuery(e.target.value); resetPagination(); }}
             />
           </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <button className="flex items-center px-4 py-2.5 text-[0.85rem] font-semibold text-foreground bg-card border border-border rounded-xl hover:bg-secondary transition-all shadow-sm" onClick={() => setShowUpload(v => !v)}>
+        </Stack>
+        <Stack gap="sm" className="flex-row items-center">
+          <Button variant="outline" onClick={() => setShowUpload(v => !v)}>
             <FileDown size={16} className="mr-2 text-muted-foreground"/> Import CSV
-          </button>
-          <button className="flex items-center px-4 py-2.5 text-[0.85rem] font-semibold text-white rounded-xl transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5" 
-            style={{ background: 'linear-gradient(135deg, var(--color-brand), hsl(220, 80%, 65%))' }} 
-            onClick={() => setShowAdd(true)}>
+          </Button>
+          <Button onClick={() => setShowAdd(true)}>
             <Plus size={16} className="mr-2"/> New Transaction
-          </button>
-        </div>
-      </div>
+          </Button>
+        </Stack>
+      </Stack>
 
-      {/* Summary Hero — Premium Style */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        <div className="col-span-1 md:col-span-2 rounded-2xl p-7 shadow-md flex flex-col justify-center relative overflow-hidden" style={{ background: 'var(--surface-card)', border: '1px solid var(--border)' }}>
-          <div style={{ position: 'absolute', top: '-50%', left: '-10%', width: '150%', height: '200%', background: netPositive ? 'radial-gradient(circle at right, rgba(22,163,74,0.04), transparent 60%)' : 'radial-gradient(circle at right, rgba(220,38,38,0.04), transparent 60%)', pointerEvents: 'none' }} />
-          
+      {/* Summary Hero */}
+      <Grid cols={{ base: 1, md: 3 }} gap="lg">
+        <Surface variant="card" className="col-span-1 md:col-span-2 p-7 flex flex-col justify-center relative overflow-hidden">
           <div className="relative z-10">
-            <p className="text-[0.7rem] font-bold text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full" style={{ background: netPositive ? 'var(--color-income)' : 'var(--color-expense)' }}></span>
-              Net Flow · {periodLabel}
-            </p>
-            <p className="font-display font-extrabold tabular-nums tracking-tight" style={{ 
-              fontSize: 'clamp(2.5rem, 5vw, 3.5rem)', 
-              lineHeight: 1.1,
-              background: netPositive ? 'linear-gradient(90deg, var(--color-income), hsl(152,65%,62%))' : 'linear-gradient(90deg, var(--color-expense), hsl(0,78%,72%))',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              textShadow: '0 4px 12px rgba(0,0,0,0.05)'
-            }}>
-                {netPositive ? '+' : '−'}{fmtAdaptive(Math.abs(net), currency)}
-            </p>
-            <div className="flex items-center gap-3 mt-4">
-              <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-secondary text-muted-foreground">
-                {(transactions || []).length} transactions
-              </span>
-            </div>
+            <FinancialMetric
+              label={`Net Flow · ${periodLabel}`}
+              value={<CurrencyDisplay amountMinor={Math.abs(net)} currency={currency} size="xl" showSign={false} prefix={netPositive ? '+' : '−'} trend={netPositive ? 'positive' : 'negative'} />}
+              subLabel={`${(transactions || []).length} transactions`}
+            />
           </div>
-        </div>
-
-        <div className="flex flex-col gap-4">
-          <div className="rounded-2xl p-5 shadow-sm flex items-center justify-between relative overflow-hidden transition-all duration-300 hover:shadow-md" style={{ background: 'var(--surface-card)', border: '1px solid var(--border)' }}>
-            <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--color-income)]" />
-            <div className="pl-2 relative z-10 w-full">
-              <p className="text-[0.7rem] font-bold text-muted-foreground uppercase tracking-widest mb-1.5 flex items-center justify-between">
-                <span>{periodLabel} Income</span>
-                <span className="text-[var(--color-income)] bg-[var(--color-income-light)] px-2 py-0.5 rounded-full">+</span>
-              </p>
-              <p className="text-2xl font-bold text-foreground tabular-nums tracking-tight">{fmtAdaptive(totalIncome, currency)}</p>
-            </div>
-          </div>
-          <div className="rounded-2xl p-5 shadow-sm flex items-center justify-between relative overflow-hidden transition-all duration-300 hover:shadow-md" style={{ background: 'var(--surface-card)', border: '1px solid var(--border)' }}>
-            <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--color-expense)]" />
-            <div className="pl-2 relative z-10 w-full">
-              <p className="text-[0.7rem] font-bold text-muted-foreground uppercase tracking-widest mb-1.5 flex items-center justify-between">
-                <span>{PERIOD_LABELS[period] || 'All Time'} Outflow</span>
-                <span className="text-[var(--color-expense)] bg-[var(--color-expense-light)] px-2 py-0.5 rounded-full">−</span>
-              </p>
-              <p className="text-2xl font-bold text-foreground tabular-nums tracking-tight">{fmtAdaptive(moneyOut, currency)}</p>
-            </div>
-          </div>
-        </div>
-      </div>
+        </Surface>
+        
+        <Stack gap="md" className="col-span-1">
+          <Surface variant="card" className="p-5">
+            <FinancialMetric
+              label={`${periodLabel} Income`}
+              value={<CurrencyDisplay amountMinor={totalIncome} currency={currency} size="lg" trend="positive" />}
+            />
+          </Surface>
+          <Surface variant="card" className="p-5">
+            <FinancialMetric
+              label={`${PERIOD_LABELS[period] || 'All Time'} Outflow`}
+              value={<CurrencyDisplay amountMinor={moneyOut} currency={currency} size="lg" trend="negative" />}
+            />
+          </Surface>
+        </Stack>
+      </Grid>
 
       {/* Transaction list */}
       <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden relative">
