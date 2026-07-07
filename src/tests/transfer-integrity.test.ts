@@ -1,6 +1,6 @@
 import { TransferService } from '../lib/domain/transfers/TransferService';
 import { prisma } from '../lib/prisma';
-import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { getTransferByIdempotencyKey } from '../lib/repositories/transfers';
 import { randomBytes } from 'crypto';
 
@@ -59,7 +59,7 @@ describe('Transfer Integrity & Institutional Standards', () => {
   describe('Failure Injection', () => {
     it('rolls back the entire transaction if the ledger creation fails', async () => {
       // Simulate transaction logic
-      (prisma.$transaction as Mock).mockImplementation(async (callback: (tx: typeof prisma) => Promise<unknown>) => {
+      vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
         // We throw midway simulating a DB network error
         throw new Error('Database network failure during INSERT');
       });
