@@ -354,7 +354,11 @@ describe('Financial Logic and Validations', () => {
       const overpaymentRes = await createTransfer({
         fromAccountId: 'acc-1', loanId: 'loan-1', amountMinor: 1200, date: '2023-10-10'
       });
-      expect(overpaymentRes).toEqual({ error: expect.stringMatching(/You can't pay more than you owe/) });
+      expect(overpaymentRes).toEqual({ 
+        success: false, 
+        code: 'UNKNOWN',
+        message: expect.stringMatching(/You can't pay more than you owe/) 
+      });
 
       // Exact payoff should succeed
       await expect(createTransfer({
@@ -418,6 +422,7 @@ describe('Financial Logic and Validations', () => {
       
       const mockLoan = { id: 'loan-1', balanceMinor: 120000, annualRate: 10, userId: 'user-1' };
       vi.mocked(getLoansForUser).mockResolvedValue([mockLoan as any]);
+      vi.mocked(prisma.loan.update).mockResolvedValue(mockLoan as any);
 
       // 120,000 * 10% / 12 = 1000 default interest
       await createTransfer({ fromAccountId: 'acc-1', loanId: 'loan-1', amountMinor: 5000, date: '2023-10-10' });
