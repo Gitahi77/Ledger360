@@ -1,0 +1,5 @@
+refactor(transactions): migrate layout and hero to UI primitives
+
+- use Grid and Stack instead of manual divs
+- use Surface for summary cards
+- integrate FinancialMetric and CurrencyDisplay

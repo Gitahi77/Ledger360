@@ -164,13 +164,13 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
           <div className="flex flex-col sm:flex-row gap-4">
             {type !== 'transfer' && (
               <div className="flex-1">
-                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Description</Label>
+                <Label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Description</Label>
                 <input className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
                   value={name} onChange={e => setName(e.target.value)} required placeholder="e.g. Naivas Grocery" />
               </div>
             )}
             <div className={type === 'transfer' ? 'w-full' : 'w-full sm:w-1/3'}>
-              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Amount ({currency})</Label>
+              <Label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Amount ({currency})</Label>
               <input className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all font-mono"
                 type="number" inputMode="decimal" min="1" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} required placeholder="0.00" />
             </div>
@@ -180,7 +180,7 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
             {type !== 'transfer' ? (
               <>
                 <div className="flex-1">
-                  <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Category</Label>
+                  <Label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Category</Label>
                   <select className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
                     value={categoryId} onChange={e => setCategoryId(e.target.value)} required>
                     <option value="">Select…</option>
@@ -191,7 +191,7 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
                   </select>
                 </div>
                 <div className="flex-1">
-                  <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Account</Label>
+                  <Label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Account</Label>
                   <select className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
                     value={accountId} onChange={e => setAccountId(e.target.value)} required>
                     <option value="">Select Account…</option>
@@ -202,7 +202,7 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
             ) : (
               <>
                 <div className="flex-1">
-                  <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">From Account</Label>
+                  <Label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">From Account</Label>
                   <select className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
                     value={accountId} onChange={e => setAccountId(e.target.value)} required>
                     <option value="">Select From Account...</option>
@@ -211,7 +211,7 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
                 </div>
                 {!loanId && (
                   <div className="flex-1">
-                    <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">To Account</Label>
+                    <Label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">To Account</Label>
                     <select className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
                       value={toAccountId} onChange={e => setToAccountId(e.target.value)} required>
                       <option value="">Select To Account...</option>
@@ -221,7 +221,7 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
                 )}
                 {goals.length > 0 && !loanId && (
                   <div className="flex-1">
-                    <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Goal to Fund (Optional)</Label>
+                    <Label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Goal to Fund (Optional)</Label>
                     <select className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
                       value={goalId} onChange={e => setGoalId(e.target.value)}>
                       <option value="">None</option>
@@ -231,7 +231,7 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
                 )}
                 {loans.length > 0 && !goalId && (
                   <div className="flex-1">
-                    <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Loan to Repay (Optional)</Label>
+                    <Label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Loan to Repay (Optional)</Label>
                     <select className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
                       value={loanId} onChange={e => setLoanId(e.target.value)}>
                       <option value="">None</option>
@@ -245,19 +245,19 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
           
           {type === 'transfer' && loanId && (
             <div>
-              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Interest Portion ({currency})</Label>
+              <Label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Interest Portion ({currency})</Label>
               <input className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all font-mono"
                 type="number" inputMode="decimal" min="0" step="0.01" value={interestAmount} onChange={e => setInterestAmount(e.target.value)} required placeholder="0.00" />
             </div>
           )}
           
           <div>
-            <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Date</Label>
+            <Label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Date</Label>
             <input className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
               type="date" value={date} onChange={e => setDate(e.target.value)} required />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Note <span className="font-normal opacity-70">(optional)</span></Label>
+            <Label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Note <span className="font-normal opacity-70">(optional)</span></Label>
             <input className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
               value={note} onChange={e => setNote(e.target.value)} placeholder="e.g. May salary" />
           </div>
@@ -355,14 +355,14 @@ export function TransactionsClient({
       {/* Toolbar */}
       <Stack gap="md" className="xl:flex-row xl:items-center justify-between">
         <Stack gap="sm" className="flex-row items-center flex-wrap flex-1">
-          <Surface variant="glass" className="flex p-1 rounded-xl">
+          <Surface variant="flat" className="flex p-1 rounded-xl">
             {(['all', 'income', 'expense', 'transfer'] as const).map(v => (
               <button key={v} onClick={() => setParam('type', v)} className={`px-4 py-2 text-[0.8rem] font-semibold rounded-lg transition-all duration-300 ${typeFilter === v ? 'bg-card text-foreground shadow-sm border border-border/50' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}>
                 {v === 'all' ? 'All Types' : v === 'income' ? 'Income' : v === 'expense' ? 'Expenses' : 'Transfers'}
               </button>
             ))}
           </Surface>
-          <Surface variant="glass" className="flex p-1 rounded-xl">
+          <Surface variant="flat" className="flex p-1 rounded-xl">
             {(['this-week', 'this-month', 'this-year'] as const).map(v => (
               <button key={v} onClick={() => setParam('period', v)} className={`px-4 py-2 text-[0.8rem] font-semibold rounded-lg transition-all duration-300 ${period === v ? 'bg-card text-foreground shadow-sm border border-border/50' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}>
                 {v === 'this-week' ? 'Week' : v === 'this-month' ? 'Month' : 'Year'}
@@ -380,7 +380,7 @@ export function TransactionsClient({
           </div>
         </Stack>
         <Stack gap="sm" className="flex-row items-center">
-          <Button variant="outline" onClick={() => setShowUpload(v => !v)}>
+          <Button variant="secondary" onClick={() => setShowUpload(v => !v)}>
             <FileDown size={16} className="mr-2 text-muted-foreground"/> Import CSV
           </Button>
           <Button onClick={() => setShowAdd(true)}>
@@ -390,28 +390,28 @@ export function TransactionsClient({
       </Stack>
 
       {/* Summary Hero */}
-      <Grid cols={{ base: 1, md: 3 }} gap="lg">
-        <Surface variant="card" className="col-span-1 md:col-span-2 p-7 flex flex-col justify-center relative overflow-hidden">
+      <Grid columns={3} responsive gap="lg">
+        <Surface variant="raised" className="col-span-1 md:col-span-2 p-7 flex flex-col justify-center relative overflow-hidden">
           <div className="relative z-10">
             <FinancialMetric
               label={`Net Flow · ${periodLabel}`}
-              value={<CurrencyDisplay amountMinor={Math.abs(net)} currency={currency} size="xl" showSign={false} prefix={netPositive ? '+' : '−'} trend={netPositive ? 'positive' : 'negative'} />}
+              value={<CurrencyDisplay value={{ amountMinor: Math.abs(net), currencyCode: currency }} size="hero" signDisplay="always" colorize />}
               subLabel={`${(transactions || []).length} transactions`}
             />
           </div>
         </Surface>
         
         <Stack gap="md" className="col-span-1">
-          <Surface variant="card" className="p-5">
+          <Surface variant="raised" className="p-5">
             <FinancialMetric
               label={`${periodLabel} Income`}
-              value={<CurrencyDisplay amountMinor={totalIncome} currency={currency} size="lg" trend="positive" />}
+              value={<CurrencyDisplay value={{ amountMinor: totalIncome, currencyCode: currency }} size="lg" colorize />}
             />
           </Surface>
-          <Surface variant="card" className="p-5">
+          <Surface variant="raised" className="p-5">
             <FinancialMetric
               label={`${PERIOD_LABELS[period] || 'All Time'} Outflow`}
-              value={<CurrencyDisplay amountMinor={moneyOut} currency={currency} size="lg" trend="negative" />}
+              value={<CurrencyDisplay value={{ amountMinor: moneyOut, currencyCode: currency }} size="lg" colorize />}
             />
           </Surface>
         </Stack>
