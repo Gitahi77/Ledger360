@@ -1,0 +1,1 @@
+import React from 'react'; import { Slot } from '@radix-ui/react-slot'; import { renderToStaticMarkup } from 'react-dom/server'; const Comp = Slot; const el = React.createElement(Comp, {}, false, false, React.createElement('a', {}, 'Link'), false); try { console.log(renderToStaticMarkup(el)); } catch(e) { console.error('ERROR:', e.message); }  

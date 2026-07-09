@@ -1,4 +1,5 @@
 import * as React from "react";
+import { Slot } from "@radix-ui/react-slot";
 import { cn } from "@/lib/ui/cn";
 import { stackVariants } from "./stack.variants";
 import type { VariantProps } from "class-variance-authority";
@@ -11,7 +12,7 @@ export interface StackProps
 
 export const Stack = React.forwardRef<HTMLDivElement, StackProps>(
   ({ className, direction, align, justify, gap, wrap, asChild = false, ...props }, ref) => {
-    const Comp = asChild ? (props as any).as : "div";
+    const Comp = asChild ? Slot : "div";
     
     return (
       <Comp

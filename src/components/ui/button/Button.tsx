@@ -3,7 +3,7 @@ import { cn } from "@/lib/ui/cn";
 import { buttonVariants } from "./button.variants";
 import type { VariantProps } from "class-variance-authority";
 import { Loader2 } from "lucide-react";
-import { Slot } from "@radix-ui/react-slot";
+import { Slot, Slottable } from "@radix-ui/react-slot";
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
@@ -43,7 +43,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       >
         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
         {!loading && iconLeft && <span className="mr-2">{iconLeft}</span>}
-        {children}
+        {asChild ? <Slottable>{children}</Slottable> : children}
         {!loading && iconRight && <span className="ml-2">{iconRight}</span>}
       </Comp>
     );
