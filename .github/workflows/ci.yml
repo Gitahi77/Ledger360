@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "**" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "**" ]
 
 jobs:
   build-and-test:
@@ -43,6 +43,15 @@ jobs:
         # Marked as continue-on-error until we do a dedicated lint cleanup chore
         run: npm run lint
         continue-on-error: true
+
+      - name: Debug Runner Environment
+        run: |
+          echo "Commit SHA: $GITHUB_SHA"
+          cat .storybook/main.ts
+          echo "------------------------------------------------"
+          cat vitest.config.ts
+          echo "------------------------------------------------"
+          npx vitest list || true
 
       - name: Run Unit Tests (Vitest)
         run: npx vitest run
