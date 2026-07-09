@@ -3,6 +3,7 @@ import { cn } from "@/lib/ui/cn";
 import { buttonVariants } from "./button.variants";
 import type { VariantProps } from "class-variance-authority";
 import { Loader2 } from "lucide-react";
+import { Slot } from "@radix-ui/react-slot";
 
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
@@ -30,8 +31,8 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     },
     ref
   ) => {
-    // Note: Radix Slot is normally used for asChild, but keeping it simple with raw HTML element if not installed
-    const Comp = asChild ? (props as any).as : "button";
+    // Using Radix Slot for proper asChild support
+    const Comp = asChild ? Slot : "button";
     
     return (
       <Comp
