@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { ArrowRight, AlertTriangle } from 'lucide-react';
+import { ArrowRight, TriangleAlert } from 'lucide-react';
 import { Surface } from '@/components/ui/surface/Surface';
 import { Stack } from '@/components/layout/stack/Stack';
 import { Button } from '@/components/ui/button/Button';
@@ -37,7 +37,7 @@ export function ActiveLoansCard({ loans, currency }: ActiveLoansCardProps) {
       
       {overdueLoanCount > 0 && (
         <div className="mb-4 flex items-center gap-1 text-[hsl(var(--finance-negative))]">
-          <AlertTriangle size={14} />
+          <TriangleAlert size={14} />
           <StatusBadge 
             status="overdue" 
             label={`${overdueLoanCount} overdue`} 
