@@ -4,6 +4,8 @@ import { focusRing } from "@/lib/ui/focus-ring";
 import { surfaceVariants } from "./surface.variants";
 import type { VariantProps } from "class-variance-authority";
 
+import { Slot } from "@radix-ui/react-slot";
+
 export interface SurfaceProps
   extends React.HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof surfaceVariants> {
@@ -12,7 +14,7 @@ export interface SurfaceProps
 
 export const Surface = React.forwardRef<HTMLDivElement, SurfaceProps>(
   ({ className, variant, padding, interactive, asChild = false, ...props }, ref) => {
-    const Comp = asChild ? (props as any).as : "div";
+    const Comp = asChild ? Slot : "div";
     return (
       <Comp
         ref={ref}

@@ -8,7 +8,7 @@ import { SmartUpload } from '@/components/SmartUpload';
 import { addTransaction, editTransaction, deleteTransaction } from '@/lib/actions/transactions';
 import { createTransfer, editTransfer, deleteTransfer } from '@/lib/actions/transfers';
 import { fmtAdaptive } from '@/lib/format';
-import { Plus, FileDown, X, Loader2, Search, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
+import { Plus, FileDown, X, Loader2, Search, ChevronLeft, ChevronRight, TriangleAlert } from 'lucide-react';
 import { toMinor, toMajor } from '@/lib/money';
 import { Grid } from '@/components/layout/grid';
 import { Stack } from '@/components/layout/stack';
@@ -145,7 +145,7 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
         
         {error && (
           <div className="flex items-center gap-2 p-3 mb-5 text-sm font-medium text-destructive bg-destructive/10 rounded-lg">
-            <AlertTriangle size={16} /> {error}
+            <TriangleAlert size={16} /> {error}
           </div>
         )}
         
@@ -345,7 +345,7 @@ export function TransactionsClient({
       {pageWarning && (
         <div className="flex items-center justify-between p-4 bg-warning/10 border border-warning/30 text-warning rounded-xl shadow-sm animate-in fade-in duration-300">
           <div className="flex items-center gap-3">
-            <AlertTriangle size={18} />
+            <TriangleAlert size={18} />
             <span className="text-sm font-medium">{pageWarning}</span>
           </div>
           <button onClick={() => setPageWarning('')} className="p-1.5 hover:bg-warning/20 rounded-md transition-colors"><X size={16}/></button>

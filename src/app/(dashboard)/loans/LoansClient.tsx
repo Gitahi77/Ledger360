@@ -5,7 +5,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { addLoan, editLoan, deleteLoan } from '@/lib/actions/loans';
 import { formatKES } from '@/lib/format';
-import { Plus, Trash2, Loader2, X, CreditCard, AlertTriangle, ChevronDown, ChevronUp, Edit2 } from 'lucide-react';
+import { Plus, Trash2, Loader2, X, CreditCard, TriangleAlert, ChevronDown, ChevronUp, Edit2 } from 'lucide-react';
 import { toMinor, toMajor } from '@/lib/money';
 
 type Loan = {
@@ -446,7 +446,7 @@ export function LoansClient({ loans = [], currency, accounts = [] }: { loans: Lo
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <div style={{ width:42, height:42, borderRadius:12, background: (l.daysOverdue ?? 0) > 0 ? 'var(--color-expense-light)' : 'var(--color-brand-light)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, transition: 'transform 0.3s', transform: 'scale(1)' }} className="group-hover:scale-105">
-                        {(l.daysOverdue ?? 0) > 0 ? <AlertTriangle size={20} color="var(--color-expense)" /> : <CreditCard size={20} color="var(--color-brand)" />}
+                        {(l.daysOverdue ?? 0) > 0 ? <TriangleAlert size={20} color="var(--color-expense)" /> : <CreditCard size={20} color="var(--color-brand)" />}
                       </div>
                       <div>
                         <div style={{ fontWeight:700, fontSize:'1rem', color:'var(--color-text-primary)' }}>{l.name}</div>

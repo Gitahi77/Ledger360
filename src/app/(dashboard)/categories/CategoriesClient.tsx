@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { createCategory, editCategory, deleteCategory } from '@/lib/actions/categories';
 import { DynamicCategoryIcon } from '@/lib/icons';
-import { Plus, Trash2, Edit2, Loader2, X, AlertTriangle } from 'lucide-react';
+import { Plus, Trash2, Edit2, Loader2, X, TriangleAlert } from 'lucide-react';
 
 type Category = {
   id: string;
@@ -55,7 +55,7 @@ function CategoryModal({ category, onClose }: { category?: Category, onClose: ()
           <h2 className="card-title" style={{ marginBottom:0, fontSize: '1.25rem', letterSpacing: '-0.02em' }}>{isEdit ? 'Edit Category' : 'New Category'}</h2>
           <button onClick={onClose} style={{ background:'var(--surface-sunken)', border:'1px solid var(--border)', borderRadius: '50%', width: 32, height: 32, cursor:'pointer', color:'var(--color-text-secondary)', display:'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }} className="hover-bg-active"><X size={16}/></button>
         </div>
-        {error && <div style={{ padding:'0.75rem 1rem', borderRadius:8, background:'var(--color-expense-light)', color:'var(--color-expense)', fontSize:'0.85rem', marginBottom:'1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 500 }}><AlertTriangle size={16} /> {error}</div>}
+        {error && <div style={{ padding:'0.75rem 1rem', borderRadius:8, background:'var(--color-expense-light)', color:'var(--color-expense)', fontSize:'0.85rem', marginBottom:'1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 500 }}><TriangleAlert size={16} /> {error}</div>}
         
         <form onSubmit={handleSubmit} style={{ display:'flex', flexDirection:'column', gap:'1.25rem' }}>
           <div>
@@ -208,7 +208,7 @@ export function CategoriesClient({ initialCategories, currency }: { initialCateg
 
       {errorMsg && (
         <div className="animate-in mb-6" style={{ padding: '1rem 1.25rem', background: 'var(--color-expense-light)', color: 'var(--color-expense)', borderRadius: 12, border: '1px solid var(--color-expense)', display: 'flex', alignItems: 'flex-start', gap: '0.85rem', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
-          <AlertTriangle size={20} style={{ flexShrink: 0, marginTop: '0.1rem' }} />
+          <TriangleAlert size={20} style={{ flexShrink: 0, marginTop: '0.1rem' }} />
           <div style={{ fontSize: '0.9rem', lineHeight: 1.5, fontWeight: 500 }}>{errorMsg}</div>
           <button onClick={() => setErrorMsg(null)} style={{ marginLeft: 'auto', background: 'var(--color-expense)', border: 'none', color: 'white', cursor: 'pointer', padding: '0.25rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={14} /></button>
         </div>

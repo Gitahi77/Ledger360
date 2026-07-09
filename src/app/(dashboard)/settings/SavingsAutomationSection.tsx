@@ -14,7 +14,7 @@ import { deleteTransfer } from '@/lib/actions/transfers';
 import { toMajor } from '@/lib/money';
 import { fmtAdaptive } from '@/lib/format';
 import {
-  Loader2, CheckCircle2, AlertTriangle, Undo2, Trash2,
+  Loader2, CheckCircle2, TriangleAlert, Undo2, Trash2,
   TrendingUp, Pause, Play, PiggyBank, Info,
 } from 'lucide-react';
 
@@ -320,7 +320,7 @@ export function SavingsAutomationSection({
           )}
           {error && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.78rem', color: 'var(--color-expense)', fontWeight: 600 }}>
-              <AlertTriangle size={14} /> {error}
+              <TriangleAlert size={14} /> {error}
             </div>
           )}
         </div>

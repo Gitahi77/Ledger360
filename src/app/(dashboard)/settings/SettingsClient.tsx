@@ -17,7 +17,7 @@ import {
   User, Bell, Palette, ShieldCheck, Database,
   HelpCircle, Download, Trash2, ExternalLink, Info,
   Globe, CheckCircle2, Loader2, ChevronDown, ChevronRight,
-  AlertTriangle,
+  TriangleAlert,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { CURRENCIES } from '@/lib/constants/currencies';
@@ -117,7 +117,7 @@ function SaveRow({ saving, saved, error }: { saving: boolean; saved: boolean; er
       )}
       {error && (
         <div style={{ display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.78rem', color:'var(--color-expense)', fontWeight:600 }}>
-          <AlertTriangle size={14}/> {error}
+          <TriangleAlert size={14}/> {error}
         </div>
       )}
     </div>
@@ -612,7 +612,7 @@ export function SettingsClient({
 
               <div style={{ padding:'1.5rem', background:'var(--color-expense-light)', borderRadius:12, border:'1px solid var(--color-expense)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                  <AlertTriangle size={18} color="var(--color-expense)" />
+                  <TriangleAlert size={18} color="var(--color-expense)" />
                   <div style={{ fontSize:'1rem', fontWeight:800, color:'var(--color-expense)', letterSpacing: '-0.01em' }}>Danger Zone</div>
                 </div>
                 <div style={{ fontSize:'0.85rem', color:'var(--color-text-secondary)', marginBottom:'1.5rem', lineHeight: 1.5 }}>

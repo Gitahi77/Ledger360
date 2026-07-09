@@ -2,6 +2,7 @@ import * as React from "react";
 import { cn } from "@/lib/ui/cn";
 import { gridVariants } from "./grid.variants";
 import type { VariantProps } from "class-variance-authority";
+import { Slot } from "@radix-ui/react-slot";
 
 export interface GridProps
   extends React.HTMLAttributes<HTMLDivElement>,
@@ -11,7 +12,7 @@ export interface GridProps
 
 export const Grid = React.forwardRef<HTMLDivElement, GridProps>(
   ({ className, columns, gap, responsive, asChild = false, ...props }, ref) => {
-    const Comp = asChild ? (props as any).as : "div";
+    const Comp = asChild ? Slot : "div";
     
     return (
       <Comp
