@@ -88,7 +88,7 @@ describe('Loan Disbursement (Received Funds)', () => {
 
     // Test (b): Leaves net worth neutral
     // Net worth = Assets (Cash) - Liabilities (Loans) = LOAN_AMOUNT - LOAN_AMOUNT = 0
-    const netWorth = await getNetWorth();
+    const netWorth = await getNetWorth({ userId: 'user-1', currency: 'KES' });
     
     // getNetWorth calls getAccountBalances and getLoansForUser, so we need to ensure our mocks are complete
     expect(netWorth.totalCashMinor).toBe(LOAN_AMOUNT);
@@ -105,7 +105,7 @@ describe('Loan Disbursement (Received Funds)', () => {
 
     // Test (d): Does NOT reduce the loan balance (not treated as a repayment)
     // Actually getLoansForUser filters transfers internally
-    const loans = await getLoansForUser('user-1');
+    const loans = await getLoansForUser({ userId: 'user-1' });
     expect(loans.length).toBe(1);
     // Our mock of loan.findMany includes the transfer. But because our loan.ts fix filters the `include`, 
     // we mocked the result. Since we are testing the output of getLoansForUser given the DB result,
@@ -116,7 +116,7 @@ describe('Loan Disbursement (Received Funds)', () => {
       id: 'loan-1', balanceMinor: LOAN_AMOUNT, userId: 'user-1', name: 'Disbursed Loan', lender: 'Bank', type: 'personal', originalAmountMinor: LOAN_AMOUNT, annualRate: 10, monthlyPaymentMinor: 250, nextDue: new Date(), createdAt: new Date(), transfers: []
     } as any]);
     
-    const loansCheck = await getLoansForUser('user-1');
+    const loansCheck = await getLoansForUser({ userId: 'user-1' });
     expect(loansCheck[0].balanceMinor).toBe(LOAN_AMOUNT);
   });
 });

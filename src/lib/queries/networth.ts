@@ -1,4 +1,4 @@
-﻿/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
 // src/lib/actions/networth.ts
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
@@ -8,15 +8,17 @@ import { getLoansForUser } from './loans';
 import { getRates } from '@/lib/api/frankfurter';
 import { mapAssetToDTO } from '@/lib/mappers/assets';
 
-export async function getNetWorth() {
-  const user = await requireAuth();
-
-  const userCurrency = user.currency || 'KES';
+export async function getNetWorth({ userId, currency }: { userId: string, currency?: string | null }) {
+  let userCurrency = currency;
+  if (!userCurrency) {
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { currency: true } });
+    userCurrency = user?.currency || 'KES';
+  }
 
   const [accounts, assets, loans, rates] = await Promise.all([
-    getAccountBalances(user.id),
-    prisma.asset.findMany({ where: { userId: user.id } }),
-    getLoansForUser(user.id),
+    getAccountBalances({ userId }),
+    prisma.asset.findMany({ where: { userId } }),
+    getLoansForUser({ userId }),
     getRates('USD')
   ]);
 
@@ -59,9 +61,8 @@ export async function getNetWorth() {
 
 
 
-export async function getNetWorthHistory(days: number) {
-  const user = await requireAuth();
-  const currentNw = (await getNetWorth()).netWorthMinor;
+export async function getNetWorthHistory({ userId, currency, days }: { userId: string, currency?: string | null, days: number }) {
+  const currentNw = (await getNetWorth({ userId, currency })).netWorthMinor;
   
   const today = new Date();
   const cutoff = new Date(today);
@@ -69,11 +70,11 @@ export async function getNetWorthHistory(days: number) {
 
   const [txs, tfs] = await Promise.all([
     prisma.transaction.findMany({
-      where: { userId: user.id, date: { gte: cutoff } },
+      where: { userId, date: { gte: cutoff } },
       select: { date: true, type: true, baseAmountMinor: true }
     }),
     prisma.transfer.findMany({
-      where: { userId: user.id, date: { gte: cutoff } },
+      where: { userId, date: { gte: cutoff } },
       select: { date: true, amountMinor: true, fromAccountId: true, toAccountId: true, loanId: true, interestMinor: true }
     })
   ]);

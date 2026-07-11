@@ -137,7 +137,7 @@ describe('Financial Logic and Validations', () => {
         { id: 'loan-1', balanceMinor: 3000n, userId: 'user-1', name: 'Personal Loan', lender: 'Bank', type: 'personal', amortization: 'REDUCING_BALANCE', originalAmountMinor: 3000n, annualRate: 10, monthlyPaymentMinor: 250n, nextDue: new Date(), createdAt: new Date(), daysOverdue: 0 }
       ]);
 
-      const result = await getNetWorth();
+      const result = await getNetWorth({ userId: 'u1', currency: 'KES' });
 
       // Cash should only be the positive bank account
       expect(result.totalCashMinor).toBe(5000);
@@ -448,13 +448,13 @@ describe('Financial Logic and Validations', () => {
       vi.mocked(getLoansForUser).mockResolvedValue([{ id: 'l1', balanceMinor: 5000n, userId: 'u1', name: 'L1', lender: 'B1', type: 'student', amortization: 'REDUCING_BALANCE', originalAmountMinor: 5000n, annualRate: 10, monthlyPaymentMinor: 500n, nextDue: new Date(), createdAt: new Date(), daysOverdue: 0 }]);
       vi.mocked(prisma.asset.findMany).mockResolvedValue([]);
       
-      const before = await getNetWorth();
+      const before = await getNetWorth({ userId: 'u1', currency: 'KES' });
       expect(before.netWorthMinor).toBe(0);
       
       vi.mocked(getAccountBalances).mockResolvedValue([{ id: 'acc-1', balanceMinor: 4000, type: 'CHECKING', currency: 'KES', name: 'Bank', userId: 'user-1', openingMinor: 0n, archived: false, createdAt: new Date() }]);
       vi.mocked(getLoansForUser).mockResolvedValue([{ id: 'loan-1', balanceMinor: 4200n, userId: 'user-1', name: 'L', lender: 'B', type: 't', amortization: 'REDUCING_BALANCE', originalAmountMinor: 5000n, annualRate: 0, monthlyPaymentMinor: 0n, nextDue: new Date(), createdAt: new Date(), daysOverdue: 0 }]);
       
-      const after = await getNetWorth();
+      const after = await getNetWorth({ userId: 'user-1', currency: 'KES' });
       expect(after.netWorthMinor).toBe(-200); 
     });
 
@@ -527,7 +527,7 @@ describe('Financial Logic and Validations', () => {
         return [{ yr: 2024, mo: 2, type: 'income', total: 1000 }];
       });
 
-      const res = await getMonthlyTrend();
+      const res = await getMonthlyTrend({ userId: 'user-1' });
 
       const febBucket = res.find(m => m.label === 'Feb');
       const janBucket = res.find(m => m.label === 'Jan');

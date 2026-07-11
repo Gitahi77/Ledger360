@@ -1,4 +1,4 @@
-﻿/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/actions/_auth';
 import { z } from 'zod';
@@ -28,13 +28,12 @@ function invalidateAccountPaths() {
 
 import { mapAccountToDTO, type AccountDTO } from '@/lib/mappers/accounts';
 
-export async function getAccounts(): Promise<AccountDTO[]> {
-  const user = await requireAuth();
-  const all = await getAccountBalances(user.id);
+export async function getAccounts({ userId }: { userId: string }): Promise<AccountDTO[]> {
+  const all = await getAccountBalances({ userId });
   return all.filter((a: any) => !a.archived);
 }
 
-export async function getAccountBalances(userId: string): Promise<AccountDTO[]> {
+export async function getAccountBalances({ userId }: { userId: string }): Promise<AccountDTO[]> {
   const accounts = await prisma.account.findMany({ 
     where: { userId },
     include: { chamaDetails: true },

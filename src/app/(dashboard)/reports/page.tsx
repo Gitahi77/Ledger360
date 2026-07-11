@@ -15,10 +15,10 @@ export default async function Reports({
 
   const user = await requireAuth();
   const [trend, summary, expenseCategories, incomeCategories] = await Promise.all([
-    getMonthlyTrend(),
-    getReportSummary(period),
-    getReportCategories(period, 'expense'),
-    getReportCategories(period, 'income'),
+    getMonthlyTrend({ userId: user.id }),
+    getReportSummary({ userId: user.id, period }),
+    getReportCategories({ userId: user.id, period, type: 'expense' }),
+    getReportCategories({ userId: user.id, period, type: 'income' }),
   ]);
 
   return (

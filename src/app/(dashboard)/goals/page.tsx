@@ -8,7 +8,7 @@ import { requireAuth } from '@/lib/actions/_auth';
 export default async function Goals() {
   const user = await requireAuth();
   const [goals] = await Promise.all([
-    getGoals(),
+    getGoals({ userId: user.id }),
   ]);
   return (
     <>

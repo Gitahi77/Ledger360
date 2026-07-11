@@ -1,8 +1,7 @@
-﻿/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
 // src/lib/queries/loans.ts
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
-import { requireAuth } from '../actions/_auth';
 import { computeLoanBalance } from '@/lib/shared-computations';
 import type { Loan } from '@prisma/client';
 import { z } from 'zod';
@@ -22,7 +21,7 @@ const EditLoanSchema = z.object({
   nextDue: z.string().optional(),
 });
 
-export async function getLoansForUser(userId: string): Promise<LoanDTO[]> {
+export async function getLoansForUser({ userId }: { userId: string }): Promise<LoanDTO[]> {
   const today = new Date();
 
   const loans = await prisma.loan.findMany({
@@ -57,9 +56,8 @@ export async function getLoansForUser(userId: string): Promise<LoanDTO[]> {
   });
 }
 
-export async function getLoans(): Promise<LoanDTO[]> {
-  const user = await requireAuth();
-  return getLoansForUser(user.id);
+export async function getLoans({ userId }: { userId: string }): Promise<LoanDTO[]> {
+  return getLoansForUser({ userId });
 }
 
 /* -- Add (Zod-validated) ------------------------------------ */

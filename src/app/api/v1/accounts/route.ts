@@ -14,8 +14,8 @@ const AccountSchema = z.object({
 
 export const GET = apiRoute(
   null,
-  async () => {
-    return getAccounts();
+  async (req, { userId }) => {
+    return getAccounts({ userId });
   }
 );
 

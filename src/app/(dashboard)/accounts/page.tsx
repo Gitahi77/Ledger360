@@ -8,7 +8,7 @@ import { AccountsClient } from './AccountsClient';
 
 export default async function AccountsPage() {
   const user = await requireAuth();
-  const allAccounts = await getAccountBalances(user.id);
+  const allAccounts = await getAccountBalances({ userId: user.id });
   const mappedAccounts = allAccounts.map(a => ({
     ...a,
     openingMinor: Number(a.openingMinor),

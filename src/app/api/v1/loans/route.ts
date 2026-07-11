@@ -5,8 +5,8 @@ import { AddLoanSchema } from '@/lib/validation';
 
 export const GET = apiRoute(
   null,
-  async () => {
-    return getLoans();
+  async (req, { userId }) => {
+    return getLoans({ userId });
   }
 );
 

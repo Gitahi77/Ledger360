@@ -5,8 +5,8 @@ import { AddBudgetSchema } from '@/lib/validation';
 
 export const GET = apiRoute(
   null,
-  async () => {
-    return getBudgetsWithSpend();
+  async (req, { userId }) => {
+    return getBudgetsWithSpend({ userId });
   }
 );
 

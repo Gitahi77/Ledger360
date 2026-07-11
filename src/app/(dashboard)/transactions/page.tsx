@@ -34,11 +34,11 @@ export default async function Transactions({
   const user = await requireAuth();
   const [transactions, transfers, categories, accounts, goals, loans] = await Promise.all([
     getTransactions({ userId: user.id, period, type: typeFilter === 'all' || typeFilter === 'transfer' ? undefined : typeFilter }),
-    typeFilter === 'all' || typeFilter === 'transfer' ? getTransfers(period as Parameters<typeof getTransfers>[0]) : Promise.resolve([]),
+    typeFilter === 'all' || typeFilter === 'transfer' ? getTransfers({ userId: user.id, period: period as any }) : Promise.resolve([]),
     getCategories({ userId: user.id }),
-    getAccounts(),
-    getGoals(),
-    getLoans(),
+    getAccounts({ userId: user.id }),
+    getGoals({ userId: user.id }),
+    getLoans({ userId: user.id }),
   ]);
 
   const mappedTransfers = transfers.map(t => ({

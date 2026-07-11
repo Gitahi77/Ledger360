@@ -3,7 +3,7 @@ import { getNetWorth } from '@/lib/queries/networth';
 
 export const GET = apiRoute(
   null,
-  async () => {
-    return getNetWorth();
+  async (req, { userId }) => {
+    return getNetWorth({ userId });
   }
 );

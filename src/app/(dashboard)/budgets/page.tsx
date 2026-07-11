@@ -16,7 +16,7 @@ export default async function Budgets({
 
   const user = await requireAuth();
   const [budgets, categories] = await Promise.all([
-    getBudgetsWithSpend(period),
+    getBudgetsWithSpend({ userId: user.id, period }),
     getCategories({ userId: user.id, type: 'expense' }),
   ]);
 

@@ -5,8 +5,8 @@ import { AddGoalSchema } from '@/lib/validation';
 
 export const GET = apiRoute(
   null,
-  async () => {
-    return getGoals();
+  async (req, { userId }) => {
+    return getGoals({ userId });
   }
 );
 

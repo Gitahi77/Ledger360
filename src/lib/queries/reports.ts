@@ -1,4 +1,4 @@
-﻿/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
 // src/lib/actions/reports.ts
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
@@ -6,8 +6,7 @@ import { requireAuth } from '../actions/_auth';
 import type { Category } from '@prisma/client';
 
 /* -- 6-month trend (single raw SQL) ------------------------ */
-export async function getMonthlyTrend() {
-  const user  = await requireAuth();
+export async function getMonthlyTrend({ userId }: { userId: string }) {
   const now   = new Date();
   
   const nowNairobi = new Date(now.toLocaleString("en-US", { timeZone: "Africa/Nairobi" }));
@@ -28,7 +27,7 @@ export async function getMonthlyTrend() {
         type,
         SUM("baseAmountMinor")::float            AS total
       FROM "Transaction"
-      WHERE "userId" = ${user.id}
+      WHERE "userId" = ${userId}
         AND type IN ('income','expense')
         AND date >= ${start} AND date <= ${end}
       GROUP BY yr, mo, type
@@ -42,7 +41,7 @@ export async function getMonthlyTrend() {
         SUM(t."baseAmountMinor")::float AS total
       FROM "Transfer" t
       LEFT JOIN "Account" a ON t."toAccountId" = a.id
-      WHERE t."userId" = ${user.id}
+      WHERE t."userId" = ${userId}
         AND t."loanId" IS NULL
         AND (t."goalId" IS NOT NULL OR a.type IN ('SAVINGS', 'BROKERAGE', 'CRYPTO', 'SACCO_DEPOSIT'))
         AND t.date >= ${start} AND t.date <= ${end}
@@ -56,7 +55,7 @@ export async function getMonthlyTrend() {
         SUM("baseAmountMinor" - "interestMinor")::float AS total,
         SUM("interestMinor")::float AS interest
       FROM "Transfer"
-      WHERE "userId" = ${user.id}
+      WHERE "userId" = ${userId}
         AND "loanId" IS NOT NULL
         AND "toAccountId" IS NULL
         AND date >= ${start} AND date <= ${end}
@@ -84,8 +83,7 @@ export async function getMonthlyTrend() {
 }
 
 /* -- Period summary (KPIs) ---------------------------------- */
-export async function getReportSummary(period: string) {
-  const user = await requireAuth();
+export async function getReportSummary({ userId, period }: { userId: string; period: string }) {
   const now  = new Date();
   
   let from: Date, to: Date;
@@ -114,30 +112,30 @@ export async function getReportSummary(period: string) {
   }
 
   const [income, expenses, prevIncome, prevExpenses, currentSavingsTransfers, prevSavingsTransfers, currentDebtTransfers, prevDebtTransfers] = await Promise.all([
-    prisma.transaction.aggregate({ where: { userId: user.id, type: 'income',  date: { gte: from, lte: to } }, _sum: { baseAmountMinor: true } }),
-    prisma.transaction.aggregate({ where: { userId: user.id, type: 'expense', date: { gte: from, lte: to } }, _sum: { baseAmountMinor: true } }),
-    prisma.transaction.aggregate({ where: { userId: user.id, type: 'income',  date: { gte: prevFrom, lte: prevTo } }, _sum: { baseAmountMinor: true } }),
-    prisma.transaction.aggregate({ where: { userId: user.id, type: 'expense', date: { gte: prevFrom, lte: prevTo } }, _sum: { baseAmountMinor: true } }),
+    prisma.transaction.aggregate({ where: { userId, type: 'income',  date: { gte: from, lte: to } }, _sum: { baseAmountMinor: true } }),
+    prisma.transaction.aggregate({ where: { userId, type: 'expense', date: { gte: from, lte: to } }, _sum: { baseAmountMinor: true } }),
+    prisma.transaction.aggregate({ where: { userId, type: 'income',  date: { gte: prevFrom, lte: prevTo } }, _sum: { baseAmountMinor: true } }),
+    prisma.transaction.aggregate({ where: { userId, type: 'expense', date: { gte: prevFrom, lte: prevTo } }, _sum: { baseAmountMinor: true } }),
     prisma.transfer.findMany({
       where: {
-        userId: user.id, date: { gte: from, lte: to }, loanId: null,
+        userId, date: { gte: from, lte: to }, loanId: null,
         OR: [{ goalId: { not: null } }, { toAccount: { type: { in: ['SAVINGS', 'BROKERAGE', 'CRYPTO', 'SACCO_DEPOSIT'] } } }],
       },
       select: { baseAmountMinor: true },
     }),
     prisma.transfer.findMany({
       where: {
-        userId: user.id, date: { gte: prevFrom, lte: prevTo }, loanId: null,
+        userId, date: { gte: prevFrom, lte: prevTo }, loanId: null,
         OR: [{ goalId: { not: null } }, { toAccount: { type: { in: ['SAVINGS', 'BROKERAGE', 'CRYPTO', 'SACCO_DEPOSIT'] } } }],
       },
       select: { baseAmountMinor: true },
     }),
     prisma.transfer.findMany({
-      where: { userId: user.id, date: { gte: from, lte: to }, loanId: { not: null }, toAccountId: null },
+      where: { userId, date: { gte: from, lte: to }, loanId: { not: null }, toAccountId: null },
       select: { baseAmountMinor: true, interestMinor: true },
     }),
     prisma.transfer.findMany({
-      where: { userId: user.id, date: { gte: prevFrom, lte: prevTo }, loanId: { not: null }, toAccountId: null },
+      where: { userId, date: { gte: prevFrom, lte: prevTo }, loanId: { not: null }, toAccountId: null },
       select: { baseAmountMinor: true, interestMinor: true },
     }),
   ]);
@@ -200,8 +198,7 @@ export async function getReportSummary(period: string) {
 }
 
 /* -- Category breakdown ------------------------------------- */
-export async function getReportCategories(period: string, type: 'expense' | 'income' = 'expense'): Promise<{ name: string; value: number; pct: number; color: string }[]> {
-  const user = await requireAuth();
+export async function getReportCategories({ userId, period, type = 'expense' }: { userId: string; period: string; type?: 'expense' | 'income' }): Promise<{ name: string; value: number; pct: number; color: string }[]> {
   const now  = new Date();
   let from: Date, to: Date;
   if (period === 'this-week') {
@@ -218,7 +215,7 @@ export async function getReportCategories(period: string, type: 'expense' | 'inc
 
   const rows = await prisma.transaction.groupBy({
     by: ['categoryId'],
-    where: { userId: user.id, type: type, date: { gte: from, lte: to } },
+    where: { userId, type: type, date: { gte: from, lte: to } },
     _sum: { baseAmountMinor: true },
     orderBy: { _sum: { baseAmountMinor: 'desc' } },
     take: 8,
@@ -244,10 +241,9 @@ export async function getReportCategories(period: string, type: 'expense' | 'inc
 }
 
 /* -- User profile ------------------------------------------- */
-export async function getUserProfile() {
-  const user   = await requireAuth();
+export async function getUserProfile({ userId }: { userId: string }) {
   const dbUser = await prisma.user.findUnique({
-    where:  { id: user.id },
+    where:  { id: userId },
     select: { id: true, name: true, email: true, currency: true, accountType: true },
   });
   return dbUser;

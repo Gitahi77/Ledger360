@@ -10,8 +10,7 @@ import { mapTransferToDTO, type TransferDTO } from '@/lib/mappers/transfers';
 const DeleteSchema = z.object({ id: z.string().cuid() });
 
 /* -- Fetch -------------------------------------------------- */
-export async function getTransfers(period?: 'this-month' | 'last-30-days' | 'all-time'): Promise<TransferDTO[]> {
-  const user = await requireAuth();
+export async function getTransfers({ userId, period }: { userId: string; period?: 'this-month' | 'last-30-days' | 'all-time' }): Promise<TransferDTO[]> {
 
   // Basic date filtering
   let dateFilter = {};
@@ -26,7 +25,7 @@ export async function getTransfers(period?: 'this-month' | 'last-30-days' | 'all
 
   const transfers = await prisma.transfer.findMany({
     where: { 
-      userId: user.id,
+      userId,
       ...(Object.keys(dateFilter).length > 0 ? { date: dateFilter } : {})
     },
     include: {
