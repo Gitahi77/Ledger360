@@ -49,7 +49,7 @@ export async function createTransfer(raw: unknown): Promise<ActionResult<Transfe
   }
 }
 
-export async function editTransfer(id: string, rawData: unknown): Promise<ActionResult<TransferResultDTO>> {
+export async function editTransfer(): Promise<ActionResult<TransferResultDTO>> {
   'use server';
   return { 
     success: false, 

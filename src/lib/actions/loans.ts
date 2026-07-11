@@ -4,8 +4,7 @@
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { requireAuth } from './_auth';
-import { computeLoanBalance } from '@/lib/shared-computations';
-import type { Loan } from '@prisma/client';
+
 import { z } from 'zod';
 
 const DeleteSchema = z.object({ id: z.string().cuid() });

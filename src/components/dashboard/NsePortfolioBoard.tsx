@@ -28,7 +28,7 @@ export function NsePortfolioBoard() {
         setStocks(data.stocks || []);
         setIsLive(data.isLive);
         setLastUpdated(new Date());
-      } catch (err) {
+      } catch {
         setError(true);
       } finally {
         setLoading(false);

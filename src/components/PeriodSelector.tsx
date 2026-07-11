@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+
 
 export type Period = 'this-week' | 'this-month' | 'this-year' | 'custom';
 

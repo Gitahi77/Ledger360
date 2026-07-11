@@ -1,4 +1,4 @@
-import type { Account, ChamaDetails } from '@prisma/client';
+import type { ChamaDetails } from '@prisma/client';
 import { toMoneyDTO, toDateDTO } from './core';
 
 export type AccountDTO = {

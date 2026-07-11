@@ -8,7 +8,7 @@
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/actions/_auth';
 import { revalidatePath } from 'next/cache';
-import { logActivity } from '@/lib/audit';
+
 import { UpsertSavingsPlanSchema } from '@/lib/validation';
 import { z } from 'zod';
 

@@ -13,7 +13,7 @@ export async function GET(request: Request) {
     const symbols = symbolsParam.split(',').filter(s => s.trim().length > 0);
     const { quotes, isLive } = await fetchQuotes(symbols);
     return NextResponse.json({ quotes, isLive });
-  } catch (err) {
+  } catch {
     return NextResponse.json({ quotes: [], isLive: false }, { status: 500 });
   }
 }

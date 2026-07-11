@@ -12,7 +12,7 @@ export async function GET(request: Request) {
     }
     const results = await searchAssets(query);
     return NextResponse.json({ results });
-  } catch (err) {
+  } catch {
     return NextResponse.json({ results: [] }, { status: 500 });
   }
 }

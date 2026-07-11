@@ -6,7 +6,7 @@ import Link from 'next/link';
 import {
   LayoutDashboard, ArrowLeftRight, PieChart, Target,
   CreditCard, BarChart2, TrendingUp, Settings,
-  Tags, Menu, X, Landmark, Shield, FileText
+  Tags, Menu, X, Landmark
 } from 'lucide-react';
 
 const MAIN_ITEMS = [

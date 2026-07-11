@@ -59,7 +59,7 @@ export default function TermsOfServicePage() {
       <section style={{ marginBottom: '2rem' }}>
         <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem', color: 'var(--color-text-primary)' }}>6. Limitation of Liability</h2>
         <p style={{ marginBottom: '1rem', color: 'var(--color-text-secondary)', lineHeight: 1.6 }}>
-          Ledger360 is provided "as is". We make no warranties regarding the accuracy, completeness, or reliability 
+          Ledger360 is provided &quot;as is&quot;. We make no warranties regarding the accuracy, completeness, or reliability 
           of the AI-extracted financial data or generated insights. We shall not be liable for any financial losses 
           resulting from your use of or inability to use the service.
         </p>

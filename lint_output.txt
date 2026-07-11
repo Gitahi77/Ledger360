@@ -4,13 +4,6 @@
 
 
 ./src/app/(dashboard)/accounts/AccountsClient.tsx
-6:52  Warning: 'Landmark' is defined but never used.  @typescript-eslint/no-unused-vars
-6:62  Warning: 'Wallet' is defined but never used.  @typescript-eslint/no-unused-vars
-6:70  Warning: 'CreditCard' is defined but never used.  @typescript-eslint/no-unused-vars
-6:82  Warning: 'Banknote' is defined but never used.  @typescript-eslint/no-unused-vars
-6:92  Warning: 'Smartphone' is defined but never used.  @typescript-eslint/no-unused-vars
-8:10  Warning: 'fmtAdaptive' is defined but never used.  @typescript-eslint/no-unused-vars
-16:10  Warning: 'getAccountGroup' is defined but never used.  @typescript-eslint/no-unused-vars
 76:23  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
 88:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
 99:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
@@ -18,8 +11,6 @@
 
 ./src/app/(dashboard)/budgets/BudgetsClient.tsx
 59:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-112:99  Warning: 'period' is defined but never used.  @typescript-eslint/no-unused-vars
-233:32  Warning: 'i' is defined but never used.  @typescript-eslint/no-unused-vars
 
 ./src/app/(dashboard)/budgets/page.tsx
 23:55  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
@@ -27,29 +18,13 @@
 
 ./src/app/(dashboard)/categories/CategoriesClient.tsx
 44:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-79:61  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
-79:68  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
-79:71  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
-79:76  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
-80:15  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
-80:27  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
-99:55  Warning: 'currency' is defined but never used.  @typescript-eslint/no-unused-vars
 124:17  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-
-./src/app/(dashboard)/loading.tsx
-1:10  Warning: 'Surface' is defined but never used.  @typescript-eslint/no-unused-vars
 
 ./src/app/(dashboard)/loans/LoansClient.tsx
 44:47  Warning: 'currency' is defined but never used.  @typescript-eslint/no-unused-vars
-413:26  Warning: 'i' is defined but never used.  @typescript-eslint/no-unused-vars
-
-./src/app/(dashboard)/net-worth/NetWorthClient.tsx
-297:33  Warning: 'i' is defined but never used.  @typescript-eslint/no-unused-vars
-357:38  Warning: 'i' is defined but never used.  @typescript-eslint/no-unused-vars
 
 ./src/app/(dashboard)/page.tsx
 77:127  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-82:9  Warning: 'projected' is assigned a value but never used.  @typescript-eslint/no-unused-vars
 
 ./src/app/(dashboard)/reports/ReportsClient.tsx
 40:52  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
@@ -63,14 +38,10 @@
 
 ./src/app/(dashboard)/settings/SavingsAutomationSection.tsx
 6:35  Warning: 'useEffect' is defined but never used.  @typescript-eslint/no-unused-vars
-11:3  Warning: 'deleteSavingsPlan' is defined but never used.  @typescript-eslint/no-unused-vars
-17:48  Warning: 'Trash2' is defined but never used.  @typescript-eslint/no-unused-vars
-18:15  Warning: 'Pause' is defined but never used.  @typescript-eslint/no-unused-vars
-18:22  Warning: 'Play' is defined but never used.  @typescript-eslint/no-unused-vars
-97:16  Warning: 'setPlan' is assigned a value but never used.  @typescript-eslint/no-unused-vars
-151:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-162:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
-174:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+96:16  Warning: 'setPlan' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+150:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+161:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+173:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
 
 ./src/app/(dashboard)/settings/SettingsClient.tsx
 23:10  Warning: 'CURRENCIES' is defined but never used.  @typescript-eslint/no-unused-vars

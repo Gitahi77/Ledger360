@@ -13,7 +13,7 @@ export class CurrencyFormatter {
         minimumFractionDigits: currency.decimals,
         maximumFractionDigits: currency.decimals,
       }).format(majorAmount);
-    } catch (e) {
+    } catch {
       // Fallback if currency code is unsupported by Intl
       return `${currency.symbol} ${majorAmount.toFixed(currency.decimals)}`;
     }

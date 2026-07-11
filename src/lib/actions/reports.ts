@@ -4,7 +4,7 @@
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { requireAuth } from './_auth';
-import type { Category } from '@prisma/client';
+
 
 /* -- 6-month trend (single raw SQL) ------------------------ */
 

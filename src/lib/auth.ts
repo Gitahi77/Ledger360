@@ -4,7 +4,7 @@
 //   - 7-day JWT session max-age (appropriate for a financial app)
 //   - NEXTAUTH_SECRET startup validation
 //   - JWT refresh on session update to pick up profile changes
-import NextAuth, { type NextAuthOptions } from 'next-auth';
+import { type NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 
 import bcrypt from 'bcryptjs';
@@ -77,7 +77,7 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user, trigger }) {
+    async jwt({ token, user }) {
       if (user) {
         token.id             = (user as any).id;
         token.accountType    = (user as any).accountType;

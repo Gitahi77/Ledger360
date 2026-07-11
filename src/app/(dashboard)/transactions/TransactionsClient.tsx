@@ -7,17 +7,15 @@ import { DynamicCategoryIcon } from '@/lib/icons';
 import { SmartUpload } from '@/components/SmartUpload';
 import { addTransaction, editTransaction, deleteTransaction } from '@/lib/actions/transactions';
 import { createTransfer, editTransfer, deleteTransfer } from '@/lib/actions/transfers';
-import { fmtAdaptive } from '@/lib/format';
+
 import { Plus, FileDown, X, Loader2, Search, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
 import { toMinor, toMajor } from '@/lib/money';
 import { Grid } from '@/components/layout/grid';
 import { Stack } from '@/components/layout/stack';
 import { Surface } from '@/components/ui/surface';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { FinancialMetric } from '@/components/finance/metrics/FinancialMetric';
 import { CurrencyDisplay } from '@/components/finance/display/currency-display';
 import { TransactionRow } from '@/components/finance/TransactionRow';
@@ -278,7 +276,6 @@ export function TransactionsClient({
   const params     = useSearchParams();
   const [, startT] = useTransition();
   const net        = totalIncome - totalExpense;
-  const netPositive = net >= 0;
 
   const [showAdd,    setShowAdd]    = useState(false);
   const [editTx,     setEditTx]     = useState<Tx | null>(null);

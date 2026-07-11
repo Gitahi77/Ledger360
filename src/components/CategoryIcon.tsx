@@ -3,7 +3,7 @@
 import {
   ShoppingCart, Car, Zap, Film, Heart, ShoppingBag, BookOpen, Home,
   Briefcase, Repeat, Coffee, Dumbbell, Wifi, Phone, Plane, Gift,
-  TrendingUp, TrendingDown, Building2, CreditCard, Utensils, Bus,
+  TrendingUp, Building2, CreditCard, Utensils, Bus,
   Droplets, Music, Gamepad2, Baby, Scissors, Wrench, Package, DollarSign
 } from 'lucide-react';
 
