@@ -5,7 +5,9 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 
-export async function requireAuth() {
+import { cache } from 'react';
+
+export const requireAuth = cache(async () => {
   if (process.env.npm_lifecycle_event === 'build') {
     return { id: 'build-dummy-id', currency: 'KES' };
   }
@@ -16,4 +18,4 @@ export async function requireAuth() {
     id,
     currency: session.user.currency ?? 'KES',
   };
-}
+});

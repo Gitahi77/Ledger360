@@ -6,10 +6,10 @@ import { NetWorthClient } from './NetWorthClient';
 import { requireAuth } from '@/lib/actions/_auth';
 
 export default async function NetWorthPage() {
-  const [data, history, user] = await Promise.all([
+  const user = await requireAuth();
+  const [data, history] = await Promise.all([
     getNetWorth(),
     getNetWorthHistory(365), // Fetch 1 year of history
-    requireAuth(),
   ]);
 
   return (

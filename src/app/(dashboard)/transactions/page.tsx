@@ -31,8 +31,8 @@ export default async function Transactions({
     ? (rawType as AllowedType)
     : 'all';
 
-  const [user, transactions, transfers, categories, accounts, goals, loans] = await Promise.all([
-    requireAuth(),
+  const user = await requireAuth();
+  const [transactions, transfers, categories, accounts, goals, loans] = await Promise.all([
     getTransactions(period, typeFilter === 'all' || typeFilter === 'transfer' ? undefined : typeFilter),
     typeFilter === 'all' || typeFilter === 'transfer' ? getTransfers(period as Parameters<typeof getTransfers>[0]) : Promise.resolve([]),
     getCategories(),
