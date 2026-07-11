@@ -18,7 +18,7 @@ export async function ChamaBoard() {
     return null; // Don't show the board if the user has no Chamas
   }
 
-  const balances = await getAccountBalances(user.id);
+  const balances = await getAccountBalances({ userId: user.id });
   const balanceMap = new Map(balances.map(b => [b.id, b.balanceMinor]));
 
   const today = new Date();

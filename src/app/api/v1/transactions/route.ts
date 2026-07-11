@@ -11,7 +11,7 @@ const GetTransactionsQuerySchema = z.object({
 
 export const GET = apiRoute(
   null,
-  async (req) => {
+  async (req, { userId }) => {
     // Parse query params safely
     const url = new URL(req.url);
     const query = GetTransactionsQuerySchema.safeParse(Object.fromEntries(url.searchParams));
@@ -24,7 +24,7 @@ export const GET = apiRoute(
     const period = query.data.period ? query.data.period : 'this-month';
     const type = query.data.type ? query.data.type : undefined;
     
-    return getTransactions(period, type);
+    return getTransactions({ userId, period, type });
   }
 );
 

@@ -1,4 +1,4 @@
-﻿/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
 // src/lib/actions/budgets.ts
 import { prisma } from '@/lib/prisma';
 import { periodDates } from '@/lib/dateUtils';
@@ -17,7 +17,7 @@ const EditBudgetSchema = z.object({
   rollover: z.boolean().optional(),
 });
 
-export async function getBudgetsWithSpend(inputPeriod: unknown = 'this-month') {
+export async function getBudgetsWithSpend({ userId, period: inputPeriod = 'this-month' }: { userId: string; period?: unknown }) {
   const GetBudgetsSchema = z.object({
     period: PeriodSchema.default('this-month'),
   });
@@ -25,18 +25,18 @@ export async function getBudgetsWithSpend(inputPeriod: unknown = 'this-month') {
   if (!parsed.success) throw new Error('Invalid input');
   const { period } = parsed.data;
 
-  const user = await requireAuth();
+
   const { from, to } = periodDates(period);
 
   const budgets: (import('@prisma/client').Budget & { category: import('@prisma/client').Category })[] = await prisma.budget.findMany({
-    where: { userId: user.id },
+    where: { userId },
     include: { category: true },
   });
 
   const spendThisPeriodGroup = await prisma.transaction.groupBy({
     by: ['categoryId'],
     where: { 
-      userId: user.id, 
+      userId, 
       type: 'expense', 
       date: { gte: from, lte: to },
       NOT: [
@@ -63,7 +63,7 @@ export async function getBudgetsWithSpend(inputPeriod: unknown = 'this-month') {
 
     const txs = await prisma.transaction.findMany({
       where: {
-        userId: user.id,
+        userId,
         type: 'expense',
         categoryId: { in: categoryIds },
         date: { gte: minDate, lte: to },

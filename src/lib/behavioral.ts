@@ -97,7 +97,7 @@ export async function safeToSpend(userId: string, period: 'weekly' | 'monthly' |
   const plannedSavings = Math.floor(expectedIncome * (savingRate / 100));
 
   // 5. Loan Due
-  const loans = await getLoansForUser(userId);
+  const loans = await getLoansForUser({ userId });
   let loanDue = 0;
   for (const l of loans) {
     if (new Date(l.nextDue) <= to) {

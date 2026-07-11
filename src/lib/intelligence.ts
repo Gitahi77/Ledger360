@@ -329,7 +329,7 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
   // -- LOAN DUE ALERTS --------------------------------------------------------
   if (prefs?.notifLoanDue !== false) {
     const { getLoansForUser } = await import('@/lib/queries/loans');
-    const allLoans = await getLoansForUser(userId);
+    const allLoans = await getLoansForUser({ userId });
     const activeLoans = allLoans.filter(l => Number(l.balanceMinor) > 0);
     for (const loan of activeLoans) {
       const dueDate = new Date(loan.nextDue);

@@ -19,16 +19,16 @@ export default async function Settings() {
   const user = await requireAuth();
   
   const [profile, prefs, logs, savingsPlan, autoSaves, accounts, goals] = await Promise.all([
-    getUserProfile(),
-    getUserPreferences(),
+    getUserProfile({ userId: user.id }),
+    getUserPreferences({ userId: user.id }),
     prisma.auditLog.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: 'desc' },
       take: 25,
     }),
-    getSavingsPlan(),
-    getRecentAutoSaves(),
-    getAccounts(),
+    getSavingsPlan({ userId: user.id }),
+    getRecentAutoSaves({ userId: user.id }),
+    getAccounts({ userId: user.id }),
     prisma.goal.findMany({ where: { userId: user.id }, select: { id: true, name: true } }),
   ]);
 

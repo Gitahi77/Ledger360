@@ -9,8 +9,8 @@ import { requireAuth } from '@/lib/actions/_auth';
 export default async function Loans() {
   const user = await requireAuth();
   const [loans, accounts] = await Promise.all([
-    getLoans(),
-    getAccountBalances(user.id)
+    getLoans({ userId: user.id }),
+    getAccountBalances({ userId: user.id })
   ]);
   return (
     <>

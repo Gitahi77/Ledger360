@@ -1,9 +1,8 @@
-﻿/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
 // src/lib/actions/transactions.ts
 import { prisma } from '@/lib/prisma';
 import { periodDates } from '@/lib/dateUtils';
 import { revalidatePath } from 'next/cache';
-import { requireAuth } from '../actions/_auth';
 import { getAccountBalances } from './accounts';
 import type { Category } from '@prisma/client';
 import { z } from 'zod';
@@ -27,7 +26,7 @@ const EditTransactionSchema = z.object({
 });
 
 /* -- List --------------------------------------------------- */
-export async function getTransactions(inputPeriod: unknown = 'this-month', inputType?: unknown) {
+export async function getTransactions({ userId, period: inputPeriod = 'this-month', type: inputType }: { userId: string; period?: unknown; type?: unknown }) {
   const GetTransactionsSchema = z.object({
     period: PeriodSchema.default('this-month'),
     type: TypeSchema.optional(),
@@ -36,12 +35,11 @@ export async function getTransactions(inputPeriod: unknown = 'this-month', input
   if (!parsed.success) throw new Error('Invalid input');
   const { period, type } = parsed.data;
 
-  const user = await requireAuth();
   const { from, to } = periodDates(period);
 
   const txs = await prisma.transaction.findMany({
     where: {
-      userId: user.id,
+      userId,
       date: { gte: from, lte: to },
       ...(type && type !== 'all' ? { type } : {}),
     },
@@ -53,7 +51,7 @@ export async function getTransactions(inputPeriod: unknown = 'this-month', input
 }
 
 /* -- Summary for period ------------------------------------- */
-export async function getTransactionSummary(inputPeriod: unknown = 'this-month') {
+export async function getTransactionSummary({ userId, period: inputPeriod = 'this-month' }: { userId: string; period?: unknown }) {
   const GetSummarySchema = z.object({
     period: PeriodSchema.default('this-month'),
   });
@@ -61,7 +59,6 @@ export async function getTransactionSummary(inputPeriod: unknown = 'this-month')
   if (!parsed.success) throw new Error('Invalid input');
   const { period } = parsed.data;
 
-  const user = await requireAuth();
   const { from, to } = periodDates(period);
 
   let prevFrom: Date, prevTo: Date;
@@ -80,21 +77,21 @@ export async function getTransactionSummary(inputPeriod: unknown = 'this-month')
   const startOfToday = new Date(to.getFullYear(), to.getMonth(), to.getDate(), 0, 0, 0, 0);
 
   const [income, expenses, transfersOut, savingsTransfers, todaySpendAgg] = await Promise.all([
-    prisma.transaction.aggregate({ where: { userId: user.id, type: 'income',   date: { gte: from, lte: to } }, _sum: { baseAmountMinor: true } }),
-    prisma.transaction.aggregate({ where: { userId: user.id, type: 'expense',  date: { gte: from, lte: to } }, _sum: { baseAmountMinor: true } }),
+    prisma.transaction.aggregate({ where: { userId, type: 'income',   date: { gte: from, lte: to } }, _sum: { baseAmountMinor: true } }),
+    prisma.transaction.aggregate({ where: { userId, type: 'expense',  date: { gte: from, lte: to } }, _sum: { baseAmountMinor: true } }),
     prisma.transfer.aggregate({
-      where: { userId: user.id, toAccountId: null, date: { gte: from, lte: to } },
+      where: { userId, toAccountId: null, date: { gte: from, lte: to } },
       _sum: { baseAmountMinor: true, interestMinor: true }
     }),
     prisma.transfer.aggregate({
       where: {
-        userId: user.id, date: { gte: from, lte: to }, loanId: null,
+        userId, date: { gte: from, lte: to }, loanId: null,
         OR: [{ goalId: { not: null } }, { toAccount: { type: { in: ['SAVINGS', 'BROKERAGE', 'CRYPTO', 'SACCO_DEPOSIT'] } } }],
       },
       _sum: { baseAmountMinor: true },
     }),
     prisma.transaction.aggregate({
-      where: { userId: user.id, type: 'expense', date: { gte: startOfToday, lte: to } },
+      where: { userId, type: 'expense', date: { gte: startOfToday, lte: to } },
       _sum: { baseAmountMinor: true }
     })
   ]);
@@ -122,8 +119,7 @@ export async function getTransactionSummary(inputPeriod: unknown = 'this-month')
 }
 
 /* -- Monthly chart data (last 6 months) â€” single query ------ */
-export async function getMonthlyChartData() {
-  const user  = await requireAuth();
+export async function getMonthlyChartData({ userId }: { userId: string }) {
   const now   = new Date();
 
   const nowNairobi = new Date(now.toLocaleString("en-US", { timeZone: "Africa/Nairobi" }));
@@ -135,7 +131,7 @@ export async function getMonthlyChartData() {
 
   const txs = await prisma.transaction.findMany({
     where: {
-      userId: user.id,
+      userId,
       type: { in: ['income', 'expense'] },
       date: { gte: start, lte: end }
     },
@@ -164,7 +160,7 @@ export async function getMonthlyChartData() {
 }
 
 /* -- Category breakdown ------------------------------------- */
-export async function getCategoryBreakdown(inputPeriod: unknown = 'this-month') {
+export async function getCategoryBreakdown({ userId, period: inputPeriod = 'this-month' }: { userId: string; period?: unknown }) {
   const GetCategoryBreakdownSchema = z.object({
     period: PeriodSchema.default('this-month'),
   });
@@ -172,12 +168,11 @@ export async function getCategoryBreakdown(inputPeriod: unknown = 'this-month') 
   if (!parsed.success) throw new Error('Invalid input');
   const { period } = parsed.data;
 
-  const user = await requireAuth();
   const { from, to } = periodDates(period);
 
   const rows = await prisma.transaction.groupBy({
     by: ['categoryId'],
-    where: { userId: user.id, type: 'expense', date: { gte: from, lte: to } },
+    where: { userId, type: 'expense', date: { gte: from, lte: to } },
     _sum: { baseAmountMinor: true },
     orderBy: { _sum: { baseAmountMinor: 'desc' } },
   });
@@ -201,7 +196,7 @@ export async function getCategoryBreakdown(inputPeriod: unknown = 'this-month') 
 }
 
 /* -- Categories list ---------------------------------------- */
-export async function getCategories(inputType?: unknown) {
+export async function getCategories({ userId, type: inputType }: { userId: string; type?: unknown }) {
   const GetCategoriesSchema = z.object({
     type: z.enum(['income', 'expense', 'savings']).optional(),
   });
@@ -209,10 +204,9 @@ export async function getCategories(inputType?: unknown) {
   if (!parsed.success) throw new Error('Invalid input');
   const { type } = parsed.data;
 
-  const user = await requireAuth();
   return prisma.category.findMany({
     where: {
-      userId: user.id,
+      userId,
       ...(type ? { type } : {}),
     },
     orderBy: { name: 'asc' },

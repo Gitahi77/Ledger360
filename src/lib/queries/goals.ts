@@ -1,4 +1,4 @@
-﻿/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
 // src/lib/actions/goals.ts
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
@@ -16,16 +16,15 @@ const EditGoalSchema = z.object({
   deadline: z.string().optional().nullable(),
 });
 
-export async function getGoals(): Promise<GoalDTO[]> {
-  const user = await requireAuth();
+export async function getGoals({ userId }: { userId: string }): Promise<GoalDTO[]> {
   const goals: Goal[] = await prisma.goal.findMany({
-    where: { userId: user.id },
+    where: { userId },
     orderBy: { deadline: 'asc' },
   });
 
   const transferAgg = await prisma.transfer.groupBy({
     by: ['goalId'],
-    where: { userId: user.id, goalId: { not: null } },
+    where: { userId, goalId: { not: null } },
     _sum: { baseAmountMinor: true },
   });
 

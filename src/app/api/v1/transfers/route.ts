@@ -10,7 +10,7 @@ const GetTransfersQuerySchema = z.object({
 
 export const GET = apiRoute(
   null,
-  async (req) => {
+  async (req, { userId }) => {
     const url = new URL(req.url);
     const query = GetTransfersQuerySchema.safeParse(Object.fromEntries(url.searchParams));
     
@@ -21,7 +21,7 @@ export const GET = apiRoute(
     
     const period = query.data.period;
     
-    return getTransfers(period);
+    return getTransfers({ userId, period });
   }
 );
 

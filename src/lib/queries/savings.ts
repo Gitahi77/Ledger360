@@ -36,11 +36,10 @@ function advanceEscalation(plan: {
 }
 
 /* -- Get plan (with lazy escalation applied) ---------------- */
-export async function getSavingsPlan() {
-  const user = await requireAuth();
+export async function getSavingsPlan({ userId }: { userId: string }) {
 
   const plan = await prisma.savingsPlan.findUnique({
-    where: { userId: user.id },
+    where: { userId },
     include: {
       fromAccount: { select: { id: true, name: true, type: true, currency: true } },
       toAccount:   { select: { id: true, name: true, type: true, currency: true } },
@@ -54,7 +53,7 @@ export async function getSavingsPlan() {
   const esc = advanceEscalation(plan);
   if (esc.changed) {
     await prisma.savingsPlan.updateMany({
-      where: { id: plan.id, userId: user.id },
+      where: { id: plan.id, userId },
       data: { currentRatePct: esc.currentRatePct, nextEscalation: esc.nextEscalation },
     });
     return { ...plan, currentRatePct: esc.currentRatePct, nextEscalation: esc.nextEscalation };
@@ -70,10 +69,9 @@ export async function getSavingsPlan() {
 
 
 /* -- Get recent auto-saves for UI --------------------------- */
-export async function getRecentAutoSaves() {
-  const user = await requireAuth();
+export async function getRecentAutoSaves({ userId }: { userId: string }) {
   const saves = await prisma.transfer.findMany({
-    where: { userId: user.id, source: 'SAVE_MORE_TOMORROW' },
+    where: { userId, source: 'SAVE_MORE_TOMORROW' },
     include: {
       fromAccount: { select: { name: true, currency: true } },
       toAccount:   { select: { name: true, currency: true } },

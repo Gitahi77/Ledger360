@@ -57,12 +57,12 @@ export default async function Dashboard({
   try {
     [summary, budgets, loans, netWorth, chartData, donutData, insights, prefs, safeToSpendData] =
       await Promise.all([
-        getTransactionSummary(period),
-        getBudgetsWithSpend(period),
-        getLoans(),
-        getNetWorth(),
-        getMonthlyChartData(),
-        getCategoryBreakdown(period),
+        getTransactionSummary({ userId: user.id, period }),
+        getBudgetsWithSpend({ userId: user.id, period }),
+        getLoans({ userId: user.id }),
+        getNetWorth({ userId: user.id, currency: user.currency }),
+        getMonthlyChartData({ userId: user.id }),
+        getCategoryBreakdown({ userId: user.id, period }),
         import('@/lib/intelligence')
           .then(m => m.generateInsights(user.id, user.currency))
           .catch(() => []),   // AI insights are non-critical — fail silently

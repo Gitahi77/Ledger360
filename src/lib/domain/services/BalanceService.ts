@@ -31,7 +31,7 @@ export class BalanceService {
     const accounts = await getAccountsByUserId(userId);
     if (accounts.length === 0) return [];
 
-    const { incomeSums, expenseSums } = await getTransactionSumsByAccount(userId);
+    const { incomeSums, expenseSums } = await getTransactionSumsByAccount({ userId });
     const { transfersOut, transfersIn } = await getTransferSumsByAccount(userId);
 
     const incMap = new Map(incomeSums.map((g: any) => [g.accountId, Number(g._sum?.baseAmountMinor ?? 0)]));

@@ -39,9 +39,8 @@ const AppearanceSchema = z.object({
 
 
 /* -- Get all user preferences ------------------------------- */
-export async function getUserPreferences() {
-  const user = await requireAuth();
-  return prisma.userPreferences.findUnique({ where: { userId: user.id } });
+export async function getUserPreferences({ userId }: { userId: string }) {
+  return prisma.userPreferences.findUnique({ where: { userId } });
 }
 
 /* -- Export all user data as JSON --------------------------- */

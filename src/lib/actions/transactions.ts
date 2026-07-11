@@ -95,7 +95,7 @@ export async function addTransaction(raw: unknown) {
       // Resolve category
       let resolvedCategoryId = data.categoryId;
       if (persistencePayload.categoryHint && !resolvedCategoryId) {
-        const cat = await getCategoryByNameOrId(user.id, persistencePayload.categoryHint, persistencePayload.type);
+        const cat = await getCategoryByNameOrId({ userId: user.id, hint: persistencePayload.categoryHint, type: persistencePayload.type });
         resolvedCategoryId = cat.id;
       }
 
