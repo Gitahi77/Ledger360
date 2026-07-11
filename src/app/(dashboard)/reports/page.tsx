@@ -13,8 +13,8 @@ export default async function Reports({
   const { period: rawPeriod } = await searchParams;
   const period = rawPeriod ?? 'this-month';
 
-  const [user, trend, summary, expenseCategories, incomeCategories] = await Promise.all([
-    requireAuth(),
+  const user = await requireAuth();
+  const [trend, summary, expenseCategories, incomeCategories] = await Promise.all([
     getMonthlyTrend(),
     getReportSummary(period),
     getReportCategories(period, 'expense'),
