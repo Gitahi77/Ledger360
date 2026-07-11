@@ -4,7 +4,7 @@
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { requireAuth } from './_auth';
-import type { Goal } from '@prisma/client';
+
 import { z } from 'zod';
 
 const DeleteSchema = z.object({ id: z.string().cuid() });

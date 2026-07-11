@@ -294,7 +294,7 @@ export function NetWorthClient({ assets, liabilities, totalAssetsMinor, totalLia
               </div>
             ) : (
               <div style={{ display:'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap:'0.75rem' }}>
-                {assets.map((a, i) => (
+                {assets.map((a) => (
                   <div key={a.id} className="card group transition-all duration-300 hover:shadow-md hover:-translate-y-1"
                     style={{ padding:'1rem', borderLeft:'4px solid var(--color-income)', display:'flex', alignItems:'center', gap:'0.875rem', borderRadius: '12px', cursor: 'default' }}>
                     <div style={{ width:38, height:38, borderRadius:10, background:'var(--color-income-light)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, color:'var(--color-income)' }}>
@@ -354,7 +354,7 @@ export function NetWorthClient({ assets, liabilities, totalAssetsMinor, totalLia
               </div>
             ) : (
               <div style={{ display:'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap:'0.75rem' }}>
-                {liabilities.map((l, i) => (
+                {liabilities.map((l) => (
                   <div key={l.id} className="card group transition-all duration-300 hover:shadow-md hover:-translate-y-1"
                     style={{ padding:'1rem', borderLeft:'4px solid var(--color-expense)', display:'flex', alignItems:'center', gap:'0.875rem', borderRadius: '12px', cursor: 'default' }}>
                     <div style={{ flex:1, minWidth:0 }}>

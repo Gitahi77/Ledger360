@@ -109,9 +109,9 @@ function BudgetModal({ budget, categories, currency, onClose }: { budget?: Budge
   );
 }
 
-export function BudgetsClient({ budgets = [], categories = [], totalBudgeted = 0, totalSpent = 0, period, currency }: {
+export function BudgetsClient({ budgets = [], categories = [], totalBudgeted = 0, totalSpent = 0, currency, period }: {
   budgets: Budget[]; categories: Category[];
-  totalBudgeted: number; totalSpent: number; period: string; currency: string;
+  totalBudgeted: number; totalSpent: number; currency: string; period?: string;
 }) {
   const router     = useRouter();
   const [, startT] = useTransition();
@@ -230,7 +230,7 @@ export function BudgetsClient({ budgets = [], categories = [], totalBudgeted = 0
         </div>
       ) : (
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(340px,1fr))', gap:'1rem' }}>
-          {safeBudgets.map((b, i) => {
+          {safeBudgets.map((b) => {
             const st  = budgetStyle(b.limit, b.spent);
             const rem = Math.max(0, b.limit - b.spent);
             return (

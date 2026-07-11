@@ -10,7 +10,7 @@ export async function GET() {
   try {
     const { stocks, isLive } = await getNseStocks();
     return NextResponse.json({ stocks, isLive });
-  } catch (err) {
+  } catch {
     return NextResponse.json({ stocks: [], isLive: false }, { status: 500 });
   }
 }

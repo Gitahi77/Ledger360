@@ -3,9 +3,9 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { createAccount, updateAccount, deleteAccount } from '@/lib/actions/accounts';
-import { Plus, Edit2, Trash2, Loader2, X, Archive, Landmark, Wallet, CreditCard, Banknote, Smartphone } from 'lucide-react';
+import { Plus, Edit2, Trash2, Loader2, X, Archive } from 'lucide-react';
 import { toMinor, toMajor } from '@/lib/money';
-import { fmtAdaptive, formatKES } from '@/lib/format';
+import { formatKES } from '@/lib/format';
 
 type Account = {
   id: string; name: string; type: string; currency: string;
@@ -13,7 +13,7 @@ type Account = {
 };
 
 import { DynamicAccountIcon } from '@/lib/icons';
-import { getAccountGroup, ACCOUNT_GROUPS } from '@/lib/accounts';
+import { ACCOUNT_GROUPS } from '@/lib/accounts';
 import type { AccountType } from '@prisma/client';
 
 const ACCOUNT_TYPES = [

@@ -49,6 +49,7 @@ export async function createTransfer(raw: unknown): Promise<ActionResult<Transfe
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function editTransfer(id: string, rawData: unknown): Promise<ActionResult<TransferResultDTO>> {
   'use server';
   return { 
