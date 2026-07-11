@@ -7,10 +7,10 @@ const redis = hasRedis ? Redis.fromEnv() : null;
 
 export type IdempotencyStatus = 'PROCESSING' | 'COMPLETED';
 
-export async function checkIdempotency(key: string): Promise<{ status: IdempotencyStatus, response?: any } | null> {
+export async function checkIdempotency(key: string): Promise<{ status: IdempotencyStatus, response?: unknown } | null> {
   if (!redis) return null;
   try {
-    const cached = await redis.get<any>(key);
+    const cached = await redis.get<unknown>(key);
     
     if (cached === null) {
       return null;
@@ -43,7 +43,7 @@ export async function lockIdempotencyKey(key: string): Promise<boolean> {
   }
 }
 
-export async function saveIdempotencyResponse(key: string, response: any): Promise<void> {
+export async function saveIdempotencyResponse(key: string, response: unknown): Promise<void> {
   if (!redis) return;
   try {
     // Overwrite the 'PROCESSING' lock with the actual response, keep 24h expiry

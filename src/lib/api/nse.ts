@@ -3,6 +3,7 @@
 // Falls back to manual prices if the community API is unavailable
 // Copyright (c) 2024-present Eric Gitahi. All rights reserved.
 import yahooFinance from 'yahoo-finance2';
+import { YahooQuoteItem } from './yahoo';
 
 export interface NseStock {
   symbol: string;
@@ -36,10 +37,10 @@ export async function getNseStocks(): Promise<{ stocks: NseStock[]; isLive: bool
   }
   try {
     const symbols = NSE_STOCKS_FALLBACK.map(s => `${s.symbol}.NR`);
-    const quotes = await yahooFinance.quote(symbols);
+    const quotes: YahooQuoteItem | YahooQuoteItem[] = await yahooFinance.quote(symbols);
 
     const quotesArray = Array.isArray(quotes) ? quotes : [quotes];
-    const stocks: NseStock[] = quotesArray.map((q: any) => {
+    const stocks: NseStock[] = quotesArray.map((q: YahooQuoteItem) => {
       const symbol = q.symbol.replace('.NR', '');
       const fallback = NSE_STOCKS_FALLBACK.find(f => f.symbol === symbol);
       return {

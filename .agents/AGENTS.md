@@ -42,6 +42,20 @@ Before writing code, answer: "Why exactly did this fail?" Provide a clear, step-
 ### GATE 3 — Minimal Fix First
 Never perform a refactor first. Always perform the minimum code change to fix the issue. Deploy, verify. If fixed, stop. Professional engineers prioritize a **small blast radius**.
 
+### GATE 3.5 — Type Quality Review
+Before testing, measure the net improvement of the type architecture:
+```text
+Removed any: X
+Introduced unknown: X
+Introduced interfaces: X
+Introduced generics: X
+Introduced utility types: X
+Assertions introduced: X
+Non-null assertions introduced: X
+Double assertions introduced: X
+Net improvement: PASS/FAIL
+```
+
 ### GATE 4 — Regression Prevention
 After every bug fix, ask: "Why didn't CI catch this?" Then create a unit test, integration test, or regression test. No exceptions. Every production bug becomes a permanent test.
 
@@ -95,7 +109,7 @@ When CI fails, do **not** fix things immediately. Investigate first:
 - Present repair plan.
 - Wait for approval.
 
-### GATE 7 — Diff Review
+### GATE 6.8 — Diff Review
 Before considering the work order complete, you must produce a change summary:
 ```text
 Files touched: X
@@ -110,6 +124,108 @@ Risk: LOW
 ```
 If you cannot honestly say "Behavior changes: NONE" (when it was purely a cleanup/lint task), then you have exceeded the scope.
 
+### GATE 7 — Post-Merge Verification
+This should happen after **every** merged work order.
+
+Checklist:
+- Merge PR
+- Wait for Vercel production deployment
+- Smoke test production
+- Compare production with Preview
+- Review logs
+- Close work order
+
+Example checklist:
+```text
+WORK ORDER CLOSED
+
+✓ GitHub Actions passed
+✓ Vercel Preview passed
+✓ Vercel Production deployed
+✓ Manual smoke test completed
+✓ Runtime logs clean
+✓ No regression detected
+✓ Lessons learned documented
+```
+Production is always the final authority.
+
+## Type Architecture Principles
+
+### Type Source Hierarchy
+Always prefer authoritative sources of truth over inventing interfaces or falling back to `unknown`.
+1. Library exported type (e.g., from `yahoo-finance2`)
+2. Prisma generated types
+3. NextAuth types
+4. Next.js types
+5. React types
+6. Zod inference
+7. Internal interface
+8. `unknown` (only at true trust boundaries, narrow immediately)
+9. NEVER use `any`
+
+### No Assertion Escalation
+You are explicitly forbidden from using the following to silence type errors, unless rigorously justified:
+- `as any`
+- `as unknown as Foo`
+- Non-null assertions (`foo!`)
+
+### Type Complexity Budget
+Do not let type safety make code unreadable. If replacing an `any` introduces massive generic chains or mapped types, state the before/after complexity and justify the trade-off.
+
+## Mandatory Pre-Execution Checks
+
+Before beginning execution of any work order, you must produce:
+
+### 1. Risk Matrix
+Example:
+```text
+Risk Matrix
+Files: 18
+Runtime Risk: LOW
+Authentication: No
+Database: No
+Prisma: No
+Next.js Routing: No
+React: No
+Migration: No
+Public API Changes: No
+Expected CI Changes: ESLint only
+Rollback Difficulty: Very Easy
+```
+
+### 2. Dependency Mapping
+Before changing anything, map its dependencies:
+```text
+Function -> Who calls this? -> Who depends on it? -> Tests covering it? -> Runtime routes? -> Blast radius?
+```
+
+## Mandatory Post-Execution Documentation
+
+### 1. Architecture Notes
+After every work order, document:
+- Observed patterns/weaknesses
+- New recommendations for future phases
+
+### 2. Technical Debt Register
+Maintain a living backlog of observations (e.g., remaining any types, missing Zod schemas, BigInt strategies).
+
+### 3. Architecture Delta
+At the end of every phase, produce an Architecture Delta report:
+```text
+Architecture Delta
+
+New interfaces created: X
+Interfaces reused: X
+Duplicate interfaces removed: X
+Generics introduced: X
+Assertions removed: X
+Type coverage improved: YES
+Behavior changed: NO
+Runtime changed: NO
+External API changed: NO
+Database changed: NO
+```
+
 ### Work Order Completion Requirements
 **No work order is considered complete until it includes:**
 1. A root cause analysis
@@ -118,6 +234,8 @@ If you cannot honestly say "Behavior changes: NONE" (when it was purely a cleanu
 4. A scalability review
 5. Evidence-backed verification (including external CI)
 6. A "Lessons Learned" section.
+7. Architecture Notes
+8. Architecture Delta
 
 End every work order with the following structured "Definition of Done":
 
