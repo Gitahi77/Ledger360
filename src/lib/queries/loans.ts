@@ -37,7 +37,7 @@ export async function getLoansForUser({ userId }: { userId: string }): Promise<L
 
   const transferMap = new Map(transferAgg.map((t: any) => [
     t.loanId,
-    (t._sum.baseAmountMinor ?? 0) - (t._sum.interestMinor ?? 0)
+    Number(t._sum.baseAmountMinor ?? 0n) - Number(t._sum.interestMinor ?? 0n)
   ]));
 
   return loans.map((l: any) => {
@@ -46,7 +46,7 @@ export async function getLoansForUser({ userId }: { userId: string }): Promise<L
       ? Math.floor((today.getTime() - due.getTime()) / 86_400_000)
       : 0;
     const repaidAmount = transferMap.get(l.id) ?? 0;
-    const currentBalanceMinor = computeLoanBalance(l.balanceMinor, repaidAmount);
+    const currentBalanceMinor = computeLoanBalance(Number(l.balanceMinor), repaidAmount);
     
     return mapLoanToDTO({ 
       ...l, 
