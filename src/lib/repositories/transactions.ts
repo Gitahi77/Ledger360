@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma';
 
-export async function getTransactionSumsByAccount(userId: string) {
+export async function getTransactionSumsByAccount({ userId }: { userId: string }) {
   const txWhere = {
     userId,
     NOT: [
@@ -25,7 +25,7 @@ export async function getTransactionSumsByAccount(userId: string) {
   return { incomeSums, expenseSums };
 }
 
-export async function getTransactions(userId: string, accountId?: string) {
+export async function getTransactions({ userId, accountId }: { userId: string; accountId?: string }) {
   return await prisma.transaction.findMany({
     where: { 
       userId,
@@ -47,7 +47,7 @@ export async function deleteTransactionRecord(tx: any, id: string, userId: strin
   if (count === 0) throw new Error('Transaction not found or unauthorized');
 }
 
-export async function getCategoryByNameOrId(userId: string, hint: string, type: string) {
+export async function getCategoryByNameOrId({ userId, hint, type }: { userId: string; hint: string; type: string }) {
   // Check by ID first
   let cat = await prisma.category.findFirst({ where: { id: hint, userId } });
   if (cat) return cat;

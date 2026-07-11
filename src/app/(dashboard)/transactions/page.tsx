@@ -33,9 +33,9 @@ export default async function Transactions({
 
   const user = await requireAuth();
   const [transactions, transfers, categories, accounts, goals, loans] = await Promise.all([
-    getTransactions(period, typeFilter === 'all' || typeFilter === 'transfer' ? undefined : typeFilter),
+    getTransactions({ userId: user.id, period, type: typeFilter === 'all' || typeFilter === 'transfer' ? undefined : typeFilter }),
     typeFilter === 'all' || typeFilter === 'transfer' ? getTransfers(period as Parameters<typeof getTransfers>[0]) : Promise.resolve([]),
-    getCategories(),
+    getCategories({ userId: user.id }),
     getAccounts(),
     getGoals(),
     getLoans(),
@@ -68,13 +68,13 @@ export default async function Transactions({
 
   // Compute summary totals from the unfiltered period (all types)
   const allForPeriod = typeFilter !== 'all'
-    ? await getTransactions(period)
+    ? await getTransactions({ userId: user.id, period })
     : transactions;
 
   const totalIncome  = allForPeriod.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.baseAmountMinor), 0);
   const totalExpense = allForPeriod.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.baseAmountMinor), 0);
 
-  const { moneyOut } = await getTransactionSummary(period);
+  const { moneyOut } = await getTransactionSummary({ userId: user.id, period });
 
   return (
     <>

@@ -200,7 +200,7 @@ describe('Financial Logic and Validations', () => {
         _sum: { baseAmountMinor: 5000, interestMinor: 0 }
       } as any);
 
-      const res = await getTransactionSummary('this-month');
+      const res = await getTransactionSummary({ userId: 'user-1', period: 'this-month' });
       expect(res.savings).toBe(5000);
       expect(res.savingRate).toBe(5); // 5000/100000 * 100
     });
@@ -210,7 +210,7 @@ describe('Financial Logic and Validations', () => {
         _sum: { baseAmountMinor: 20000, interestMinor: 0 }
       } as any);
 
-      const res = await getTransactionSummary('this-month');
+      const res = await getTransactionSummary({ userId: 'user-1', period: 'this-month' });
       expect(res.savings).toBe(20000);
       expect(res.savingRate).toBe(20);
     });
@@ -220,7 +220,7 @@ describe('Financial Logic and Validations', () => {
         _sum: { baseAmountMinor: 15000, interestMinor: 0 }
       } as any);
 
-      const res = await getTransactionSummary('this-month');
+      const res = await getTransactionSummary({ userId: 'user-1', period: 'this-month' });
       expect(res.savings).toBe(15000);
       expect(res.savingRate).toBe(15);
     });
@@ -230,7 +230,7 @@ describe('Financial Logic and Validations', () => {
       // Simulate: no qualifying transfers returned.
       vi.mocked(prisma.transfer.aggregate).mockResolvedValue({ _sum: { baseAmountMinor: 0, interestMinor: 0 } } as any);
 
-      const res = await getTransactionSummary('this-month');
+      const res = await getTransactionSummary({ userId: 'user-1', period: 'this-month' });
       expect(res.savings).toBe(0);
       expect(res.savingRate).toBe(0);
     });
@@ -240,7 +240,7 @@ describe('Financial Logic and Validations', () => {
       // A transfer to a bank account with no goalId does not match -> not returned.
       vi.mocked(prisma.transfer.aggregate).mockResolvedValue({ _sum: { baseAmountMinor: 0, interestMinor: 0 } } as any);
 
-      const res = await getTransactionSummary('this-month');
+      const res = await getTransactionSummary({ userId: 'user-1', period: 'this-month' });
       expect(res.savings).toBe(0);
       expect(res.savingRate).toBe(0);
     });
@@ -251,7 +251,7 @@ describe('Financial Logic and Validations', () => {
         _sum: { baseAmountMinor: 5000, interestMinor: 0 }
       } as any);
 
-      const res = await getTransactionSummary('this-month');
+      const res = await getTransactionSummary({ userId: 'user-1', period: 'this-month' });
       expect(res.savings).toBe(5000);
       expect(res.savingRate).toBe(0);
     });
@@ -276,7 +276,7 @@ describe('Financial Logic and Validations', () => {
     });
 
     it('returns todaySpend summing only today expense transactions', async () => {
-      const res = await getTransactionSummary('this-month');
+      const res = await getTransactionSummary({ userId: 'user-1', period: 'this-month' });
       
       expect(prisma.transaction.aggregate).toHaveBeenCalledWith(expect.objectContaining({
         where: expect.objectContaining({
@@ -330,7 +330,7 @@ describe('Financial Logic and Validations', () => {
       // Dashboard logic mock
       vi.mocked(prisma.transfer.aggregate).mockResolvedValue({ _sum: { baseAmountMinor: 10000, interestMinor: 0 } } as Awaited<ReturnType<typeof prisma.transfer.aggregate>>);
 
-      const dashboard = await getTransactionSummary('this-month');
+      const dashboard = await getTransactionSummary({ userId: 'user-1', period: 'this-month' });
       const reports = await getReportSummary('this-month');
 
       // Dashboard moneyOut = expenses (30000) + transfers out (10000 loan repayment) = 40000
@@ -500,7 +500,7 @@ describe('Financial Logic and Validations', () => {
         { date: new Date('2024-01-31T22:30:00Z'), type: 'income', baseAmountMinor: 1000 }
       ]);
 
-      const res = await getMonthlyChartData();
+      const res = await getMonthlyChartData({ userId: 'user-1' });
 
       // The last 6 months from May 2024 are Dec, Jan, Feb, Mar, Apr, May.
       // We assert that the returned JS array has mapped this SQL row (mo: 2) to the 'Feb' bucket.

@@ -17,7 +17,7 @@ export default async function Budgets({
   const user = await requireAuth();
   const [budgets, categories] = await Promise.all([
     getBudgetsWithSpend(period),
-    getCategories('expense'),
+    getCategories({ userId: user.id, type: 'expense' }),
   ]);
 
   const totalBudgeted = budgets.reduce((s: number, b: any) => s + b.limit, 0);
