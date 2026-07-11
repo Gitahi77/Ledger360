@@ -2,7 +2,7 @@
 
 import {
   LayoutDashboard, ArrowLeftRight, PieChart, Target,
-  CreditCard, BarChart2, Settings, TrendingUp, LogOut, ShieldCheck, Tag, Landmark
+  CreditCard, BarChart2, Settings, TrendingUp, LogOut, Tag, Landmark
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';

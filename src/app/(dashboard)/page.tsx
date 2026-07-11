@@ -78,8 +78,6 @@ export default async function Dashboard({
   }
 
   const now          = new Date();
-  const monthsLeft   = Math.max(0, 11 - now.getMonth());
-  const projected    = Math.max(0, Number(summary.savings) * monthsLeft + Number(netWorth.netWorthMinor));
   const periodLabel  = period === 'this-week' ? 'This Week' : period === 'this-year' ? 'This Year' : 'This Month';
   const targetRate   = prefs?.savingRate ?? 20;
 

@@ -10,7 +10,7 @@ import { prisma } from './prisma';
 import {
   startOfMonth, subMonths, getDate, getDaysInMonth,
 } from 'date-fns';
-import { getLoansForUser } from './queries/loans';
+
 import { toMajor } from '@/lib/money';
 import type { Transaction, Category, Goal, Transfer } from '@prisma/client';
 
@@ -112,7 +112,7 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
 
       let topDiscretionary = null;
       let maxAmt = 0;
-      for (const [catId, cat] of Object.entries(lastMonthByCategory)) {
+      for (const cat of Object.values(lastMonthByCategory)) {
         if (!essentialRegex.test(cat.name) && cat.totalAmt > maxAmt) {
           maxAmt = cat.totalAmt;
           topDiscretionary = cat;

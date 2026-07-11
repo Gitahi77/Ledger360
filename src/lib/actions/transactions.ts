@@ -2,15 +2,13 @@
 
 // src/lib/actions/transactions.ts
 import { prisma } from '@/lib/prisma';
-import { periodDates } from '@/lib/dateUtils';
+
 import { revalidatePath } from 'next/cache';
 import { requireAuth } from './_auth';
 import { getAccountBalances } from './accounts';
-import type { Category } from '@prisma/client';
+
 import { z } from 'zod';
 
-const PeriodSchema = z.enum(['this-week', 'this-month', 'this-year', 'all']);
-const TypeSchema = z.enum(['income', 'expense', 'transfer', 'savings', 'all']);
 
 const DeleteSchema = z.object({
   id: z.string().cuid(),
@@ -91,7 +89,7 @@ export async function addTransaction(raw: unknown) {
     );
 
     // 2. Persist to Repository
-    const newTx = await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx) => {
       // Resolve category
       let resolvedCategoryId = data.categoryId;
       if (persistencePayload.categoryHint && !resolvedCategoryId) {

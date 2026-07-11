@@ -76,8 +76,8 @@ function CategoryModal({ category, onClose }: { category?: Category, onClose: ()
             <label style={{ display:'block', fontSize:'0.75rem', fontWeight:700, textTransform: 'uppercase', letterSpacing: '0.05em', color:'var(--color-text-secondary)', marginBottom:'0.5rem' }}>Icon</label>
             <p style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)' }}>
               Icons are automatically assigned based on the category name.
-              Name your category after a common label (e.g. "Matatu", "NHIF",
-              "Supermarket") to get the right icon automatically.
+              Name your category after a common label (e.g. &quot;Matatu&quot;, &quot;NHIF&quot;,
+              &quot;Supermarket&quot;) to get the right icon automatically.
             </p>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem', padding: '0.5rem', background: 'var(--bg-subtle)', borderRadius: 8 }}>
               <DynamicCategoryIcon category={name} size={20} style={{ color: 'var(--color-brand)' }} />
@@ -96,7 +96,7 @@ function CategoryModal({ category, onClose }: { category?: Category, onClose: ()
   );
 }
 
-export function CategoriesClient({ initialCategories, currency }: { initialCategories: Category[], currency: string }) {
+export function CategoriesClient({ initialCategories }: { initialCategories: Category[] }) {
   const router = useRouter();
   const [, startT] = useTransition();
   const [showAdd, setShowAdd] = useState(false);

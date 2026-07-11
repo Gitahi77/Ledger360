@@ -20,21 +20,11 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { CURRENCIES } from '@/lib/constants/currencies';
 import { SavingsAutomationSection } from './SavingsAutomationSection';
 
 type Section = 'profile' | 'appearance' | 'preferences' | 'savings' | 'notifications' | 'security' | 'data' | 'help';
 
-const SECTIONS: { id: Section; label: string; Icon: React.ElementType; desc: string }[] = [
-  { id: 'profile',       label: 'Profile',        Icon: User,        desc: 'Name, email, account type'     },
-  { id: 'appearance',    label: 'Appearance',      Icon: Palette,     desc: 'Theme, accent color, display'  },
-  { id: 'preferences',   label: 'Preferences',     Icon: Globe,       desc: 'Currency, date format'         },
-  { id: 'savings',       label: 'Save-More-Tomorrow', Icon: Globe,    desc: 'Auto-save automation (B-5)'    },
-  { id: 'notifications', label: 'Notifications',   Icon: Bell,        desc: 'Alerts and reminders'          },
-  { id: 'security',      label: 'Security & Activity', Icon: ShieldCheck, desc: 'Audit logs and sessions'   },
-  { id: 'data',          label: 'Data & Privacy',  Icon: Database,    desc: 'Export, import, delete'        },
-  { id: 'help',          label: 'Help & About',    Icon: HelpCircle,  desc: 'Guide, shortcuts, version'     },
-];
+
 
 const ACCENTS = [
   { label: 'Royal Blue', value: '#1A73E8' },
@@ -124,60 +114,7 @@ function SaveRow({ saving, saved, error }: { saving: boolean; saved: boolean; er
   );
 }
 
-/* -- Accordion header --------------------------------------- */
-function AccordionHeader({ section, isOpen, onClick }: {
-  section: typeof SECTIONS[number]; isOpen: boolean; onClick: () => void;
-}) {
-  const Icon = section.Icon;
-  return (
-    <button
-      onClick={onClick}
-      aria-expanded={isOpen}
-      style={{
-        display:'flex', alignItems:'center', gap:'0.75rem',
-        width:'100%', padding:'1rem', borderRadius: isOpen ? '0.75rem 0.75rem 0 0' : '0.75rem',
-        background: isOpen ? 'var(--color-brand-light)' : 'var(--surface-card)',
-        border:`1px solid ${isOpen ? 'var(--color-brand)' : 'var(--border)'}`,
-        borderBottom: isOpen ? 'none' : `1px solid var(--border)`,
-        color: isOpen ? 'var(--color-brand)' : 'var(--color-text-secondary)',
-        textAlign:'left', cursor:'pointer',
-        transition:'all 0.2s', marginBottom: isOpen ? 0 : '0.5rem',
-      }}
-    >
-      <div style={{
-        width:36, height:36, borderRadius:8, flexShrink:0,
-        background: isOpen ? 'var(--color-brand)' : 'var(--bg-hover)',
-        display:'flex', alignItems:'center', justifyContent:'center',
-        color: isOpen ? 'white' : 'var(--color-text-secondary)',
-        transition:'all 0.2s',
-      }}>
-        <Icon size={16} strokeWidth={isOpen ? 2.5 : 2} />
-      </div>
-      <div style={{ flex:1, minWidth:0 }}>
-        <div style={{ fontWeight:700, fontSize:'0.875rem', color: isOpen ? 'var(--color-brand)' : 'var(--color-text-primary)' }}>{section.label}</div>
-        <div style={{ fontSize:'0.7rem', color: isOpen ? 'var(--color-brand)' : 'var(--color-text-secondary)', opacity:0.8, marginTop:'0.1rem' }}>{section.desc}</div>
-      </div>
-      {isOpen
-        ? <ChevronDown size={16} style={{ flexShrink:0, color:'var(--color-brand)' }} />
-        : <ChevronRight size={16} style={{ flexShrink:0, color:'var(--color-text-secondary)' }} />
-      }
-    </button>
-  );
-}
 
-function AccordionPanel({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="animate-in" style={{
-      border:'1px solid var(--color-brand)', borderTop:'none',
-      borderRadius:'0 0 0.75rem 0.75rem',
-      padding:'1.25rem',
-      background:'var(--surface-card)',
-      marginBottom:'0.5rem',
-    }}>
-      {children}
-    </div>
-  );
-}
 
 /* -- Main Settings Client ----------------------------------- */
 export function SettingsClient({
@@ -213,7 +150,7 @@ export function SettingsClient({
 
   // Profile fields
   const [name,        setName]        = useState(initialName);
-  const [currency,    setCurrency]    = useState(initialCurrency);
+  const [currency]    = useState(initialCurrency);
   const [accountType, setAccountType] = useState(initialAccountType);
 
   // Appearance fields (from DB prefs or defaults)
@@ -251,9 +188,7 @@ export function SettingsClient({
 
   const initials = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || '??';
 
-  function toggleSection(id: Section) {
-    setOpenSection(prev => prev === id ? null : id);
-  }
+
 
   async function withSave(
     setter: React.Dispatch<React.SetStateAction<{ saving: boolean; saved: boolean; error: string }>>,
@@ -620,7 +555,7 @@ export function SettingsClient({
                 </div>
                 {deleteConfirm ? (
                   <div style={{ display:'flex', gap:'0.75rem', alignItems:'center', flexWrap:'wrap', background: 'var(--surface-card)', padding: '1rem', borderRadius: 8, border: '1px solid var(--border)' }}>
-                    <span style={{ fontSize:'0.85rem', color:'var(--color-text-primary)', fontWeight:600 }}>Type "DELETE" to confirm:</span>
+                    <span style={{ fontSize:'0.85rem', color:'var(--color-text-primary)', fontWeight:600 }}>Type &quot;DELETE&quot; to confirm:</span>
                     <input
                       type="text"
                       value={deleteAllText}
@@ -660,7 +595,7 @@ export function SettingsClient({
                   </div>
                   {deleteAcctConfirm ? (
                     <div style={{ display:'flex', gap:'0.75rem', alignItems:'center', flexWrap:'wrap', background: 'var(--surface-card)', padding: '1rem', borderRadius: 8, border: '1px solid var(--border)' }}>
-                      <span style={{ fontSize:'0.85rem', color:'var(--color-text-primary)', fontWeight:600 }}>Type "DELETE" to confirm:</span>
+                      <span style={{ fontSize:'0.85rem', color:'var(--color-text-primary)', fontWeight:600 }}>Type &quot;DELETE&quot; to confirm:</span>
                       <input
                         type="text"
                         value={deleteAcctText}

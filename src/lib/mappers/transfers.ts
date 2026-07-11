@@ -1,4 +1,4 @@
-import type { Transfer, Account, Goal, Loan } from '@prisma/client';
+import type { Transfer, Account } from '@prisma/client';
 import { toMoneyDTO, toDateDTO } from './core';
 
 export type TransferDTO = {

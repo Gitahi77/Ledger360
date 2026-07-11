@@ -3,7 +3,7 @@
 // If GOOGLE_GENERATIVE_AI_API_KEY is set, PDF/image screenshots also go through Gemini Vision.
 
 import { NextResponse } from 'next/server';
-import { headers } from 'next/headers';
+
 import { getServerSession } from 'next-auth';
 import { z } from 'zod';
 import { authOptions } from '@/lib/auth';
@@ -19,7 +19,7 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024;
  * Extracts magic number from file buffer to prevent MIME spoofing attacks.
  * Relies on the actual binary signature, not the user-provided MIME type.
  */
-function getActualMimeType(buffer: ArrayBuffer | null, fallbackMime: string, filename: string): string {
+function getActualMimeType(buffer: ArrayBuffer | null, fallbackMime: string): string {
   if (!buffer || buffer.byteLength < 4) return fallbackMime;
   
   const arr = new Uint8Array(buffer).subarray(0, 4);
@@ -354,7 +354,7 @@ export async function POST(request: Request) {
     const magicBuffer    = file ? await file.slice(0, 100).arrayBuffer() : null;
     
     // Security: Derive MIME type from magic numbers to prevent spoofing
-    const mimeType = getActualMimeType(magicBuffer, clientMimeType, fileName);
+    const mimeType = getActualMimeType(magicBuffer, clientMimeType);
     
     let cachedFileBuffer: ArrayBuffer | null = null;
     const getFileBuffer = async () => {

@@ -41,7 +41,7 @@ function loanStyle(l: Loan) {
 }
 
 /* -- Add Loan Modal ----------------------------------------- */
-function LoanModal({ loan, accounts, onClose, currency }: { loan?: Loan; accounts: {id: string, name: string}[]; onClose: () => void; currency?: string; }) {
+function LoanModal({ loan, accounts, onClose }: { loan?: Loan; accounts: {id: string, name: string}[]; onClose: () => void; }) {
   const router     = useRouter();
   const [, startT] = useTransition();
   const [loading, setLoading] = useState(false);
@@ -327,8 +327,8 @@ export function LoansClient({ loans = [], currency, accounts = [] }: { loans: Lo
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {showAdd    && <LoanModal accounts={accounts} onClose={() => setShowAdd(false)} currency={currency} />}
-      {editLoanObj && <LoanModal loan={editLoanObj} accounts={accounts} onClose={() => setEditLoanObj(null)} currency={currency} />}
+      {showAdd    && <LoanModal accounts={accounts} onClose={() => setShowAdd(false)} />}
+      {editLoanObj && <LoanModal loan={editLoanObj} accounts={accounts} onClose={() => setEditLoanObj(null)} />}
 
       {/* Toolbar */}
       <div className="flex items-center justify-between mb-2">
@@ -410,7 +410,7 @@ export function LoansClient({ loans = [], currency, accounts = [] }: { loans: Lo
         </div>
       ) : (
         <div style={{ display:'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap:'1rem' }}>
-          {loans.map((l, i) => {
+          {loans.map((l) => {
             const st  = loanStyle(l);
             const isExpanded = expanded === l.id;
 

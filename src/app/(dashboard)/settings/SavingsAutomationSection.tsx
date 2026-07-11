@@ -3,19 +3,18 @@
 // Save-More-Tomorrow settings UI (WO-15, B-5).
 // Transparent and reversible (B-0): shows what happens on each income,
 // lists recent auto-saves with Undo buttons.
-import { useState, useTransition, useEffect } from 'react';
+import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   upsertSavingsPlan,
   toggleSavingsPlan,
-  deleteSavingsPlan,
 } from '@/lib/actions/savings';
 import { deleteTransfer } from '@/lib/actions/transfers';
 import { toMajor } from '@/lib/money';
 import { fmtAdaptive } from '@/lib/format';
 import {
-  Loader2, CheckCircle2, AlertTriangle, Undo2, Trash2,
-  TrendingUp, Pause, Play, PiggyBank, Info,
+  Loader2, CheckCircle2, AlertTriangle, Undo2,
+  TrendingUp, PiggyBank, Info,
 } from 'lucide-react';
 
 /* -- Types -------------------------------------------------- */
@@ -94,7 +93,7 @@ export function SavingsAutomationSection({
   const [, startT] = useTransition();
 
   // State
-  const [plan, setPlan] = useState(initialPlan);
+  const [plan] = useState(initialPlan);
   const [autoSaves, setAutoSaves] = useState(initialAutoSaves);
 
   const [fromAccountId, setFromAccountId] = useState(plan?.fromAccountId ?? (accounts[0]?.id || ''));
