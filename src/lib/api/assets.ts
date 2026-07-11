@@ -1,4 +1,5 @@
 import yahooFinance from 'yahoo-finance2';
+import { YahooSearchQuote, YahooQuoteItem } from './yahoo';
 
 export interface AssetQuote {
   symbol: string;
@@ -19,8 +20,9 @@ export interface AssetSearchResult {
 
 export async function searchAssets(query: string): Promise<AssetSearchResult[]> {
   try {
-    const results = await yahooFinance.search(query, { quotesCount: 10, newsCount: 0 });
-    return (results as any).quotes.map((q: any) => ({
+    // We explicitly type the result to avoid TypeScript evaluating the overloaded library method to `never`
+    const results: { quotes: YahooSearchQuote[] } = await yahooFinance.search(query, { quotesCount: 10, newsCount: 0 });
+    return results.quotes.map((q: YahooSearchQuote) => ({
       symbol: q.symbol,
       name: q.shortname || q.longname || q.symbol,
       exchDisp: q.exchDisp || 'Global',
@@ -36,10 +38,11 @@ export async function fetchQuotes(symbols: string[]): Promise<{ quotes: AssetQuo
   if (!symbols || symbols.length === 0) return { quotes: [], isLive: true };
 
   try {
-    const rawQuotes = await yahooFinance.quote(symbols);
+    // Explicit annotation to guide TypeScript's overloaded return type
+    const rawQuotes: YahooQuoteItem | YahooQuoteItem[] = await yahooFinance.quote(symbols);
     const quotesArray = Array.isArray(rawQuotes) ? rawQuotes : [rawQuotes];
     
-    const quotes: AssetQuote[] = quotesArray.map((q: any) => {
+    const quotes: AssetQuote[] = quotesArray.map((q: YahooQuoteItem) => {
       // We convert prices to minor units (e.g. multiply by 100) to keep math consistent with Ledger360 standard
       return {
         symbol: q.symbol,
