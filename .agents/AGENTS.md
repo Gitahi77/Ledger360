@@ -70,6 +70,31 @@ Would this code fail if:
 - another developer extends this feature?
 (If yes—document it. Do not fix it. Those become future work orders.)
 
+### GATE 6.5 — External CI Validation
+This gate occurs after local testing.
+A work order cannot be marked complete until all external validation succeeds.
+
+Mandatory checklist:
+- `npm run lint`
+- `npm test`
+- `npm run build`
+- `npx tsc`
+- GitHub Actions PASS
+- Vercel Preview PASS
+- Manual smoke test PASS
+
+If even ONE fails: `WORK ORDER = NOT COMPLETE`.
+
+#### CI Failure Protocol
+When CI fails, do **not** fix things immediately. Investigate first:
+- STOP. Do not edit code.
+- Read every CI error.
+- Group them by root cause.
+- Determine whether they are the same bug, unrelated bugs, or cascade errors.
+- Estimate blast radius.
+- Present repair plan.
+- Wait for approval.
+
 ### GATE 7 — Diff Review
 Before considering the work order complete, you must produce a change summary:
 ```text
@@ -91,26 +116,56 @@ If you cannot honestly say "Behavior changes: NONE" (when it was purely a cleanu
 2. A regression test
 3. An architecture impact assessment
 4. A scalability review
-5. Evidence-backed verification
+5. Evidence-backed verification (including external CI)
 6. A "Lessons Learned" section.
 
-End every work order with a structured summary format including measurable, evidence-based confidence metrics:
+End every work order with the following structured "Definition of Done":
+
 ```text
 WORK ORDER COMPLETE
-Feature: [Feature Name]
 
-Confidence Report
-Root cause identified: 99%
-Minimal fix: 100%
-Regression tests: 95%
-Architecture unchanged: 100%
-Production verification: 100%
-Remaining unknowns: [List specific unknowns]
+Root cause proven
+YES
 
-Lessons Learned
-✓ [Lesson 1]
-✓ [Lesson 2]
+Regression test added
+YES / N/A
 
-Future recommendation:
-[Recommendation]
+TypeScript
+PASS
+
+ESLint
+PASS (or expected remaining warnings listed)
+
+Vitest
+PASS
+
+Production build
+PASS
+
+GitHub Actions
+PASS
+
+Vercel Preview
+PASS
+
+Manual smoke test
+PASS
+
+Architecture review completed
+YES
+
+Scalability review completed
+YES
+
+Remaining technical debt
+Listed explicitly
+
+Confidence
+Root Cause: xx%
+Fix: xx%
+Regression Prevention: xx%
+Deployment Confidence: xx%
 ```
+
+**Rule for Confidence:**
+Never say "100% confidence" unless GitHub PASS, Vercel PASS, and Manual browser verification PASS are all true. Otherwise, Deployment Confidence must state "Unknown until Vercel passes."
