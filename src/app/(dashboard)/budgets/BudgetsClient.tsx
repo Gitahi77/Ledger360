@@ -109,9 +109,9 @@ function BudgetModal({ budget, categories, currency, onClose }: { budget?: Budge
   );
 }
 
-export function BudgetsClient({ budgets = [], categories = [], totalBudgeted = 0, totalSpent = 0, currency }: {
+export function BudgetsClient({ budgets = [], categories = [], totalBudgeted = 0, totalSpent = 0, currency, period }: {
   budgets: Budget[]; categories: Category[];
-  totalBudgeted: number; totalSpent: number; currency: string;
+  totalBudgeted: number; totalSpent: number; currency: string; period?: string;
 }) {
   const router     = useRouter();
   const [, startT] = useTransition();
