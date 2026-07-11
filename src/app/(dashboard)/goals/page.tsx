@@ -6,8 +6,8 @@ import { GoalsClient } from './GoalsClient';
 import { requireAuth } from '@/lib/actions/_auth';
 
 export default async function Goals() {
-  const [user, goals] = await Promise.all([
-    requireAuth(),
+  const user = await requireAuth();
+  const [goals] = await Promise.all([
     getGoals(),
   ]);
   return (
