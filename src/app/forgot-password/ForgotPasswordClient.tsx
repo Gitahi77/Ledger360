@@ -3,6 +3,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Loader2 } from 'lucide-react';
 import { requestPasswordReset } from '@/lib/actions/password';
+import { getErrorMessage } from '@/lib/format';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail]     = useState('');
@@ -18,8 +19,8 @@ export default function ForgotPasswordPage() {
     try {
       await requestPasswordReset(email);
       setSent(true);
-    } catch (err: any) {
-      setError(err.message || 'Something went wrong.');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err) || 'Something went wrong.');
     } finally {
       setLoading(false);
     }

@@ -52,30 +52,46 @@ export default async function Dashboard({
   const currency = user.currency;
   const firstName = (session?.user?.name ?? '').split(' ')[0] || 'there';
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let summary: any, budgets: any[], loans: any[], netWorth: any, chartData: any[], donutData: any[], insights: any[], prefs: any, safeToSpendData: any;
+  type DashboardData = [
+    Awaited<ReturnType<typeof getTransactionSummary>>,
+    Awaited<ReturnType<typeof getBudgetsWithSpend>>,
+    Awaited<ReturnType<typeof getLoans>>,
+    Awaited<ReturnType<typeof getNetWorth>>,
+    Awaited<ReturnType<typeof getMonthlyChartData>>,
+    Awaited<ReturnType<typeof getCategoryBreakdown>>,
+    any[], // Insights
+    Awaited<ReturnType<typeof prisma.userPreferences.findUnique>>,
+    Awaited<ReturnType<typeof safeToSpend>>
+  ];
+
+  let data: DashboardData;
   try {
-    [summary, budgets, loans, netWorth, chartData, donutData, insights, prefs, safeToSpendData] =
-      await Promise.all([
-        getTransactionSummary({ userId: user.id, period }),
-        getBudgetsWithSpend({ userId: user.id, period }),
-        getLoans({ userId: user.id }),
-        getNetWorth({ userId: user.id, currency: user.currency }),
-        getMonthlyChartData({ userId: user.id }),
-        getCategoryBreakdown({ userId: user.id, period }),
-        import('@/lib/intelligence')
-          .then(m => m.generateInsights(user.id, user.currency))
-          .catch(() => []),   // AI insights are non-critical — fail silently
-        prisma.userPreferences.findUnique({ where: { userId: user.id } }),
-        safeToSpend(user.id, period === 'this-week' ? 'weekly' : period === 'this-year' ? 'yearly' : 'monthly'),
-      ]);
-  } catch (err) {
-    console.error('[Dashboard] Data fetch failed:', err);
-    summary = { income: 0, expenses: 0, savings: 0, savingRate: 0, moneyOut: 0, todaySpend: 0 };
-    budgets = []; loans = []; chartData = []; donutData = []; insights = [];
-    netWorth = { netWorthMinor: 0, totalAssetsMinor: 0, totalLiabilitiesMinor: 0, totalCashMinor: 0 };
-    prefs = null; safeToSpendData = { discretionaryMinor: 0, remainingMinor: 0, perDayMinor: 0, daysLeft: 0, breakdown: {} as any };
+    data = await Promise.all([
+      getTransactionSummary({ userId: user.id, period }),
+      getBudgetsWithSpend({ userId: user.id, period }),
+      getLoans({ userId: user.id }),
+      getNetWorth({ userId: user.id, currency: user.currency }),
+      getMonthlyChartData({ userId: user.id }),
+      getCategoryBreakdown({ userId: user.id, period }),
+      import('@/lib/intelligence')
+        .then(m => m.generateInsights(user.id, user.currency))
+        .catch(() => []),   // AI insights are non-critical — fail silently
+      prisma.userPreferences.findUnique({ where: { userId: user.id } }),
+      safeToSpend(user.id, period === 'this-week' ? 'weekly' : period === 'this-year' ? 'yearly' : 'monthly'),
+    ]) as DashboardData;
+  } catch (err: unknown) {
+    const { getErrorMessage } = await import('@/lib/format');
+    console.error('[Dashboard] Data fetch failed:', getErrorMessage(err));
+    data = [
+      { income: 0, expenses: 0, savings: 0, savingRate: 0, moneyOut: 0, todaySpend: 0, savingRateChange: 0, incomeChange: 0, expensesChange: 0, savingsChange: 0, moneyOutChange: 0, todaySpendChange: 0 },
+      [], [],
+      { netWorthMinor: 0, totalAssetsMinor: 0, totalLiabilitiesMinor: 0, totalCashMinor: 0, netWorthChange: 0, assetsChange: 0, liabilitiesChange: 0, cashChange: 0 },
+      [], [], [], null,
+      { discretionaryMinor: 0, remainingMinor: 0, perDayMinor: 0, daysLeft: 0, breakdown: { expectedIncome: 0, baseEnvelopeLimits: 0, plannedSavings: 0, loanDue: 0, unbudgetedSpendThisPeriod: 0, envelopeOverspendPenalty: 0 } }
+    ] as unknown as DashboardData;
   }
+
+  const [summary, budgets, loans, netWorth, chartData, donutData, insights, prefs, safeToSpendData] = data;
 
   const now          = new Date();
   const periodLabel  = period === 'this-week' ? 'This Week' : period === 'this-year' ? 'This Year' : 'This Month';

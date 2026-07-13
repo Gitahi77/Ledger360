@@ -8,13 +8,14 @@ import { toMinor, toMajor } from '@/lib/money';
 import { formatKES } from '@/lib/format';
 
 type Account = {
-  id: string; name: string; type: string; currency: string;
+  id: string; name: string; type: AccountType; currency: string;
   openingMinor: number; balanceMinor: number; archived: boolean;
 };
 
 import { DynamicAccountIcon } from '@/lib/icons';
 import { ACCOUNT_GROUPS } from '@/lib/accounts';
 import type { AccountType } from '@prisma/client';
+import { getErrorMessage } from '@/lib/format';
 
 const ACCOUNT_TYPES = [
   { id: 'CHECKING',       label: 'Checking' },
@@ -39,7 +40,7 @@ export function AccountsClient({ accounts, currency }: { accounts: Account[], cu
   const [editingAcc, setEditingAcc] = useState<Account | null>(null);
 
   const [name, setName] = useState('');
-  const [type, setType] = useState('CHECKING');
+  const [type, setType] = useState<AccountType>('CHECKING');
   const [opening, setOpening] = useState('');
   
   const [loading, setLoading] = useState(false);
@@ -52,7 +53,7 @@ export function AccountsClient({ accounts, currency }: { accounts: Account[], cu
   function openNew() {
     setEditingAcc(null);
     setName('');
-    setType('CHECKING');
+    setType('CHECKING' as AccountType);
     setOpening('');
     setError('');
     setShowModal(true);
@@ -73,7 +74,7 @@ export function AccountsClient({ accounts, currency }: { accounts: Account[], cu
     try {
       const data = {
         name,
-        type: type as any,
+        type: type,
         openingMinor: toMinor(parseFloat(opening || '0')),
       };
       
@@ -85,8 +86,8 @@ export function AccountsClient({ accounts, currency }: { accounts: Account[], cu
       
       setShowModal(false);
       startT(() => router.refresh());
-    } catch (err: any) {
-      setError(err.message ?? 'Something went wrong.');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -96,8 +97,8 @@ export function AccountsClient({ accounts, currency }: { accounts: Account[], cu
     try {
       await updateAccount(acc.id, { archived: !acc.archived });
       startT(() => router.refresh());
-    } catch (err: any) {
-      alert(err.message ?? 'Could not archive account.');
+    } catch (err: unknown) {
+      alert(getErrorMessage(err) ?? 'Could not archive account.');
     }
   }
 
@@ -107,8 +108,8 @@ export function AccountsClient({ accounts, currency }: { accounts: Account[], cu
     try {
       await deleteAccount(id);
       startT(() => router.refresh());
-    } catch (err: any) {
-      alert(err.message ?? 'Could not delete account.');
+    } catch (err: unknown) {
+      alert(getErrorMessage(err) ?? 'Could not delete account.');
     } finally {
       setDeletingId(null);
     }
@@ -246,7 +247,7 @@ export function AccountsClient({ accounts, currency }: { accounts: Account[], cu
               <div>
                 <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '0.35rem' }}>Type</label>
                 <select required className="input-field" style={{ width: '100%', padding: '0.55rem 0.75rem', fontSize: '0.85rem' }}
-                  value={type} onChange={e => setType(e.target.value)}>
+                  value={type} onChange={e => setType(e.target.value as AccountType)}>
                   {ACCOUNT_TYPES.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
                 </select>
               </div>

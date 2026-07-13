@@ -34,7 +34,7 @@ export default async function Transactions({
   const user = await requireAuth();
   const [transactions, transfers, categories, accounts, goals, loans] = await Promise.all([
     getTransactions({ userId: user.id, period, type: typeFilter === 'all' || typeFilter === 'transfer' ? undefined : typeFilter }),
-    typeFilter === 'all' || typeFilter === 'transfer' ? getTransfers({ userId: user.id, period: period as any }) : Promise.resolve([]),
+    typeFilter === 'all' || typeFilter === 'transfer' ? getTransfers({ userId: user.id, period }) : Promise.resolve([]),
     getCategories({ userId: user.id }),
     getAccounts({ userId: user.id }),
     getGoals({ userId: user.id }),

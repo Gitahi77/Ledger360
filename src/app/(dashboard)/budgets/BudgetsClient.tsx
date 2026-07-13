@@ -8,6 +8,7 @@ import { SmartUpload } from '@/components/SmartUpload';
 import { fmtAdaptive } from '@/lib/format';
 import { Plus, Trash2, Loader2, X, FileDown, LayoutGrid } from 'lucide-react';
 import { toMinor, toMajor } from '@/lib/money';
+import { getErrorMessage } from '@/lib/format';
 
 type Budget = { id: string; name: string; category: string; icon: string; limit: number; spent: number; period: string; rollover?: boolean };
 type Category = { id: string; name: string; type: string };
@@ -56,7 +57,7 @@ function BudgetModal({ budget, categories, currency, onClose }: { budget?: Budge
         await addBudget({ name, categoryId, limitAmountMinor: toMinor(parseFloat(limitAmt)), period, rollover });
       }
       startT(() => router.refresh()); onClose();
-    } catch (err: any) { setError(err.message ?? 'Something went wrong.'); }
+    } catch (err: unknown) { setError(getErrorMessage(err)); }
     finally { setLoading(false); }
   }
 

@@ -3,6 +3,7 @@
 // Copyright (c) 2024-present Eric Gitahi. All rights reserved.
 // Fully wired: every toggle/field saves to the database via server actions.
 import { useState, useTransition } from 'react';
+import { getErrorMessage } from '@/lib/format';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { updateProfile } from '@/lib/actions/reports';
@@ -21,6 +22,7 @@ import {
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { SavingsAutomationSection } from './SavingsAutomationSection';
+
 
 type Section = 'profile' | 'appearance' | 'preferences' | 'savings' | 'notifications' | 'security' | 'data' | 'help';
 
@@ -199,8 +201,8 @@ export function SettingsClient({
       await fn();
       setter({ saving: false, saved: true, error: '' });
       setTimeout(() => setter({ saving: false, saved: false, error: '' }), 3000);
-    } catch (err: any) {
-      setter({ saving: false, saved: false, error: err?.message ?? 'Save failed' });
+    } catch (err: unknown) {
+      setter({ saving: false, saved: false, error: getErrorMessage(err) });
     }
   }
 
@@ -277,8 +279,8 @@ export function SettingsClient({
     try {
       await deleteUserAccount();
       signOut({ callbackUrl: '/login' });
-    } catch (e: any) {
-      setDataState({ saving: false, saved: false, error: e.message || 'Failed to delete account.' });
+    } catch (e: unknown) {
+      setDataState({ saving: false, saved: false, error: getErrorMessage(e) || 'Failed to delete account.' });
     }
   }
 
@@ -461,7 +463,7 @@ export function SettingsClient({
                 {logs.map(log => {
                   const date = new Date(log.createdAt);
                   const rawAction = log.action.split('_')[0].toUpperCase();
-                  const actionVerbs = { CREATE: 'added', UPDATE: 'updated', DELETE: 'deleted', IMPORT: 'imported' } as any;
+                  const actionVerbs: Record<string, string> = { CREATE: 'added', UPDATE: 'updated', DELETE: 'deleted', IMPORT: 'imported' };
                   const verb = actionVerbs[rawAction] || 'modified';
                   const resourceNoun = (log.resource || 'item').toLowerCase();
                   

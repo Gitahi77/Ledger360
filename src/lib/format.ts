@@ -121,3 +121,13 @@ export function formatKESCompact(amountCents: number): string {
   if (amount >= 1_000) return `KES ${(amount / 1_000).toFixed(0)}K`;
   return `KES ${amount.toFixed(0)}`;
 }
+  
+/**  
+ * Centralized error normalization for UI components.  
+ */  
+export function getErrorMessage(error: unknown): string {  
+  if (error instanceof Error) return error.message;  
+  if (typeof error === 'string') return error;  
+  if (typeof error === 'object' && error !== null && 'message' in error) return String(error.message);  
+  return 'An unexpected error occurred.';  
+} 

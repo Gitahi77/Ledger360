@@ -1,3 +1,4 @@
+import { AccountType } from '@prisma/client';
 import { getAccountsByUserId } from '../../repositories/accounts';
 import { getTransactionSumsByAccount } from '../../repositories/transactions';
 import { getTransferSumsByAccount } from '../../repositories/transfers';
@@ -8,7 +9,7 @@ export type EnrichedAccountData = {
   id: string;
   userId: string;
   name: string;
-  type: string;
+  type: AccountType;
   currency: string;
   openingMinor: number;
   archived: boolean;
