@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import {
   BarChart, Bar, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
-  PieChart, Pie, Cell,
+  PieChart, Pie, Cell, TooltipProps
 } from 'recharts';
 import { TrendingUp, TrendingDown, Minus, Info } from 'lucide-react';
 import { fmtAdaptive, fmtCompact } from '@/lib/format';
@@ -37,12 +37,15 @@ type CategoryRow  = { name: string; value: number; pct: number; color: string };
 
 const tick = { fontSize: 10, fill: 'var(--color-text-secondary)', fontFamily: 'Inter, sans-serif' };
 
-function Tip({ active, payload, label, currency }: any) {
+function BarTip(props: { active?: boolean; payload?: unknown; label?: string; currency?: string; total?: number }) {
+  if (typeof props !== 'object' || props === null) return null;
+  const { active, payload, label } = props as { active?: boolean; payload?: { name: string; value: number; color?: string }[]; label?: string };
+  const currency = (props as { currency?: string }).currency || 'USD';
   if (!active || !payload?.length) return null;
   return (
     <div style={{ background:'var(--surface-card)', border:'1px solid var(--border)', borderRadius:12, padding:'0.75rem 1rem', boxShadow:'var(--shadow-md)' }}>
       <p style={{ fontSize:'0.7rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.08em', color:'var(--color-text-secondary)', marginBottom:'0.5rem' }}>{label}</p>
-      {payload.map((p: any) => (
+      {payload.map((p) => (
         <div key={p.name} style={{ display:'flex', alignItems:'center', justifyContent: 'space-between', gap:'1.5rem', marginBottom:'0.25rem' }}>
           <div style={{ display:'flex', alignItems:'center', gap:'0.4rem' }}>
             <div style={{ width:8, height:8, borderRadius:'50%', background:p.color, flexShrink:0 }} />
@@ -55,7 +58,11 @@ function Tip({ active, payload, label, currency }: any) {
   );
 }
 
-function PieTip({ active, payload, total, currency }: any) {
+function PieTip(props: { active?: boolean; payload?: unknown; label?: string; currency?: string; total?: number }) {
+  if (typeof props !== 'object' || props === null) return null;
+  const { active, payload } = props as { active?: boolean; payload?: { name: string; value: number }[] };
+  const total = (props as { total?: number }).total || 0;
+  const currency = (props as { currency?: string }).currency || 'USD';
   if (!active || !payload?.length) return null;
   return (
     <div style={{ background: 'var(--surface-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '0.75rem 1rem', boxShadow: 'var(--shadow-md)' }}>
@@ -112,8 +119,8 @@ export function ReportsClient({
       {/* Toolbar */}
       <div className="flex items-center justify-between mb-6 animate-in flex-wrap gap-4 print-hide">
         <div style={{ display:'flex', gap:'0.25rem', background: 'var(--surface-sunken)', padding: '0.35rem', borderRadius: 10, border: '1px solid var(--border)' }}>
-          {['cash-flow', 'spending', 'income', 'insights'].map(t => (
-            <button key={t} onClick={() => setTab(t as any)}
+          {(['cash-flow', 'spending', 'income', 'insights'] as const).map(t => (
+            <button key={t} onClick={() => setTab(t)}
               style={{
                 background: tab === t ? 'var(--surface-card)' : 'transparent',
                 border: tab === t ? '1px solid var(--border)' : '1px solid transparent',
@@ -248,8 +255,8 @@ export function ReportsClient({
             </div>
             {tab !== 'cash-flow' && (
               <div style={{ display: 'flex', gap: '0.25rem', background: 'var(--surface-sunken)', padding: '0.25rem', borderRadius: 8, border: '1px solid var(--border)' }}>
-                {['breakdown', 'trends'].map(v => (
-                  <button key={v} onClick={() => setView(v as any)}
+                {(['breakdown', 'trends'] as const).map(v => (
+                  <button key={v} onClick={() => setView(v)}
                     style={{
                       background: view === v ? 'var(--surface-card)' : 'transparent',
                       border: view === v ? '1px solid var(--border)' : '1px solid transparent',
@@ -276,11 +283,11 @@ export function ReportsClient({
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.5} />
                   <XAxis dataKey="label" tick={tick} tickLine={false} axisLine={false} dy={10} />
                   <YAxis tick={tick} tickLine={false} axisLine={false} tickFormatter={v => fmtCompact(v, currency)} />
-                  <Tooltip content={<Tip currency={currency} />} cursor={{ fill: 'var(--bg-hover)', opacity: 0.5 }} />
+                  <Tooltip content={<BarTip currency={currency} />} cursor={{ fill: 'var(--bg-hover)', opacity: 0.5 }} />
                   <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize:'0.8rem', paddingTop: 20, fontWeight: 600 }} />
                   {/* Monarch-style grouped bar chart for cash flow */}
-                  <Bar name="Income" dataKey="Income" fill="var(--chart-income)" radius={[4, 4, 0, 0]} barSize={32} onClick={(e: any) => { if(e?.payload?.label) handleDrillDown(String(e.payload.label)); }} style={{ cursor: 'pointer' }} />
-                  <Bar name="Spending" dataKey="Expenses" fill="var(--chart-expense)" radius={[4, 4, 0, 0]} barSize={32} onClick={(e: any) => { if(e?.payload?.label) handleDrillDown(String(e.payload.label)); }} style={{ cursor: 'pointer' }} />
+                  <Bar name="Income" dataKey="Income" fill="var(--chart-income)" radius={[4, 4, 0, 0]} barSize={32} onClick={(e: unknown) => { const label = (e as Record<string, unknown>)?.payload ? ((e as Record<string, unknown>).payload as Record<string, unknown>)?.label : null; if(label) handleDrillDown(String(label)); }} style={{ cursor: 'pointer' }} />
+                  <Bar name="Spending" dataKey="Expenses" fill="var(--chart-expense)" radius={[4, 4, 0, 0]} barSize={32} onClick={(e: unknown) => { const label = (e as Record<string, unknown>)?.payload ? ((e as Record<string, unknown>).payload as Record<string, unknown>)?.label : null; if(label) handleDrillDown(String(label)); }} style={{ cursor: 'pointer' }} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -341,7 +348,7 @@ export function ReportsClient({
 
             {(tab === 'spending' || tab === 'income') && view === 'trends' && (
               <ResponsiveContainer width="100%" height={350}>
-                <AreaChart data={trend} margin={{ top:10, right:10, left:-20, bottom:0 }} onClick={(e: any) => { if(e && e.activeLabel) handleDrillDown(String(e.activeLabel)); }} style={{ cursor: 'pointer' }}>
+                <AreaChart data={trend} margin={{ top:10, right:10, left:-20, bottom:0 }} onClick={(e: unknown) => { const obj = e as Record<string, unknown> | undefined; if(obj?.activeLabel) handleDrillDown(String(obj.activeLabel)); }} style={{ cursor: 'pointer' }}>
                   <defs>
                     <linearGradient id="gTrend" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%"   stopColor={tab === 'income' ? 'var(--chart-income)' : 'var(--chart-expense)'} stopOpacity={0.4}/>
@@ -351,7 +358,7 @@ export function ReportsClient({
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.5} />
                   <XAxis dataKey="label" tick={tick} tickLine={false} axisLine={false} dy={10} />
                   <YAxis tick={tick} tickLine={false} axisLine={false} tickFormatter={v => fmtCompact(v, currency)} />
-                  <Tooltip content={<Tip currency={currency} />} cursor={{ stroke: 'var(--border)', strokeWidth: 1, strokeDasharray: '3 3' }} />
+                  <Tooltip content={<BarTip currency={currency} />} cursor={{ stroke: 'var(--border)', strokeWidth: 1, strokeDasharray: '3 3' }} />
                   <Area name={tab === 'income' ? 'Income' : 'Spending'} dataKey={tab === 'income' ? 'Income' : 'Expenses'} type="monotone"
                     stroke={tab === 'income' ? 'var(--chart-income)' : 'var(--chart-expense)'} strokeWidth={3} fill="url(#gTrend)"
                     dot={{ fill: tab === 'income' ? 'var(--chart-income)' : 'var(--chart-expense)', r:4, strokeWidth:0 }} activeDot={{ r:6, strokeWidth: 2, stroke: 'var(--surface-card)' }} />

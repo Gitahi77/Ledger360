@@ -7,6 +7,7 @@ import { addLoan, editLoan, deleteLoan } from '@/lib/actions/loans';
 import { formatKES } from '@/lib/format';
 import { Plus, Trash2, Loader2, X, CreditCard, AlertTriangle, ChevronDown, ChevronUp, Edit2 } from 'lucide-react';
 import { toMinor, toMajor } from '@/lib/money';
+import { getErrorMessage } from '@/lib/format';
 
 type Loan = {
   id: string; name: string; lender: string; type: string;
@@ -105,8 +106,8 @@ function LoanModal({ loan, accounts, onClose }: { loan?: Loan; accounts: {id: st
       }
       startT(() => router.refresh());
       onClose();
-    } catch (err: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
-      setError(err.message ?? 'Something went wrong.');
+    } catch (err: unknown) { // eslint-disable-line @typescript-eslint/no-explicit-any
+      setError(getErrorMessage(err));
     } finally { setLoading(false); }
   }
 

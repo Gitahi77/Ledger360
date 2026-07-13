@@ -4,7 +4,7 @@
 import {
   AreaChart, Area, XAxis, YAxis,
   CartesianGrid, Tooltip, ResponsiveContainer, Legend,
-  PieChart, Pie, Cell,
+  PieChart, Pie, Cell, TooltipProps
 } from 'recharts';
 import { fmtAdaptive, fmtCompact } from '@/lib/format';
 import { useRouter } from 'next/navigation';
@@ -28,12 +28,15 @@ const DONUT_COLORS = [
 ];
 
 /* -- Tooltip components ------------------------------------- */
-function FlowTip({ active, payload, label, currency }: any) {
+function FlowTip(props: { active?: boolean; payload?: unknown; label?: string; currency?: string; total?: number }) {
+  if (typeof props !== 'object' || props === null) return null;
+  const { active, payload, label } = props as { active?: boolean; payload?: { name: string; value: number; color?: string }[]; label?: string };
+  const currency = (props as { currency?: string }).currency || 'USD';
   if (!active || !payload?.length) return null;
   return (
     <div style={{ background: 'var(--surface-card)', border: '1px solid var(--border)', borderRadius: 8, padding: '0.625rem 0.875rem', boxShadow: 'var(--shadow-md)' }}>
       <p style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-text-secondary)', marginBottom: '0.35rem' }}>{label}</p>
-      {payload.map((p: any) => (
+      {payload.map((p) => (
         <div key={p.name} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.1rem' }}>
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: p.color, flexShrink: 0 }} />
           <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>{p.name}:</span>
@@ -46,7 +49,11 @@ function FlowTip({ active, payload, label, currency }: any) {
   );
 }
 
-function PieTip({ active, payload, total, currency }: any) {
+function PieTip(props: { active?: boolean; payload?: unknown; label?: string; currency?: string; total?: number }) {
+  if (typeof props !== 'object' || props === null) return null;
+  const { active, payload } = props as { active?: boolean; payload?: { name: string; value: number }[] };
+  const total = (props as { total?: number }).total || 0;
+  const currency = (props as { currency?: string }).currency || 'USD';
   if (!active || !payload?.length) return null;
   return (
     <div style={{ background: 'var(--surface-card)', border: '1px solid var(--border)', borderRadius: 8, padding: '0.625rem 0.875rem', boxShadow: 'var(--shadow-md)' }}>
@@ -60,7 +67,8 @@ function PieTip({ active, payload, total, currency }: any) {
 const tick = { fontSize: 10, fill: 'var(--color-text-secondary)', fontFamily: 'Inter, sans-serif' };
 
 const RADIAN = Math.PI / 180;
-function PieLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) {
+function PieLabel(props: unknown) {
+  const { cx, cy, midAngle, innerRadius, outerRadius, percent } = props as Record<string, number>;
   if (percent < 0.08) return null;
   const r = innerRadius + (outerRadius - innerRadius) * 0.55;
   return (

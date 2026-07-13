@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { resetPassword } from '@/lib/actions/password';
+import { getErrorMessage } from '@/lib/format';
 
 export default function ResetPasswordClient() {
   const router = useRouter();
@@ -37,8 +38,8 @@ export default function ResetPasswordClient() {
       setTimeout(() => {
         router.push('/login');
       }, 3000);
-    } catch (err: any) {
-      setError(err.message || 'Failed to reset password. The token may be expired.');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err) || 'Failed to reset password. The token may be expired.');
     } finally {
       setLoading(false);
     }

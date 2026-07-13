@@ -4,6 +4,7 @@
 // Transparent and reversible (B-0): shows what happens on each income,
 // lists recent auto-saves with Undo buttons.
 import { useState, useTransition } from 'react';
+import { getErrorMessage } from '@/lib/format';
 import { useRouter } from 'next/navigation';
 import {
   upsertSavingsPlan,
@@ -147,8 +148,8 @@ export function SavingsAutomationSection({
       setSaving(false); setSaved(true);
       setTimeout(() => setSaved(false), 3000);
       startT(() => router.refresh());
-    } catch (err: any) {
-      setSaving(false); setError(err?.message ?? 'Save failed');
+    } catch (err: unknown) {
+      setSaving(false); setError(getErrorMessage(err));
     }
   }
 
@@ -158,9 +159,9 @@ export function SavingsAutomationSection({
     try {
       await toggleSavingsPlan(newActive);
       startT(() => router.refresh());
-    } catch (err: any) {
+    } catch (err: unknown) {
       setActive(!newActive); // revert on failure
-      setError(err?.message ?? 'Toggle failed');
+      setError(getErrorMessage(err));
     }
   }
 
@@ -170,8 +171,8 @@ export function SavingsAutomationSection({
       await deleteTransfer(transferId);
       setAutoSaves(prev => prev.filter(s => s.id !== transferId));
       startT(() => router.refresh());
-    } catch (err: any) {
-      setError(err?.message ?? 'Undo failed');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
     } finally {
       setUndoing(null);
     }

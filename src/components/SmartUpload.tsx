@@ -15,9 +15,9 @@ type ParsedRow = {
 type UploadState = 'idle' | 'uploading' | 'reviewing' | 'importing' | 'done' | 'error';
 type Tab = 'file' | 'sms';
 
-const EMPTY_ACCOUNTS: any[] = [];
+const EMPTY_ACCOUNTS: { id: string, name: string, currency: string }[] = [];
 
-export function SmartUpload({ onDone, initialAccounts = EMPTY_ACCOUNTS }: { onDone?: () => void, initialAccounts?: any[] }) {
+export function SmartUpload({ onDone, initialAccounts = EMPTY_ACCOUNTS }: { onDone?: () => void, initialAccounts?: { id: string, name: string, currency: string }[] }) {
   const [state,     setState]    = useState<UploadState>('idle');
   const [tab,       setTab]      = useState<Tab>('file');
   const [progress,  setProgress] = useState(0);
@@ -60,7 +60,7 @@ export function SmartUpload({ onDone, initialAccounts = EMPTY_ACCOUNTS }: { onDo
 
       setTimeout(() => {
         setRows(data.transactions);
-        setSelected(new Set(data.transactions.map((r: any, i: number) => 
+        setSelected(new Set(data.transactions.map((r: ParsedRow, i: number) => 
           (r.isDuplicate || r.isTransfer) ? -1 : i
         ).filter((i: number) => i !== -1)));
         setMethod(data.method);
@@ -85,8 +85,9 @@ export function SmartUpload({ onDone, initialAccounts = EMPTY_ACCOUNTS }: { onDo
       })), accountId);
       setState('done');
       setTimeout(() => { onDone?.(); }, 1500);
-    } catch (e: any) {
-      setErrMsg(e.message ?? 'Import failed.');
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Import failed.';
+      setErrMsg(msg);
       setState('error');
     }
   }
@@ -125,10 +126,39 @@ export function SmartUpload({ onDone, initialAccounts = EMPTY_ACCOUNTS }: { onDo
       })), accountId);
       setState('done');
       setTimeout(() => { onDone?.(); }, 1500);
-    } catch (e: any) {
-      setErrMsg(e.message ?? 'Import failed.');
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Import failed.';
+      setErrMsg(msg);
       setState('error');
     }
+  }
+
+  function handleFileDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setDragging(false);
+    if (!accountId) { setErrMsg('Please select an account first.'); setState('error'); return; }
+    if (!aiConsent) { setErrMsg('Please consent to AI processing before uploading.'); setState('error'); return; }
+    if (!e.dataTransfer.files || e.dataTransfer.files.length === 0) return;
+    const file = e.dataTransfer.files[0];
+    if (!(file instanceof File) || file.size === 0) {
+      setErrMsg('Invalid or empty file.');
+      setState('error');
+      return;
+    }
+    processFile(file);
+  }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    if (!accountId) { setErrMsg('Please select an account first.'); setState('error'); return; }
+    if (!aiConsent) { setErrMsg('Please consent to AI processing before uploading.'); setState('error'); return; }
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    if (!(file instanceof File) || file.size === 0) {
+      setErrMsg('Invalid or empty file.');
+      setState('error');
+      return;
+    }
+    processFile(file);
   }
 
   /* -- Idle / drop zone --------------------------------------- */
@@ -183,16 +213,9 @@ export function SmartUpload({ onDone, initialAccounts = EMPTY_ACCOUNTS }: { onDo
       {tab === 'file' && (
         <div
           onDragEnter={e => { e.preventDefault(); setDragging(true); }}
-          onDragLeave={e => { e.preventDefault(); setDragging(false); }}
-          onDragOver={e => e.preventDefault()}
-          onDrop={e => {
-            e.preventDefault();
-            setDragging(false);
-            if (!accountId) { setErrMsg('Please select an account first.'); setState('error'); return; }
-            if (!aiConsent) { setErrMsg('Please consent to AI processing before uploading.'); setState('error'); return; }
-            const f = e.dataTransfer.files[0];
-            if (f) processFile(f);
-          }}
+          onDragOver={(e: React.DragEvent) => { e.preventDefault(); setDragging(true); }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={handleFileDrop}
           onClick={() => {
             if (!accountId) { setErrMsg('Please select an account first.'); setState('error'); return; }
             if (!aiConsent) { setErrMsg('Please consent to AI processing before uploading.'); setState('error'); return; }
@@ -206,7 +229,7 @@ export function SmartUpload({ onDone, initialAccounts = EMPTY_ACCOUNTS }: { onDo
           }}
         >
           <input id="smart-upload-input" type="file" accept=".pdf,.csv,.xlsx,.xls,.png,.jpg,.jpeg" style={{ display: 'none' }}
-            onChange={e => { const f = e.target.files?.[0]; if (f) processFile(f); }} />
+            onChange={handleFileChange} />
           <UploadCloud size={40} color="var(--color-brand)" style={{ margin: '0 auto 0.875rem' }} />
           <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--color-text-primary)', marginBottom: '0.3rem' }}>AI Smart Upload</div>
           <p style={{ fontSize: '0.78rem', color: 'var(--color-text-secondary)', marginBottom: '1rem' }}>

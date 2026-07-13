@@ -1,3 +1,4 @@
+import { AccountType } from '@prisma/client';
 import type { ChamaDetails } from '@prisma/client';
 import { toMoneyDTO, toDateDTO } from './core';
 
@@ -5,7 +6,7 @@ export type AccountDTO = {
   id: string;
   userId: string;
   name: string;
-  type: string;
+  type: AccountType;
   currency: string;
   openingMinor: number;
   archived: boolean;

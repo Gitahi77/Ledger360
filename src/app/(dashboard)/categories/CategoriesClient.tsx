@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createCategory, editCategory, deleteCategory } from '@/lib/actions/categories';
 import { DynamicCategoryIcon } from '@/lib/icons';
 import { Plus, Trash2, Edit2, Loader2, X, AlertTriangle } from 'lucide-react';
+import { getErrorMessage } from '@/lib/format';
 
 type Category = {
   id: string;
@@ -41,8 +42,8 @@ function CategoryModal({ category, onClose }: { category?: Category, onClose: ()
       }
       startT(() => router.refresh());
       onClose();
-    } catch (err: any) {
-      setError(err.message ?? 'Something went wrong');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -121,8 +122,8 @@ export function CategoriesClient({ initialCategories, currency }: { initialCateg
     try {
       await deleteCategory(cat.id);
       startT(() => router.refresh());
-    } catch (e: any) {
-      setErrorMsg(e.message || 'Failed to delete category.');
+    } catch (e: unknown) {
+      setErrorMsg(getErrorMessage(e) || 'Failed to delete category.');
     } finally {
       setDeletingId(null);
     }

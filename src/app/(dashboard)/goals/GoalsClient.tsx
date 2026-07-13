@@ -9,6 +9,7 @@ import { fmtAdaptive } from '@/lib/format';
 import { Plus, CheckCircle2, Trash2, Loader2, X, PiggyBank, Info } from 'lucide-react';
 import { inflationAdjustedTarget, yearsUntil } from '@/lib/api/inflation';
 import { toMinor, toMajor } from '@/lib/money';
+import { getErrorMessage } from '@/lib/format';
 
 type Goal = {
   id: string; name: string; category: string;
@@ -98,8 +99,8 @@ function GoalModal({ goal, onClose, currency }: { goal?: Goal; onClose: () => vo
       }
       startT(() => router.refresh());
       onClose();
-    } catch (err: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
-      setError(err.message ?? 'Something went wrong.');
+    } catch (err: unknown) { // eslint-disable-line @typescript-eslint/no-explicit-any
+      setError(getErrorMessage(err));
     } finally { setLoading(false); }
   }
 

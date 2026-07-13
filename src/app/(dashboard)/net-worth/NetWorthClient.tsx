@@ -6,14 +6,18 @@ import { useRouter } from 'next/navigation';
 import { addAsset, editAsset, deleteAsset } from '@/lib/actions/networth';
 import { fmtAdaptive } from '@/lib/format';
 import { Plus, Trash2, Loader2, X, Home, Car, Gem, BarChart3, Edit2 } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, TooltipProps } from 'recharts';
 
 import { toMinor, toMajor } from '@/lib/money';
+import { getErrorMessage } from '@/lib/format';
 
 type Asset = { id: string; name: string; category: string; valueMinor: number; symbol?: string | null };
 type Loan  = { id: string; name: string; balanceMinor: number; type: string };
 
-function NwChartTip({ active, payload, label, currency }: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
+function NwChartTip(props: { active?: boolean; payload?: unknown; label?: string; currency?: string; total?: number }) {
+  if (typeof props !== 'object' || props === null) return null;
+  const { active, payload, label } = props as { active?: boolean; payload?: { value: number; color?: string }[]; label?: string };
+  const currency = (props as { currency?: string }).currency || 'USD';
   if (!active || !payload?.length) return null;
   return (
     <div style={{ background:'var(--surface-card)', border:'1px solid var(--border)', borderRadius:8, padding:'0.625rem 0.875rem', boxShadow:'var(--shadow-md)' }}>
@@ -58,7 +62,7 @@ function AssetModal({ asset, onClose, currency }: { asset?: Asset; onClose: () =
       if (isEdit && asset) { await editAsset(asset.id, { name, category, valueMinor: toMinor(parsedValue), symbol: symbol || undefined }); }
       else { await addAsset({ name, category, valueMinor: toMinor(parsedValue), symbol: symbol || undefined }); }
       startT(() => router.refresh()); onClose();
-    } catch (err: any) { setError(err.message ?? 'Something went wrong.'); } // eslint-disable-line @typescript-eslint/no-explicit-any
+    } catch (err: unknown) { setError(getErrorMessage(err)); } // eslint-disable-line @typescript-eslint/no-explicit-any
     finally { setLoading(false); }
   }
 

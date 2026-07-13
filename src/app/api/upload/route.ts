@@ -196,10 +196,10 @@ async function parseExcel(buffer: ArrayBuffer): Promise<RawRow[]> {
   // Convert to CSV text and reuse the CSV parser
   const csvRows: string[] = [];
   sheet.eachRow((row) => {
-    const rowValues = (row.values as any[]).slice(1).map(val => {
+    const rowValues = (row.values as unknown[]).slice(1).map(val => {
       if (val === null || val === undefined) return '';
       if (val instanceof Date) return val.toISOString();
-      if (typeof val === 'object' && val.text) return val.text;
+      if (typeof val === 'object' && 'text' in val) return String((val as { text?: unknown }).text || '');
       return String(val).replace(/"/g, '""');
     });
     csvRows.push('"' + rowValues.join('","') + '"');

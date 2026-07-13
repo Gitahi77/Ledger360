@@ -19,6 +19,7 @@ import { Label } from '@/components/ui/label';
 import { FinancialMetric } from '@/components/finance/metrics/FinancialMetric';
 import { CurrencyDisplay } from '@/components/finance/display/currency-display';
 import { TransactionRow } from '@/components/finance/TransactionRow';
+import { getErrorMessage } from '@/lib/format';
 
 type Tx = {
   id: string; name: string; baseAmountMinor: number; type: string;
@@ -128,8 +129,8 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
       }
       startT(() => router.refresh());
       onClose(warnMsg);
-    } catch (err: any) {
-      setError(err.message ?? 'Something went wrong.');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
     } finally { setLoading(false); }
   }
 
@@ -324,8 +325,8 @@ export function TransactionsClient({
         await deleteTransaction(id);
       }
       startT(() => router.refresh());
-    } catch (err: any) {
-      alert(err.message || 'Failed to delete transaction');
+    } catch (err: unknown) {
+      alert(getErrorMessage(err) || 'Failed to delete transaction');
     } finally {
       setDeletingId(null);
     }

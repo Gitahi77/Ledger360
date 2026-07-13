@@ -30,6 +30,7 @@ function invalidateAccountPaths() {
 import { BalanceService } from '../domain/services/BalanceService';
 import { mapAccountToDTO, AccountDTO } from '../mappers/accounts';
 import { ActionResult } from '../types/action-result';
+import { getErrorMessage } from '@/lib/format';
 
 export async function getAccounts(): Promise<ActionResult<AccountDTO[]>> {
   try {
@@ -153,9 +154,9 @@ export async function updateAccount(id: string, rawData: unknown): Promise<Actio
     };
     
     return { success: true, data: mapAccountToDTO(enrichedAccount as any) };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[updateAccount]', error);
-    if (error.message === 'Account not found') {
+    if (getErrorMessage(error) === 'Account not found') {
       return { success: false, code: 'NOT_FOUND', message: 'Account not found or unauthorized' };
     }
     return { success: false, code: 'UNKNOWN', message: 'An unexpected error occurred.' };

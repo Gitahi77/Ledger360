@@ -1,4 +1,5 @@
 'use server';
+import { getErrorMessage } from '@/lib/format';
 
 // src/lib/actions/transactions.ts
 import { prisma } from '@/lib/prisma';
@@ -118,9 +119,9 @@ export async function addTransaction(raw: unknown) {
     revalidatePath('/transactions');
     revalidatePath('/');
     return { success: true, warning };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[addTransaction]', error);
-    return { error: error.message || 'An unexpected error occurred. Please try again.' };
+    return { error: getErrorMessage(error) || 'An unexpected error occurred. Please try again.' };
   }
 }
 export async function importTransactions(rows: any[], targetAccountId: string) {
