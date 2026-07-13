@@ -9,6 +9,8 @@ import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { requireAuth } from './_auth';
 import { z } from 'zod';
+import { AuthorizationError } from '@/lib/authz';
+
 
 import { logger } from '@/lib/logger';
 import type { ActionResult } from '@/lib/types/action-result';
@@ -49,6 +51,7 @@ export async function saveAppearance(raw: z.infer<typeof AppearanceSchema>): Pro
     revalidatePath('/settings');
     return { success: true, data: undefined };
   } catch (error) {
+    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
     const errorId = logger.server(error, { action: 'saveAppearance', raw });
     return { success: false, error: 'Failed to save appearance', errorId };
   }
@@ -71,6 +74,7 @@ export async function savePreferences(raw: z.infer<typeof PrefsSchema>): Promise
     revalidatePath('/reports');
     return { success: true, data: undefined };
   } catch (error) {
+    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
     const errorId = logger.server(error, { action: 'savePreferences', raw });
     return { success: false, error: 'Failed to save preferences', errorId };
   }
@@ -100,6 +104,7 @@ export async function saveNotifications(raw: z.infer<typeof NotifSchema>): Promi
     revalidatePath('/settings');
     return { success: true, data: undefined };
   } catch (error) {
+    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
     const errorId = logger.server(error, { action: 'saveNotifications', raw });
     return { success: false, error: 'Failed to save notifications', errorId };
   }
@@ -128,6 +133,7 @@ export async function exportUserData(): Promise<ActionResult<Record<string, unkn
     ]);
     return { success: true, data: { transactions, budgets, goals, loans, assets, categories, accounts, transfers, exportedAt: new Date().toISOString() } };
   } catch (error) {
+    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
     const errorId = logger.server(error, { action: 'exportUserData' });
     return { success: false, error: 'Failed to export data', errorId };
   }
@@ -169,6 +175,7 @@ export async function deleteAllUserData(): Promise<ActionResult> {
     revalidatePath('/settings');
     return { success: true, data: undefined };
   } catch (error) {
+    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
     const errorId = logger.server(error, { action: 'deleteAllUserData' });
     return { success: false, error: 'Failed to delete data', errorId };
   }
@@ -185,6 +192,7 @@ export async function deleteUserAccount(): Promise<ActionResult> {
     });
     return { success: true, data: undefined };
   } catch (error) {
+    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
     const errorId = logger.server(error, { action: 'deleteUserAccount' });
     return { success: false, error: 'Failed to delete account', errorId };
   }

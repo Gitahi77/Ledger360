@@ -3,6 +3,9 @@
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/actions/_auth';
 import { z } from 'zod';
+import { AuthorizationError, assertOwnsAccount } from '@/lib/authz';
+
+import { safeValidate } from '@/lib/respond';
 import { Account, Prisma } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 
@@ -43,6 +46,7 @@ export async function getAccounts(): Promise<ActionResult<AccountDTO[]>> {
 
     return { success: true, data: dtos };
   } catch (error) {
+    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
     console.error('[getAccounts] Error:', error);
     return { success: false, code: 'UNKNOWN', message: 'Failed to retrieve accounts' };
   }
@@ -54,6 +58,7 @@ export async function getAccountBalances(userId: string): Promise<ActionResult<A
     const dtos = enrichedAccounts.map(mapAccountToDTO);
     return { success: true, data: dtos };
   } catch (error) {
+    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
     console.error('[getAccountBalances] Error:', error);
     return { success: false, code: 'UNKNOWN', message: 'Failed to compute balances' };
   }
@@ -63,8 +68,8 @@ export async function createAccount(rawData: unknown): Promise<ActionResult<Acco
   'use server';
   try {
     const user = await requireAuth();
-    const parsed = AccountSchema.safeParse(rawData);
-    if (!parsed.success) return { success: false, code: 'VALIDATION_ERROR', message: 'Invalid input' };
+    const parsed = safeValidate(AccountSchema, rawData, 'AccountSchema');
+    if (!parsed.success) return parsed.error;
     const valid = parsed.data;
 
     const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
@@ -105,6 +110,7 @@ export async function createAccount(rawData: unknown): Promise<ActionResult<Acco
     
     return { success: true, data: mapAccountToDTO(enrichedAccount) };
   } catch (error) {
+    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
     console.error('[createAccount]', error);
     return { success: false, code: 'UNKNOWN', message: 'An unexpected error occurred.' };
   }
@@ -114,13 +120,15 @@ export async function updateAccount(id: string, rawData: unknown): Promise<Actio
   'use server';
   try {
     const user = await requireAuth();
-    const parsedId = DeleteSchema.safeParse({ id });
-    if (!parsedId.success) return { success: false, code: 'VALIDATION_ERROR', message: 'Invalid ID' };
+    const parsedId = safeValidate(DeleteSchema, { id }, 'DeleteSchema');
+    if (!parsedId.success) return parsedId.error;
     const validId = parsedId.data.id;
 
-    const parsedData = AccountSchema.partial().safeParse(rawData);
-    if (!parsedData.success) return { success: false, code: 'VALIDATION_ERROR', message: 'Invalid input' };
+    const parsedData = safeValidate(AccountSchema.partial(), rawData, 'AccountSchema.partial()');
+    if (!parsedData.success) return parsedData.error;
     const data = parsedData.data;
+
+    await assertOwnsAccount(user.id, validId);
 
     const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const { updateAccountRecord } = await import('../repositories/accounts');
@@ -154,7 +162,8 @@ export async function updateAccount(id: string, rawData: unknown): Promise<Actio
     };
     
     return { success: true, data: mapAccountToDTO(enrichedAccount) };
-  } catch (error: unknown) {
+  } catch (error) {
+    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
     console.error('[updateAccount]', error);
     if (getErrorMessage(error) === 'Account not found') {
       return { success: false, code: 'NOT_FOUND', message: 'Account not found or unauthorized' };
@@ -167,9 +176,11 @@ export async function deleteAccount(id: string): Promise<ActionResult<void>> {
   'use server';
   try {
     const user = await requireAuth();
-    const parsedId = DeleteSchema.safeParse({ id });
-    if (!parsedId.success) return { success: false, code: 'VALIDATION_ERROR', message: 'Invalid ID' };
+    const parsedId = safeValidate(DeleteSchema, { id }, 'DeleteSchema');
+    if (!parsedId.success) return parsedId.error;
     const validId = parsedId.data.id;
+
+    await assertOwnsAccount(user.id, validId);
 
     // Block deletion if transactions or transfers exist
     const [txCount, transferFromCount, transferToCount] = await Promise.all([
@@ -199,6 +210,7 @@ export async function deleteAccount(id: string): Promise<ActionResult<void>> {
     invalidateAccountPaths();
     return { success: true, data: undefined };
   } catch (error) {
+    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
     console.error('[deleteAccount]', error);
     return { success: false, code: 'UNKNOWN', message: 'An unexpected error occurred.' };
   }

@@ -474,17 +474,28 @@ export async function POST(request: Request) {
     }
 
     // -- Validate every row with Zod before touching the DB -----
-    const validRows = transactions.filter((t: RowData) => {
+    const validRows: RowData[] = [];
+    const rejectedRows: Record<string, unknown>[] = [];
+    let rowIndex = 0;
+    for (const t of transactions) {
+      rowIndex++;
       const result = UploadRowSchema.safeParse(t);
-      if (!result.success) {
-        console.warn('[upload] Skipping invalid row:', result.error.flatten(), t);
+      if (result.success) {
+        validRows.push(t);
+      } else {
+        console.warn(`[upload] Skipping invalid row ${rowIndex}:`, result.error.flatten().fieldErrors, t);
+        rejectedRows.push({
+          row: rowIndex,
+          data: t,
+          errors: result.error.flatten().fieldErrors,
+        });
       }
-      return result.success;
-    });
+    }
 
     if (validRows.length === 0) {
       return NextResponse.json({
-        error: 'No valid transactions found after validation. Check that dates are YYYY-MM-DD and amounts are numeric.',
+        error: 'No valid transactions found after validation.',
+        rejected: rejectedRows,
       }, { status: 422 });
     }
 
@@ -546,7 +557,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ 
       success: true, 
       transactions: finalParsed,
-      count: finalParsed.filter((t: RowData) => !t.isDuplicate && !t.isTransfer).length, 
+      count: finalParsed.filter((t: RowData) => !t.isDuplicate && !t.isTransfer).length,
+      rejectedCount: rejectedRows.length,
+      rejected: rejectedRows,
       method 
     });
 

@@ -6,6 +6,9 @@ import { revalidatePath } from 'next/cache';
 import { requireAuth } from './_auth';
 
 import { z } from 'zod';
+import { AuthorizationError, assertOwnsGoal } from '@/lib/authz';
+
+import { safeValidate } from '@/lib/respond';
 
 const DeleteSchema = z.object({ id: z.string().cuid() });
 const EditGoalSchema = z.object({
@@ -22,8 +25,8 @@ export async function addGoal(raw: unknown) {
   'use server';
   try {
     const { AddGoalSchema } = await import('@/lib/validation');
-    const parsed = AddGoalSchema.safeParse(raw);
-    if (!parsed.success) return { error: 'Invalid input' };
+    const parsed = safeValidate(AddGoalSchema, raw, 'AddGoalSchema');
+    if (!parsed.success) return parsed.error;
     const data = parsed.data;
     const user = await requireAuth();
     await prisma.goal.create({
@@ -39,6 +42,7 @@ export async function addGoal(raw: unknown) {
     revalidatePath('/');
     return { success: true };
   } catch (error) {
+    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
     console.error('[addGoal]', error);
     return { error: 'An unexpected error occurred. Please try again.' };
   }
@@ -48,15 +52,17 @@ export async function deleteGoal(id: string) {
   'use server';
   const user = await requireAuth();
   try {
-    const parsedId = DeleteSchema.safeParse({ id });
-    if (!parsedId.success) return { error: 'Invalid input' };
+    const parsedId = safeValidate(DeleteSchema, { id }, 'DeleteSchema');
+    if (!parsedId.success) return parsedId.error;
     const validId = parsedId.data.id;
 
+    await assertOwnsGoal(user.id, validId);
     await prisma.goal.deleteMany({ where: { id: validId, userId: user.id } });
     revalidatePath('/goals');
     revalidatePath('/');
     return { success: true };
   } catch (error) {
+    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
     console.error('[deleteGoal]', error);
     return { error: 'An unexpected error occurred. Please try again.' };
   }
@@ -66,9 +72,10 @@ export async function editGoal(id: string, rawData: unknown) {
   'use server';
   const user = await requireAuth();
   try {
-    const parsedId = DeleteSchema.safeParse({ id });
-    const parsedData = EditGoalSchema.safeParse(rawData);
-    if (!parsedId.success || !parsedData.success) return { error: 'Invalid input' };
+    const parsedId = safeValidate(DeleteSchema, { id }, 'DeleteSchema');
+    const parsedData = safeValidate(EditGoalSchema, rawData, 'EditGoalSchema');
+    if (!parsedId.success) return parsedId.error;
+    if (!parsedData.success) return parsedData.error;
     const validId = parsedId.data.id;
     const data = parsedData.data;
 
@@ -77,6 +84,7 @@ export async function editGoal(id: string, rawData: unknown) {
       updateData.deadline = data.deadline ? new Date(data.deadline) : null;
     }
 
+    await assertOwnsGoal(user.id, validId);
     const { count } = await prisma.goal.updateMany({
       where: { id: validId, userId: user.id },
       data: updateData,
@@ -87,6 +95,7 @@ export async function editGoal(id: string, rawData: unknown) {
     revalidatePath('/');
     return { success: true };
   } catch (error) {
+    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
     console.error('[editGoal]', error);
     return { error: 'An unexpected error occurred. Please try again.' };
   }

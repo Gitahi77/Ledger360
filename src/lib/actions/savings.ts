@@ -11,6 +11,9 @@ import { revalidatePath } from 'next/cache';
 
 import { UpsertSavingsPlanSchema } from '@/lib/validation';
 import { z } from 'zod';
+import { AuthorizationError } from '@/lib/authz';
+
+import { safeValidate } from '@/lib/respond';
 
 /* -- Lazy escalation (no cron — B-5, design point 6) -------- */
 // Advances nextEscalation in a loop until it is in the future,
@@ -44,8 +47,8 @@ export async function upsertSavingsPlan(raw: unknown) {
   'use server';
   const user = await requireAuth();
   try {
-    const parsed = UpsertSavingsPlanSchema.safeParse(raw);
-    if (!parsed.success) return { error: 'Invalid input' };
+    const parsed = safeValidate(UpsertSavingsPlanSchema, raw, 'UpsertSavingsPlanSchema');
+    if (!parsed.success) return parsed.error;
     const data = parsed.data;
 
     const [fromAccount, toAccount] = await Promise.all([
@@ -119,6 +122,7 @@ export async function upsertSavingsPlan(raw: unknown) {
     revalidatePath('/');
     return { success: true };
   } catch (error) {
+    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
     console.error('[upsertSavingsPlan]', error);
     return { error: 'An unexpected error occurred. Please try again.' };
   }
@@ -152,6 +156,7 @@ export async function toggleSavingsPlan(active: unknown) {
     revalidatePath('/settings');
     return { success: true };
   } catch (error) {
+    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
     console.error('[toggleSavingsPlan]', error);
     return { error: 'An unexpected error occurred. Please try again.' };
   }
@@ -185,6 +190,7 @@ export async function deleteSavingsPlan() {
     revalidatePath('/');
     return { success: true };
   } catch (error) {
+    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
     console.error('[deleteSavingsPlan]', error);
     return { error: 'An unexpected error occurred. Please try again.' };
   }
@@ -292,7 +298,8 @@ export async function triggerAutoSave(
     });
 
     return null; // success, no warning
-  } catch (err: unknown) {
+  } catch (err) {
+    if (err instanceof AuthorizationError) return err.message;
     // Design point 4 — idempotency: unique constraint violation = already saved
     const message = err instanceof Error ? err.message : String(err);
     if (message.includes('Unique constraint') && message.includes('sourceTransactionId')) {

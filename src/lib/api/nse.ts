@@ -3,7 +3,9 @@
 // Falls back to manual prices if the community API is unavailable
 // Copyright (c) 2024-present Eric Gitahi. All rights reserved.
 import yahooFinance from 'yahoo-finance2';
-import { YahooQuoteItem } from './yahoo';
+import { YahooQuoteItemSchema } from './yahoo';
+import { env } from '@/env';
+import { withTimeout } from '@/lib/timeout';
 
 export interface NseStock {
   symbol: string;
@@ -37,21 +39,40 @@ export async function getNseStocks(): Promise<{ stocks: NseStock[]; isLive: bool
   }
   try {
     const symbols = NSE_STOCKS_FALLBACK.map(s => `${s.symbol}.NR`);
-    const quotes: YahooQuoteItem | YahooQuoteItem[] = await yahooFinance.quote(symbols);
+    const rawQuotes = await withTimeout(
+      yahooFinance.quote(symbols),
+      env.EXTERNAL_API_TIMEOUT_MS,
+      'NSE quote timed out'
+    );
 
-    const quotesArray = Array.isArray(quotes) ? quotes : [quotes];
-    const stocks: NseStock[] = quotesArray.map((q: YahooQuoteItem) => {
+    const quotesArray = Array.isArray(rawQuotes) ? rawQuotes : [rawQuotes];
+    const stocks: NseStock[] = [];
+    
+    for (const raw of quotesArray) {
+      const parsed = YahooQuoteItemSchema.safeParse(raw);
+      if (!parsed.success) {
+        console.warn(`[NSE] Discarding invalid quote item`, parsed.error.flatten().fieldErrors);
+        continue;
+      }
+      const q = parsed.data;
       const symbol = q.symbol.replace('.NR', '');
       const fallback = NSE_STOCKS_FALLBACK.find(f => f.symbol === symbol);
-      return {
+      
+      const price = q.regularMarketPrice ? Math.round(q.regularMarketPrice * 100) : (fallback?.price ?? 0);
+      if (price <= 0) {
+         console.warn(`[NSE] Discarding quote for ${q.symbol} due to zero or negative price`);
+         continue;
+      }
+
+      stocks.push({
         symbol: symbol,
         name: q.shortName ?? fallback?.name ?? symbol,
-        price: q.regularMarketPrice ? Math.round(q.regularMarketPrice * 100) : (fallback?.price ?? 0),
+        price,
         change: q.regularMarketChange ? Math.round(q.regularMarketChange * 100) : 0,
         changePct: q.regularMarketChangePercent ?? 0,
         volume: q.regularMarketVolume ?? 0,
-      };
-    }).filter((s: NseStock) => s.price > 0);
+      });
+    }
 
     if (stocks.length > 0) {
       _cache = { stocks, updatedAt: Date.now() };

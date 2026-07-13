@@ -8,6 +8,8 @@ import { Resend } from 'resend';
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 import { z } from 'zod';
+import { AuthorizationError } from '@/lib/authz';
+
 
 import { logger } from '@/lib/logger';
 import type { ActionResult } from '@/lib/types/action-result';
@@ -59,11 +61,13 @@ export async function requestPasswordReset(rawEmail: string): Promise<ActionResu
         `,
       });
     } catch (error) {
+    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
       logger.server(error, { action: 'sendPasswordResetEmail', email });
     }
 
     return { success: true, data: undefined };
   } catch (error) {
+    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
     const errorId = logger.server(error, { action: 'requestPasswordReset' });
     return { success: false, error: 'Failed to request password reset', errorId };
   }
@@ -102,6 +106,7 @@ export async function resetPassword(rawToken: string, rawNewPassword: string): P
 
     return { success: true, data: undefined };
   } catch (error) {
+    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
     const errorId = logger.server(error, { action: 'resetPassword' });
     return { success: false, error: 'Failed to reset password', errorId };
   }

@@ -3,12 +3,15 @@ import { getErrorMessage } from '@/lib/format';
 
 // src/lib/actions/transactions.ts
 import { prisma } from '@/lib/prisma';
+import { AuthorizationError, assertOwnsAccount, assertOwnsCategory, assertOwnsTransaction } from '@/lib/authz';
 
 import { revalidatePath } from 'next/cache';
 import { requireAuth } from './_auth';
 import { getAccountBalances } from './accounts';
 
 import { z } from 'zod';
+
+import { safeValidate } from '@/lib/respond';
 
 
 const DeleteSchema = z.object({
@@ -44,8 +47,8 @@ export async function addTransaction(raw: unknown) {
   'use server';
   try {
     const { AddTransactionSchema } = await import('@/lib/validation');
-    const parsed = AddTransactionSchema.safeParse(raw);
-    if (!parsed.success) return { error: 'Invalid input' };
+    const parsed = safeValidate(AddTransactionSchema, raw, 'AddTransactionSchema');
+    if (!parsed.success) return parsed.error;
     const data = parsed.data;
     const user = await requireAuth();
 
@@ -57,6 +60,12 @@ export async function addTransaction(raw: unknown) {
         const fallback = await prisma.account.create({ data: { userId: user.id, name: 'Default Account', type: 'CHECKING', currency: 'KES' }});
         accountId = fallback.id;
       }
+    } else {
+      await assertOwnsAccount(user.id, accountId);
+    }
+
+    if (data.categoryId) {
+      await assertOwnsCategory(user.id, data.categoryId);
     }
 
     const { TransactionService } = await import('../domain/services/TransactionService');
@@ -119,7 +128,8 @@ export async function addTransaction(raw: unknown) {
     revalidatePath('/transactions');
     revalidatePath('/');
     return { success: true, warning };
-  } catch (error: unknown) {
+  } catch (error) {
+    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
     console.error('[addTransaction]', error);
     return { error: getErrorMessage(error) || 'An unexpected error occurred. Please try again.' };
   }
@@ -133,8 +143,7 @@ export async function importTransactions(rows: unknown[], targetAccountId: strin
     if (!targetAccountId) throw new Error('Account ID is required for import');
 
     // Verify the target account exists and belongs to the user
-    const account = await prisma.account.findFirst({ where: { id: targetAccountId, userId: user.id } });
-    if (!account) throw new Error('Selected account not found');
+    await assertOwnsAccount(user.id, targetAccountId);
 
   const ImportRowSchema = z.object({
     name: z.string().min(1).max(120),
@@ -252,6 +261,7 @@ export async function importTransactions(rows: unknown[], targetAccountId: strin
     revalidatePath('/');
     return { success: true };
   } catch (error) {
+    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
     console.error('[importTransactions]', error);
     return { error: 'An unexpected error occurred. Please try again.' };
   }
@@ -262,9 +272,10 @@ export async function deleteTransaction(id: string) {
   'use server';
   const user = await requireAuth();
   try {
-    const parsed = DeleteSchema.safeParse({ id });
-    if (!parsed.success) return { error: 'Invalid input' };
+    const parsed = safeValidate(DeleteSchema, { id }, 'DeleteSchema');
+    if (!parsed.success) return parsed.error;
 
+    await assertOwnsTransaction(user.id, parsed.data.id);
     await prisma.$transaction(async (tx) => {
       const { count } = await tx.transaction.deleteMany({
         where: { id: parsed.data.id, userId: user.id },
@@ -285,6 +296,7 @@ export async function deleteTransaction(id: string) {
     revalidatePath('/');
     return { success: true };
   } catch (error) {
+    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
     console.error('[deleteTransaction]', error);
     return { error: 'An unexpected error occurred. Please try again.' };
   }
@@ -295,27 +307,25 @@ export async function editTransaction(id: string, rawData: unknown) {
   'use server';
   const user = await requireAuth();
   try {
-    const parsedId = DeleteSchema.safeParse({ id });
-    const parsedData = EditTransactionSchema.safeParse(rawData);
-    if (!parsedId.success || !parsedData.success) return { error: 'Invalid input' };
+    const parsedId = safeValidate(DeleteSchema, { id }, 'DeleteSchema');
+    const parsedData = safeValidate(EditTransactionSchema, rawData, 'EditTransactionSchema');
+    if (!parsedId.success) return parsedId.error;
+    if (!parsedData.success) return parsedData.error;
     const validId = parsedId.data.id;
     const data = parsedData.data;
 
-    const oldTx = await prisma.transaction.findFirst({ where: { id: validId, userId: user.id } });
-    if (!oldTx) return { error: 'Transaction not found' };
+    const oldTx = await assertOwnsTransaction(user.id, validId);
 
     const newType = data.type ?? oldTx.type;
     const newAmount = data.baseAmountMinor ?? oldTx.baseAmountMinor;
     const newAccountId = data.accountId ?? oldTx.accountId;
 
     if (newAccountId !== oldTx.accountId) {
-      const acc = await prisma.account.findFirst({ where: { id: newAccountId, userId: user.id } });
-      if (!acc) return { error: 'Target account not found or access denied.' };
+      await assertOwnsAccount(user.id, newAccountId);
     }
 
     if (data.categoryId && data.categoryId !== oldTx.categoryId) {
-      const cat = await prisma.category.findFirst({ where: { id: data.categoryId, userId: user.id } });
-      if (!cat) return { error: 'Category not found or access denied.' };
+      await assertOwnsCategory(user.id, data.categoryId);
     }
 
     let warning: string | undefined;
@@ -362,6 +372,7 @@ export async function editTransaction(id: string, rawData: unknown) {
     revalidatePath('/');
     return { success: true, warning };
   } catch (error) {
+    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
     console.error('[editTransaction]', error);
     return { error: 'An unexpected error occurred. Please try again.' };
   }

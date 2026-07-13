@@ -1,6 +1,8 @@
 'use server';
 
 // src/lib/actions/reports.ts
+import { AuthorizationError } from '@/lib/authz';
+
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { requireAuth } from './_auth';
@@ -43,6 +45,7 @@ export async function updateProfile(raw: { name: string; currency: string; accou
     revalidatePath('/reports');
     return { success: true, data: undefined };
   } catch (error) {
+    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
     const errorId = logger.server(error, { action: 'updateProfile', raw });
     return { success: false, error: 'Failed to update profile', errorId };
   }
