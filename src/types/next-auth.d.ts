@@ -20,6 +20,7 @@ declare module 'next-auth' {
     id: string;
     accountType: string;
     currency: string;
+    sessionVersion?: number;
   }
 }
 
@@ -28,5 +29,7 @@ declare module 'next-auth/jwt' {
     id: string;
     accountType: string;
     currency: string;
+    sessionVersion?: number;
+    error?: string;
   }
 }

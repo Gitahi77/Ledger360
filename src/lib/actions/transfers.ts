@@ -21,7 +21,7 @@ export async function createTransfer(raw: unknown): Promise<ActionResult<Transfe
     const user = await requireAuth();
 
     const fallbackIdempotencyKey = `LEGACY-${user.id}-${data.fromAccountId}-${data.amountMinor}-${new Date(data.date).getTime()}`;
-    const idempotencyKey = (data as any).idempotencyKey || fallbackIdempotencyKey;
+    const idempotencyKey = data.idempotencyKey || fallbackIdempotencyKey;
 
     const result = await TransferService.executeTransfer({
       idempotencyKey,

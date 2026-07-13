@@ -417,6 +417,7 @@ export async function POST(request: Request) {
       const fb = await getFileBuffer();
       if (fb) {
         try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
         const pdfParse = require('pdf-parse');
         const { text: pdfExtractedText } = await pdfParse(Buffer.from(fb));
         const deterministicPdf = parseMpesaPdfStatement(pdfExtractedText);

@@ -99,7 +99,7 @@ function GoalModal({ goal, onClose, currency }: { goal?: Goal; onClose: () => vo
       }
       startT(() => router.refresh());
       onClose();
-    } catch (err: unknown) { // eslint-disable-line @typescript-eslint/no-explicit-any
+    } catch (err: unknown) {  
       setError(getErrorMessage(err));
     } finally { setLoading(false); }
   }

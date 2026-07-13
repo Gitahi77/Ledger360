@@ -97,7 +97,7 @@ function CategoryModal({ category, onClose }: { category?: Category, onClose: ()
   );
 }
 
-export function CategoriesClient({ initialCategories, currency }: { initialCategories: Category[]; currency?: string }) {
+export function CategoriesClient({ initialCategories }: { initialCategories: Category[]; currency?: string }) {
   const router = useRouter();
   const [, startT] = useTransition();
   const [showAdd, setShowAdd] = useState(false);

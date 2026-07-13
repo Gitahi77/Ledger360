@@ -59,7 +59,7 @@ export default async function Dashboard({
     Awaited<ReturnType<typeof getNetWorth>>,
     Awaited<ReturnType<typeof getMonthlyChartData>>,
     Awaited<ReturnType<typeof getCategoryBreakdown>>,
-    any[], // Insights
+    Awaited<ReturnType<typeof import('@/lib/intelligence').generateInsights>>, // Insights
     Awaited<ReturnType<typeof prisma.userPreferences.findUnique>>,
     Awaited<ReturnType<typeof safeToSpend>>
   ];

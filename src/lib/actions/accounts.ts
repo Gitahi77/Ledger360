@@ -103,7 +103,7 @@ export async function createAccount(rawData: unknown): Promise<ActionResult<Acco
       availableBalanceMinor: initialMoney.minorUnits
     };
     
-    return { success: true, data: mapAccountToDTO(enrichedAccount as any) };
+    return { success: true, data: mapAccountToDTO(enrichedAccount) };
   } catch (error) {
     console.error('[createAccount]', error);
     return { success: false, code: 'UNKNOWN', message: 'An unexpected error occurred.' };
@@ -153,7 +153,7 @@ export async function updateAccount(id: string, rawData: unknown): Promise<Actio
       availableBalanceMinor: initialMoney.minorUnits
     };
     
-    return { success: true, data: mapAccountToDTO(enrichedAccount as any) };
+    return { success: true, data: mapAccountToDTO(enrichedAccount) };
   } catch (error: unknown) {
     console.error('[updateAccount]', error);
     if (getErrorMessage(error) === 'Account not found') {

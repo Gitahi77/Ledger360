@@ -35,7 +35,7 @@ export async function addBudget(raw: unknown) {
     });
     if (!cat) return { error: 'Invalid category' };
 
-    await prisma.budget.create({ data: { ...data, rollover: (data as any).rollover ?? false, userId: user.id, limitAmountMinor: BigInt(data.limitAmountMinor) } });
+    await prisma.budget.create({ data: { ...data, rollover: data.rollover, userId: user.id, limitAmountMinor: BigInt(data.limitAmountMinor) } });
     revalidatePath('/budgets');
     revalidatePath('/');
     return { success: true };

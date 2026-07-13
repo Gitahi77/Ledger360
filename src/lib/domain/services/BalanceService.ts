@@ -14,7 +14,7 @@ export type EnrichedAccountData = {
   openingMinor: number;
   archived: boolean;
   createdAt: Date;
-  chamaDetails?: any;
+  chamaDetails?: import('@prisma/client').ChamaDetails | null;
   
   // Computed domain fields
   balanceMinor: number;
@@ -35,10 +35,10 @@ export class BalanceService {
     const { incomeSums, expenseSums } = await getTransactionSumsByAccount({ userId });
     const { transfersOut, transfersIn } = await getTransferSumsByAccount(userId);
 
-    const incMap = new Map(incomeSums.map((g: any) => [g.accountId, Number(g._sum?.baseAmountMinor ?? 0)]));
-    const expMap = new Map(expenseSums.map((g: any) => [g.accountId, Number(g._sum?.baseAmountMinor ?? 0)]));
-    const txOutMap = new Map(transfersOut.map((g: any) => [g.fromAccountId, Number(g._sum?.amountMinor ?? 0)]));
-    const txInMap = new Map(transfersIn.map((g: any) => [g.toAccountId, Number(g._sum?.baseAmountMinor ?? 0)]));
+    const incMap = new Map(incomeSums.map(g => [g.accountId, Number(g._sum?.baseAmountMinor ?? 0)]));
+    const expMap = new Map(expenseSums.map(g => [g.accountId, Number(g._sum?.baseAmountMinor ?? 0)]));
+    const txOutMap = new Map(transfersOut.map(g => [g.fromAccountId, Number(g._sum?.amountMinor ?? 0)]));
+    const txInMap = new Map(transfersIn.map(g => [g.toAccountId, Number(g._sum?.baseAmountMinor ?? 0)]));
 
     // 2. Orchestrate calculations
     return accounts.map(acc => {

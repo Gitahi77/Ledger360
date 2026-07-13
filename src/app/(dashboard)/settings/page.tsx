@@ -61,10 +61,7 @@ export default async function Settings() {
           createdAt: l.createdAt.toISOString()
         }))}
         savingsPlan={savingsPlan}
-        autoSaves={autoSaves.map(s => ({
-          ...s,
-          date: s.date.toISOString(),
-        }))}
+        autoSaves={autoSaves}
         accounts={accounts.map(a => ({ id: a.id, name: a.name, type: a.type, currency: a.currency }))}
         goals={goals}
       />

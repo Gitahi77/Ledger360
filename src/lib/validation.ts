@@ -32,6 +32,7 @@ export const AddTransferSchema = z.object({
   goalId:        z.string().optional().nullable(),
   loanId:        z.string().optional().nullable(),
   interestMinor: z.number().min(0, 'Interest cannot be negative').optional(),
+  idempotencyKey: z.string().optional(),
 }).refine(data => {
   if (data.toAccountId && data.fromAccountId === data.toAccountId) return false;
   return true;
@@ -65,6 +66,7 @@ export const AddBudgetSchema = z.object({
   categoryId: z.string().min(1, 'Category is required'),
   limitAmountMinor:   kes('Spending limit'),
   period:     z.enum(['weekly', 'monthly', 'yearly']),
+  rollover:   z.boolean().optional().default(false),
 });
 export type AddBudgetInput = z.infer<typeof AddBudgetSchema>;
 

@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 
 export async function getTransactionSumsByAccount({ userId }: { userId: string }) {
   const txWhere = {
@@ -36,11 +37,11 @@ export async function getTransactions({ userId, accountId }: { userId: string; a
   });
 }
 
-export async function createTransactionRecord(tx: any, data: any) {
+export async function createTransactionRecord(tx: Prisma.TransactionClient, data: Prisma.TransactionUncheckedCreateInput) {
   return await tx.transaction.create({ data });
 }
 
-export async function deleteTransactionRecord(tx: any, id: string, userId: string) {
+export async function deleteTransactionRecord(tx: Prisma.TransactionClient, id: string, userId: string) {
   const { count } = await tx.transaction.deleteMany({
     where: { id, userId }
   });

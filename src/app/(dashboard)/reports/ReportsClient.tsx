@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import {
   BarChart, Bar, AreaChart, Area,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
-  PieChart, Pie, Cell, TooltipProps
+  PieChart, Pie, Cell
 } from 'recharts';
 import { TrendingUp, TrendingDown, Minus, Info } from 'lucide-react';
 import { fmtAdaptive, fmtCompact } from '@/lib/format';
