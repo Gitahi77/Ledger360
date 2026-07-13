@@ -2,18 +2,26 @@
 // Zod schemas for all server action inputs.
 // Compatible with Zod v4 (z.number() API change — use .check() for custom messages).
 import { z } from 'zod';
+import { MAX_TRANSACTION_AMOUNT_MAJOR } from './money';
 
 /* -- Shared primitives -------------------------------------- */
-const kes = (label = 'Amount') =>
-  z.number().positive(`${label} must be greater than 0`);
+const minorAmount = (label = 'Amount') =>
+  z.number()
+   .finite(`${label} must be a finite number`)
+   .int(`${label} must not contain fractional minor units`)
+   .positive(`${label} must be greater than 0`)
+   .max(MAX_TRANSACTION_AMOUNT_MAJOR * 100, `${label} exceeds maximum allowed limit`);
 
-const optKes = (label = 'Amount') =>
-  z.number().min(0, `${label} cannot be negative`);
+const optMinorAmount = (label = 'Amount') =>
+  z.number()
+   .finite(`${label} must be a finite number`)
+   .int(`${label} must not contain fractional minor units`)
+   .min(0, `${label} cannot be negative`);
 
 /* -- Transactions ------------------------------------------- */
 export const AddTransactionSchema = z.object({
   name:       z.string().min(1, 'Description is required').max(120, 'Description too long'),
-  baseAmountMinor:     kes('Amount'),
+  baseAmountMinor: minorAmount('Amount'),
   type:       z.enum(['income', 'expense']),
   categoryId: z.string().min(1, 'Category is required'),
   accountId:  z.string().optional(),
@@ -26,7 +34,7 @@ export type AddTransactionInput = z.infer<typeof AddTransactionSchema>;
 export const AddTransferSchema = z.object({
   fromAccountId: z.string().min(1, 'From account is required'),
   toAccountId:   z.string().optional().nullable(),
-  amountMinor:   kes('Amount'),
+  amountMinor:   minorAmount('Amount'),
   date:          z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD'),
   note:          z.string().max(500, 'Note too long').optional(),
   goalId:        z.string().optional().nullable(),
@@ -51,7 +59,7 @@ export type AddTransferInput = z.infer<typeof AddTransferSchema>;
 export const EditTransferSchema = z.object({
   fromAccountId: z.string().min(1, 'From account is required'),
   toAccountId:   z.string().optional().nullable(),
-  amountMinor:   kes('Amount'),
+  amountMinor:   minorAmount('Amount'),
   date:          z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD'),
   note:          z.string().max(500, 'Note too long').optional(),
   goalId:        z.string().optional().nullable(),
@@ -64,7 +72,7 @@ export type EditTransferInput = z.infer<typeof EditTransferSchema>;
 export const AddBudgetSchema = z.object({
   name:       z.string().min(1, 'Budget name is required').max(80),
   categoryId: z.string().min(1, 'Category is required'),
-  limitAmountMinor:   kes('Spending limit'),
+  limitAmountMinor: minorAmount('Spending limit'),
   period:     z.enum(['weekly', 'monthly', 'yearly']),
   rollover:   z.boolean().optional().default(false),
 });
@@ -74,7 +82,7 @@ export type AddBudgetInput = z.infer<typeof AddBudgetSchema>;
 export const AddGoalSchema = z.object({
   name:          z.string().min(1, 'Goal name is required').max(80),
   category:      z.string().min(1),
-  targetAmountMinor:  kes('Target amount'),
+  targetAmountMinor: minorAmount('Target amount'),
   deadline:      z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal('')).optional(),
 });
 export type AddGoalInput = z.infer<typeof AddGoalSchema>;
@@ -84,11 +92,11 @@ export const AddLoanSchema = z.object({
   name:        z.string().min(1, 'Loan name is required').max(80),
   lender:      z.string().min(1, 'Lender is required').max(80),
   type:        z.string().min(1),
-  originalAmountMinor: kes('Original amount'),
-  balanceMinor:     optKes('Current balance'),
-  annualRate:  z.number().min(0).max(100),
+  originalAmountMinor: minorAmount('Original amount'),
+  balanceMinor: optMinorAmount('Current balance'),
+  annualRate: z.number().min(0, 'Interest rate cannot be negative').max(100),
   amortization: z.enum(['REDUCING_BALANCE', 'FLAT_RATE']),
-  monthlyPaymentMinor:  kes('Monthly payment'),
+  monthlyPaymentMinor: minorAmount('Monthly payment'),
   nextDue:     z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Next due date must be YYYY-MM-DD'),
   disbursementType: z.enum(['existing_debt', 'received_funds']).optional(),
   disbursementAccountId: z.string().optional(),
@@ -99,7 +107,7 @@ export type AddLoanInput = z.infer<typeof AddLoanSchema>;
 export const AddAssetSchema = z.object({
   name:     z.string().min(1, 'Asset name is required').max(80),
   category: z.enum(['Property', 'Investment', 'Vehicle', 'Other']),
-  valueMinor:    optKes('Asset value'),
+  valueMinor: optMinorAmount('Asset value'),
   symbol:   z.string().optional(),
 });
 export type AddAssetInput = z.infer<typeof AddAssetSchema>;

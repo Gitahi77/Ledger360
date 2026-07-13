@@ -25,3 +25,18 @@ export function assertMinor(amount: unknown): number {
   if (typeof amount === 'bigint') return Number(amount);
   return Number(amount);
 }
+
+export const MAX_TRANSACTION_AMOUNT_MAJOR = 100_000_000_000;
+
+export const CurrencyPrecision: Record<string, number> = {
+  KES: 2,
+  USD: 2,
+  EUR: 2,
+  GBP: 2,
+  JPY: 0,
+  KWD: 3,
+};
+
+export function getCurrencyDecimals(currency: string): number {
+  return CurrencyPrecision[currency.toUpperCase()] ?? 2; // Default to 2
+}

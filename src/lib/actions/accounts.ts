@@ -16,6 +16,13 @@ const AccountSchema = z.object({
   type: z.nativeEnum(AccountType),
   openingMinor: z.number().int().default(0),
   archived: z.boolean().optional(),
+  allowNegativeBalance: z.boolean().default(false),
+}).refine(data => {
+  if (data.openingMinor < 0 && !data.allowNegativeBalance) return false;
+  return true;
+}, {
+  message: "Opening balance cannot be negative unless overdraft is allowed",
+  path: ["openingMinor"]
 });
 
 const DeleteSchema = z.object({
@@ -105,7 +112,8 @@ export async function createAccount(rawData: unknown): Promise<ActionResult<Acco
       balanceMinor: initialMoney.minorUnits,
       displayBalance: MoneyFormatter.format(initialMoney),
       isOverdrawn: initialMoney.isNegative(),
-      availableBalanceMinor: initialMoney.minorUnits
+      availableBalanceMinor: initialMoney.minorUnits,
+      allowNegativeBalance: result.allowNegativeBalance
     };
     
     return { success: true, data: mapAccountToDTO(enrichedAccount) };
@@ -158,7 +166,8 @@ export async function updateAccount(id: string, rawData: unknown): Promise<Actio
       balanceMinor: initialMoney.minorUnits, // Should ideally re-aggregate
       displayBalance: MoneyFormatter.format(initialMoney),
       isOverdrawn: initialMoney.isNegative(),
-      availableBalanceMinor: initialMoney.minorUnits
+      availableBalanceMinor: initialMoney.minorUnits,
+      allowNegativeBalance: result.allowNegativeBalance
     };
     
     return { success: true, data: mapAccountToDTO(enrichedAccount) };

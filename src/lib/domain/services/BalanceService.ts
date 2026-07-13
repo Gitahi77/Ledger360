@@ -13,6 +13,7 @@ export type EnrichedAccountData = {
   currency: string;
   openingMinor: number;
   archived: boolean;
+  allowNegativeBalance: boolean;
   createdAt: Date;
   chamaDetails?: import('@prisma/client').ChamaDetails | null;
   

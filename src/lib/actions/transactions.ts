@@ -72,18 +72,26 @@ export async function addTransaction(raw: unknown) {
     const { Money } = await import('../domain/money/Money');
     const { createTransactionRecord, getCategoryByNameOrId } = await import('../repositories/transactions');
     
-    // Fallback to KES if no currency available on user
-    const currency = user.currency || 'KES';
+    // Overdraft prevention and currency validation
+    let warning: string | undefined;
+    const { BalanceService } = await import('../domain/services/BalanceService');
+    const balances = await BalanceService.getEnrichedAccounts(user.id);
+    const acc = balances.find(a => a.id === accountId);
+    
+    // Fallback to KES if no currency available on user or account
+    const currency = acc?.currency || user.currency || 'KES';
     const moneyAmount = Money.fromMinor(data.baseAmountMinor, currency);
 
-    // Overdraft prevention
-    let warning: string | undefined;
-    if (data.type === 'expense' && accountId) {
-      const { BalanceService } = await import('../domain/services/BalanceService');
-      const balances = await BalanceService.getEnrichedAccounts(user.id);
-      const acc = balances.find(a => a.id === accountId);
-      if (acc && acc.type !== 'CREDIT_CARD' && acc.balanceMinor - data.baseAmountMinor < 0) {
-        warning = `Warning: Not enough money in ${acc.name}. Available: ${acc.displayBalance}.`;
+    if (data.type === 'expense' && acc) {
+      if (acc.type !== 'CREDIT_CARD') {
+        const projectedBalance = acc.balanceMinor - data.baseAmountMinor;
+        if (projectedBalance < 0) {
+          if (!acc.allowNegativeBalance) {
+            throw new Error(`Insufficient funds: ${acc.name} does not allow negative balances. Available: ${acc.displayBalance}.`);
+          } else {
+            warning = `Warning: This transaction will cause your account ${acc.name} to become overdrawn.`;
+          }
+        }
       }
     }
 
@@ -329,32 +337,38 @@ export async function editTransaction(id: string, rawData: unknown) {
     }
 
     let warning: string | undefined;
+    const { toMajor } = await import('@/lib/money');
+    const balancesResult = await getAccountBalances(user.id);
+    let newCurrency = oldTx.currency;
 
-    if (newType === 'expense' && newAccountId) {
-      const { toMajor } = await import('@/lib/money');
-      const balancesResult = await getAccountBalances(user.id);
-      if (balancesResult.success) {
-        const acc = balancesResult.data.find(a => a.id === newAccountId);
-        
-        if (acc && acc.type !== 'CREDIT_CARD') {
-        let effectiveBalance = acc.balanceMinor;
-        if (oldTx.type === 'expense' && oldTx.accountId === newAccountId) {
-          effectiveBalance += Number(oldTx.baseAmountMinor); // restore old amount
-        } else if (oldTx.type === 'income' && oldTx.accountId === newAccountId) {
-          effectiveBalance -= Number(oldTx.baseAmountMinor); // remove old income
+    if (balancesResult.success) {
+      const acc = balancesResult.data.find(a => a.id === newAccountId);
+      if (acc) {
+        newCurrency = acc.currency;
+        if (newType === 'expense' && acc.type !== 'CREDIT_CARD') {
+          let effectiveBalance = acc.balanceMinor;
+          if (oldTx.type === 'expense' && oldTx.accountId === newAccountId) {
+            effectiveBalance += Number(oldTx.baseAmountMinor); // restore old amount
+          } else if (oldTx.type === 'income' && oldTx.accountId === newAccountId) {
+            effectiveBalance -= Number(oldTx.baseAmountMinor); // remove old income
+          }
+          
+          const projectedBalance = effectiveBalance - Number(newAmount);
+          if (projectedBalance < 0) {
+            if (!acc.allowNegativeBalance) {
+              throw new Error(`Insufficient funds: ${acc.name} does not allow negative balances. Available: ${acc.currency} ${toMajor(effectiveBalance)}.`);
+            } else {
+              warning = `Warning: This transaction will cause your account ${acc.name} to become overdrawn.`;
+            }
+          }
         }
-        
-        if (effectiveBalance - Number(newAmount) < 0) {
-          warning = `Warning: Not enough money in ${acc.name}. Available: ${acc.currency} ${toMajor(effectiveBalance)}.`;
-        }
-      }
       }
     }
 
     await prisma.$transaction(async (tx) => {
       const { count } = await tx.transaction.updateMany({
         where: { id: validId, userId: user.id },
-        data,
+        data: { ...data, currency: newCurrency },
       });
       if (count === 0) throw new Error('Transaction not found or ownership failed');
 
@@ -374,6 +388,6 @@ export async function editTransaction(id: string, rawData: unknown) {
   } catch (error) {
     if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
     console.error('[editTransaction]', error);
-    return { error: 'An unexpected error occurred. Please try again.' };
+    return { error: getErrorMessage(error) || 'An unexpected error occurred. Please try again.' };
   }
 }
