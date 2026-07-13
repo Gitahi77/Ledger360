@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import * as argon2 from '@node-rs/argon2';
 import { z } from 'zod';
+import { respondValidationError } from '@/lib/respond';
 import { prisma } from '@/lib/prisma';
 import { DEFAULT_CATEGORIES } from '@/lib/constants/categories';
 import { checkLimit } from '@/lib/rateLimit';
@@ -40,10 +41,7 @@ export async function POST(req: Request) {
     // -- Zod validation ----------------------------------------------------
     const parsed = SignupSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.issues[0]?.message ?? 'Invalid input.' },
-        { status: 400 }
-      );
+      return respondValidationError(parsed.error, 'Signup API');
     }
     const { name, email, password, accountType, currency } = parsed.data;
 

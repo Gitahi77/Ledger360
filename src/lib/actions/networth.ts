@@ -1,6 +1,8 @@
 'use server';
 
 // src/lib/actions/networth.ts
+import { AuthorizationError, assertOwnsAsset } from '@/lib/authz';
+
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { requireAuth } from './_auth';
@@ -22,6 +24,7 @@ export async function addAsset(raw: { name: string; category: string; valueMinor
     revalidatePath('/');
     return { success: true, data: undefined };
   } catch (error) {
+    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
     const errorId = logger.server(error, { action: 'addAsset', raw });
     return { success: false, error: 'Failed to add asset', errorId };
   }
@@ -35,6 +38,8 @@ export async function editAsset(id: string, raw: { name?: string; category?: str
     const { AddAssetSchema } = await import('@/lib/validation');
     const parsed = AddAssetSchema.partial().parse(raw);
     
+    await assertOwnsAsset(user.id, id);
+
     const { count } = await prisma.asset.updateMany({
       where: { id, userId: user.id },
       data: { ...parsed, valueMinor: parsed.valueMinor !== undefined ? BigInt(parsed.valueMinor) : undefined },
@@ -45,6 +50,7 @@ export async function editAsset(id: string, raw: { name?: string; category?: str
     revalidatePath('/');
     return { success: true, data: undefined };
   } catch (error) {
+    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
     const errorId = logger.server(error, { action: 'editAsset', id, raw });
     return { success: false, error: 'Failed to edit asset', errorId };
   }
@@ -55,11 +61,13 @@ export async function deleteAsset(id: string): Promise<ActionResult> {
   try {
     const user = await requireAuth();
     if (!id) throw new Error('Missing id');
+    await assertOwnsAsset(user.id, id);
     await prisma.asset.deleteMany({ where: { id, userId: user.id } });
     revalidatePath('/net-worth');
     revalidatePath('/');
     return { success: true, data: undefined };
   } catch (error) {
+    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
     const errorId = logger.server(error, { action: 'deleteAsset', id });
     return { success: false, error: 'Failed to delete asset', errorId };
   }

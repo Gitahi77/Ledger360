@@ -4,6 +4,9 @@ import { requireAuth } from './_auth';
 import { prisma } from '@/lib/prisma';
 
 import { z } from 'zod';
+import { AuthorizationError } from '@/lib/authz';
+
+import { safeValidate } from '@/lib/respond';
 
 const CategorySchema = z.object({
   name: z.string().min(1).max(100),
@@ -20,8 +23,8 @@ export async function createCategory(rawData: unknown) {
   const user = await requireAuth();
 
   try {
-    const parsed = CategorySchema.safeParse(rawData);
-    if (!parsed.success) return { error: 'Invalid input' };
+    const parsed = safeValidate(CategorySchema, rawData, 'CategorySchema');
+    if (!parsed.success) return parsed.error;
     const data = parsed.data;
 
     const existing = await prisma.category.findUnique({
@@ -42,6 +45,7 @@ export async function createCategory(rawData: unknown) {
     });
     return { success: true, category: result };
   } catch (error) {
+    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
     console.error('[createCategory]', error);
     return { error: 'An unexpected error occurred. Please try again.' };
   }
@@ -52,9 +56,10 @@ export async function editCategory(id: string, rawData: unknown) {
   const user = await requireAuth();
 
   try {
-    const parsedId = DeleteSchema.safeParse({ id });
-    const parsedData = CategorySchema.safeParse(rawData);
-    if (!parsedId.success || !parsedData.success) return { error: 'Invalid input' };
+    const parsedId = safeValidate(DeleteSchema, { id }, 'DeleteSchema');
+    const parsedData = safeValidate(CategorySchema, rawData, 'CategorySchema');
+    if (!parsedId.success) return parsedId.error;
+    if (!parsedData.success) return parsedData.error;
     const validId = parsedId.data.id;
     const data = parsedData.data;
 
@@ -86,6 +91,7 @@ export async function editCategory(id: string, rawData: unknown) {
 
     return { success: true };
   } catch (error) {
+    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
     console.error('[editCategory]', error);
     return { error: 'An unexpected error occurred. Please try again.' };
   }
@@ -96,8 +102,8 @@ export async function deleteCategory(id: string) {
   const user = await requireAuth();
 
   try {
-    const parsedId = DeleteSchema.safeParse({ id });
-    if (!parsedId.success) return { error: 'Invalid input' };
+    const parsedId = safeValidate(DeleteSchema, { id }, 'DeleteSchema');
+    if (!parsedId.success) return parsedId.error;
     const validId = parsedId.data.id;
 
     // First check if it's used in transactions or budgets
@@ -131,6 +137,7 @@ export async function deleteCategory(id: string) {
 
     return { success: true };
   } catch (error) {
+    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
     console.error('[deleteCategory]', error);
     return { error: 'An unexpected error occurred. Please try again.' };
   }

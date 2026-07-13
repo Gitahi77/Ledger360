@@ -32,6 +32,10 @@ export const POST = apiRoute(
   AddTransactionSchema,
   async (req, { body }) => {
     const result = await addTransaction(body);
-    return { success: true, warning: result?.warning };
+    let warning;
+    if (result && 'warning' in result) {
+      warning = result.warning as string;
+    }
+    return { success: true, warning };
   }
 );

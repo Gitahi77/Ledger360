@@ -6,6 +6,9 @@ import { revalidatePath } from 'next/cache';
 import { requireAuth } from './_auth';
 
 import { z } from 'zod';
+import { AuthorizationError, assertOwnsAccount, assertOwnsLoan } from '@/lib/authz';
+
+import { safeValidate } from '@/lib/respond';
 
 const DeleteSchema = z.object({ id: z.string().cuid() });
 const EditLoanSchema = z.object({
@@ -29,11 +32,15 @@ export async function addLoan(raw: unknown) {
   'use server';
   try {
     const { AddLoanSchema } = await import('@/lib/validation');
-    const parsed = AddLoanSchema.safeParse(raw);
-    if (!parsed.success) return { error: 'Invalid input' };
+    const parsed = safeValidate(AddLoanSchema, raw, 'AddLoanSchema');
+    if (!parsed.success) return parsed.error;
     const data = parsed.data;
     const user = await requireAuth();
     
+    if (data.disbursementType === 'received_funds' && data.disbursementAccountId) {
+      await assertOwnsAccount(user.id, data.disbursementAccountId);
+    }
+
     await prisma.$transaction(async (tx) => {
       const loan = await tx.loan.create({
         data: {
@@ -71,6 +78,7 @@ export async function addLoan(raw: unknown) {
     revalidatePath('/');
     return { success: true };
   } catch (error) {
+    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
     console.error('[addLoan]', error);
     return { error: 'An unexpected error occurred. Please try again.' };
   }
@@ -80,15 +88,17 @@ export async function deleteLoan(id: string) {
   'use server';
   const user = await requireAuth();
   try {
-    const parsedId = DeleteSchema.safeParse({ id });
-    if (!parsedId.success) return { error: 'Invalid input' };
+    const parsedId = safeValidate(DeleteSchema, { id }, 'DeleteSchema');
+    if (!parsedId.success) return parsedId.error;
     const validId = parsedId.data.id;
 
+    await assertOwnsLoan(user.id, validId);
     await prisma.loan.deleteMany({ where: { id: validId, userId: user.id } });
     revalidatePath('/loans');
     revalidatePath('/');
     return { success: true };
   } catch (error) {
+    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
     console.error('[deleteLoan]', error);
     return { error: 'An unexpected error occurred. Please try again.' };
   }
@@ -98,15 +108,17 @@ export async function editLoan(id: string, rawData: unknown) {
   'use server';
   const user = await requireAuth();
   try {
-    const parsedId = DeleteSchema.safeParse({ id });
-    const parsedData = EditLoanSchema.safeParse(rawData);
-    if (!parsedId.success || !parsedData.success) return { error: 'Invalid input' };
+    const parsedId = safeValidate(DeleteSchema, { id }, 'DeleteSchema');
+    const parsedData = safeValidate(EditLoanSchema, rawData, 'EditLoanSchema');
+    if (!parsedId.success) return parsedId.error;
+    if (!parsedData.success) return parsedData.error;
     const validId = parsedId.data.id;
     const data = parsedData.data;
 
     const updateData: Record<string, unknown> = { ...data };
     if (data.nextDue) updateData.nextDue = new Date(data.nextDue);
 
+    await assertOwnsLoan(user.id, validId);
     const { count } = await prisma.loan.updateMany({
       where: { id: validId, userId: user.id },
       data: updateData,
@@ -117,6 +129,7 @@ export async function editLoan(id: string, rawData: unknown) {
     revalidatePath('/');
     return { success: true };
   } catch (error) {
+    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
     console.error('[editLoan]', error);
     return { error: 'An unexpected error occurred. Please try again.' };
   }

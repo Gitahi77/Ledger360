@@ -121,10 +121,10 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
       } else {
         if (isEdit && tx) {
           const res = await editTransaction(tx.id, { name, baseAmountMinor: toMinor(parseFloat(amount)), type, categoryId, accountId, date: new Date(date), note });
-          warnMsg = res?.warning;
+          if (res && 'warning' in res) warnMsg = res.warning as string;
         } else {
           const res = await addTransaction({ name, baseAmountMinor: toMinor(parseFloat(amount)), type, categoryId, accountId, date, note });
-          warnMsg = res?.warning;
+          if (res && 'warning' in res) warnMsg = res.warning as string;
         }
       }
       startT(() => router.refresh());
