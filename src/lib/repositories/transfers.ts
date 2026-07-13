@@ -25,8 +25,8 @@ export async function getTransferById(userId: string, transferId: string): Promi
 }
 
 export async function getTransferByIdempotencyKey(userId: string, idempotencyKey: string): Promise<Transfer | null> {
-  return prisma.transfer.findUnique({
-    where: { idempotencyKey }
+  return prisma.transfer.findFirst({
+    where: { idempotencyKey, userId }
   });
 }
 

@@ -224,7 +224,7 @@ export async function getReportCategories({ userId, period, type = 'expense' }: 
   if (rows.length === 0) return [] as { name: string; value: number; pct: number; color: string }[];
 
   const categoryIds = rows.map((r: any) => r.categoryId).filter((id): id is string => id !== null);
-  const cats: Category[] = await prisma.category.findMany({ where: { id: { in: categoryIds } } });
+  const cats: Category[] = await prisma.category.findMany({ where: { id: { in: categoryIds }, userId } });
   const catMap = Object.fromEntries(cats.map((c: any) => [c.id, c]));
   const total  = rows.reduce((s, r: any) => s + Number(r._sum.baseAmountMinor ?? 0), 0);
 

@@ -25,6 +25,18 @@ vi.mock('@/lib/domain/services/BalanceService', () => ({
   }
 }));
 
+vi.mock('@/lib/authz', () => ({
+  assertOwnsAccount: vi.fn().mockImplementation(async (userId, id) => ({ id, userId })),
+  assertOwnsTransaction: vi.fn().mockImplementation(async (userId, id) => ({ id, userId })),
+  assertOwnsTransfer: vi.fn().mockImplementation(async (userId, id) => ({ id, userId })),
+  assertOwnsBudget: vi.fn().mockImplementation(async (userId, id) => ({ id, userId })),
+  assertOwnsCategory: vi.fn().mockImplementation(async (userId, id) => ({ id, userId })),
+  assertOwnsAsset: vi.fn().mockImplementation(async (userId, id) => ({ id, userId })),
+  assertOwnsLoan: vi.fn().mockImplementation(async (userId, id) => ({ id, userId })),
+  assertOwnsGoal: vi.fn().mockImplementation(async (userId, id) => ({ id, userId })),
+  AuthorizationError: class AuthorizationError extends Error {}
+}));
+
 vi.mock('@/lib/queries/loans', () => ({
   getLoansForUser: vi.fn()
 }));
@@ -62,6 +74,7 @@ vi.mock('@/lib/prisma', () => ({
     },
     transfer: {
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
       create: vi.fn().mockResolvedValue({ id: 'transfer-mocked' }),
       findMany: vi.fn().mockResolvedValue([]),
       aggregate: vi.fn().mockResolvedValue({ _sum: { baseAmountMinor: 0 } })
@@ -394,9 +407,16 @@ describe('Financial Logic and Validations', () => {
       // So effective balance before the new edit is 500 + 300 = 800.
       vi.mocked(getAccountBalances).mockResolvedValue({ success: true, data: [{ id: 'acc-1', type: 'CHECKING', balanceMinor: 500, userId: 'user-1', name: 'Bank', currency: 'KES', openingMinor: 0n, archived: false, createdAt: new Date() }] });
       
-      vi.mocked(prisma.transaction.findFirst).mockResolvedValue({
-        id: 'clrq9xyz00000123456789abc', type: 'expense', baseAmountMinor: 300, accountId: 'acc-1', userId: 'user-1', name: 'Lunch', categoryId: 'cat-1', date: new Date(), note: null, createdAt: new Date()
-      } as any);
+      const mockedTx = {
+        id: 'clrq9xyz00000123456789abc', type: 'expense', baseAmountMinor: 300n, accountId: 'acc-1', userId: 'user-1', name: 'Lunch', categoryId: 'cat-1', date: new Date(), note: null, createdAt: new Date()
+      } as any;
+      
+      vi.mocked(prisma.transaction.findFirst).mockResolvedValue(mockedTx);
+      
+      // Also mock assertOwnsTransaction since editTransaction uses it now
+      const { assertOwnsTransaction } = await import('../lib/authz');
+      vi.mocked(assertOwnsTransaction).mockResolvedValue(mockedTx);
+      
       vi.mocked(prisma.transaction.updateMany).mockResolvedValue({ count: 1 });
 
       // Increasing expense to 700: 800 - 700 = 100 >= 0 (Allowed)

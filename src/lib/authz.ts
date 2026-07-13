@@ -1,4 +1,5 @@
 import { prisma } from './prisma';
+import { logger } from './logger';
 
 export class AuthorizationError extends Error {
   code = 'FORBIDDEN';
@@ -13,30 +14,34 @@ export class AuthorizationError extends Error {
  * Minimizes DB trips by returning the loaded resource.
  * Throws AuthorizationError if missing or owned by another user.
  */
-export async function assertOwnsResource<
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  T extends { findUnique: (args: any) => Promise<any> },
-  R = Awaited<ReturnType<T['findUnique']>>
->(params: {
-  model: T;
+export async function assertOwnsResource<R>(params: {
+  findById: (id: string) => Promise<R | null>;
   userId: string;
   id: string;
-  idField?: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  select?: any;
+  resourceType: string;
 }): Promise<NonNullable<R>> {
-  const idField = params.idField || 'id';
   
-  const resource = await params.model.findUnique({
-    where: { [idField]: params.id },
-    select: params.select,
-  });
+  const resource = await params.findById(params.id);
 
   if (!resource) {
+    logger.server('AUTHORIZATION_FAILURE', {
+      userId: params.userId,
+      resourceType: params.resourceType,
+      resourceId: params.id,
+      reason: 'Resource not found',
+      action: 'assertOwnsResource',
+    });
     throw new AuthorizationError();
   }
   
-  if (resource.userId !== params.userId) {
+  if ((resource as any).userId !== params.userId) {
+    logger.server('AUTHORIZATION_FAILURE', {
+      userId: params.userId,
+      resourceType: params.resourceType,
+      resourceId: params.id,
+      reason: 'Ownership mismatch',
+      action: 'assertOwnsResource',
+    });
     throw new AuthorizationError();
   }
 
@@ -46,33 +51,73 @@ export async function assertOwnsResource<
 // ── Thin Domain Wrappers ────────────────────────────────────────────────
 
 export async function assertOwnsAccount(userId: string, accountId: string) {
-  return assertOwnsResource({ model: prisma.account, userId, id: accountId });
+  return assertOwnsResource({ 
+    findById: async (id) => prisma.account.findUnique({ where: { id } }), 
+    userId, 
+    id: accountId, 
+    resourceType: 'account' 
+  });
 }
 
 export async function assertOwnsTransaction(userId: string, transactionId: string) {
-  return assertOwnsResource({ model: prisma.transaction, userId, id: transactionId });
+  return assertOwnsResource({ 
+    findById: async (id) => prisma.transaction.findUnique({ where: { id } }), 
+    userId, 
+    id: transactionId, 
+    resourceType: 'transaction' 
+  });
 }
 
 export async function assertOwnsCategory(userId: string, categoryId: string) {
-  return assertOwnsResource({ model: prisma.category, userId, id: categoryId });
+  return assertOwnsResource({ 
+    findById: async (id) => prisma.category.findUnique({ where: { id } }), 
+    userId, 
+    id: categoryId, 
+    resourceType: 'category' 
+  });
 }
 
 export async function assertOwnsBudget(userId: string, budgetId: string) {
-  return assertOwnsResource({ model: prisma.budget, userId, id: budgetId });
+  return assertOwnsResource({ 
+    findById: async (id) => prisma.budget.findUnique({ where: { id } }), 
+    userId, 
+    id: budgetId, 
+    resourceType: 'budget' 
+  });
 }
 
 export async function assertOwnsGoal(userId: string, goalId: string) {
-  return assertOwnsResource({ model: prisma.goal, userId, id: goalId });
+  return assertOwnsResource({ 
+    findById: async (id) => prisma.goal.findUnique({ where: { id } }), 
+    userId, 
+    id: goalId, 
+    resourceType: 'goal' 
+  });
 }
 
 export async function assertOwnsLoan(userId: string, loanId: string) {
-  return assertOwnsResource({ model: prisma.loan, userId, id: loanId });
+  return assertOwnsResource({ 
+    findById: async (id) => prisma.loan.findUnique({ where: { id } }), 
+    userId, 
+    id: loanId, 
+    resourceType: 'loan' 
+  });
 }
 
 export async function assertOwnsTransfer(userId: string, transferId: string) {
-  return assertOwnsResource({ model: prisma.transfer, userId, id: transferId });
+  return assertOwnsResource({ 
+    findById: async (id) => prisma.transfer.findUnique({ where: { id } }), 
+    userId, 
+    id: transferId, 
+    resourceType: 'transfer' 
+  });
 }
 
 export async function assertOwnsAsset(userId: string, assetId: string) {
-  return assertOwnsResource({ model: prisma.asset, userId, id: assetId });
+  return assertOwnsResource({ 
+    findById: async (id) => prisma.asset.findUnique({ where: { id } }), 
+    userId, 
+    id: assetId, 
+    resourceType: 'asset' 
+  });
 }
