@@ -10,6 +10,7 @@ export type AccountDTO = {
   currency: string;
   openingMinor: number;
   archived: boolean;
+  allowNegativeBalance: boolean;
   createdAt: string;
   chamaDetails?: ChamaDetails | null;
   balanceMinor: number;
@@ -29,6 +30,7 @@ export function mapAccountToDTO(
     currency: account.currency,
     openingMinor: toMoneyDTO(account.openingMinor),
     archived: account.archived,
+    allowNegativeBalance: account.allowNegativeBalance,
     createdAt: toDateDTO(account.createdAt) as string,
     chamaDetails: account.chamaDetails,
     balanceMinor: toMoneyDTO(account.balanceMinor),

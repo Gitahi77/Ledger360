@@ -379,8 +379,20 @@ describe('Financial Logic and Validations', () => {
       })).resolves.not.toThrow();
     });
 
-    it('returns an overdraft warning for standard accounts in addTransaction without throwing', async () => {
-      vi.mocked(getAccountBalances).mockResolvedValue([{ id: 'acc-1', type: 'CHECKING', balanceMinor: 500, userId: 'user-1', name: 'Bank', currency: 'KES', openingMinor: 0n, archived: false, createdAt: new Date() }]);
+    it('rejects overdraft for standard accounts in addTransaction when allowNegativeBalance is false', async () => {
+      vi.mocked(getAccountBalances).mockResolvedValue([{ id: 'acc-1', type: 'CHECKING', balanceMinor: 500, userId: 'user-1', name: 'Bank', currency: 'KES', openingMinor: 0n, archived: false, allowNegativeBalance: false, createdAt: new Date() }] as any);
+      vi.mocked(prisma.category.findFirst).mockResolvedValue({ id: 'cat-1', userId: 'user-1', name: 'Food', type: 'expense', icon: null, createdAt: new Date() } as any);
+
+      const res = await addTransaction({
+        name: 'Lunch', type: 'expense', baseAmountMinor: 600, categoryId: 'cat-1', accountId: 'acc-1', date: '2023-10-10'
+      });
+      expect(res).toEqual({
+        error: expect.stringMatching(/Bank does not allow negative balances/)
+      });
+    });
+
+    it('returns an overdraft warning for standard accounts in addTransaction when allowNegativeBalance is true without throwing', async () => {
+      vi.mocked(getAccountBalances).mockResolvedValue([{ id: 'acc-1', type: 'CHECKING', balanceMinor: 500, userId: 'user-1', name: 'Bank', currency: 'KES', openingMinor: 0n, archived: false, allowNegativeBalance: true, createdAt: new Date() }] as any);
       vi.mocked(prisma.category.findFirst).mockResolvedValue({ id: 'cat-1', userId: 'user-1', name: 'Food', type: 'expense', icon: null, createdAt: new Date() } as any);
 
       const res = await addTransaction({
@@ -388,7 +400,7 @@ describe('Financial Logic and Validations', () => {
       });
       expect(res).toEqual({
         success: true,
-        warning: expect.stringMatching(/Not enough money in Bank/)
+        warning: expect.stringMatching(/cause your account Bank to become overdrawn/)
       });
     });
 
@@ -405,7 +417,7 @@ describe('Financial Logic and Validations', () => {
     it('computes effective balance correctly when editing a transaction', async () => {
       // Current balance is 500, but that includes a 300 expense we are editing.
       // So effective balance before the new edit is 500 + 300 = 800.
-      vi.mocked(getAccountBalances).mockResolvedValue({ success: true, data: [{ id: 'acc-1', type: 'CHECKING', balanceMinor: 500, userId: 'user-1', name: 'Bank', currency: 'KES', openingMinor: 0n, archived: false, createdAt: new Date() }] });
+      vi.mocked(getAccountBalances).mockResolvedValue({ success: true, data: [{ id: 'acc-1', type: 'CHECKING', balanceMinor: 500, userId: 'user-1', name: 'Bank', currency: 'KES', openingMinor: 0n, archived: false, allowNegativeBalance: true, createdAt: new Date() }] } as any);
       
       const mockedTx = {
         id: 'clrq9xyz00000123456789abc', type: 'expense', baseAmountMinor: 300n, accountId: 'acc-1', userId: 'user-1', name: 'Lunch', categoryId: 'cat-1', date: new Date(), note: null, createdAt: new Date()
@@ -424,13 +436,22 @@ describe('Financial Logic and Validations', () => {
         baseAmountMinor: 700
       })).resolves.not.toHaveProperty('error');
 
-      // Increasing expense to 900: 800 - 900 = -100 < 0 (Warning)
+      // Increasing expense to 900: 800 - 900 = -100 < 0 (Warning since allowNegativeBalance is true)
       const res = await editTransaction('clrq9xyz00000123456789abc', {
         baseAmountMinor: 900
       });
       expect(res).toEqual({
         success: true,
-        warning: expect.stringMatching(/Not enough money in Bank/)
+        warning: expect.stringMatching(/cause your account Bank to become overdrawn/)
+      });
+
+      // When allowNegativeBalance is false, it should throw
+      vi.mocked(getAccountBalances).mockResolvedValue({ success: true, data: [{ id: 'acc-1', type: 'CHECKING', balanceMinor: 500, userId: 'user-1', name: 'Bank', currency: 'KES', openingMinor: 0n, archived: false, allowNegativeBalance: false, createdAt: new Date() }] } as any);
+      const resError = await editTransaction('clrq9xyz00000123456789abc', {
+        baseAmountMinor: 900
+      });
+      expect(resError).toEqual({
+        error: expect.stringMatching(/Bank does not allow negative balances/)
       });
     });
   });
