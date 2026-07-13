@@ -216,7 +216,7 @@ export async function triggerAutoSave(
     if (!plan || !plan.active) return null;
 
     // Filter to valid transactions on/after plan.createdAt
-    const validIncomes = incomeTransactions.filter((tx: any) => new Date(tx.date) >= plan.createdAt);
+    const validIncomes = incomeTransactions.filter(tx => new Date(tx.date) >= plan.createdAt);
     if (validIncomes.length === 0) return null;
 
     // 2. Lazy escalation
@@ -231,8 +231,8 @@ export async function triggerAutoSave(
     const rate = esc.currentRatePct;
 
     // 3. Compute amounts
-    const transfersToCreate: any[] = [];
-    const logEntries: any[] = [];
+    const transfersToCreate: import('@prisma/client').Prisma.TransferCreateManyInput[] = [];
+    const logEntries: { source: string; amount: number; rate: number; triggeredBy: string }[] = [];
     let totalNeeded = 0;
 
     for (const tx of validIncomes) {
@@ -267,7 +267,7 @@ export async function triggerAutoSave(
     // 4. Balance check
     const { getAccountBalances } = await import('@/lib/queries/accounts');
     const balances = await getAccountBalances({ userId });
-    const sourceAcc = balances.find((a: any) => a.id === plan.fromAccountId);
+    const sourceAcc = balances.find(a => a.id === plan.fromAccountId);
     if (sourceAcc && sourceAcc.type !== 'CREDIT_CARD' && Number(sourceAcc.balanceMinor) < totalNeeded) {
       return `Auto-save skipped: not enough funds in ${sourceAcc.name ?? 'source account'} (available: ${sourceAcc.currency} ${(Number(sourceAcc.balanceMinor) / 100).toFixed(2)}, needed: ${(totalNeeded / 100).toFixed(2)}).`;
     }

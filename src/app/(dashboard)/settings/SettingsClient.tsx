@@ -15,9 +15,9 @@ import { signOut } from 'next-auth/react';
 import { toMajor, toMinor } from '@/lib/money';
 import { fmtAdaptive } from '@/lib/format';
 import {
-  User, Bell, Palette, ShieldCheck, Database,
-  HelpCircle, Download, Trash2, ExternalLink, Info,
-  Globe, CheckCircle2, Loader2, ChevronDown, ChevronRight,
+  User, ShieldCheck, Database,
+  Download, Trash2, ExternalLink, Info,
+  Globe, CheckCircle2, Loader2,
   AlertTriangle,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -132,8 +132,8 @@ export function SettingsClient({
     expectedMonthlyIncomeMinor: number | null;
   } | null;
   logs: { id: string; action: string; resource: string; metadata: string | null; createdAt: string }[];
-  savingsPlan: any;
-  autoSaves: any[];
+  savingsPlan: Awaited<ReturnType<typeof import('@/lib/queries/savings').getSavingsPlan>>;
+  autoSaves: Awaited<ReturnType<typeof import('@/lib/queries/savings').getRecentAutoSaves>>;
   accounts: { id: string; name: string; type: string; currency: string }[];
   goals: { id: string; name: string }[];
 }) {

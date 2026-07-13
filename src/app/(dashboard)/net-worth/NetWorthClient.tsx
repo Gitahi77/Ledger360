@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { addAsset, editAsset, deleteAsset } from '@/lib/actions/networth';
 import { fmtAdaptive } from '@/lib/format';
 import { Plus, Trash2, Loader2, X, Home, Car, Gem, BarChart3, Edit2 } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, TooltipProps } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 import { toMinor, toMajor } from '@/lib/money';
 import { getErrorMessage } from '@/lib/format';
@@ -62,7 +62,7 @@ function AssetModal({ asset, onClose, currency }: { asset?: Asset; onClose: () =
       if (isEdit && asset) { await editAsset(asset.id, { name, category, valueMinor: toMinor(parsedValue), symbol: symbol || undefined }); }
       else { await addAsset({ name, category, valueMinor: toMinor(parsedValue), symbol: symbol || undefined }); }
       startT(() => router.refresh()); onClose();
-    } catch (err: unknown) { setError(getErrorMessage(err)); } // eslint-disable-line @typescript-eslint/no-explicit-any
+    } catch (err: unknown) { setError(getErrorMessage(err)); }  
     finally { setLoading(false); }
   }
 

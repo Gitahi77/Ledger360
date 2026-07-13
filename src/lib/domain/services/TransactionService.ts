@@ -1,5 +1,6 @@
 import { TransactionNormalizer, RawTransaction } from '../transactions/TransactionNormalizer';
 import { Money } from '../money/Money';
+import { Transaction } from '@prisma/client';
 
 export class TransactionService {
   /**
@@ -53,11 +54,11 @@ export class TransactionService {
   /**
    * Enriches an existing database transaction with dynamic normalization metadata.
    */
-  static enrichExistingTransaction(dbTx: any, currency: string) {
+  static enrichExistingTransaction(dbTx: Transaction & { category?: { name: string } | null }, currency: string) {
     const raw: RawTransaction = {
       accountId: dbTx.accountId,
       amount: Money.fromMinor(Number(dbTx.baseAmountMinor), currency),
-      type: dbTx.type,
+      type: dbTx.type as 'income' | 'expense',
       rawMerchantName: dbTx.name,
       date: dbTx.date,
       notes: dbTx.note || undefined,

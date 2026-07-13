@@ -112,7 +112,7 @@ export async function getUserPreferences() {
 }
 
 /* -- Export all user data as JSON --------------------------- */
-export async function exportUserData(): Promise<ActionResult<any>> {
+export async function exportUserData(): Promise<ActionResult<Record<string, unknown>>> {
   'use server';
   try {
     const user = await requireAuth();

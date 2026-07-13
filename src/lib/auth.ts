@@ -79,10 +79,10 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id             = (user as any).id;
-        token.accountType    = (user as any).accountType;
-        token.currency       = (user as any).currency;
-        token.sessionVersion = (user as any).sessionVersion;
+        token.id             = user.id;
+        token.accountType    = user.accountType;
+        token.currency       = user.currency;
+        token.sessionVersion = user.sessionVersion;
       }
       
       // Fetch fresh data from DB on every request to ensure session validity and sync currency
@@ -96,7 +96,7 @@ export const authOptions: NextAuthOptions = {
           // If user was deleted or sessionVersion changed (e.g. password reset), invalidate token
           if (!fresh || (token.sessionVersion !== undefined && fresh.sessionVersion !== token.sessionVersion)) {
             // Return token with an error flag to invalidate session
-            return { ...token, error: "SessionExpired" } as any;
+            return { ...token, error: "SessionExpired" };
           }
           
           // Auto-sync currency and profile
@@ -113,9 +113,9 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }) {
-      if ((token as any).error) {
+      if (token.error) {
         // Return an empty session to force logout
-        return {} as any;
+        return {} as import('next-auth').Session;
       }
       if (session.user) {
         session.user.id          = token.id as string;

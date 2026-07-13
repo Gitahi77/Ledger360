@@ -106,7 +106,7 @@ function LoanModal({ loan, accounts, onClose }: { loan?: Loan; accounts: {id: st
       }
       startT(() => router.refresh());
       onClose();
-    } catch (err: unknown) { // eslint-disable-line @typescript-eslint/no-explicit-any
+    } catch (err: unknown) {  
       setError(getErrorMessage(err));
     } finally { setLoading(false); }
   }

@@ -72,7 +72,7 @@ export async function addTransaction(raw: unknown) {
     if (data.type === 'expense' && accountId) {
       const { BalanceService } = await import('../domain/services/BalanceService');
       const balances = await BalanceService.getEnrichedAccounts(user.id);
-      const acc = balances.find((a: any) => a.id === accountId);
+      const acc = balances.find(a => a.id === accountId);
       if (acc && acc.type !== 'CREDIT_CARD' && acc.balanceMinor - data.baseAmountMinor < 0) {
         warning = `Warning: Not enough money in ${acc.name}. Available: ${acc.displayBalance}.`;
       }
@@ -124,7 +124,7 @@ export async function addTransaction(raw: unknown) {
     return { error: getErrorMessage(error) || 'An unexpected error occurred. Please try again.' };
   }
 }
-export async function importTransactions(rows: any[], targetAccountId: string) {
+export async function importTransactions(rows: unknown[], targetAccountId: string) {
   'use server';
   try {
     const user = await requireAuth();
@@ -147,23 +147,23 @@ export async function importTransactions(rows: any[], targetAccountId: string) {
     reference: z.string().optional().nullable(),
   });
 
-  const parsedArray = z.array(z.any()).safeParse(rows);
+  const parsedArray = z.array(z.unknown()).safeParse(rows);
   if (!parsedArray.success) throw new Error('Invalid payload');
 
   const validRows: z.infer<typeof ImportRowSchema>[] = [];
   for (const r of parsedArray.data) {
     const res = ImportRowSchema.safeParse(r);
     if (!res.success) {
-      console.warn('[importTransactions] Dropping invalid row:', r.name, res.error.issues);
+      console.warn('[importTransactions] Dropping invalid row:', r, res.error.issues);
       continue;
     }
     const data = res.data;
     if (isNaN(data.date.getTime())) {
-      console.warn('[importTransactions] Skipping invalid date:', r.date, r.name);
+      console.warn('[importTransactions] Skipping invalid date:', r);
       continue;
     }
     if (!isFinite(data.baseAmountMinor) || data.baseAmountMinor <= 0) {
-      console.warn('[importTransactions] Skipping invalid amount:', r.baseAmountMinor, r.name);
+      console.warn('[importTransactions] Skipping invalid amount:', r);
       continue;
     }
     validRows.push(data);
@@ -174,21 +174,21 @@ export async function importTransactions(rows: any[], targetAccountId: string) {
   // If the createMany fails, no orphaned categories are left behind.
   const createdIds = await prisma.$transaction(async (tx) => {
     // Resolve or create categories
-    const categoryNames = [...new Set(validRows.map((r: any) => String(r.categoryName)))];
+    const categoryNames = [...new Set(validRows.map(r => String(r.categoryName)))];
     const existingCats = await tx.category.findMany({ where: { userId: user.id, name: { in: categoryNames } } });
-    const catMap: Record<string, string> = Object.fromEntries(existingCats.map((c: any) => [c.name, c.id]));
+    const catMap: Record<string, string> = Object.fromEntries(existingCats.map(c => [c.name, c.id]));
 
     const newCatsToCreate = categoryNames
-      .filter((name: any) => !catMap[name])
-      .map((name: any) => {
-        const typeHint = validRows.find((r: any) => r.categoryName === name)?.type === 'income' ? 'income' : 'expense';
+      .filter(name => !catMap[name])
+      .map(name => {
+        const typeHint = validRows.find(r => r.categoryName === name)?.type === 'income' ? 'income' : 'expense';
         return { name, type: typeHint, userId: user.id };
       });
 
     if (newCatsToCreate.length > 0) {
       await tx.category.createMany({ data: newCatsToCreate, skipDuplicates: true });
       const newlyCreated = await tx.category.findMany({
-        where: { userId: user.id, name: { in: newCatsToCreate.map((c: any) => c.name) } }
+        where: { userId: user.id, name: { in: newCatsToCreate.map(c => c.name) } }
       });
       for (const cat of newlyCreated) {
         catMap[cat.name] = cat.id;
@@ -196,7 +196,7 @@ export async function importTransactions(rows: any[], targetAccountId: string) {
     }
 
     await tx.transaction.createMany({
-      data: validRows.map((r: any) => ({
+      data: validRows.map(r => ({
         name:            r.name,
         baseAmountMinor: BigInt(r.baseAmountMinor),
         type:            r.type,
@@ -221,7 +221,7 @@ export async function importTransactions(rows: any[], targetAccountId: string) {
       });
 
       // Return income rows to trigger auto-save outside the transaction
-      return validRows.filter((r: any) => r.type === 'income');
+      return validRows.filter(r => r.type === 'income');
     });
 
   // WO-15: Save-More-Tomorrow auto-save trigger for imported income rows.
@@ -242,7 +242,7 @@ export async function importTransactions(rows: any[], targetAccountId: string) {
     if (recentTxs.length > 0) {
       await triggerAutoSave(
         user.id,
-        recentTxs.map((tx: any) => ({ id: tx.id, baseAmountMinor: tx.baseAmountMinor, date: tx.date })),
+        recentTxs.map(tx => ({ id: tx.id, baseAmountMinor: Number(tx.baseAmountMinor), date: tx.date })),
         user.currency || 'KES',
       );
     }
@@ -324,7 +324,7 @@ export async function editTransaction(id: string, rawData: unknown) {
       const { toMajor } = await import('@/lib/money');
       const balancesResult = await getAccountBalances(user.id);
       if (balancesResult.success) {
-        const acc = balancesResult.data.find((a: any) => a.id === newAccountId);
+        const acc = balancesResult.data.find(a => a.id === newAccountId);
         
         if (acc && acc.type !== 'CREDIT_CARD') {
         let effectiveBalance = acc.balanceMinor;

@@ -4,7 +4,7 @@
 import {
   AreaChart, Area, XAxis, YAxis,
   CartesianGrid, Tooltip, ResponsiveContainer, Legend,
-  PieChart, Pie, Cell, TooltipProps
+  PieChart, Pie, Cell
 } from 'recharts';
 import { fmtAdaptive, fmtCompact } from '@/lib/format';
 import { useRouter } from 'next/navigation';

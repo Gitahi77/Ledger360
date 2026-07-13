@@ -20,8 +20,8 @@ export default async function Budgets({
     getCategories({ userId: user.id, type: 'expense' }),
   ]);
 
-  const totalBudgeted = budgets.reduce((s: number, b: any) => s + b.limit, 0);
-  const totalSpent    = budgets.reduce((s: number, b: any) => s + b.spent, 0);
+  const totalBudgeted = budgets.reduce((s, b) => s + b.limit, 0);
+  const totalSpent    = budgets.reduce((s, b) => s + b.spent, 0);
 
   return (
     <>
