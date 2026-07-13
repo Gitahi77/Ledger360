@@ -122,7 +122,7 @@ export async function safeToSpend(userId: string, period: 'weekly' | 'monthly' |
     _sum: { baseAmountMinor: true }
   });
   
-  const spendThisPeriodMap = new Map(spendThisPeriodGroups.map((g: any) => [g.categoryId, Number(g._sum.baseAmountMinor ?? 0)]));
+  const spendThisPeriodMap = new Map(spendThisPeriodGroups.map((g) => [g.categoryId, Number(g._sum.baseAmountMinor ?? 0)]));
 
   // Fetch unbudgeted spend in parallel with rollover queries
   const unbudgetedPromise = prisma.transaction.aggregate({
@@ -144,7 +144,7 @@ export async function safeToSpend(userId: string, period: 'weekly' | 'monthly' |
     })
   ));
   
-  const rolloverSpendMap = new Map(rolloverBudgets.map((b: any, i: number) => [b.id, Number(rolloverSpends[i]._sum.baseAmountMinor ?? 0)]));
+  const rolloverSpendMap = new Map(rolloverBudgets.map((b, i: number) => [b.id, Number(rolloverSpends[i]._sum.baseAmountMinor ?? 0)]));
 
   for (const b of budgets) {
     baseEnvelopeLimits += Number(b.limitAmountMinor);

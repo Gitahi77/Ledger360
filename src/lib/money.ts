@@ -21,7 +21,7 @@ export function toMajor(minor: number | bigint): number {
  * Type-guard: assert a value is a safe integer (minor units).
  * Use at API boundaries before writing to DB.
  */
-export function assertMinor(amount: any): number {
+export function assertMinor(amount: unknown): number {
   if (typeof amount === 'bigint') return Number(amount);
   return Number(amount);
 }

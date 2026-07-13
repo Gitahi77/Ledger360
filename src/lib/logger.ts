@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
  * In a real production environment, this would forward logs to Datadog, Sentry, or Logtail.
  */
 class Logger {
-  public server(error: unknown, context?: Record<string, any>): string {
+  public server(error: unknown, context?: Record<string, unknown>): string {
     const errorId = `LGR-${uuidv4().substring(0, 8).toUpperCase()}`;
     const timestamp = new Date().toISOString();
     
@@ -27,7 +27,7 @@ class Logger {
     return errorId;
   }
 
-  public client(error: unknown, context?: Record<string, any>): string {
+  public client(error: unknown, context?: Record<string, unknown>): string {
     const errorId = `LGR-C-${uuidv4().substring(0, 8).toUpperCase()}`;
     // In production, this would send to an ingest API for client errors.
     console.error(`[Client Error ${errorId}]`, error, context);
