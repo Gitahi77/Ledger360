@@ -11,6 +11,7 @@ export interface LogPayload {
   metadata?: Record<string, unknown>;
   message?: string;
   error?: unknown;
+  [key: string]: unknown;
 }
 
 /**

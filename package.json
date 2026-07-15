@@ -13,7 +13,9 @@
     "test": "vitest run",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "verify": "npm run lint && npx tsc --noEmit && npm run test && npm run build"
+    "verify": "npm run lint && npx tsc --noEmit && npm run test && npm run build",
+    "db:seed:benchmark": "npx tsx scripts/benchmarks/seed.ts",
+    "benchmark": "k6 run scripts/benchmarks/scenarios.js"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",

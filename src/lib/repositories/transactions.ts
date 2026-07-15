@@ -1,7 +1,8 @@
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
+import { withMetric } from '../domain/metrics-proxy';
 
-export async function getTransactionSumsByAccount({ userId }: { userId: string }) {
+export const getTransactionSumsByAccount = withMetric('TransactionsRepository', 'getTransactionSumsByAccount', async function getTransactionSumsByAccount({ userId }: { userId: string }) {
   const txWhere = {
     userId,
     NOT: [
@@ -24,9 +25,9 @@ export async function getTransactionSumsByAccount({ userId }: { userId: string }
   ]);
 
   return { incomeSums, expenseSums };
-}
+});
 
-export async function getTransactions({ userId, accountId }: { userId: string; accountId?: string }) {
+export const getTransactions = withMetric('TransactionsRepository', 'getTransactions', async function getTransactions({ userId, accountId }: { userId: string; accountId?: string }) {
   return await prisma.transaction.findMany({
     where: { 
       userId,
@@ -35,20 +36,20 @@ export async function getTransactions({ userId, accountId }: { userId: string; a
     include: { category: true },
     orderBy: { date: 'desc' }
   });
-}
+});
 
-export async function createTransactionRecord(tx: Prisma.TransactionClient, data: Prisma.TransactionUncheckedCreateInput) {
+export const createTransactionRecord = withMetric('TransactionsRepository', 'createTransactionRecord', async function createTransactionRecord(tx: Prisma.TransactionClient, data: Prisma.TransactionUncheckedCreateInput) {
   return await tx.transaction.create({ data });
-}
+});
 
-export async function deleteTransactionRecord(tx: Prisma.TransactionClient, id: string, userId: string) {
+export const deleteTransactionRecord = withMetric('TransactionsRepository', 'deleteTransactionRecord', async function deleteTransactionRecord(tx: Prisma.TransactionClient, id: string, userId: string) {
   const { count } = await tx.transaction.deleteMany({
     where: { id, userId }
   });
   if (count === 0) throw new Error('Transaction not found or unauthorized');
-}
+});
 
-export async function getCategoryByNameOrId({ userId, hint, type }: { userId: string; hint: string; type: string }) {
+export const getCategoryByNameOrId = withMetric('TransactionsRepository', 'getCategoryByNameOrId', async function getCategoryByNameOrId({ userId, hint, type }: { userId: string; hint: string; type: string }) {
   // Check by ID first
   let cat = await prisma.category.findFirst({ where: { id: hint, userId } });
   if (cat) return cat;
@@ -61,4 +62,4 @@ export async function getCategoryByNameOrId({ userId, hint, type }: { userId: st
   return await prisma.category.create({
     data: { name: hint, type, userId }
   });
-}
+});
