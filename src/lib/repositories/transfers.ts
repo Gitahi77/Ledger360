@@ -1,7 +1,8 @@
 import { prisma } from '@/lib/prisma';
 import { Prisma, Transfer } from '@prisma/client';
+import { withMetric } from '../domain/metrics-proxy';
 
-export async function getTransferSumsByAccount(userId: string) {
+export const getTransferSumsByAccount = withMetric('TransfersRepository', 'getTransferSumsByAccount', async function getTransferSumsByAccount(userId: string) {
   const [transfersOut, transfersIn] = await Promise.all([
     prisma.transfer.groupBy({
       by: ['fromAccountId'],
@@ -16,28 +17,28 @@ export async function getTransferSumsByAccount(userId: string) {
   ]);
 
   return { transfersOut, transfersIn };
-}
+});
 
-export async function getTransferById(userId: string, transferId: string): Promise<Transfer | null> {
+export const getTransferById = withMetric('TransfersRepository', 'getTransferById', async function getTransferById(userId: string, transferId: string): Promise<Transfer | null> {
   return prisma.transfer.findFirst({
     where: { id: transferId, userId }
   });
-}
+});
 
-export async function getTransferByIdempotencyKey(userId: string, idempotencyKey: string): Promise<Transfer | null> {
+export const getTransferByIdempotencyKey = withMetric('TransfersRepository', 'getTransferByIdempotencyKey', async function getTransferByIdempotencyKey(userId: string, idempotencyKey: string): Promise<Transfer | null> {
   return prisma.transfer.findFirst({
     where: { idempotencyKey, userId }
   });
-}
+});
 
-export async function createTransferRecord(
+export const createTransferRecord = withMetric('TransfersRepository', 'createTransferRecord', async function createTransferRecord(
   tx: Prisma.TransactionClient, 
   data: Prisma.TransferUncheckedCreateInput
 ): Promise<Transfer> {
   return tx.transfer.create({ data });
-}
+});
 
-export async function updateTransferRecord(
+export const updateTransferRecord = withMetric('TransfersRepository', 'updateTransferRecord', async function updateTransferRecord(
   tx: Prisma.TransactionClient, 
   id: string,
   userId: string,
@@ -47,9 +48,9 @@ export async function updateTransferRecord(
     where: { id, userId },
     data
   });
-}
+});
 
-export async function deleteTransferRecord(
+export const deleteTransferRecord = withMetric('TransfersRepository', 'deleteTransferRecord', async function deleteTransferRecord(
   tx: Prisma.TransactionClient, 
   id: string,
   userId: string
@@ -57,4 +58,4 @@ export async function deleteTransferRecord(
   await tx.transfer.delete({
     where: { id, userId }
   });
-}
+});

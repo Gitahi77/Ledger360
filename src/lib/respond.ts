@@ -50,7 +50,7 @@ export function validate<T>(schema: ZodSchema<T>, input: unknown, context: strin
 
 import { AppError } from './errors';
 import { logger } from './logger';
-import { getRequestId } from './request-context';
+import { getRequestId, getRequestContext } from './request-context';
 
 /**
  * Safe validate helper that returns a Result tuple instead of throwing.
@@ -128,10 +128,50 @@ export async function withAction<TInput, TResult>(
     }
 
     const durationMs = Math.round(performance.now() - started);
+    
+    let metrics = {};
+    let poolMetrics = {};
+    try {
+      const ctx = await getRequestContext();
+      metrics = {
+        metrics: ctx.metrics,
+        dbQueries: ctx.queryCount,
+      };
+
+      if (ctx.queryCount > 0) {
+        try {
+          const { prisma } = await import('@/lib/prisma');
+          const pMetrics = await (prisma as any).$metrics.json();
+          const activeConnections = pMetrics.gauges.find((g: any) => g.key === 'prisma_pool_connections_busy')?.value || 0;
+          const idleConnections = pMetrics.gauges.find((g: any) => g.key === 'prisma_pool_connections_idle')?.value || 0;
+          const waitCount = pMetrics.counters.find((c: any) => c.key === 'prisma_client_queries_wait')?.value || 0;
+          
+          poolMetrics = {
+            poolActive: activeConnections,
+            poolIdle: idleConnections,
+            poolWaitCount: waitCount,
+          };
+        } catch (e) {}
+      }
+    } catch (e) {
+      // Outside request context fallback
+    }
+
+    // Try to stringify payload for size
+    let payloadSize = 0;
+    try { payloadSize = input ? JSON.stringify(input).length : 0; } catch (e) {}
+
+    let responseSize = 0;
+    try { responseSize = result ? JSON.stringify(result).length : 0; } catch (e) {}
+
     logger.info({
       requestId,
       action: actionName,
       durationMs,
+      payloadSize,
+      responseSize,
+      ...metrics,
+      ...poolMetrics,
       outcome: result.success ? 'success' : 'failure',
       errorCode: result.success ? undefined : result.code,
       message: result.success ? 'Action completed successfully' : 'Action completed with failure'

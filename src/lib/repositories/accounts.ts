@@ -1,29 +1,30 @@
 import { prisma } from '@/lib/prisma';
 import type { Account, Prisma } from '@prisma/client';
+import { withMetric } from '../domain/metrics-proxy';
 
 export type AccountPersistenceModel = Account;
 
-export async function getAccountsByUserId(userId: string): Promise<AccountPersistenceModel[]> {
+export const getAccountsByUserId = withMetric('AccountsRepository', 'getAccountsByUserId', async function getAccountsByUserId(userId: string): Promise<AccountPersistenceModel[]> {
   return await prisma.account.findMany({
     where: { userId },
     orderBy: { createdAt: 'asc' },
   });
-}
+});
 
-export async function getAccountById(id: string, userId: string): Promise<AccountPersistenceModel | null> {
+export const getAccountById = withMetric('AccountsRepository', 'getAccountById', async function getAccountById(id: string, userId: string): Promise<AccountPersistenceModel | null> {
   return await prisma.account.findFirst({
     where: { id, userId },
   });
-}
+});
 
-export async function createAccountRecord(
+export const createAccountRecord = withMetric('AccountsRepository', 'createAccountRecord', async function createAccountRecord(
   tx: Prisma.TransactionClient,
   data: Prisma.AccountUncheckedCreateInput
 ): Promise<AccountPersistenceModel> {
   return await tx.account.create({ data });
-}
+});
 
-export async function updateAccountRecord(
+export const updateAccountRecord = withMetric('AccountsRepository', 'updateAccountRecord', async function updateAccountRecord(
   tx: Prisma.TransactionClient,
   id: string,
   userId: string,
@@ -35,9 +36,9 @@ export async function updateAccountRecord(
   });
   if (account.count === 0) throw new Error('Account not found');
   return (await tx.account.findUnique({ where: { id } }))!;
-}
+});
 
-export async function deleteAccountRecord(
+export const deleteAccountRecord = withMetric('AccountsRepository', 'deleteAccountRecord', async function deleteAccountRecord(
   tx: Prisma.TransactionClient,
   id: string,
   userId: string
@@ -45,4 +46,4 @@ export async function deleteAccountRecord(
   await tx.account.deleteMany({
     where: { id, userId },
   });
-}
+});
