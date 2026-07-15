@@ -31,7 +31,7 @@ export function actionValidationError(error: ZodError, context: string): ActionR
   console.warn(`[Validation Error] ${context}:`, error.flatten().fieldErrors);
   // Flattening or picking first error message for simple client display
   const firstError = error.issues[0]?.message || 'Invalid input';
-  return { success: false, code: 'VALIDATION_ERROR', error: firstError, message: firstError };
+  return { success: false, code: 'VALIDATION', error: firstError, message: firstError };
 }
 
 /**
@@ -48,6 +48,10 @@ export function validate<T>(schema: ZodSchema<T>, input: unknown, context: strin
   return parsed.data;
 }
 
+import { AppError } from './errors';
+import { logger } from './logger';
+import { getRequestId } from './request-context';
+
 /**
  * Safe validate helper that returns a Result tuple instead of throwing.
  * Useful for Server Actions to avoid try/catch boilerplate.
@@ -60,21 +64,106 @@ export function safeValidate<T>(schema: ZodSchema<T>, input: unknown, context: s
   return { success: true, data: parsed.data };
 }
 
+import { checkIdempotency, hashPayload, lockIdempotencyKey, saveIdempotencyResponse, releaseIdempotencyLock } from './api/idempotency';
+
+export interface ActionOptions<TInput, TResult> {
+  actionName: string;
+  idempotencyKey?: string;
+  input?: TInput;
+  handler: () => Promise<ActionResult<TResult>>;
+}
+
 /**
- * Executes a server action block and standardizes the error response.
- * Automatically catches AuthorizationError and generic errors.
+ * Standardized wrapper for Server Actions.
+ * Handles performance timing, error mapping, structured operational logging, and idempotency.
  */
-export async function withErrorHandling<T>(
-  action: () => Promise<ActionResult<T>>
-): Promise<ActionResult<T>> {
+export async function withAction<TInput, TResult>(
+  options: ActionOptions<TInput, TResult>
+): Promise<ActionResult<TResult>> {
+  const { actionName, idempotencyKey, input, handler } = options;
+  const started = performance.now();
+  const requestId = await getRequestId();
+  
+  let holdsLock = false;
+  let fullIdempotencyKey: string | null = null;
+  let phash = '';
+
   try {
-    return await action();
-  } catch (error) {
-    if (error instanceof AuthorizationError) {
-      return { success: false, code: 'FORBIDDEN', message: error.message };
+    logger.info({ requestId, action: actionName, message: 'Action started' });
+
+    if (idempotencyKey) {
+      phash = hashPayload(input);
+      fullIdempotencyKey = `idemp:${actionName}:${idempotencyKey}`;
+      
+      const existing = await checkIdempotency(fullIdempotencyKey);
+      if (existing) {
+        if (existing.status === 'PROCESSING') {
+          return { success: false, code: 'CONFLICT', message: 'Request already in progress' };
+        }
+        if (existing.status === 'COMPLETED') {
+          if (existing.payloadHash !== phash) {
+            return { success: false, code: 'CONFLICT', message: 'Idempotency key reused with different payload' };
+          }
+          return existing.response as ActionResult<TResult>;
+        }
+      }
+
+      const locked = await lockIdempotencyKey(fullIdempotencyKey, phash);
+      if (!locked) {
+        return { success: false, code: 'CONFLICT', message: 'Request already in progress' };
+      }
+      holdsLock = true;
     }
-    console.error('[Action Error]', error);
-    const msg = error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.';
-    return { success: false, code: 'UNKNOWN', message: msg };
+
+    const result = await handler();
+    
+    if (holdsLock && fullIdempotencyKey && result.success) {
+      await saveIdempotencyResponse(fullIdempotencyKey, phash, result);
+    }
+    
+    // Only release lock if there was a transient failure? Wait, if it fails predictably (validation), we should release the lock so they can retry.
+    // If it fails, we release the lock.
+    if (holdsLock && fullIdempotencyKey && !result.success) {
+      await releaseIdempotencyLock(fullIdempotencyKey);
+    }
+
+    const durationMs = Math.round(performance.now() - started);
+    logger.info({
+      requestId,
+      action: actionName,
+      durationMs,
+      outcome: result.success ? 'success' : 'failure',
+      errorCode: result.success ? undefined : result.code,
+      message: result.success ? 'Action completed successfully' : 'Action completed with failure'
+    });
+    
+    return result;
+  } catch (error) {
+    if (holdsLock && fullIdempotencyKey) {
+      await releaseIdempotencyLock(fullIdempotencyKey);
+    }
+
+    const durationMs = Math.round(performance.now() - started);
+    
+    let appError: AppError;
+    if (error instanceof AppError) {
+      appError = error;
+    } else if (error instanceof AuthorizationError) {
+      appError = AppError.Authorization(error.message);
+    } else {
+      appError = AppError.Internal(error instanceof Error ? error.message : 'An unexpected error occurred');
+    }
+
+    logger.error({
+      requestId,
+      action: actionName,
+      durationMs,
+      outcome: 'failure',
+      errorCode: appError.code,
+      message: appError.message,
+      error,
+    });
+
+    return { success: false, code: appError.code as any, message: appError.message };
   }
 }

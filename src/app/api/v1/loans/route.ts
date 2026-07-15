@@ -13,7 +13,7 @@ export const GET = apiRoute(
 export const POST = apiRoute(
   AddLoanSchema,
   async (req, { body }) => {
-    await addLoan(body);
+    await addLoan({ payload: body });
     return { success: true };
   }
 );

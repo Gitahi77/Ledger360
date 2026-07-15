@@ -28,109 +28,115 @@ const EditLoanSchema = z.object({
 
 
 /* -- Add (Zod-validated) ------------------------------------ */
-export async function addLoan(raw: unknown) {
+export async function addLoan(envelope: { idempotencyKey?: string; payload: unknown }) {
   'use server';
-  try {
-    const { AddLoanSchema } = await import('@/lib/validation');
-    const parsed = safeValidate(AddLoanSchema, raw, 'AddLoanSchema');
-    if (!parsed.success) return parsed.error;
-    const data = parsed.data;
-    const user = await requireAuth();
-    
-    if (data.disbursementType === 'received_funds' && data.disbursementAccountId) {
-      await assertOwnsAccount(user.id, data.disbursementAccountId);
-    }
-
-    await prisma.$transaction(async (tx) => {
-      const loan = await tx.loan.create({
-        data: {
-          name: data.name,
-          lender: data.lender,
-          type: data.type,
-          userId: user.id,
-          nextDue: new Date(data.nextDue),
-          originalAmountMinor: data.originalAmountMinor,
-          balanceMinor: data.balanceMinor,
-          monthlyPaymentMinor: data.monthlyPaymentMinor,
-          annualRate: data.annualRate,
-          amortization: data.amortization,
-        },
-      });
-
+  const { withAction } = await import('@/lib/respond');
+  return withAction<unknown, void>({
+    actionName: 'addLoan',
+    idempotencyKey: envelope.idempotencyKey,
+    input: envelope.payload,
+    handler: async () => {
+      const { AddLoanSchema } = await import('@/lib/validation');
+      const parsed = safeValidate(AddLoanSchema, envelope.payload, 'AddLoanSchema');
+      if (!parsed.success) return parsed.error;
+      const data = parsed.data;
+      const user = await requireAuth();
+      
       if (data.disbursementType === 'received_funds' && data.disbursementAccountId) {
-        await tx.transfer.create({
-          data: {
-            userId: user.id,
-            fromAccountId: null,
-            toAccountId: data.disbursementAccountId,
-            amountMinor: data.balanceMinor,
-            currency: user.currency || 'KES',
-            baseAmountMinor: data.balanceMinor,
-            fxRate: 1,
-            date: new Date(),
-            source: 'loan_disbursement',
-            loanId: loan.id,
-          }
-        });
+        await assertOwnsAccount(user.id, data.disbursementAccountId);
       }
-    });
-    revalidatePath('/loans');
-    revalidatePath('/');
-    return { success: true };
-  } catch (error) {
-    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
-    console.error('[addLoan]', error);
-    return { error: 'An unexpected error occurred. Please try again.' };
-  }
+
+      await prisma.$transaction(async (tx) => {
+        const loan = await tx.loan.create({
+          data: {
+            name: data.name,
+            lender: data.lender,
+            type: data.type,
+            userId: user.id,
+            nextDue: new Date(data.nextDue),
+            originalAmountMinor: data.originalAmountMinor,
+            balanceMinor: data.balanceMinor,
+            monthlyPaymentMinor: data.monthlyPaymentMinor,
+            annualRate: data.annualRate,
+            amortization: data.amortization,
+          },
+        });
+
+        if (data.disbursementType === 'received_funds' && data.disbursementAccountId) {
+          await tx.transfer.create({
+            data: {
+              userId: user.id,
+              fromAccountId: null,
+              toAccountId: data.disbursementAccountId,
+              amountMinor: data.balanceMinor,
+              currency: user.currency || 'KES',
+              baseAmountMinor: data.balanceMinor,
+              fxRate: 1,
+              date: new Date(),
+              source: 'loan_disbursement',
+              loanId: loan.id,
+            }
+          });
+        }
+      });
+      revalidatePath('/loans');
+      revalidatePath('/');
+      return { success: true, data: undefined };
+    }
+  });
 }
 
-export async function deleteLoan(id: string) {
+export async function deleteLoan(envelope: { idempotencyKey?: string; payload: unknown }) {
   'use server';
-  const user = await requireAuth();
-  try {
-    const parsedId = safeValidate(DeleteSchema, { id }, 'DeleteSchema');
-    if (!parsedId.success) return parsedId.error;
-    const validId = parsedId.data.id;
+  const { withAction } = await import('@/lib/respond');
+  return withAction<unknown, void>({
+    actionName: 'deleteLoan',
+    idempotencyKey: envelope.idempotencyKey,
+    input: envelope.payload,
+    handler: async () => {
+      const user = await requireAuth();
+      const parsedId = safeValidate(DeleteSchema, envelope.payload, 'DeleteSchema');
+      if (!parsedId.success) return parsedId.error;
+      const validId = parsedId.data.id;
 
-    await assertOwnsLoan(user.id, validId);
-    await prisma.loan.deleteMany({ where: { id: validId, userId: user.id } });
-    revalidatePath('/loans');
-    revalidatePath('/');
-    return { success: true };
-  } catch (error) {
-    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
-    console.error('[deleteLoan]', error);
-    return { error: 'An unexpected error occurred. Please try again.' };
-  }
+      await assertOwnsLoan(user.id, validId);
+      await prisma.loan.deleteMany({ where: { id: validId, userId: user.id } });
+      revalidatePath('/loans');
+      revalidatePath('/');
+      return { success: true, data: undefined };
+    }
+  });
 }
 
-export async function editLoan(id: string, rawData: unknown) {
+export async function editLoan(id: string, envelope: { idempotencyKey?: string; payload: unknown }) {
   'use server';
-  const user = await requireAuth();
-  try {
-    const parsedId = safeValidate(DeleteSchema, { id }, 'DeleteSchema');
-    const parsedData = safeValidate(EditLoanSchema, rawData, 'EditLoanSchema');
-    if (!parsedId.success) return parsedId.error;
-    if (!parsedData.success) return parsedData.error;
-    const validId = parsedId.data.id;
-    const data = parsedData.data;
+  const { withAction } = await import('@/lib/respond');
+  return withAction<unknown, void>({
+    actionName: 'editLoan',
+    idempotencyKey: envelope.idempotencyKey,
+    input: envelope.payload,
+    handler: async () => {
+      const user = await requireAuth();
+      const parsedId = safeValidate(DeleteSchema, { id }, 'DeleteSchema');
+      const parsedData = safeValidate(EditLoanSchema, envelope.payload, 'EditLoanSchema');
+      if (!parsedId.success) return parsedId.error;
+      if (!parsedData.success) return parsedData.error;
+      const validId = parsedId.data.id;
+      const data = parsedData.data;
 
-    const updateData: Record<string, unknown> = { ...data };
-    if (data.nextDue) updateData.nextDue = new Date(data.nextDue);
+      const updateData: Record<string, unknown> = { ...data };
+      if (data.nextDue) updateData.nextDue = new Date(data.nextDue);
 
-    await assertOwnsLoan(user.id, validId);
-    const { count } = await prisma.loan.updateMany({
-      where: { id: validId, userId: user.id },
-      data: updateData,
-    });
-    if (count === 0) return { error: 'Loan not found or ownership failed' };
-    
-    revalidatePath('/loans');
-    revalidatePath('/');
-    return { success: true };
-  } catch (error) {
-    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
-    console.error('[editLoan]', error);
-    return { error: 'An unexpected error occurred. Please try again.' };
-  }
+      await assertOwnsLoan(user.id, validId);
+      const { count } = await prisma.loan.updateMany({
+        where: { id: validId, userId: user.id },
+        data: updateData,
+      });
+      if (count === 0) return { success: false, code: 'NOT_FOUND', message: 'Loan not found or ownership failed' };
+      
+      revalidatePath('/loans');
+      revalidatePath('/');
+      return { success: true, data: undefined };
+    }
+  });
 }

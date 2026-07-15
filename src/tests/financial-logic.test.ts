@@ -367,30 +367,32 @@ describe('Financial Logic and Validations', () => {
       vi.mocked(prisma.loan.update).mockResolvedValue({ id: 'loan-1', balanceMoney: { amountMinor: 1000, currency: 'KES' }, balanceMinor: 1000n, userId: 'user-1', name: 'Personal Loan', lender: 'Bank', type: 'personal', amortization: 'REDUCING_BALANCE', annualRate: 10, monthlyPaymentMoney: { amountMinor: 250, currency: 'KES' }, monthlyPaymentMinor: 250n, nextDue: new Date(), createdAt: new Date() } as any);
 
       // Overpayment should return error
-      const overpaymentRes = await createTransfer({
+      const overpaymentRes = await createTransfer({ payload: {
         fromAccountId: 'acc-1', loanId: 'loan-1', amountMinor: 1200, date: '2023-10-10'
-      });
+      }});
       expect(overpaymentRes).toEqual({ 
         success: false, 
-        code: 'UNKNOWN',
+        code: 'INTERNAL',
         message: expect.stringMatching(/You can't pay more than you owe/) 
       });
 
       // Exact payoff should succeed
-      await expect(createTransfer({
+      await expect(createTransfer({ payload: {
         fromAccountId: 'acc-1', loanId: 'loan-1', amountMinor: 1000, date: '2023-10-10'
-      })).resolves.not.toThrow();
+      }})).resolves.not.toThrow();
     });
 
     it('rejects overdraft for standard accounts in addTransaction when allowNegativeBalance is false', async () => {
       vi.mocked(getAccountBalances).mockResolvedValue([{ id: 'acc-1', type: 'CHECKING', balanceMoney: { amountMinor: 500, currency: 'KES' }, balanceMinor: 500n, userId: 'user-1', name: 'Bank', currency: 'KES', openingMinor: 0n, archived: false, allowNegativeBalance: false, createdAt: new Date() }] as any);
       vi.mocked(prisma.category.findFirst).mockResolvedValue({ id: 'cat-1', userId: 'user-1', name: 'Food', type: 'expense', icon: null, createdAt: new Date() } as any);
 
-      const res = await addTransaction({
+      const res = await addTransaction({ payload: {
         name: 'Lunch', type: 'expense', baseAmountMinor: 600, categoryId: 'cat-1', accountId: 'acc-1', date: '2023-10-10'
-      });
+      }});
       expect(res).toEqual({
-        error: expect.stringMatching(/Bank does not allow negative balances/)
+        success: false,
+        code: 'VALIDATION',
+        message: expect.stringMatching(/Bank does not allow negative balances/)
       });
     });
 
@@ -398,9 +400,9 @@ describe('Financial Logic and Validations', () => {
       vi.mocked(getAccountBalances).mockResolvedValue([{ id: 'acc-1', type: 'CHECKING', balanceMoney: { amountMinor: 500, currency: 'KES' }, balanceMinor: 500n, userId: 'user-1', name: 'Bank', currency: 'KES', openingMinor: 0n, archived: false, allowNegativeBalance: true, createdAt: new Date() }] as any);
       vi.mocked(prisma.category.findFirst).mockResolvedValue({ id: 'cat-1', userId: 'user-1', name: 'Food', type: 'expense', icon: null, createdAt: new Date() } as any);
 
-      const res = await addTransaction({
+      const res = await addTransaction({ payload: {
         name: 'Lunch', type: 'expense', baseAmountMinor: 600, categoryId: 'cat-1', accountId: 'acc-1', date: '2023-10-10'
-      });
+      }});
       expect(res).toEqual({
         success: true,
         warning: expect.stringMatching(/cause your account Bank to become overdrawn/)
@@ -435,14 +437,14 @@ describe('Financial Logic and Validations', () => {
       vi.mocked(prisma.transaction.updateMany).mockResolvedValue({ count: 1 });
 
       // Increasing expense to 700: 800 - 700 = 100 >= 0 (Allowed)
-      await expect(editTransaction('clrq9xyz00000123456789abc', {
+      await expect(editTransaction('clrq9xyz00000123456789abc', { payload: {
         baseAmountMinor: 700
-      })).resolves.not.toHaveProperty('error');
+      }})).resolves.not.toHaveProperty('error');
 
       // Increasing expense to 900: 800 - 900 = -100 < 0 (Warning since allowNegativeBalance is true)
-      const res = await editTransaction('clrq9xyz00000123456789abc', {
+      const res = await editTransaction('clrq9xyz00000123456789abc', { payload: {
         baseAmountMinor: 900
-      });
+      }});
       expect(res).toEqual({
         success: true,
         warning: expect.stringMatching(/cause your account Bank to become overdrawn/)
@@ -450,11 +452,13 @@ describe('Financial Logic and Validations', () => {
 
       // When allowNegativeBalance is false, it should throw
       vi.mocked(getAccountBalances).mockResolvedValue([{ id: 'acc-1', type: 'CHECKING', balanceMoney: { amountMinor: 500, currency: 'KES' }, balanceMinor: 500n, userId: 'user-1', name: 'Bank', currency: 'KES', openingMinor: 0n, archived: false, allowNegativeBalance: false, createdAt: new Date() }] as any);
-      const resError = await editTransaction('clrq9xyz00000123456789abc', {
+      const resError = await editTransaction('clrq9xyz00000123456789abc', { payload: {
         baseAmountMinor: 900
-      });
+      }});
       expect(resError).toEqual({
-        error: expect.stringMatching(/Bank does not allow negative balances/)
+        success: false,
+        code: 'VALIDATION',
+        message: expect.stringMatching(/Bank does not allow negative balances/)
       });
     });
   });
@@ -469,7 +473,7 @@ describe('Financial Logic and Validations', () => {
       vi.mocked(prisma.loan.update).mockResolvedValue(mockLoan as any);
 
       // 120,000 * 10% / 12 = 1000 default interest
-      await createTransfer({ fromAccountId: 'acc-1', loanId: 'loan-1', amountMinor: 5000, date: '2023-10-10' });
+      await createTransfer({ payload: { fromAccountId: 'acc-1', loanId: 'loan-1', amountMinor: 5000, date: '2023-10-10' } });
       expect(prisma.transfer.create).toHaveBeenCalledWith(expect.objectContaining({
         data: expect.objectContaining({
           amountMinor: 5000,
@@ -478,7 +482,7 @@ describe('Financial Logic and Validations', () => {
       }));
 
       // Test cap: if payment is less than interest
-      await createTransfer({ fromAccountId: 'acc-1', loanId: 'loan-1', amountMinor: 500, date: '2023-10-10' });
+      await createTransfer({ payload: { fromAccountId: 'acc-1', loanId: 'loan-1', amountMinor: 500, date: '2023-10-10' } });
       expect(prisma.transfer.create).toHaveBeenCalledWith(expect.objectContaining({
         data: expect.objectContaining({
           amountMinor: 500,

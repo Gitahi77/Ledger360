@@ -57,7 +57,7 @@ export default async function Settings() {
           id: l.id,
           action: l.action,
           resource: l.resource,
-          metadata: l.metadata,
+          metadata: l.metadata as any,
           createdAt: l.createdAt.toISOString()
         }))}
         savingsPlan={savingsPlan}

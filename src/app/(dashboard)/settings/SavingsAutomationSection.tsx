@@ -168,7 +168,7 @@ export function SavingsAutomationSection({
   async function handleUndo(transferId: string) {
     setUndoing(transferId);
     try {
-      await deleteTransfer(transferId);
+      await deleteTransfer({ idempotencyKey: crypto.randomUUID(), payload: { id: transferId } });
       setAutoSaves(prev => prev.filter(s => s.id !== transferId));
       startT(() => router.refresh());
     } catch (err: unknown) {

@@ -45,7 +45,7 @@ export async function createCategory(rawData: unknown) {
     });
     return { success: true, category: result };
   } catch (error) {
-    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
+    if (error instanceof AuthorizationError) return { success: false, code: 'AUTHORIZATION', message: error.message };
     console.error('[createCategory]', error);
     return { error: 'An unexpected error occurred. Please try again.' };
   }
@@ -91,7 +91,7 @@ export async function editCategory(id: string, rawData: unknown) {
 
     return { success: true };
   } catch (error) {
-    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
+    if (error instanceof AuthorizationError) return { success: false, code: 'AUTHORIZATION', message: error.message };
     console.error('[editCategory]', error);
     return { error: 'An unexpected error occurred. Please try again.' };
   }
@@ -137,7 +137,7 @@ export async function deleteCategory(id: string) {
 
     return { success: true };
   } catch (error) {
-    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
+    if (error instanceof AuthorizationError) return { success: false, code: 'AUTHORIZATION', message: error.message };
     console.error('[deleteCategory]', error);
     return { error: 'An unexpected error occurred. Please try again.' };
   }

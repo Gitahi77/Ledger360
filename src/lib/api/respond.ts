@@ -17,7 +17,7 @@ type RouteHandler<T, U> = (
 export type ApiResponse<T> = {
   data: T | null;
   error: {
-    code: 'UNAUTHORIZED' | 'VALIDATION_ERROR' | 'RATE_LIMITED' | 'NOT_FOUND' | 'INTERNAL' | 'CONFLICT';
+    code: 'UNAUTHORIZED' | 'VALIDATION' | 'RATE_LIMITED' | 'NOT_FOUND' | 'INTERNAL' | 'CONFLICT';
     message: string;
     details?: unknown;
   } | null;
@@ -67,11 +67,46 @@ export function apiRoute<T = unknown, U = unknown>(
       const clientKey = req.headers.get('idempotency-key');
       let idempotencyKey: string | null = null;
       let holdsLock = false;
+      let phash = '';
+
+      let bodyData: T = {} as T;
+      let rawBody: unknown;
+
+      if (schema) {
+        try {
+          rawBody = await req.json();
+          bodyData = schema.parse(rawBody);
+        } catch (err) {
+          if (err instanceof z.ZodError) {
+            return createResponse(
+              null, 
+              { code: 'VALIDATION', message: 'Invalid input', details: (err as z.ZodError<unknown>).issues }, 
+              400, 
+              requestId
+            );
+          }
+          return createResponse(
+            null, 
+            { code: 'VALIDATION', message: 'Invalid JSON payload' }, 
+            400, 
+            requestId
+          );
+        }
+      } else if (isMutation) {
+        try {
+          rawBody = await req.json();
+        } catch {
+          // ignore
+        }
+      }
 
       if (isMutation && clientKey) {
         // Strict namespace to prevent collisions
         idempotencyKey = `idemp:${userId}:${method}:${req.nextUrl.pathname}:${clientKey}`;
         
+        const { hashPayload } = await import('./idempotency');
+        phash = hashPayload(rawBody);
+
         const existing = await checkIdempotency(idempotencyKey);
         
         if (existing) {
@@ -84,13 +119,21 @@ export function apiRoute<T = unknown, U = unknown>(
             );
           }
           if (existing.status === 'COMPLETED') {
+            if (existing.payloadHash !== phash) {
+               return createResponse(
+                 null,
+                 { code: 'CONFLICT', message: 'Idempotency key reused with different payload' },
+                 409,
+                 requestId
+               );
+            }
             // Note: cached response is the exact JSON structure we returned previously
             return NextResponse.json(existing.response, { status: 200 });
           }
         }
 
         // Try to acquire lock
-        const locked = await lockIdempotencyKey(idempotencyKey);
+        const locked = await lockIdempotencyKey(idempotencyKey, phash);
         if (!locked) {
           // Lost the race condition to another identical request
           return createResponse(
@@ -103,32 +146,6 @@ export function apiRoute<T = unknown, U = unknown>(
         holdsLock = true;
       }
 
-      // 4. Validation (I-7)
-      let bodyData: T = {} as T;
-      if (schema) {
-        try {
-          const rawBody = await req.json();
-          bodyData = schema.parse(rawBody);
-        } catch (err) {
-          if (holdsLock && idempotencyKey) await releaseIdempotencyLock(idempotencyKey);
-          
-          if (err instanceof z.ZodError) {
-            return createResponse(
-              null, 
-              { code: 'VALIDATION_ERROR', message: 'Invalid input', details: (err as z.ZodError<unknown>).issues }, 
-              400, 
-              requestId
-            );
-          }
-          return createResponse(
-            null, 
-            { code: 'VALIDATION_ERROR', message: 'Invalid JSON payload' }, 
-            400, 
-            requestId
-          );
-        }
-      }
-
       // 5. Execution (Scoped to userId via the action inherently)
       const result = await handler(req, { userId, body: bodyData });
 
@@ -136,7 +153,7 @@ export function apiRoute<T = unknown, U = unknown>(
       const envelope = { data: result, error: null, meta: { requestId } };
       
       if (holdsLock && idempotencyKey) {
-        await saveIdempotencyResponse(idempotencyKey, envelope);
+        await saveIdempotencyResponse(idempotencyKey, phash, envelope);
       }
 
       return NextResponse.json(envelope, { status: 200 });
@@ -166,7 +183,7 @@ export function apiRoute<T = unknown, U = unknown>(
           code = { code: 'CONFLICT', message: error.message };
           status = 409;
         } else if (error.message.includes('Invalid') || error.message.includes('missing')) {
-          code = { code: 'VALIDATION_ERROR', message: error.message };
+          code = { code: 'VALIDATION', message: error.message };
           status = 400;
         }
       }

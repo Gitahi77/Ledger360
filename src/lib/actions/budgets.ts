@@ -40,7 +40,7 @@ export async function addBudget(raw: unknown) {
     revalidatePath('/');
     return { success: true };
   } catch (error) {
-    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
+    if (error instanceof AuthorizationError) return { success: false, code: 'AUTHORIZATION', message: error.message };
     console.error('[addBudget]', error);
     return { error: 'An unexpected error occurred. Please try again.' };
   }
@@ -60,7 +60,7 @@ export async function deleteBudget(id: string) {
     revalidatePath('/');
     return { success: true };
   } catch (error) {
-    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
+    if (error instanceof AuthorizationError) return { success: false, code: 'AUTHORIZATION', message: error.message };
     console.error('[deleteBudget]', error);
     return { error: 'An unexpected error occurred. Please try again.' };
   }
@@ -91,7 +91,7 @@ export async function editBudget(id: string, rawData: unknown) {
     revalidatePath('/');
     return { success: true };
   } catch (error) {
-    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
+    if (error instanceof AuthorizationError) return { success: false, code: 'AUTHORIZATION', message: error.message };
     console.error('[editBudget]', error);
     return { error: 'An unexpected error occurred. Please try again.' };
   }

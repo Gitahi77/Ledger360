@@ -31,7 +31,7 @@ export const GET = apiRoute(
 export const POST = apiRoute(
   AddTransactionSchema,
   async (req, { body }) => {
-    const result = await addTransaction(body);
+    const result = await addTransaction({ payload: body });
     let warning;
     if (result && 'warning' in result) {
       warning = result.warning as string;

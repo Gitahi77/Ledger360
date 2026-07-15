@@ -10,7 +10,7 @@ import { EventBus } from '../events';
 import { toMajor } from '@/lib/money';
 
 export type TransferRequest = {
-  idempotencyKey: string;
+  idempotencyKey?: string | null;
   userId: string;
   fromAccountId: string;
   toAccountId?: string | null;
@@ -27,18 +27,6 @@ export class TransferService {
   static async executeTransfer(req: TransferRequest): Promise<TransferResultDTO> {
     if (!TransferPolicy.canTransfer(req.amountMinor)) {
       throw new Error('Transfer amount must be greater than zero.');
-    }
-
-    // 1. Transparent Idempotency Check (Outside transaction for speed)
-    const existing = await getTransferByIdempotencyKey(req.userId, req.idempotencyKey);
-    if (existing) {
-      return {
-        status: 'completed',
-        transferId: existing.id,
-        amountMoney: { amountMinor: Number(existing.amountMinor), currency: existing.currency },
-        interestMoney: { amountMinor: Number(existing.interestMinor), currency: existing.currency },
-        referenceNumber: existing.idempotencyKey ?? undefined, // Fallback for legacy
-      };
     }
 
     // 2. Orchestrate within an atomic Database Transaction

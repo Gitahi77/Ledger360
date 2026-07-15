@@ -256,17 +256,19 @@ model Asset {
 
 // ── Security / Activity Logging ──────────────────────────────
 model AuditLog {
-  id        String  @id @default(cuid())
-  userId    String
-  action    String // e.g., "LOGIN", "IMPORT_TRANSACTIONS", "DELETE_BUDGET"
-  resource  String // e.g., "Auth", "Transaction", "Budget"
-  metadata  String? // JSON stringified details
-  ipAddress String?
+  id         String  @id @default(cuid())
+  userId     String
+  action     String  // e.g., "TRANSFER_EXECUTED", "LOAN_APPROVED", "ACCOUNT_CLOSED"
+  resource   String  // e.g., "Transfer", "Loan", "Account"
+  entityId   String? // ID of the affected resource
+  metadata   Json?   // Structured data about the event
+  ipAddress  String?
 
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 
   @@index([userId, createdAt(sort: Desc)])
+  @@index([resource, entityId])
 }
 
 model Transfer {

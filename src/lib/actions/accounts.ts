@@ -53,7 +53,7 @@ export async function getAccounts(): Promise<ActionResult<AccountDTO[]>> {
 
     return { success: true, data: dtos };
   } catch (error) {
-    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
+    if (error instanceof AuthorizationError) return { success: false, code: 'AUTHORIZATION', message: error.message };
     console.error('[getAccounts] Error:', error);
     return { success: false, code: 'UNKNOWN', message: 'Failed to retrieve accounts' };
   }
@@ -65,7 +65,7 @@ export async function getAccountBalances(userId: string): Promise<ActionResult<A
     const dtos = enrichedAccounts.map(mapAccountToDTO);
     return { success: true, data: dtos };
   } catch (error) {
-    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
+    if (error instanceof AuthorizationError) return { success: false, code: 'AUTHORIZATION', message: error.message };
     console.error('[getAccountBalances] Error:', error);
     return { success: false, code: 'UNKNOWN', message: 'Failed to compute balances' };
   }
@@ -118,7 +118,7 @@ export async function createAccount(rawData: unknown): Promise<ActionResult<Acco
     
     return { success: true, data: mapAccountToDTO(enrichedAccount) };
   } catch (error) {
-    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
+    if (error instanceof AuthorizationError) return { success: false, code: 'AUTHORIZATION', message: error.message };
     console.error('[createAccount]', error);
     return { success: false, code: 'UNKNOWN', message: 'An unexpected error occurred.' };
   }
@@ -172,7 +172,7 @@ export async function updateAccount(id: string, rawData: unknown): Promise<Actio
     
     return { success: true, data: mapAccountToDTO(enrichedAccount) };
   } catch (error) {
-    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
+    if (error instanceof AuthorizationError) return { success: false, code: 'AUTHORIZATION', message: error.message };
     console.error('[updateAccount]', error);
     if (getErrorMessage(error) === 'Account not found') {
       return { success: false, code: 'NOT_FOUND', message: 'Account not found or unauthorized' };
@@ -219,7 +219,7 @@ export async function deleteAccount(id: string): Promise<ActionResult<void>> {
     invalidateAccountPaths();
     return { success: true, data: undefined };
   } catch (error) {
-    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
+    if (error instanceof AuthorizationError) return { success: false, code: 'AUTHORIZATION', message: error.message };
     console.error('[deleteAccount]', error);
     return { success: false, code: 'UNKNOWN', message: 'An unexpected error occurred.' };
   }

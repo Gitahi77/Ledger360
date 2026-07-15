@@ -113,19 +113,23 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
         }
       }
       let warnMsg: string | undefined;
+      const idempotencyKey = crypto.randomUUID();
       if (type === 'transfer') {
         const intMinor = interestAmount !== '' ? toMinor(parseFloat(interestAmount)) : undefined;
+        const payload = { fromAccountId: accountId, toAccountId: loanId ? null : toAccountId, amountMinor: toMinor(parseFloat(amount)), date, note, goalId: goalId || null, loanId: loanId || null, interestMinor: intMinor };
         if (isEdit && tx) {
-          await editTransfer(tx.id, { fromAccountId: accountId, toAccountId: loanId ? null : toAccountId, amountMinor: toMinor(parseFloat(amount)), date, note, goalId: goalId || null, loanId: loanId || null, interestMinor: intMinor });
+          await editTransfer(tx.id, { idempotencyKey, payload });
         } else {
-          await createTransfer({ fromAccountId: accountId, toAccountId: loanId ? null : toAccountId, amountMinor: toMinor(parseFloat(amount)), date, note, goalId: goalId || null, loanId: loanId || null, interestMinor: intMinor });
+          await createTransfer({ idempotencyKey, payload });
         }
       } else {
         if (isEdit && tx) {
-          const res = await editTransaction(tx.id, { name, baseAmountMinor: toMinor(parseFloat(amount)), type, categoryId, accountId, date: new Date(date), note });
+          const payload = { name, baseAmountMinor: toMinor(parseFloat(amount)), type, categoryId, accountId, date: new Date(date), note };
+          const res = await editTransaction(tx.id, { idempotencyKey, payload });
           if (res && 'warning' in res) warnMsg = res.warning as string;
         } else {
-          const res = await addTransaction({ name, baseAmountMinor: toMinor(parseFloat(amount)), type, categoryId, accountId, date, note });
+          const payload = { name, baseAmountMinor: toMinor(parseFloat(amount)), type, categoryId, accountId, date, note };
+          const res = await addTransaction({ idempotencyKey, payload });
           if (res && 'warning' in res) warnMsg = res.warning as string;
         }
       }
@@ -321,10 +325,11 @@ export function TransactionsClient({
     if (!confirm('Delete this transaction?')) return;
     setDeletingId(id);
     try {
+      const idempotencyKey = crypto.randomUUID();
       if (type === 'transfer') {
-        await deleteTransfer(id);
+        await deleteTransfer({ idempotencyKey, payload: { id } });
       } else {
-        await deleteTransaction(id);
+        await deleteTransaction({ idempotencyKey, payload: { id } });
       }
       startT(() => router.refresh());
     } catch (err: unknown) {

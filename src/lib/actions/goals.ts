@@ -42,7 +42,7 @@ export async function addGoal(raw: unknown) {
     revalidatePath('/');
     return { success: true };
   } catch (error) {
-    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
+    if (error instanceof AuthorizationError) return { success: false, code: 'AUTHORIZATION', message: error.message };
     console.error('[addGoal]', error);
     return { error: 'An unexpected error occurred. Please try again.' };
   }
@@ -62,7 +62,7 @@ export async function deleteGoal(id: string) {
     revalidatePath('/');
     return { success: true };
   } catch (error) {
-    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
+    if (error instanceof AuthorizationError) return { success: false, code: 'AUTHORIZATION', message: error.message };
     console.error('[deleteGoal]', error);
     return { error: 'An unexpected error occurred. Please try again.' };
   }
@@ -95,7 +95,7 @@ export async function editGoal(id: string, rawData: unknown) {
     revalidatePath('/');
     return { success: true };
   } catch (error) {
-    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
+    if (error instanceof AuthorizationError) return { success: false, code: 'AUTHORIZATION', message: error.message };
     console.error('[editGoal]', error);
     return { error: 'An unexpected error occurred. Please try again.' };
   }

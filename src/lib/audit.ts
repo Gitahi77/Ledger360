@@ -19,7 +19,7 @@ export async function logActivity({
         userId,
         action,
         resource,
-        metadata: metadata ? JSON.stringify(metadata) : null,
+        metadata: metadata ? (metadata as any) : undefined,
         ipAddress,
       },
     });

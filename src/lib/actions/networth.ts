@@ -24,7 +24,7 @@ export async function addAsset(raw: { name: string; category: string; valueMinor
     revalidatePath('/');
     return { success: true, data: undefined };
   } catch (error) {
-    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
+    if (error instanceof AuthorizationError) return { success: false, code: 'AUTHORIZATION', message: error.message };
     const errorId = logger.server(error, { action: 'addAsset', raw });
     return { success: false, error: 'Failed to add asset', errorId };
   }
@@ -50,7 +50,7 @@ export async function editAsset(id: string, raw: { name?: string; category?: str
     revalidatePath('/');
     return { success: true, data: undefined };
   } catch (error) {
-    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
+    if (error instanceof AuthorizationError) return { success: false, code: 'AUTHORIZATION', message: error.message };
     const errorId = logger.server(error, { action: 'editAsset', id, raw });
     return { success: false, error: 'Failed to edit asset', errorId };
   }
@@ -67,7 +67,7 @@ export async function deleteAsset(id: string): Promise<ActionResult> {
     revalidatePath('/');
     return { success: true, data: undefined };
   } catch (error) {
-    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
+    if (error instanceof AuthorizationError) return { success: false, code: 'AUTHORIZATION', message: error.message };
     const errorId = logger.server(error, { action: 'deleteAsset', id });
     return { success: false, error: 'Failed to delete asset', errorId };
   }

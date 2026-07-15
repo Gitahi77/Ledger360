@@ -61,13 +61,13 @@ export async function requestPasswordReset(rawEmail: string): Promise<ActionResu
         `,
       });
     } catch (error) {
-    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
+    if (error instanceof AuthorizationError) return { success: false, code: 'AUTHORIZATION', message: error.message };
       logger.server(error, { action: 'sendPasswordResetEmail', email });
     }
 
     return { success: true, data: undefined };
   } catch (error) {
-    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
+    if (error instanceof AuthorizationError) return { success: false, code: 'AUTHORIZATION', message: error.message };
     const errorId = logger.server(error, { action: 'requestPasswordReset' });
     return { success: false, error: 'Failed to request password reset', errorId };
   }
@@ -106,7 +106,7 @@ export async function resetPassword(rawToken: string, rawNewPassword: string): P
 
     return { success: true, data: undefined };
   } catch (error) {
-    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
+    if (error instanceof AuthorizationError) return { success: false, code: 'AUTHORIZATION', message: error.message };
     const errorId = logger.server(error, { action: 'resetPassword' });
     return { success: false, error: 'Failed to reset password', errorId };
   }

@@ -27,34 +27,6 @@ describe('Transfer Integrity & Institutional Standards', () => {
     vi.clearAllMocks();
   });
 
-  describe('Idempotency & Replay Resistance', () => {
-    it('returns the existing transfer result transparently when identical idempotency key is submitted', async () => {
-      const mockKey = 'TRF-123-IDEMP';
-      const existingRecord = {
-        id: 'trans_123',
-        amountMinor: 50000n,
-        interestMinor: 0n,
-        idempotencyKey: mockKey
-      };
-      
-      vi.mocked(getTransferByIdempotencyKey).mockResolvedValue(existingRecord as unknown as ReturnType<typeof getTransferByIdempotencyKey> extends Promise<infer U> ? U : never);
-
-      const req = {
-        idempotencyKey: mockKey,
-        userId: 'user_1',
-        fromAccountId: 'acc_1',
-        toAccountId: 'acc_2',
-        amountMinor: 50000,
-        date: new Date()
-      };
-
-      const result = await TransferService.executeTransfer(req);
-
-      expect(result.status).toBe('completed');
-      expect(result.transferId).toBe('trans_123');
-      expect(prisma.$transaction).not.toHaveBeenCalled(); // Fast path hit!
-    });
-  });
 
   describe('Failure Injection', () => {
     it('rolls back the entire transaction if the ledger creation fails', async () => {

@@ -22,7 +22,8 @@ vi.mock('@/lib/api/idempotency', () => ({
   checkIdempotency: vi.fn(),
   lockIdempotencyKey: vi.fn(),
   saveIdempotencyResponse: vi.fn(),
-  releaseIdempotencyLock: vi.fn()
+  releaseIdempotencyLock: vi.fn(),
+  hashPayload: vi.fn()
 }));
 
 describe('apiRoute Wrapper', () => {
@@ -48,9 +49,10 @@ describe('apiRoute Wrapper', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(rateLimit.checkLimit).mockResolvedValue({ ok: true, limit: 10, remaining: 9 });
     vi.mocked(auth.getServerSession).mockResolvedValue({ user: { id: 'user-1' } } as any);
-    vi.mocked(rateLimit.checkLimit).mockResolvedValue({ ok: true, retryAfter: 0 });
     vi.mocked(idempotency.checkIdempotency).mockResolvedValue(null);
+    vi.mocked(idempotency.hashPayload).mockReturnValue('hash');
     vi.mocked(idempotency.lockIdempotencyKey).mockResolvedValue(true);
   });
 
@@ -84,7 +86,7 @@ describe('apiRoute Wrapper', () => {
     const json = await res.json();
 
     expect(res.status).toBe(400);
-    expect(json.error?.code).toBe('VALIDATION_ERROR');
+    expect(json.error?.code).toBe('VALIDATION');
     expect(json.error?.details).toBeDefined();
   });
 
@@ -99,7 +101,7 @@ describe('apiRoute Wrapper', () => {
   });
 
   it('(e) a second request with the same Idempotency-Key while the first is in flight -> 409 CONFLICT', async () => {
-    vi.mocked(idempotency.checkIdempotency).mockResolvedValue({ status: 'PROCESSING' });
+    vi.mocked(idempotency.checkIdempotency).mockResolvedValue({ status: 'PROCESSING', payloadHash: 'hash' });
     const req = createRequest('POST', { name: 'Test' }, { 'idempotency-key': 'key-1' });
     const res = await route(req);
     const json = await res.json();
@@ -111,7 +113,7 @@ describe('apiRoute Wrapper', () => {
 
   it('(f) a repeated completed key returns the exact cached envelope', async () => {
     const cachedEnvelope = { data: { success: true }, error: null, meta: { requestId: 'old-req-id' } };
-    vi.mocked(idempotency.checkIdempotency).mockResolvedValue({ status: 'COMPLETED', response: cachedEnvelope });
+    vi.mocked(idempotency.checkIdempotency).mockResolvedValue({ status: 'COMPLETED', payloadHash: 'hash', response: cachedEnvelope });
     const req = createRequest('POST', { name: 'Test' }, { 'idempotency-key': 'key-1' });
     const res = await route(req);
     const json = await res.json();

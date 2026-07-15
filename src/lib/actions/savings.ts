@@ -122,7 +122,7 @@ export async function upsertSavingsPlan(raw: unknown) {
     revalidatePath('/');
     return { success: true };
   } catch (error) {
-    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
+    if (error instanceof AuthorizationError) return { success: false, code: 'AUTHORIZATION', message: error.message };
     console.error('[upsertSavingsPlan]', error);
     return { error: 'An unexpected error occurred. Please try again.' };
   }
@@ -156,7 +156,7 @@ export async function toggleSavingsPlan(active: unknown) {
     revalidatePath('/settings');
     return { success: true };
   } catch (error) {
-    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
+    if (error instanceof AuthorizationError) return { success: false, code: 'AUTHORIZATION', message: error.message };
     console.error('[toggleSavingsPlan]', error);
     return { error: 'An unexpected error occurred. Please try again.' };
   }
@@ -190,7 +190,7 @@ export async function deleteSavingsPlan() {
     revalidatePath('/');
     return { success: true };
   } catch (error) {
-    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
+    if (error instanceof AuthorizationError) return { success: false, code: 'AUTHORIZATION', message: error.message };
     console.error('[deleteSavingsPlan]', error);
     return { error: 'An unexpected error occurred. Please try again.' };
   }

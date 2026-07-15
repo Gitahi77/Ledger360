@@ -75,27 +75,34 @@ function LoanModal({ loan, accounts, onClose }: { loan?: LoanDTO; accounts: {id:
     }
     setLoading(true); setError('');
     try {
+      const idempotencyKey = crypto.randomUUID();
       if (isEdit && loan) {
         await editLoan(loan.id, {
-          name, lender, type,
-          originalAmountMinor: toMinor(parseFloat(origAmt)),
-          balanceMinor:     toMinor(parseFloat(balance || origAmt)),
-          annualRate:  parseFloat(rate),
-          amortization,
-          monthlyPaymentMinor:  toMinor(parseFloat(monthly)),
-          nextDue,
+          idempotencyKey,
+          payload: {
+            name, lender, type,
+            originalAmountMinor: toMinor(parseFloat(origAmt)),
+            balanceMinor:     toMinor(parseFloat(balance || origAmt)),
+            annualRate:  parseFloat(rate),
+            amortization,
+            monthlyPaymentMinor:  toMinor(parseFloat(monthly)),
+            nextDue,
+          }
         });
       } else {
         await addLoan({
-          name, lender, type,
-          originalAmountMinor: toMinor(parseFloat(origAmt)),
-          balanceMinor:     toMinor(parseFloat(balance || origAmt)),
-          annualRate:  parseFloat(rate),
-          amortization,
-          monthlyPaymentMinor:  toMinor(parseFloat(monthly)),
-          nextDue,
-          disbursementType,
-          disbursementAccountId: disbursementType === 'received_funds' ? disbursementAccountId : undefined,
+          idempotencyKey,
+          payload: {
+            name, lender, type,
+            originalAmountMinor: toMinor(parseFloat(origAmt)),
+            balanceMinor:     toMinor(parseFloat(balance || origAmt)),
+            annualRate:  parseFloat(rate),
+            amortization,
+            monthlyPaymentMinor:  toMinor(parseFloat(monthly)),
+            nextDue,
+            disbursementType,
+            disbursementAccountId: disbursementType === 'received_funds' ? disbursementAccountId : undefined,
+          }
         });
       }
       startT(() => router.refresh());
@@ -313,7 +320,8 @@ export function LoansClient({ loans = [], currency, accounts = [] }: { loans: Lo
     if (!confirm('Delete this loan?')) return;
     setDeletingId(id);
     try {
-      await deleteLoan(id);
+      const idempotencyKey = crypto.randomUUID();
+      await deleteLoan({ idempotencyKey, payload: { id } });
       startT(() => router.refresh());
     } catch {
       // silent

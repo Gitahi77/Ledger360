@@ -41,6 +41,7 @@ describe('Loan Disbursement (Received Funds)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(prisma.transaction.groupBy).mockResolvedValue([] as any);
+    vi.mocked(prisma.transaction.aggregate).mockResolvedValue({ _sum: { baseAmountMinor: 0 } } as any);
   });
 
   it('increases account balance, leaves net worth neutral, does not count in reports, does not reduce loan balance', async () => {

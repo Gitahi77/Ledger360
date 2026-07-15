@@ -2,7 +2,7 @@ import { prisma } from './prisma';
 import { logger } from './logger';
 
 export class AuthorizationError extends Error {
-  code = 'FORBIDDEN';
+  code = 'AUTHORIZATION';
   constructor(message: string = 'You are not authorized to access this resource.') {
     super(message);
     this.name = 'AuthorizationError';

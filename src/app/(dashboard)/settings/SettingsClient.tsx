@@ -118,6 +118,8 @@ function SaveRow({ saving, saved, error }: { saving: boolean; saved: boolean; er
 
 
 
+type Json = string | number | boolean | null | Json[] | { [key: string]: Json };
+
 /* -- Main Settings Client ----------------------------------- */
 export function SettingsClient({
   initialName, initialEmail, initialCurrency, initialAccountType,
@@ -131,7 +133,7 @@ export function SettingsClient({
     notifInsights: boolean; notifLoanDue: boolean;
     expectedMonthlyIncomeMinor: number | null;
   } | null;
-  logs: { id: string; action: string; resource: string; metadata: string | null; createdAt: string }[];
+  logs: { id: string; action: string; resource: string; metadata: Json; createdAt: string }[];
   savingsPlan: Awaited<ReturnType<typeof import('@/lib/queries/savings').getSavingsPlan>>;
   autoSaves: Awaited<ReturnType<typeof import('@/lib/queries/savings').getRecentAutoSaves>>;
   accounts: { id: string; name: string; type: string; currency: string }[];
@@ -470,19 +472,22 @@ export function SettingsClient({
                   let details = '';
                   if (log.metadata) {
                     try {
-                      const meta = JSON.parse(log.metadata);
-                      const parts = [];
-                      if (meta.name) parts.push(`"${meta.name}"`);
-                      const minorAmt = meta.amountMinor ?? meta.baseAmountMinor;
-                      if (minorAmt !== undefined) parts.push(`for ${fmtAdaptive(toMajor(minorAmt), initialCurrency || 'KES')}`);
-                      
-                      if (parts.length > 0) details = parts.join(' ');
-                      else {
-                        const keys = Object.keys(meta).filter(k => !k.includes('Id'));
-                        if (keys.length > 0) details = `(Fields: ${keys.join(', ')})`;
+                      // metadata is already a Json object (or string if it was old JSON.stringify)
+                      const meta = typeof log.metadata === 'string' ? JSON.parse(log.metadata) : log.metadata;
+                      if (meta && typeof meta === 'object' && !Array.isArray(meta)) {
+                        const parts = [];
+                        if (meta.name) parts.push(`"${meta.name}"`);
+                        const minorAmt = meta.amountMinor ?? meta.baseAmountMinor;
+                        if (minorAmt !== undefined) parts.push(`for ${fmtAdaptive(toMajor(minorAmt), initialCurrency || 'KES')}`);
+                        
+                        if (parts.length > 0) details = parts.join(' ');
+                        else {
+                          const keys = Object.keys(meta).filter(k => !k.includes('Id'));
+                          if (keys.length > 0) details = `(Fields: ${keys.join(', ')})`;
+                        }
                       }
                     } catch {
-                      details = log.metadata.startsWith('{') ? '' : log.metadata;
+                      details = typeof log.metadata === 'string' && !log.metadata.startsWith('{') ? log.metadata : '';
                     }
                   }
 

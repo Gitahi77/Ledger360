@@ -40,7 +40,6 @@ export const AddTransferSchema = z.object({
   goalId:        z.string().optional().nullable(),
   loanId:        z.string().optional().nullable(),
   interestMinor: z.number().min(0, 'Interest cannot be negative').optional(),
-  idempotencyKey: z.string().optional(),
 }).refine(data => {
   if (data.toAccountId && data.fromAccountId === data.toAccountId) return false;
   return true;

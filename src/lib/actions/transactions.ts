@@ -42,105 +42,106 @@ const EditTransactionSchema = z.object({
 
 /* -- Categories list ---------------------------------------- */
 
-
-export async function addTransaction(raw: unknown) {
+export async function addTransaction(envelope: { idempotencyKey?: string; payload: unknown }) {
   'use server';
-  try {
-    const { AddTransactionSchema } = await import('@/lib/validation');
-    const parsed = safeValidate(AddTransactionSchema, raw, 'AddTransactionSchema');
-    if (!parsed.success) return parsed.error;
-    const data = parsed.data;
-    const user = await requireAuth();
+  const { withAction } = await import('@/lib/respond');
+  return withAction<unknown, void>({
+    actionName: 'addTransaction',
+    idempotencyKey: envelope.idempotencyKey,
+    input: envelope.payload,
+    handler: async () => {
+      const { AddTransactionSchema } = await import('@/lib/validation');
+      const parsed = safeValidate(AddTransactionSchema, envelope.payload, 'AddTransactionSchema');
+      if (!parsed.success) return parsed.error;
+      const data = parsed.data;
+      const user = await requireAuth();
 
-    let accountId = data.accountId;
-    if (!accountId) {
-      const firstAccount = await prisma.account.findFirst({ where: { userId: user.id }, orderBy: { createdAt: 'asc' }});
-      if (firstAccount) accountId = firstAccount.id;
-      else {
-        const fallback = await prisma.account.create({ data: { userId: user.id, name: 'Default Account', type: 'CHECKING', currency: 'KES' }});
-        accountId = fallback.id;
+      let accountId = data.accountId;
+      if (!accountId) {
+        const firstAccount = await prisma.account.findFirst({ where: { userId: user.id }, orderBy: { createdAt: 'asc' }});
+        if (firstAccount) accountId = firstAccount.id;
+        else {
+          const fallback = await prisma.account.create({ data: { userId: user.id, name: 'Default Account', type: 'CHECKING', currency: 'KES' }});
+          accountId = fallback.id;
+        }
+      } else {
+        await assertOwnsAccount(user.id, accountId);
       }
-    } else {
-      await assertOwnsAccount(user.id, accountId);
-    }
 
-    if (data.categoryId) {
-      await assertOwnsCategory(user.id, data.categoryId);
-    }
+      if (data.categoryId) {
+        await assertOwnsCategory(user.id, data.categoryId);
+      }
 
-    const { TransactionService } = await import('../domain/services/TransactionService');
-    const { Money } = await import('../domain/money/Money');
-    const { createTransactionRecord, getCategoryByNameOrId } = await import('../repositories/transactions');
-    
-    // Overdraft prevention and currency validation
-    let warning: string | undefined;
-    const { BalanceService } = await import('../domain/services/BalanceService');
-    const balances = await BalanceService.getEnrichedAccounts(user.id);
-    const acc = balances.find(a => a.id === accountId);
-    
-    // Fallback to KES if no currency available on user or account
-    const currency = acc?.currency || user.currency || 'KES';
-    const moneyAmount = Money.fromMinor(data.baseAmountMinor, currency);
+      const { TransactionService } = await import('../domain/services/TransactionService');
+      const { Money } = await import('../domain/money/Money');
+      const { createTransactionRecord, getCategoryByNameOrId } = await import('../repositories/transactions');
+      
+      // Overdraft prevention and currency validation
+      let warning: string | undefined;
+      const { BalanceService } = await import('../domain/services/BalanceService');
+      const balances = await BalanceService.getEnrichedAccounts(user.id);
+      const acc = balances.find(a => a.id === accountId);
+      
+      // Fallback to KES if no currency available on user or account
+      const currency = acc?.currency || user.currency || 'KES';
+      const moneyAmount = Money.fromMinor(data.baseAmountMinor, currency);
 
-    if (data.type === 'expense' && acc) {
-      if (acc.type !== 'CREDIT_CARD') {
-        const projectedBalance = acc.balanceMinor - data.baseAmountMinor;
-        if (projectedBalance < 0) {
-          if (!acc.allowNegativeBalance) {
-            throw new Error(`Insufficient funds: ${acc.name} does not allow negative balances. Available: ${acc.displayBalance}.`);
-          } else {
-            warning = `Warning: This transaction will cause your account ${acc.name} to become overdrawn.`;
+      if (data.type === 'expense' && acc) {
+        if (acc.type !== 'CREDIT_CARD') {
+          const projectedBalance = acc.balanceMinor - data.baseAmountMinor;
+          if (projectedBalance < 0) {
+            if (!acc.allowNegativeBalance) {
+              return { success: false, code: 'VALIDATION', message: `Insufficient funds: ${acc.name} does not allow negative balances. Available: ${acc.displayBalance}.` };
+            } else {
+              warning = `Warning: This transaction will cause your account ${acc.name} to become overdrawn.`;
+            }
           }
         }
       }
-    }
 
-    // 1. Process Domain Logic (Validation, Normalization, Classification)
-    const { persistencePayload } = TransactionService.processNewTransaction(
-      accountId,
-      moneyAmount,
-      data.type === 'income' ? 'income' : 'expense',
-      data.name,
-      new Date(data.date),
-      data.note,
-      data.categoryId // Used as explicit hint if provided
-    );
+      // 1. Process Domain Logic (Validation, Normalization, Classification)
+      const { persistencePayload } = TransactionService.processNewTransaction(
+        accountId,
+        moneyAmount,
+        data.type === 'income' ? 'income' : 'expense',
+        data.name,
+        new Date(data.date),
+        data.note,
+        data.categoryId // Used as explicit hint if provided
+      );
 
-    // 2. Persist to Repository
-    await prisma.$transaction(async (tx) => {
-      // Resolve category
-      let resolvedCategoryId = data.categoryId;
-      if (persistencePayload.categoryHint && !resolvedCategoryId) {
-        const cat = await getCategoryByNameOrId({ userId: user.id, hint: persistencePayload.categoryHint, type: persistencePayload.type });
-        resolvedCategoryId = cat.id;
-      }
-
-      const createdTx = await createTransactionRecord(tx, {
-        ...persistencePayload,
-        categoryId: resolvedCategoryId,
-        userId: user.id
-      });
-
-      await tx.auditLog.create({
-        data: {
-          userId: user.id,
-          action: 'CREATE_LEDGER_ENTRY',
-          resource: 'Transaction',
-          metadata: JSON.stringify({ txId: createdTx.id, amount: data.baseAmountMinor, name: data.name }),
+      // 2. Persist to Repository
+      await prisma.$transaction(async (tx) => {
+        // Resolve category
+        let resolvedCategoryId = data.categoryId;
+        if (persistencePayload.categoryHint && !resolvedCategoryId) {
+          const cat = await getCategoryByNameOrId({ userId: user.id, hint: persistencePayload.categoryHint, type: persistencePayload.type });
+          resolvedCategoryId = cat.id;
         }
+
+        const createdTx = await createTransactionRecord(tx, {
+          ...persistencePayload,
+          categoryId: resolvedCategoryId,
+          userId: user.id
+        });
+
+        await tx.auditLog.create({
+          data: {
+            userId: user.id,
+            action: 'CREATE_LEDGER_ENTRY',
+            resource: 'Transaction',
+            metadata: { txId: createdTx.id, amount: data.baseAmountMinor, name: data.name },
+          }
+        });
+
+        return createdTx;
       });
 
-      return createdTx;
-    });
-
-    revalidatePath('/transactions');
-    revalidatePath('/');
-    return { success: true, warning };
-  } catch (error) {
-    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
-    console.error('[addTransaction]', error);
-    return { error: getErrorMessage(error) || 'An unexpected error occurred. Please try again.' };
-  }
+      revalidatePath('/transactions');
+      revalidatePath('/');
+      return { success: true, data: undefined, warning };
+    }
+  });
 }
 export async function importTransactions(rows: unknown[], targetAccountId: string) {
   'use server';
@@ -265,130 +266,134 @@ export async function importTransactions(rows: unknown[], targetAccountId: strin
     }
   }
 
-    revalidatePath('/transactions');
-    revalidatePath('/');
-    return { success: true };
-  } catch (error) {
-    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
+      revalidatePath('/transactions');
+      revalidatePath('/');
+      return { success: true, data: undefined };
+    } catch (error) {
+    if (error instanceof AuthorizationError) return { success: false, code: 'AUTHORIZATION', message: error.message };
     console.error('[importTransactions]', error);
     return { error: 'An unexpected error occurred. Please try again.' };
   }
 }
 
 /* -- Delete (atomic — no TOCTOU race) ---------------------- */
-export async function deleteTransaction(id: string) {
+export async function deleteTransaction(envelope: { idempotencyKey?: string; payload: unknown }) {
   'use server';
-  const user = await requireAuth();
-  try {
-    const parsed = safeValidate(DeleteSchema, { id }, 'DeleteSchema');
-    if (!parsed.success) return parsed.error;
+  const { withAction } = await import('@/lib/respond');
+  return withAction<unknown, void>({
+    actionName: 'deleteTransaction',
+    idempotencyKey: envelope.idempotencyKey,
+    input: envelope.payload,
+    handler: async () => {
+      const user = await requireAuth();
+      const parsed = safeValidate(DeleteSchema, envelope.payload, 'DeleteSchema');
+      if (!parsed.success) return parsed.error;
 
-    await assertOwnsTransaction(user.id, parsed.data.id);
-    await prisma.$transaction(async (tx) => {
-      const { count } = await tx.transaction.deleteMany({
-        where: { id: parsed.data.id, userId: user.id },
+      await assertOwnsTransaction(user.id, parsed.data.id);
+      await prisma.$transaction(async (tx) => {
+        const { count } = await tx.transaction.deleteMany({
+          where: { id: parsed.data.id, userId: user.id },
+        });
+        if (count === 0) throw new Error('Transaction not found or already deleted');
+
+        await tx.auditLog.create({
+          data: {
+            userId:   user.id,
+            action:   'DELETE',
+            resource: 'Transaction',
+            metadata: { txId: parsed.data.id },
+          }
+        });
       });
-      if (count === 0) throw new Error('Transaction not found or already deleted');
 
-      await tx.auditLog.create({
-        data: {
-          userId:   user.id,
-          action:   'DELETE',
-          resource: 'Transaction',
-          metadata: JSON.stringify({ txId: parsed.data.id }),
-        }
-      });
-    });
-
-    revalidatePath('/transactions');
-    revalidatePath('/');
-    return { success: true };
-  } catch (error) {
-    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
-    console.error('[deleteTransaction]', error);
-    return { error: 'An unexpected error occurred. Please try again.' };
-  }
+      revalidatePath('/transactions');
+      revalidatePath('/');
+      return { success: true, data: undefined };
+    }
+  });
 }
 
 /* -- Edit (atomic ownership check) -------------------------- */
-export async function editTransaction(id: string, rawData: unknown) {
+export async function editTransaction(id: string, envelope: { idempotencyKey?: string; payload: unknown }) {
   'use server';
-  const user = await requireAuth();
-  try {
-    const parsedId = safeValidate(DeleteSchema, { id }, 'DeleteSchema');
-    const parsedData = safeValidate(EditTransactionSchema, rawData, 'EditTransactionSchema');
-    if (!parsedId.success) return parsedId.error;
-    if (!parsedData.success) return parsedData.error;
-    const validId = parsedId.data.id;
-    const data = parsedData.data;
+  const { withAction } = await import('@/lib/respond');
+  return withAction<unknown, void>({
+    actionName: 'editTransaction',
+    idempotencyKey: envelope.idempotencyKey,
+    input: envelope.payload,
+    handler: async () => {
+      const user = await requireAuth();
+      const parsedId = safeValidate(DeleteSchema, { id }, 'DeleteSchema');
+      const parsedData = safeValidate(EditTransactionSchema, envelope.payload, 'EditTransactionSchema');
+      if (!parsedId.success) return parsedId.error;
+      if (!parsedData.success) return parsedData.error;
+      const validId = parsedId.data.id;
+      const data = parsedData.data;
 
-    const oldTx = await assertOwnsTransaction(user.id, validId);
+      const oldTx = await assertOwnsTransaction(user.id, validId);
 
-    const newType = data.type ?? oldTx.type;
-    const newAmount = data.baseAmountMinor ?? oldTx.baseAmountMinor;
-    const newAccountId = data.accountId ?? oldTx.accountId;
+      const newType = data.type ?? oldTx.type;
+      const newAmount = data.baseAmountMinor ?? oldTx.baseAmountMinor;
+      const newAccountId = data.accountId ?? oldTx.accountId;
 
-    if (newAccountId !== oldTx.accountId) {
-      await assertOwnsAccount(user.id, newAccountId);
-    }
+      if (newAccountId !== oldTx.accountId) {
+        await assertOwnsAccount(user.id, newAccountId);
+      }
 
-    if (data.categoryId && data.categoryId !== oldTx.categoryId) {
-      await assertOwnsCategory(user.id, data.categoryId);
-    }
+      if (data.categoryId && data.categoryId !== oldTx.categoryId) {
+        await assertOwnsCategory(user.id, data.categoryId);
+      }
 
-    let warning: string | undefined;
-    const { toMajor } = await import('@/lib/money');
-    const balancesResult = await getAccountBalances(user.id);
-    if (!balancesResult.success) {
-      throw new Error(balancesResult.message || 'Failed to retrieve account balances');
-    }
-    let newCurrency = oldTx.currency;
+      let warning: string | undefined;
+      const { toMajor } = await import('@/lib/money');
+      const balancesResult = await getAccountBalances(user.id);
+      if (!balancesResult.success) {
+        return { success: false, code: 'INTERNAL', message: balancesResult.message || 'Failed to retrieve account balances' };
+      }
+      let newCurrency = oldTx.currency;
 
-    const acc = balancesResult.data.find(a => a.id === newAccountId);
-    if (acc) {
-      newCurrency = acc.balanceMoney.currency;
-      if (newType === 'expense' && acc.type !== 'CREDIT_CARD') {
-        let effectiveBalance = acc.balanceMoney.amountMinor;
-        if (oldTx.type === 'expense' && oldTx.accountId === newAccountId) {
-          effectiveBalance += Number(oldTx.baseAmountMinor); // restore old amount
-        } else if (oldTx.type === 'income' && oldTx.accountId === newAccountId) {
-          effectiveBalance -= Number(oldTx.baseAmountMinor); // remove old income
-        }
-        
-        const projectedBalance = effectiveBalance - Number(newAmount);
-        if (projectedBalance < 0) {
-          if (!acc.allowNegativeBalance) {
-            throw new Error(`Insufficient funds: ${acc.name} does not allow negative balances. Available: ${acc.balanceMoney.currency} ${toMajor(effectiveBalance)}.`);
-          } else {
-            warning = `Warning: This transaction will cause your account ${acc.name} to become overdrawn.`;
+      const acc = balancesResult.data.find(a => a.id === newAccountId);
+      if (acc) {
+        newCurrency = acc.balanceMoney.currency;
+        if (newType === 'expense' && acc.type !== 'CREDIT_CARD') {
+          let effectiveBalance = acc.balanceMoney.amountMinor;
+          if (oldTx.type === 'expense' && oldTx.accountId === newAccountId) {
+            effectiveBalance += Number(oldTx.baseAmountMinor); // restore old amount
+          } else if (oldTx.type === 'income' && oldTx.accountId === newAccountId) {
+            effectiveBalance -= Number(oldTx.baseAmountMinor); // remove old income
+          }
+          
+          const projectedBalance = effectiveBalance - Number(newAmount);
+          if (projectedBalance < 0) {
+            if (!acc.allowNegativeBalance) {
+              return { success: false, code: 'VALIDATION', message: `Insufficient funds: ${acc.name} does not allow negative balances. Available: ${acc.balanceMoney.currency} ${toMajor(effectiveBalance)}.` };
+            } else {
+              warning = `Warning: This transaction will cause your account ${acc.name} to become overdrawn.`;
+            }
           }
         }
       }
+
+      await prisma.$transaction(async (tx) => {
+        const { count } = await tx.transaction.updateMany({
+          where: { id: validId, userId: user.id },
+          data: { ...data, currency: newCurrency },
+        });
+        if (count === 0) throw new Error('Transaction not found or ownership failed');
+
+        await tx.auditLog.create({
+          data: {
+            userId:   user.id,
+            action:   'UPDATE',
+            resource: 'Transaction',
+            metadata: { txId: validId, fields: Object.keys(data) },
+          }
+        });
+      });
+
+      revalidatePath('/transactions');
+      revalidatePath('/');
+      return { success: true, data: undefined, warning };
     }
-
-    await prisma.$transaction(async (tx) => {
-      const { count } = await tx.transaction.updateMany({
-        where: { id: validId, userId: user.id },
-        data: { ...data, currency: newCurrency },
-      });
-      if (count === 0) throw new Error('Transaction not found or ownership failed');
-
-      await tx.auditLog.create({
-        data: {
-          userId:   user.id,
-          action:   'UPDATE',
-          resource: 'Transaction',
-          metadata: JSON.stringify({ txId: validId, fields: Object.keys(data) }),
-        }
-      });
-    });
-
-    revalidatePath('/transactions');
-    revalidatePath('/');
-    return { success: true, warning };
-  } catch (error) {
-    if (error instanceof AuthorizationError) return { success: false, code: 'FORBIDDEN', message: error.message };
-    console.error('[editTransaction]', error);
-    return { error: getErrorMessage(error) || 'An unexpected error occurred. Please try again.' };
-  }
+  });
 }

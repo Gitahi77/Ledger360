@@ -28,7 +28,7 @@ export const GET = apiRoute(
 export const POST = apiRoute(
   AddTransferSchema,
   async (req, { body }) => {
-    await createTransfer(body);
+    await createTransfer({ payload: body });
     return { success: true };
   }
 );
