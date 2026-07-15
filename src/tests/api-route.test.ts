@@ -49,7 +49,7 @@ describe('apiRoute Wrapper', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(rateLimit.checkLimit).mockResolvedValue({ ok: true, limit: 10, remaining: 9 });
+    vi.mocked(rateLimit.checkLimit).mockResolvedValue({ ok: true, retryAfter: 0 });
     vi.mocked(auth.getServerSession).mockResolvedValue({ user: { id: 'user-1' } } as any);
     vi.mocked(idempotency.checkIdempotency).mockResolvedValue(null);
     vi.mocked(idempotency.hashPayload).mockReturnValue('hash');
