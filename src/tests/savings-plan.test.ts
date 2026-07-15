@@ -11,7 +11,7 @@ vi.mock('@/lib/actions/_auth', () => ({
 
 vi.mock('@/lib/queries/accounts', () => ({
   getAccounts: vi.fn().mockResolvedValue([]),
-  getAccountBalances: vi.fn().mockResolvedValue([]),
+  getAccountBalances: vi.fn().mockResolvedValue({ success: true, data: [] }),
 }));
 
 vi.mock('next/cache', () => ({
@@ -109,9 +109,9 @@ describe('Save-More-Tomorrow (WO-15)', () => {
       });
 
       vi.mocked(prisma.savingsPlan.findUnique).mockResolvedValue(plan as any);
-      vi.mocked(getAccountBalances).mockResolvedValue([
-        { id: 'acc-mpesa', type: 'MPESA', balanceMinor: 1000000, userId: 'user-1', name: 'M-Pesa', currency: 'KES', openingMinor: 0, archived: false, createdAt: new Date() },
-      ]);
+      vi.mocked(getAccountBalances).mockResolvedValue({ success: true, data: [
+        { id: 'acc-mpesa', type: 'MPESA', balanceMoney: { amountMinor: 1000000, currency: 'KES' }, userId: 'user-1', name: 'M-Pesa', openingMoney: { amountMinor: 0, currency: 'KES' }, archived: false, allowNegativeBalance: false, createdAt: '2026-01-01' },
+      ] } as any);
 
       await triggerAutoSave(
         'user-1',
@@ -156,9 +156,9 @@ describe('Save-More-Tomorrow (WO-15)', () => {
       });
 
       vi.mocked(prisma.savingsPlan.findUnique).mockResolvedValue(plan as any);
-      vi.mocked(getAccountBalances).mockResolvedValue([
-        { id: 'acc-mpesa', type: 'MPESA', balanceMinor: 1000000, userId: 'user-1', name: 'M-Pesa', currency: 'KES', openingMinor: 0, archived: false, createdAt: new Date() },
-      ]);
+      vi.mocked(getAccountBalances).mockResolvedValue({ success: true, data: [
+        { id: 'acc-mpesa', type: 'MPESA', balanceMoney: { amountMinor: 1000000, currency: 'KES' }, userId: 'user-1', name: 'M-Pesa', openingMoney: { amountMinor: 0, currency: 'KES' }, archived: false, allowNegativeBalance: false, createdAt: '2026-01-01' },
+      ] } as any);
 
       await triggerAutoSave(
         'user-1',
@@ -207,9 +207,9 @@ describe('Save-More-Tomorrow (WO-15)', () => {
   it('idempotent: duplicate trigger for same income returns null, no second transfer', async () => {
     const plan = makePlan();
     vi.mocked(prisma.savingsPlan.findUnique).mockResolvedValue(plan as any);
-    vi.mocked(getAccountBalances).mockResolvedValue([
-      { id: 'acc-mpesa', type: 'MPESA', balanceMinor: 1000000, userId: 'user-1', name: 'M-Pesa', currency: 'KES', openingMinor: 0n, archived: false, createdAt: new Date() },
-    ]);
+    vi.mocked(getAccountBalances).mockResolvedValue({ success: true, data: [
+      { id: 'acc-mpesa', type: 'MPESA', balanceMoney: { amountMinor: 1000000, currency: 'KES' }, userId: 'user-1', name: 'M-Pesa', openingMoney: { amountMinor: 0, currency: 'KES' }, archived: false, allowNegativeBalance: false, createdAt: '2026-01-01' },
+    ] } as any);
 
     // First call succeeds
     await triggerAutoSave(
@@ -238,9 +238,9 @@ describe('Save-More-Tomorrow (WO-15)', () => {
   it('a failed auto-save returns a warning string, never throws', async () => {
     const plan = makePlan();
     vi.mocked(prisma.savingsPlan.findUnique).mockResolvedValue(plan as any);
-    vi.mocked(getAccountBalances).mockResolvedValue([
-      { id: 'acc-mpesa', type: 'MPESA', balanceMinor: 1000000, userId: 'user-1', name: 'M-Pesa', currency: 'KES', openingMinor: 0n, archived: false, createdAt: new Date() },
-    ]);
+    vi.mocked(getAccountBalances).mockResolvedValue({ success: true, data: [
+      { id: 'acc-mpesa', type: 'MPESA', balanceMoney: { amountMinor: 1000000, currency: 'KES' }, userId: 'user-1', name: 'M-Pesa', openingMoney: { amountMinor: 0, currency: 'KES' }, archived: false, allowNegativeBalance: false, createdAt: '2026-01-01' },
+    ] } as any);
 
     // Simulate a random DB error
     vi.mocked(prisma.transfer.createMany).mockRejectedValueOnce(
@@ -262,9 +262,9 @@ describe('Save-More-Tomorrow (WO-15)', () => {
   it('auto-save transfer has loanId=null + savings destination = included in savings metric', async () => {
     const plan = makePlan();
     vi.mocked(prisma.savingsPlan.findUnique).mockResolvedValue(plan as any);
-    vi.mocked(getAccountBalances).mockResolvedValue([
-      { id: 'acc-mpesa', type: 'MPESA', balanceMinor: 1000000, userId: 'user-1', name: 'M-Pesa', currency: 'KES', openingMinor: 0n, archived: false, createdAt: new Date() },
-    ]);
+    vi.mocked(getAccountBalances).mockResolvedValue({ success: true, data: [
+      { id: 'acc-mpesa', type: 'MPESA', balanceMoney: { amountMinor: 1000000, currency: 'KES' }, userId: 'user-1', name: 'M-Pesa', openingMoney: { amountMinor: 0, currency: 'KES' }, archived: false, allowNegativeBalance: false, createdAt: '2026-01-01' },
+    ] } as any);
 
     await triggerAutoSave(
       'user-1',
@@ -298,9 +298,9 @@ describe('Save-More-Tomorrow (WO-15)', () => {
   it('auto-save transfer fields match the reports savings query criteria', async () => {
     const planWithGoal = makePlan({ goalId: 'goal-1' });
     vi.mocked(prisma.savingsPlan.findUnique).mockResolvedValue(planWithGoal as any);
-    vi.mocked(getAccountBalances).mockResolvedValue([
-      { id: 'acc-mpesa', type: 'MPESA', balanceMinor: 1000000, userId: 'user-1', name: 'M-Pesa', currency: 'KES', openingMinor: 0n, archived: false, createdAt: new Date() },
-    ]);
+    vi.mocked(getAccountBalances).mockResolvedValue({ success: true, data: [
+      { id: 'acc-mpesa', type: 'MPESA', balanceMoney: { amountMinor: 1000000, currency: 'KES' }, userId: 'user-1', name: 'M-Pesa', openingMoney: { amountMinor: 0, currency: 'KES' }, archived: false, allowNegativeBalance: false, createdAt: '2026-01-01' },
+    ] } as any);
 
     await triggerAutoSave(
       'user-1',
@@ -367,9 +367,10 @@ describe('Save-More-Tomorrow (WO-15)', () => {
     vi.mocked(prisma.savingsPlan.findUnique).mockResolvedValue(plan as any);
 
     // Source account has only 500 minor units, but 10% of 100000 = 10000
-    vi.mocked(getAccountBalances).mockResolvedValue([
-      { id: 'acc-mpesa', type: 'MPESA', balanceMinor: 500, userId: 'user-1', name: 'M-Pesa', currency: 'KES', openingMinor: 0n, archived: false, createdAt: new Date() },
-    ]);
+    vi.mocked(getAccountBalances).mockResolvedValue({
+      success: true,
+      data: [{ id: 'acc-mpesa', type: 'MPESA', balanceMoney: { amountMinor: 500, currency: 'KES' }, userId: 'user-1', name: 'M-Pesa', openingMoney: { amountMinor: 0, currency: 'KES' }, archived: false, allowNegativeBalance: false, createdAt: '2023-10-10' }]
+    } as any);
 
     const result = await triggerAutoSave(
       'user-1',

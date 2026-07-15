@@ -330,7 +330,7 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
   if (prefs?.notifLoanDue !== false) {
     const { getLoansForUser } = await import('@/lib/queries/loans');
     const allLoans = await getLoansForUser({ userId });
-    const activeLoans = allLoans.filter(l => Number(l.balanceMinor) > 0);
+    const activeLoans = allLoans.filter(l => l.balanceMoney.amountMinor > 0);
     for (const loan of activeLoans) {
       const dueDate = new Date(loan.nextDue);
       const diffTime = dueDate.getTime() - now.getTime();
@@ -341,7 +341,7 @@ export async function generateInsights(userId: string, currency = 'KES'): Promis
           id: `loan-due-${loan.id}`,
           type: 'recurring',
           title: 'Upcoming Loan Payment',
-          description: `Your payment of ${currency} ${toMajor(loan.monthlyPaymentMinor).toLocaleString()} for ${loan.name} is due in ${diffDays} day(s).`,
+          description: `Your payment of ${currency} ${toMajor(loan.monthlyPaymentMoney.amountMinor).toLocaleString()} for ${loan.name} is due in ${diffDays} day(s).`,
           severity: 'warning',
         });
       } else if (diffDays < 0) {

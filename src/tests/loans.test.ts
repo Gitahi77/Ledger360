@@ -42,7 +42,7 @@ describe('getLoansForUser', () => {
     const loans = await getLoansForUser({ userId: 'user-1' });
 
     expect(loans).toHaveLength(1);
-    expect(loans[0].balanceMinor).toBe(5000); // 10000 - 5000
+    expect(loans[0].balanceMoney.amountMinor).toBe(5000); // 10000 - 5000
     // If the BigInt fix was missing, the line above would never be reached 
     // because getLoansForUser would throw: TypeError: Cannot mix BigInt and other types
   });

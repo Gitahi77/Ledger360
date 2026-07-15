@@ -35,8 +35,8 @@ export class TransferService {
       return {
         status: 'completed',
         transferId: existing.id,
-        amountMinor: Number(existing.amountMinor),
-        interestMinor: Number(existing.interestMinor),
+        amountMoney: { amountMinor: Number(existing.amountMinor), currency: existing.currency },
+        interestMoney: { amountMinor: Number(existing.interestMinor), currency: existing.currency },
         referenceNumber: existing.idempotencyKey ?? undefined, // Fallback for legacy
       };
     }

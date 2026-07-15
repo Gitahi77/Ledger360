@@ -10,7 +10,7 @@ import { StatusBadge } from '@/components/finance/trend/StatusBadge';
 interface Loan {
   id: string;
   name: string;
-  balanceMinor: number;
+  balanceMoney: import('@/lib/types/domain').MoneyDTO;
   daysOverdue?: number;
 }
 
@@ -52,7 +52,7 @@ export function ActiveLoansCard({ loans, currency }: ActiveLoansCardProps) {
             <div key={l.id} className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground truncate max-w-[60%]">{l.name}</span>
               <CurrencyDisplay 
-                value={{ amountMinor: l.balanceMinor, currencyCode: currency }}
+                value={{ amountMinor: l.balanceMoney.amountMinor, currencyCode: currency }}
                 className={`font-bold tabular-nums ${isOverdue ? 'text-[hsl(var(--finance-negative))]' : 'text-foreground'}`}
               />
             </div>

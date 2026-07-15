@@ -11,8 +11,8 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { toMinor, toMajor } from '@/lib/money';
 import { getErrorMessage } from '@/lib/format';
 
-type Asset = { id: string; name: string; category: string; valueMinor: number; symbol?: string | null };
-type Loan  = { id: string; name: string; balanceMinor: number; type: string };
+type Asset = { id: string; name: string; category: string; valueMoney: import('@/lib/types/domain').MoneyDTO; symbol?: string | null };
+type Loan  = { id: string; name: string; balanceMoney: import('@/lib/types/domain').MoneyDTO; type: string };
 
 function NwChartTip(props: { active?: boolean; payload?: unknown; label?: string; currency?: string; total?: number }) {
   if (typeof props !== 'object' || props === null) return null;
@@ -46,7 +46,7 @@ function AssetModal({ asset, onClose, currency }: { asset?: Asset; onClose: () =
   const [error, setError]     = useState('');
   const [name,     setName]     = useState(asset?.name     ?? '');
   const [category, setCategory] = useState(asset?.category ?? 'Other');
-  const [value,    setValue]    = useState(asset ? String(toMajor(asset.valueMinor)) : '');
+  const [value,    setValue]    = useState(asset ? String(toMajor(asset.valueMoney.amountMinor)) : '');
   const [symbol,   setSymbol]   = useState(asset?.symbol ?? '');
   const isEdit = Boolean(asset);
 
@@ -309,7 +309,7 @@ export function NetWorthClient({ assets, liabilities, totalAssetsMinor, totalLia
                       <div style={{ fontSize:'0.7rem', color:'var(--color-text-secondary)', textTransform:'capitalize', marginTop: '0.1rem' }}>{a.category}</div>
                     </div>
                     <div style={{ textAlign:'right', flexShrink:0 }}>
-                      <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:800, fontSize:'0.95rem', color:'var(--color-income)', whiteSpace:'nowrap' }}>{fmtAdaptive(a.valueMinor, currency)}</div>
+                      <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:800, fontSize:'0.95rem', color:'var(--color-income)', whiteSpace:'nowrap' }}>{fmtAdaptive(a.valueMoney.amountMinor, currency)}</div>
                       <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ display:'flex', gap:'0.4rem', justifyContent:'flex-end', marginTop:'0.3rem' }}>
                         <button onClick={() => setEditAsset(a)} className="hover:bg-[var(--surface-sunken)] p-1 rounded transition-colors" style={{ background:'none', border:'none', cursor:'pointer', color:'var(--color-text-secondary)', display:'flex' }}><Edit2 size={13}/></button>
                         <button onClick={() => handleDelete(a.id)} disabled={deletingId===a.id} className="hover:bg-[var(--color-expense-light)] hover:text-[var(--color-expense)] p-1 rounded transition-colors" style={{ background:'none', border:'none', cursor:'pointer', color:'var(--color-text-secondary)', display:'flex' }}>
@@ -366,7 +366,7 @@ export function NetWorthClient({ assets, liabilities, totalAssetsMinor, totalLia
                       <div style={{ fontSize:'0.7rem', color:'var(--color-text-secondary)', textTransform:'capitalize', marginTop: '0.1rem' }}>{l.type.replace('_', ' ')}</div>
                     </div>
                     <div style={{ textAlign:'right', flexShrink:0 }}>
-                      <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:800, fontSize:'0.95rem', color:'var(--color-expense)', whiteSpace:'nowrap' }}>{fmtAdaptive(l.balanceMinor, currency)}</div>
+                      <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:800, fontSize:'0.95rem', color:'var(--color-expense)', whiteSpace:'nowrap' }}>{fmtAdaptive(l.balanceMoney.amountMinor, currency)}</div>
                     </div>
                   </div>
                 ))}

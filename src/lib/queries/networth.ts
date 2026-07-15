@@ -22,8 +22,8 @@ export async function getNetWorth({ userId, currency }: { userId: string, curren
     getRates('USD')
   ]);
 
-  const cashAccounts = accounts.filter((a: any) => a.type !== 'CREDIT_CARD' && a.balanceMinor >= 0);
-  const debtAccounts = accounts.filter((a: any) => a.type === 'CREDIT_CARD' || a.balanceMinor < 0);
+  const cashAccounts = accounts.filter((a: any) => a.type !== 'CREDIT_CARD' && a.balanceMoney.amountMinor >= 0);
+  const debtAccounts = accounts.filter((a: any) => a.type === 'CREDIT_CARD' || a.balanceMoney.amountMinor < 0);
 
   const convert = (amount: number, currency?: string | null) => {
     const c = currency || userCurrency;
@@ -37,14 +37,14 @@ export async function getNetWorth({ userId, currency }: { userId: string, curren
     return Math.round((amount * rateUser) / rateC);
   };
 
-  const totalCashMinor        = cashAccounts.reduce((s: any, a: any) => s + convert(a.balanceMinor, a.currency), 0);
-  const totalCardDebtMinor    = debtAccounts.reduce((s: any, a: any) => s + Math.abs(convert(a.balanceMinor, a.currency)), 0);
+  const totalCashMinor        = cashAccounts.reduce((sum: number, acc: any) => sum + convert(acc.balanceMoney.amountMinor, acc.currency), 0);
+  const totalCardDebtMinor    = debtAccounts.reduce((sum: number, acc: any) => sum + Math.abs(convert(acc.balanceMoney.amountMinor, acc.currency)), 0);
   
   const totalAssetsMinor      = assets.reduce((s: any, a: any) => s + Number(a.valueMinor), 0) + totalCashMinor;
-  const totalLiabilitiesMinor = loans.reduce((s: any, l: any) => s + Number(l.balanceMinor), 0) + totalCardDebtMinor;
+  const totalLiabilitiesMinor = loans.reduce((s: any, l: any) => s + Number(l.balanceMoney?.amountMinor ?? l.balanceMinor ?? 0), 0) + totalCardDebtMinor;
 
   return {
-    assets: assets.map(mapAssetToDTO),
+    assets: assets.map(a => mapAssetToDTO(a, userCurrency)),
     liabilities: loans, // getLoansForUser already returns LoanDTO[]
     totalAssetsMinor,
     totalLiabilitiesMinor,

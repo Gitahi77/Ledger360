@@ -73,9 +73,9 @@ describe('safeToSpend', () => {
     
     // Loan next due on June 15
     vi.mocked(getLoansForUser).mockResolvedValue([
-      { monthlyPaymentMinor: 15000, nextDue: new Date(2026, 5, 15) },
+      { monthlyPaymentMoney: { amountMinor: 15000, currency: 'KES' }, nextDue: new Date(2026, 5, 15) },
       // loan outside period (July 5)
-      { monthlyPaymentMinor: 5000, nextDue: new Date(2026, 6, 5) }
+      { monthlyPaymentMoney: { amountMinor: 5000, currency: 'KES' }, nextDue: new Date(2026, 6, 5) }
     ] as any);
 
     const res = await safeToSpend(userId, 'monthly');

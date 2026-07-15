@@ -1,16 +1,17 @@
 import type { Loan } from '@prisma/client';
 import { toMoneyDTO, toDateDTO } from './core';
+import type { MoneyDTO } from '../types/domain';
 
 export type LoanDTO = {
   id: string;
   name: string;
   lender: string;
   type: string;
-  originalAmountMinor: number;
-  balanceMinor: number;
+  originalMoney: MoneyDTO;
+  balanceMoney: MoneyDTO;
   annualRate: number;
   amortization: string;
-  monthlyPaymentMinor: number;
+  monthlyPaymentMoney: MoneyDTO;
   nextDue: string;
   userId: string;
   createdAt: string;
@@ -18,18 +19,19 @@ export type LoanDTO = {
 };
 
 export function mapLoanToDTO(
-  loan: Loan & { daysOverdue?: number }
+  loan: Loan & { daysOverdue?: number },
+  baseCurrency: string = 'KES'
 ): LoanDTO {
   return {
     id: loan.id,
     name: loan.name,
     lender: loan.lender,
     type: loan.type,
-    originalAmountMinor: toMoneyDTO(loan.originalAmountMinor),
-    balanceMinor: toMoneyDTO(loan.balanceMinor),
+    originalMoney: { amountMinor: toMoneyDTO(loan.originalAmountMinor), currency: baseCurrency },
+    balanceMoney: { amountMinor: toMoneyDTO(loan.balanceMinor), currency: baseCurrency },
     annualRate: Number(loan.annualRate),
     amortization: loan.amortization,
-    monthlyPaymentMinor: toMoneyDTO(loan.monthlyPaymentMinor),
+    monthlyPaymentMoney: { amountMinor: toMoneyDTO(loan.monthlyPaymentMinor), currency: baseCurrency },
     nextDue: toDateDTO(loan.nextDue) as string,
     userId: loan.userId,
     createdAt: toDateDTO(loan.createdAt) as string,

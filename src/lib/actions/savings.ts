@@ -272,10 +272,11 @@ export async function triggerAutoSave(
 
     // 4. Balance check
     const { getAccountBalances } = await import('@/lib/queries/accounts');
-    const balances = await getAccountBalances({ userId });
+    const balancesRes = await getAccountBalances(userId);
+    const balances = balancesRes.success ? balancesRes.data : [];
     const sourceAcc = balances.find(a => a.id === plan.fromAccountId);
-    if (sourceAcc && sourceAcc.type !== 'CREDIT_CARD' && Number(sourceAcc.balanceMinor) < totalNeeded) {
-      return `Auto-save skipped: not enough funds in ${sourceAcc.name ?? 'source account'} (available: ${sourceAcc.currency} ${(Number(sourceAcc.balanceMinor) / 100).toFixed(2)}, needed: ${(totalNeeded / 100).toFixed(2)}).`;
+    if (sourceAcc && sourceAcc.type !== 'CREDIT_CARD' && Number(sourceAcc.balanceMoney.amountMinor) < totalNeeded) {
+      return `Auto-save skipped: not enough funds in ${sourceAcc.name ?? 'source account'} (available: ${sourceAcc.balanceMoney.currency} ${(Number(sourceAcc.balanceMoney.amountMinor) / 100).toFixed(2)}, needed: ${(totalNeeded / 100).toFixed(2)}).`;
     }
 
     // 5. Create transfers in bulk, ignoring conflicts for idempotency

@@ -101,7 +101,7 @@ export async function safeToSpend(userId: string, period: 'weekly' | 'monthly' |
   let loanDue = 0;
   for (const l of loans) {
     if (new Date(l.nextDue) <= to) {
-      loanDue += l.monthlyPaymentMinor;
+      loanDue += l.monthlyPaymentMoney.amountMinor;
     }
   }
 

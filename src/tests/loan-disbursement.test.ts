@@ -32,7 +32,7 @@ vi.mock('@/lib/prisma', () => ({
 }));
 
 import { prisma } from '../lib/prisma';
-import { getAccountBalances } from '../lib/queries/accounts';
+import { getAccountBalances } from '../lib/actions/accounts';
 import { getNetWorth } from '../lib/queries/networth';
 import { getReportSummary } from '../lib/queries/reports';
 import { getLoansForUser } from '../lib/queries/loans';
@@ -78,13 +78,14 @@ describe('Loan Disbursement (Received Funds)', () => {
 
     // Mock the loan for getLoansForUser / getNetWorth
     vi.mocked(prisma.loan.findMany).mockResolvedValue([{
-      id: 'loan-1', balanceMinor: LOAN_AMOUNT, userId: 'user-1', name: 'Disbursed Loan', lender: 'Bank', type: 'personal', originalAmountMinor: LOAN_AMOUNT, annualRate: 10, monthlyPaymentMinor: 250, nextDue: new Date(), createdAt: new Date(), transfers: []
+      id: 'loan-1', balanceMinor: LOAN_AMOUNT, userId: 'user-1', name: 'Disbursed Loan', lender: 'Bank', type: 'personal', originalAmountMinor: LOAN_AMOUNT, annualRate: 10, monthlyPaymentMoney: { amountMinor: 250, currency: 'KES' }, monthlyPaymentMinor: 250n, nextDue: new Date(), createdAt: new Date(), transfers: []
     } as any]);
 
     // Test (a): Increases the chosen account balance by the loan amount
-    const balances = await getAccountBalances('user-1');
+    const balancesRes = await getAccountBalances('user-1');
+    const balances = balancesRes.success ? balancesRes.data : [];
     expect(balances.length).toBe(1);
-    expect(balances[0].balanceMinor).toBe(LOAN_AMOUNT);
+    expect(balances[0].balanceMoney.amountMinor).toBe(LOAN_AMOUNT);
 
     // Test (b): Leaves net worth neutral
     // Net worth = Assets (Cash) - Liabilities (Loans) = LOAN_AMOUNT - LOAN_AMOUNT = 0
@@ -113,10 +114,10 @@ describe('Loan Disbursement (Received Funds)', () => {
     // So the mock should return NO transfers in the `include` because the DB filters them.
     // Let me fix the mock to return an empty array for transfers since the filter correctly excludes it.
     vi.mocked(prisma.loan.findMany).mockResolvedValue([{
-      id: 'loan-1', balanceMinor: LOAN_AMOUNT, userId: 'user-1', name: 'Disbursed Loan', lender: 'Bank', type: 'personal', originalAmountMinor: LOAN_AMOUNT, annualRate: 10, monthlyPaymentMinor: 250, nextDue: new Date(), createdAt: new Date(), transfers: []
+      id: 'loan-1', balanceMinor: LOAN_AMOUNT, userId: 'user-1', name: 'Disbursed Loan', lender: 'Bank', type: 'personal', originalAmountMinor: LOAN_AMOUNT, annualRate: 10, monthlyPaymentMoney: { amountMinor: 250, currency: 'KES' }, monthlyPaymentMinor: 250n, nextDue: new Date(), createdAt: new Date(), transfers: []
     } as any]);
     
     const loansCheck = await getLoansForUser({ userId: 'user-1' });
-    expect(loansCheck[0].balanceMinor).toBe(LOAN_AMOUNT);
+    expect(loansCheck[0].balanceMoney.amountMinor).toBe(LOAN_AMOUNT);
   });
 });

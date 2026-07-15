@@ -8,18 +8,12 @@ import { formatKES } from '@/lib/format';
 import { Plus, Trash2, Loader2, X, CreditCard, AlertTriangle, ChevronDown, ChevronUp, Edit2 } from 'lucide-react';
 import { toMinor, toMajor } from '@/lib/money';
 import { getErrorMessage } from '@/lib/format';
-
-type Loan = {
-  id: string; name: string; lender: string; type: string;
-  originalAmountMinor: number; balanceMinor: number; annualRate: number;
-  amortization: string;
-  monthlyPaymentMinor: number; nextDue: string; daysOverdue?: number;
-};
+import type { LoanDTO } from '@/lib/mappers/loans';
 
 // All colours via CSS token vars — adapts to light and dark automatically
-function loanStyle(l: Loan) {
+function loanStyle(l: LoanDTO) {
   const overdueDays = l.daysOverdue ?? 0;
-  const paidPct = Math.min(100, Math.round(((l.originalAmountMinor - l.balanceMinor) / l.originalAmountMinor) * 100));
+  const paidPct = Math.min(100, Math.round(((l.originalMoney.amountMinor - l.balanceMoney.amountMinor) / l.originalMoney.amountMinor) * 100));
   if (overdueDays > 0) return {
     badge: 'badge-danger',  label: 'Overdue',
     color: 'var(--color-expense)',  barGrad: 'linear-gradient(90deg,var(--color-expense),hsl(0,78%,72%))',
@@ -42,7 +36,7 @@ function loanStyle(l: Loan) {
 }
 
 /* -- Add Loan Modal ----------------------------------------- */
-function LoanModal({ loan, accounts, onClose }: { loan?: Loan; accounts: {id: string, name: string}[]; onClose: () => void; }) {
+function LoanModal({ loan, accounts, onClose }: { loan?: LoanDTO; accounts: {id: string, name: string}[]; onClose: () => void; }) {
   const router     = useRouter();
   const [, startT] = useTransition();
   const [loading, setLoading] = useState(false);
@@ -51,10 +45,10 @@ function LoanModal({ loan, accounts, onClose }: { loan?: Loan; accounts: {id: st
   const [name,       setName]       = useState(loan?.name ?? '');
   const [lender,     setLender]     = useState(loan?.lender ?? '');
   const [type,       setType]       = useState(loan?.type ?? 'personal');
-  const [origAmt,    setOrigAmt]    = useState(loan ? String(toMajor(loan.originalAmountMinor)) : '');
-  const [balance,    setBalance]    = useState(loan ? String(toMajor(loan.balanceMinor)) : '');
+  const [origAmt,    setOrigAmt]    = useState(loan ? String(toMajor(loan.originalMoney.amountMinor)) : '');
+  const [balance,    setBalance]    = useState(loan ? String(toMajor(loan.balanceMoney.amountMinor)) : '');
   const [rate,       setRate]       = useState(loan ? String(loan.annualRate) : '');
-  const [monthly,    setMonthly]    = useState(loan ? String(toMajor(loan.monthlyPaymentMinor)) : '');
+  const [monthly,    setMonthly]    = useState(loan ? String(toMajor(loan.monthlyPaymentMoney.amountMinor)) : '');
   const [amortization,setAmortization]= useState(loan?.amortization ?? 'REDUCING_BALANCE');
   const [nextDue,    setNextDue]    = useState(loan?.nextDue ? new Date(loan.nextDue).toISOString().slice(0, 10) : '');
   const [disbursementType, setDisbursementType] = useState<'existing_debt' | 'received_funds'>('existing_debt');
@@ -218,22 +212,22 @@ function LoanModal({ loan, accounts, onClose }: { loan?: Loan; accounts: {id: st
 }
 
 /* -- Expanded Forecast Panel (Interactive Extra Payment Simulator) -- */
-function ExpandedForecast({ loan, monthsLeft, totalInterest, currency }: { loan: Loan; monthsLeft: number; totalInterest: number; currency: string }) {
+function ExpandedForecast({ loan, monthsLeft, totalInterest, currency }: { loan: LoanDTO; monthsLeft: number; totalInterest: number; currency: string }) {
   const [extraPayment, setExtraPayment] = useState(0);
 
   const monthlyRate = loan.annualRate / 100 / 12;
-  const totalPmtMinor    = loan.monthlyPaymentMinor + toMinor(extraPayment);
+  const totalPmtMinor    = loan.monthlyPaymentMoney.amountMinor + toMinor(extraPayment);
   const isFlat = loan.amortization === 'FLAT_RATE';
-  const minPmtMinor      = isFlat ? 0 : (monthlyRate > 0 ? loan.balanceMinor * monthlyRate : 0);
+  const minPmtMinor      = isFlat ? 0 : (monthlyRate > 0 ? loan.balanceMoney.amountMinor * monthlyRate : 0);
   const newMonths   = totalPmtMinor <= minPmtMinor
     ? Infinity
     : isFlat
-      ? Math.ceil(loan.balanceMinor / (totalPmtMinor - (loan.originalAmountMinor * monthlyRate)))
+      ? Math.ceil(loan.balanceMoney.amountMinor / (totalPmtMinor - (loan.originalMoney.amountMinor * monthlyRate)))
       : monthlyRate > 0
-        ? Math.ceil(Math.log(totalPmtMinor / (totalPmtMinor - loan.balanceMinor * monthlyRate)) / Math.log(1 + monthlyRate))
-        : Math.ceil(loan.balanceMinor / totalPmtMinor);
+        ? Math.ceil(Math.log(totalPmtMinor / (totalPmtMinor - loan.balanceMoney.amountMinor * monthlyRate)) / Math.log(1 + monthlyRate))
+        : Math.ceil(loan.balanceMoney.amountMinor / totalPmtMinor);
   const newInterestMinor = isFinite(newMonths) 
-    ? Math.round(Math.max(0, isFlat ? (loan.originalAmountMinor * monthlyRate * newMonths) : (totalPmtMinor * newMonths) - loan.balanceMinor)) 
+    ? Math.round(Math.max(0, isFlat ? (loan.originalMoney.amountMinor * monthlyRate * newMonths) : (totalPmtMinor * newMonths) - loan.balanceMoney.amountMinor)) 
     : 0;
   const monthsSaved = isFinite(monthsLeft) && isFinite(newMonths) ? Math.max(0, monthsLeft - newMonths) : 0;
   const interestSavedMinor = totalInterest - newInterestMinor;
@@ -301,17 +295,17 @@ function ExpandedForecast({ loan, monthsLeft, totalInterest, currency }: { loan:
 
 
 /* -- Main Client Component ---------------------------------- */
-export function LoansClient({ loans = [], currency, accounts = [] }: { loans: Loan[], currency: string, accounts?: {id: string, name: string}[] }) {
+export function LoansClient({ loans = [], currency, accounts = [] }: { loans: LoanDTO[], currency: string, accounts?: {id: string, name: string}[] }) {
   const router     = useRouter();
   const [, startT] = useTransition();
   const [showAdd,     setShowAdd]     = useState(false);
-  const [editLoanObj, setEditLoanObj] = useState<Loan | null>(null);
+  const [editLoanObj, setEditLoanObj] = useState<LoanDTO | null>(null);
   const [deletingId,  setDeletingId]  = useState<string | null>(null);
   const [expanded,    setExpanded]    = useState<string | null>(null);
 
-  const totalDebtMinor     = (loans || []).reduce((s, l) => s + (l.balanceMinor || 0), 0);
-  const totalOriginalMinor = (loans || []).reduce((s, l) => s + (l.originalAmountMinor || 0), 0);
-  const totalMonthlyMinor  = (loans || []).reduce((s, l) => s + (l.monthlyPaymentMinor || 0), 0);
+  const totalDebtMinor     = (loans || []).reduce((s, l) => s + (l.balanceMoney.amountMinor || 0), 0);
+  const totalOriginalMinor = (loans || []).reduce((s, l) => s + (l.originalMoney.amountMinor || 0), 0);
+  const totalMonthlyMinor  = (loans || []).reduce((s, l) => s + (l.monthlyPaymentMoney.amountMinor || 0), 0);
   const overdue       = (loans || []).filter(l => (l.daysOverdue ?? 0) > 0).length;
   const paidPct       = totalOriginalMinor > 0 ? Math.min(100, Math.round(((totalOriginalMinor - totalDebtMinor) / totalOriginalMinor) * 100)) : 0;
 
@@ -418,25 +412,25 @@ export function LoansClient({ loans = [], currency, accounts = [] }: { loans: Lo
             // Amortization calculator with safety guards
             const isFlat = l.amortization === 'FLAT_RATE';
             const monthlyRate   = (l.annualRate || 0) / 100 / 12;
-            const minPaymentMinor    = isFlat ? 0 : (monthlyRate > 0 ? l.balanceMinor * monthlyRate : 0); // payment must exceed this
-            const paymentValid  = l.monthlyPaymentMinor > minPaymentMinor;
+            const minPaymentMinor    = isFlat ? 0 : (monthlyRate > 0 ? l.balanceMoney.amountMinor * monthlyRate : 0); // payment must exceed this
+            const paymentValid  = l.monthlyPaymentMoney.amountMinor > minPaymentMinor;
             
             // Safe calculation avoiding div-by-zero or log of negative
             let monthsLeft = Infinity;
-            if (paymentValid && l.monthlyPaymentMinor > 0) {
+            if (paymentValid && l.monthlyPaymentMoney.amountMinor > 0) {
               if (isFlat) {
-                const den = l.monthlyPaymentMinor - (l.originalAmountMinor * monthlyRate);
-                monthsLeft = den > 0 ? Math.ceil(l.balanceMinor / den) : Infinity;
+                const den = l.monthlyPaymentMoney.amountMinor - (l.originalMoney.amountMinor * monthlyRate);
+                monthsLeft = den > 0 ? Math.ceil(l.balanceMoney.amountMinor / den) : Infinity;
               } else if (monthlyRate > 0) {
-                const arg = l.monthlyPaymentMinor / (l.monthlyPaymentMinor - l.balanceMinor * monthlyRate);
+                const arg = l.monthlyPaymentMoney.amountMinor / (l.monthlyPaymentMoney.amountMinor - l.balanceMoney.amountMinor * monthlyRate);
                 monthsLeft = arg > 0 ? Math.ceil(Math.log(arg) / Math.log(1 + monthlyRate)) : Infinity;
               } else {
-                monthsLeft = Math.ceil(l.balanceMinor / l.monthlyPaymentMinor);
+                monthsLeft = Math.ceil(l.balanceMoney.amountMinor / l.monthlyPaymentMoney.amountMinor);
               }
             }
 
             const totalInterestMinor = isFinite(monthsLeft)
-              ? Math.round(Math.max(0, isFlat ? (l.originalAmountMinor * monthlyRate * monthsLeft) : (l.monthlyPaymentMinor * monthsLeft) - l.balanceMinor))
+              ? Math.round(Math.max(0, isFlat ? (l.originalMoney.amountMinor * monthlyRate * monthsLeft) : (l.monthlyPaymentMoney.amountMinor * monthsLeft) - l.balanceMoney.amountMinor))
               : 0;
 
             return (
@@ -474,13 +468,13 @@ export function LoansClient({ loans = [], currency, accounts = [] }: { loans: Lo
                       <div style={{ fontSize:'0.7rem', color:'var(--color-text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.2rem' }}>Remaining</div>
                       <div style={{
                         fontFamily:'Space Grotesk,sans-serif',
-                        fontSize: l.balanceMinor > 9_999_99900 ? '1.4rem' : l.balanceMinor > 999_99900 ? '1.6rem' : '1.8rem',
+                        fontSize: l.balanceMoney.amountMinor > 9_999_99900 ? '1.4rem' : l.balanceMoney.amountMinor > 999_99900 ? '1.6rem' : '1.8rem',
                         fontWeight:800, color:st.color, letterSpacing:'-0.04em', lineHeight:1.1,
                         whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
                       }}>
-                        {formatKES(l.balanceMinor)}
+                        {formatKES(l.balanceMoney.amountMinor)}
                       </div>
-                      <div style={{ fontSize:'0.7rem', color:'var(--color-text-secondary)', marginTop:'0.2rem', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>of {formatKES(l.originalAmountMinor)} original</div>
+                      <div style={{ fontSize:'0.7rem', color:'var(--color-text-secondary)', marginTop:'0.2rem', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>of {formatKES(l.originalMoney.amountMinor)} original</div>
                     </div>
                     <div style={{ textAlign:'right', flexShrink:0 }}>
                       <div style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'1.4rem', fontWeight:800, color:st.color, lineHeight:1, padding: '0.3rem', background: 'var(--card)', borderRadius: 8 }}>{st.paidPct}%</div>
@@ -494,7 +488,7 @@ export function LoansClient({ loans = [], currency, accounts = [] }: { loans: Lo
                   <div className="grid grid-cols-2 gap-3 mb-4">
                     <div className="bg-[var(--surface-sunken)] p-3 rounded-xl border border-border/50">
                       <div style={{ fontSize:'0.65rem', color:'var(--color-text-secondary)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom: '0.2rem' }}>Monthly</div>
-                      <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:800, fontSize:'1rem', color:'var(--color-text-primary)', whiteSpace:'nowrap' }}>{formatKES(l.monthlyPaymentMinor)}</div>
+                      <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:800, fontSize:'1rem', color:'var(--color-text-primary)', whiteSpace:'nowrap' }}>{formatKES(l.monthlyPaymentMoney.amountMinor)}</div>
                     </div>
                     <div className="bg-[var(--surface-sunken)] p-3 rounded-xl border border-border/50">
                       <div style={{ fontSize:'0.65rem', color:'var(--color-text-secondary)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom: '0.2rem' }}>Next Due</div>

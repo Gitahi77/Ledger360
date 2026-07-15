@@ -1,5 +1,4 @@
-import { AccountType } from '@prisma/client';
-import type { ChamaDetails } from '@prisma/client';
+import type { AccountType, ChamaDetails, MoneyDTO } from '../types/domain';
 import { toMoneyDTO, toDateDTO } from './core';
 
 export type AccountDTO = {
@@ -7,16 +6,15 @@ export type AccountDTO = {
   userId: string;
   name: string;
   type: AccountType;
-  currency: string;
-  openingMinor: number;
+  openingMoney: MoneyDTO;
   archived: boolean;
   allowNegativeBalance: boolean;
   createdAt: string;
   chamaDetails?: ChamaDetails | null;
-  balanceMinor: number;
+  balanceMoney: MoneyDTO;
   displayBalance: string;
   isOverdrawn: boolean;
-  availableBalanceMinor: number;
+  availableBalanceMoney: MoneyDTO;
 };
 
 export function mapAccountToDTO(
@@ -27,15 +25,15 @@ export function mapAccountToDTO(
     userId: account.userId,
     name: account.name,
     type: account.type,
-    currency: account.currency,
-    openingMinor: toMoneyDTO(account.openingMinor),
+    openingMoney: { amountMinor: toMoneyDTO(account.openingMinor), currency: account.currency },
     archived: account.archived,
     allowNegativeBalance: account.allowNegativeBalance,
     createdAt: toDateDTO(account.createdAt) as string,
     chamaDetails: account.chamaDetails,
-    balanceMinor: toMoneyDTO(account.balanceMinor),
+    balanceMoney: { amountMinor: toMoneyDTO(account.balanceMinor), currency: account.currency },
     displayBalance: account.displayBalance,
     isOverdrawn: account.isOverdrawn,
-    availableBalanceMinor: toMoneyDTO(account.availableBalanceMinor),
+    availableBalanceMoney: { amountMinor: toMoneyDTO(account.availableBalanceMinor), currency: account.currency },
   };
 }
+

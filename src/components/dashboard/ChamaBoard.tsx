@@ -19,7 +19,7 @@ export async function ChamaBoard() {
   }
 
   const balances = await getAccountBalances({ userId: user.id });
-  const balanceMap = new Map(balances.map(b => [b.id, b.balanceMinor]));
+  const balanceMap = new Map(balances.map(b => [b.id, b.balanceMoney.amountMinor]));
 
   const today = new Date();
 

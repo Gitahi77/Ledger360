@@ -339,27 +339,28 @@ export async function editTransaction(id: string, rawData: unknown) {
     let warning: string | undefined;
     const { toMajor } = await import('@/lib/money');
     const balancesResult = await getAccountBalances(user.id);
+    if (!balancesResult.success) {
+      throw new Error(balancesResult.message || 'Failed to retrieve account balances');
+    }
     let newCurrency = oldTx.currency;
 
-    if (balancesResult.success) {
-      const acc = balancesResult.data.find(a => a.id === newAccountId);
-      if (acc) {
-        newCurrency = acc.currency;
-        if (newType === 'expense' && acc.type !== 'CREDIT_CARD') {
-          let effectiveBalance = acc.balanceMinor;
-          if (oldTx.type === 'expense' && oldTx.accountId === newAccountId) {
-            effectiveBalance += Number(oldTx.baseAmountMinor); // restore old amount
-          } else if (oldTx.type === 'income' && oldTx.accountId === newAccountId) {
-            effectiveBalance -= Number(oldTx.baseAmountMinor); // remove old income
-          }
-          
-          const projectedBalance = effectiveBalance - Number(newAmount);
-          if (projectedBalance < 0) {
-            if (!acc.allowNegativeBalance) {
-              throw new Error(`Insufficient funds: ${acc.name} does not allow negative balances. Available: ${acc.currency} ${toMajor(effectiveBalance)}.`);
-            } else {
-              warning = `Warning: This transaction will cause your account ${acc.name} to become overdrawn.`;
-            }
+    const acc = balancesResult.data.find(a => a.id === newAccountId);
+    if (acc) {
+      newCurrency = acc.balanceMoney.currency;
+      if (newType === 'expense' && acc.type !== 'CREDIT_CARD') {
+        let effectiveBalance = acc.balanceMoney.amountMinor;
+        if (oldTx.type === 'expense' && oldTx.accountId === newAccountId) {
+          effectiveBalance += Number(oldTx.baseAmountMinor); // restore old amount
+        } else if (oldTx.type === 'income' && oldTx.accountId === newAccountId) {
+          effectiveBalance -= Number(oldTx.baseAmountMinor); // remove old income
+        }
+        
+        const projectedBalance = effectiveBalance - Number(newAmount);
+        if (projectedBalance < 0) {
+          if (!acc.allowNegativeBalance) {
+            throw new Error(`Insufficient funds: ${acc.name} does not allow negative balances. Available: ${acc.balanceMoney.currency} ${toMajor(effectiveBalance)}.`);
+          } else {
+            warning = `Warning: This transaction will cause your account ${acc.name} to become overdrawn.`;
           }
         }
       }

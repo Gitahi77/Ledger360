@@ -1,12 +1,12 @@
-import type { Transaction, Category } from '@prisma/client';
 import { toMoneyDTO, toDateDTO } from './core';
+import type { MoneyDTO, TransactionType } from '../types/domain';
+import { type CategoryDTO, mapCategoryToDTO } from './categories';
 
 export type TransactionDTO = {
   id: string;
   date: string;
-  baseAmountMinor: number;
-  currency: string;
-  type: string;
+  baseMoney: MoneyDTO;
+  type: TransactionType;
   name: string;
   note: string | null;
   categoryId: string;
@@ -16,7 +16,7 @@ export type TransactionDTO = {
   importHash: string | null;
   reference: string | null;
   createdAt: string;
-  category?: Category | null;
+  category?: CategoryDTO | null;
   
   // Normalization Metadata (Presentation/AI layers)
   normalizedMerchantName?: string;
@@ -26,7 +26,12 @@ export type TransactionDTO = {
 };
 
 export function mapTransactionToDTO(
-  transaction: Transaction & { category?: Category | null },
+  transaction: {
+    id: string; date: Date; baseAmountMinor: number | bigint; currency: string; type: string; name: string;
+    note: string | null; categoryId: string; accountId: string; userId: string; importedAt: Date | null;
+    importHash: string | null; reference: string | null; createdAt: Date;
+    category?: any | null;
+  },
   metadataOrIndex?: {
     normalizedMerchantName?: string;
     merchantConfidence?: number;
@@ -38,9 +43,8 @@ export function mapTransactionToDTO(
   return {
     id: transaction.id,
     date: toDateDTO(transaction.date) as string,
-    baseAmountMinor: toMoneyDTO(transaction.baseAmountMinor),
-    currency: transaction.currency,
-    type: transaction.type,
+    baseMoney: { amountMinor: toMoneyDTO(transaction.baseAmountMinor), currency: transaction.currency },
+    type: transaction.type as TransactionType,
     name: transaction.name,
     note: transaction.note,
     categoryId: transaction.categoryId,
@@ -50,7 +54,7 @@ export function mapTransactionToDTO(
     importHash: transaction.importHash,
     reference: transaction.reference,
     createdAt: toDateDTO(transaction.createdAt) as string,
-    category: transaction.category,
+    category: transaction.category ? mapCategoryToDTO(transaction.category) : null,
     
     normalizedMerchantName: metadata?.normalizedMerchantName,
     merchantConfidence: metadata?.merchantConfidence,
