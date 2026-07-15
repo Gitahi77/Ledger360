@@ -232,7 +232,7 @@ Database changed: NO
 2. A regression test
 3. An architecture impact assessment
 4. A scalability review
-5. Evidence-backed verification (including external CI)
+5. Evidence-backed verification (including external CI and command output logs)
 6. A "Lessons Learned" section.
 7. Architecture Notes
 8. Architecture Delta
@@ -248,26 +248,38 @@ YES
 Regression test added
 YES / N/A
 
-TypeScript
-PASS
+Verification Evidence
 
-ESLint
-PASS (or expected remaining warnings listed)
+tsc
+Command: npx tsc --noEmit
+Exit Code: [Exit Code]
+Summary: [Summary or exact output]
 
+----------------
 Vitest
-PASS
+Command: npm test
+Exit Code: [Exit Code]
+Summary: [Summary or exact output]
 
-Production build
-PASS
+----------------
+ESLint
+Command: npm run lint
+Exit Code: [Exit Code]
+Summary: [Summary or exact output]
 
-GitHub Actions
-PASS
+----------------
+Build
+Command: npm run build
+Exit Code: [Exit Code]
+Summary: [Summary or exact output]
 
-Vercel Preview
-PASS
+----------------
+GitHub CI
+Status: PASS/FAIL
 
-Manual smoke test
-PASS
+----------------
+Vercel
+Status: PASS/FAIL
 
 Architecture review completed
 YES
@@ -287,3 +299,15 @@ Deployment Confidence: xx%
 
 **Rule for Confidence:**
 Never say "100% confidence" unless GitHub PASS, Vercel PASS, and Manual browser verification PASS are all true. Otherwise, Deployment Confidence must state "Unknown until Vercel passes."
+
+## Core Operational Rules
+
+1. **Never push directly to `main`.** All changes must go through feature branches (`feature/*`, `bugfix/*`, `hotfix/*`), CI, and a pull request before merging. Only the human may merge into main.
+2. **Never report `PASS` without evidence.** The AI is forbidden from declaring any verification step PASS unless:
+   - The command actually completed.
+   - Exit code == 0.
+   - The output has been inspected.
+   - The output is included in the completion report.
+   If any verification command is still running, the work order status must remain PENDING. Never infer, assume, or estimate success.
+3. **Never declare a work order complete until local verification, GitHub Actions, and the Vercel production build have all passed.**
+
