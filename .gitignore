@@ -52,3 +52,7 @@ tsc_errors.txt
 
 *storybook.log
 storybook-static
+
+# k6 benchmark files
+k6-bin/
+k6.zip
