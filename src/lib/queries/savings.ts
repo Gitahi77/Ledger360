@@ -166,10 +166,8 @@ export async function triggerAutoSave(
     if (transfersToCreate.length === 0) return null;
 
     // 4. Balance check
-    const { getAccountBalances } = await import('@/lib/actions/accounts');
-    const balancesResult = await getAccountBalances(userId);
-    if (!balancesResult.success) throw new Error('Failed to fetch account balances for auto-save');
-    const balances = balancesResult.data;
+    const { getAccountBalances } = await import('@/lib/queries/accounts');
+    const balances = await getAccountBalances({ userId });
     const sourceAcc = balances.find((a: any) => a.id === plan.fromAccountId);
     if (sourceAcc && sourceAcc.type !== 'CREDIT_CARD' && sourceAcc.balanceMoney.amountMinor < totalNeeded) {
       return `Auto-save skipped: not enough funds in ${sourceAcc.name ?? 'source account'} (available: ${sourceAcc.balanceMoney.currency} ${(sourceAcc.balanceMoney.amountMinor / 100).toFixed(2)}, needed: ${(totalNeeded / 100).toFixed(2)}).`;
