@@ -1,0 +1,170 @@
+{
+  "cmq0iflbm000004i5y1q9u5lb": {
+    "accounts": [
+      {
+        "id": "cmq0iflpl000s04i5srazf9eb",
+        "userId": "cmq0iflbm000004i5y1q9u5lb",
+        "name": "Cash",
+        "type": "CHECKING",
+        "currency": "KES",
+        "openingMinor": 0,
+        "archived": false,
+        "createdAt": "2026-06-05T05:55:11.913Z",
+        "updatedAt": "2026-07-07T10:20:00.811Z",
+        "balanceMinor": 1200000,
+        "displayBalance": "KES 12,000.00",
+        "isOverdrawn": false,
+        "availableBalanceMinor": 1200000
+      },
+      {
+        "id": "cmq0iflpl000r04i5fc87il40",
+        "userId": "cmq0iflbm000004i5y1q9u5lb",
+        "name": "M-Pesa",
+        "type": "CHECKING",
+        "currency": "KES",
+        "openingMinor": 0,
+        "archived": false,
+        "createdAt": "2026-06-05T05:55:11.913Z",
+        "updatedAt": "2026-07-07T10:20:00.811Z",
+        "balanceMinor": 200000,
+        "displayBalance": "KES 2,000.00",
+        "isOverdrawn": false,
+        "availableBalanceMinor": 200000
+      },
+      {
+        "id": "cmq29a933000104kzgil0j0en",
+        "userId": "cmq0iflbm000004i5y1q9u5lb",
+        "name": "Equity",
+        "type": "CHECKING",
+        "currency": "KES",
+        "openingMinor": 0,
+        "archived": false,
+        "createdAt": "2026-06-06T11:14:38.079Z",
+        "updatedAt": "2026-07-07T10:20:00.811Z",
+        "balanceMinor": 0,
+        "displayBalance": "KES 0.00",
+        "isOverdrawn": false,
+        "availableBalanceMinor": 0
+      }
+    ],
+    "rawTxAggr": {
+      "sum": "2000000",
+      "count": 1
+    },
+    "rawTransferAggr": {
+      "sum": "1800000",
+      "count": 2
+    }
+  },
+  "cmqsgh9r50000ighqicageux0": {
+    "accounts": [
+      {
+        "id": "cmqsghajb000righqoffam6rt",
+        "userId": "cmqsgh9r50000ighqicageux0",
+        "name": "M-Pesa",
+        "type": "MPESA",
+        "currency": "KES",
+        "openingMinor": 0,
+        "archived": false,
+        "createdAt": "2026-06-24T19:18:04.440Z",
+        "updatedAt": "2026-07-07T10:20:00.811Z",
+        "balanceMinor": 4850000,
+        "displayBalance": "KES 48,500.00",
+        "isOverdrawn": false,
+        "availableBalanceMinor": 4850000
+      },
+      {
+        "id": "cmqsghajc000sighq33ptho19",
+        "userId": "cmqsgh9r50000ighqicageux0",
+        "name": "Cash/Checking",
+        "type": "CHECKING",
+        "currency": "KES",
+        "openingMinor": 0,
+        "archived": false,
+        "createdAt": "2026-06-24T19:18:04.440Z",
+        "updatedAt": "2026-07-07T10:20:00.811Z",
+        "balanceMinor": 0,
+        "displayBalance": "KES 0.00",
+        "isOverdrawn": false,
+        "availableBalanceMinor": 0
+      }
+    ],
+    "rawTxAggr": {
+      "sum": "5150000",
+      "count": 2
+    },
+    "rawTransferAggr": {
+      "sum": "0",
+      "count": 0
+    }
+  },
+  "cmrdjn0v00000f8hqf66d4pqm": {
+    "accounts": [
+      {
+        "id": "cmrdjn1ma000rf8hq092yf111",
+        "userId": "cmrdjn0v00000f8hqf66d4pqm",
+        "name": "M-Pesa",
+        "type": "MPESA",
+        "currency": "KES",
+        "openingMinor": 0,
+        "archived": false,
+        "createdAt": "2026-07-09T13:29:41.362Z",
+        "updatedAt": "2026-07-09T13:29:41.362Z",
+        "balanceMinor": 0,
+        "displayBalance": "KES 0.00",
+        "isOverdrawn": false,
+        "availableBalanceMinor": 0
+      },
+      {
+        "id": "cmrdjn1ma000sf8hq67lwfsd1",
+        "userId": "cmrdjn0v00000f8hqf66d4pqm",
+        "name": "Cash/Checking",
+        "type": "CHECKING",
+        "currency": "KES",
+        "openingMinor": 0,
+        "archived": false,
+        "createdAt": "2026-07-09T13:29:41.362Z",
+        "updatedAt": "2026-07-09T13:29:41.362Z",
+        "balanceMinor": 0,
+        "displayBalance": "KES 0.00",
+        "isOverdrawn": false,
+        "availableBalanceMinor": 0
+      }
+    ],
+    "rawTxAggr": {
+      "sum": "0",
+      "count": 0
+    },
+    "rawTransferAggr": {
+      "sum": "0",
+      "count": 0
+    }
+  },
+  "cmrgfekgb00007chqgnufgjdv": {
+    "accounts": [
+      {
+        "id": "cmrgfjpka0000tkhqql9zzaqi",
+        "userId": "cmrgfekgb00007chqgnufgjdv",
+        "name": "Checking",
+        "type": "CHECKING",
+        "currency": "KES",
+        "openingMinor": 500000,
+        "archived": false,
+        "createdAt": "2026-07-11T13:58:25.834Z",
+        "updatedAt": "2026-07-11T13:58:25.834Z",
+        "balanceMinor": 450000,
+        "displayBalance": "KES 4,500.00",
+        "isOverdrawn": false,
+        "availableBalanceMinor": 450000
+      }
+    ],
+    "rawTxAggr": {
+      "sum": "0",
+      "count": 0
+    },
+    "rawTransferAggr": {
+      "sum": "50000",
+      "count": 1
+    }
+  }
+}

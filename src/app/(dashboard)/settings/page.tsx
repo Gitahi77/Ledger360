@@ -62,7 +62,7 @@ export default async function Settings() {
         }))}
         savingsPlan={savingsPlan}
         autoSaves={autoSaves}
-        accounts={accounts.map(a => ({ id: a.id, name: a.name, type: a.type, currency: a.currency }))}
+        accounts={accounts.map(a => ({ id: a.id, name: a.name, type: a.type, currency: a.balanceMoney.currency }))}
         goals={goals}
       />
     </>

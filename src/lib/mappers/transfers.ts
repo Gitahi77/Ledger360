@@ -1,4 +1,4 @@
-import type { Transfer, Account } from '@prisma/client';
+import type { MoneyDTO } from '../types/domain';
 import { toMoneyDTO, toDateDTO } from './core';
 
 export type TransferDTO = {
@@ -6,9 +6,8 @@ export type TransferDTO = {
   userId: string;
   fromAccountId: string | null;
   toAccountId: string | null;
-  amountMinor: number;
-  currency: string;
-  baseAmountMinor: number;
+  money: MoneyDTO;
+  baseMoney: MoneyDTO;
   fxRate: number;
   date: string;
   note: string | null;
@@ -16,7 +15,7 @@ export type TransferDTO = {
   goalId: string | null;
   sourceTransactionId: string | null;
   loanId: string | null;
-  interestMinor: number;
+  interestMoney: MoneyDTO;
   createdAt: string;
   fromAccount?: { name: string; currency: string } | null;
   toAccount?: { name: string; currency: string } | null;
@@ -25,20 +24,24 @@ export type TransferDTO = {
 export type TransferResultDTO = {
   status: 'completed' | 'rejected' | 'pending';
   transferId?: string;
-  amountMinor?: number;
-  feeMinor?: number;
-  interestMinor?: number;
+  amountMoney?: MoneyDTO;
+  feeMoney?: MoneyDTO;
+  interestMoney?: MoneyDTO;
   referenceNumber?: string;
-  updatedSourceBalanceMinor?: number;
-  updatedDestinationBalanceMinor?: number;
-  remainingLoanBalanceMinor?: number;
+  updatedSourceBalanceMoney?: MoneyDTO;
+  updatedDestinationBalanceMoney?: MoneyDTO;
+  remainingLoanBalanceMoney?: MoneyDTO;
 };
 
-
 export function mapTransferToDTO(
-  transfer: Transfer & { 
-    fromAccount?: Pick<Account, 'name' | 'currency'> | null,
-    toAccount?: Pick<Account, 'name' | 'currency'> | null
+  transfer: {
+    id: string; userId: string; fromAccountId: string | null; toAccountId: string | null;
+    amountMinor: number | bigint; currency: string; baseAmountMinor: number | bigint; fxRate: any;
+    date: Date; note: string | null; source: string; goalId: string | null;
+    sourceTransactionId: string | null; loanId: string | null; interestMinor: number | bigint;
+    createdAt: Date;
+    fromAccount?: { name: string; currency: string } | null;
+    toAccount?: { name: string; currency: string } | null;
   }
 ): TransferDTO {
   return {
@@ -46,9 +49,8 @@ export function mapTransferToDTO(
     userId: transfer.userId,
     fromAccountId: transfer.fromAccountId,
     toAccountId: transfer.toAccountId,
-    amountMinor: toMoneyDTO(transfer.amountMinor),
-    currency: transfer.currency,
-    baseAmountMinor: toMoneyDTO(transfer.baseAmountMinor),
+    money: { amountMinor: toMoneyDTO(transfer.amountMinor), currency: transfer.currency },
+    baseMoney: { amountMinor: toMoneyDTO(transfer.baseAmountMinor), currency: transfer.currency }, // Note: base currency usually KES, but storing it helps
     fxRate: Number(transfer.fxRate),
     date: toDateDTO(transfer.date) as string,
     note: transfer.note,
@@ -56,7 +58,7 @@ export function mapTransferToDTO(
     goalId: transfer.goalId,
     sourceTransactionId: transfer.sourceTransactionId,
     loanId: transfer.loanId,
-    interestMinor: toMoneyDTO(transfer.interestMinor),
+    interestMoney: { amountMinor: toMoneyDTO(transfer.interestMinor), currency: transfer.currency },
     createdAt: toDateDTO(transfer.createdAt) as string,
     fromAccount: transfer.fromAccount,
     toAccount: transfer.toAccount,

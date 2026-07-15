@@ -6,15 +6,11 @@ import { createAccount, updateAccount, deleteAccount } from '@/lib/actions/accou
 import { Plus, Edit2, Trash2, Loader2, X, Archive } from 'lucide-react';
 import { toMinor, toMajor } from '@/lib/money';
 import { formatKES } from '@/lib/format';
-
-type Account = {
-  id: string; name: string; type: AccountType; currency: string;
-  openingMinor: number; balanceMinor: number; archived: boolean;
-};
+import type { AccountDTO } from '@/lib/mappers/accounts';
 
 import { DynamicAccountIcon } from '@/lib/icons';
 import { ACCOUNT_GROUPS } from '@/lib/accounts';
-import type { AccountType } from '@prisma/client';
+import type { AccountType } from '@/lib/types/domain';
 import { getErrorMessage } from '@/lib/format';
 
 const ACCOUNT_TYPES = [
@@ -32,12 +28,12 @@ const ACCOUNT_TYPES = [
   { id: 'CRYPTO',         label: 'Crypto' },
 ];
 
-export function AccountsClient({ accounts, currency }: { accounts: Account[], currency: string }) {
+export function AccountsClient({ accounts, currency }: { accounts: AccountDTO[], currency: string }) {
   const router = useRouter();
   const [, startT] = useTransition();
 
   const [showModal, setShowModal] = useState(false);
-  const [editingAcc, setEditingAcc] = useState<Account | null>(null);
+  const [editingAcc, setEditingAcc] = useState<AccountDTO | null>(null);
 
   const [name, setName] = useState('');
   const [type, setType] = useState<AccountType>('CHECKING');
@@ -59,11 +55,11 @@ export function AccountsClient({ accounts, currency }: { accounts: Account[], cu
     setShowModal(true);
   }
 
-  function openEdit(acc: Account) {
+  function openEdit(acc: AccountDTO) {
     setEditingAcc(acc);
     setName(acc.name);
     setType(acc.type);
-    setOpening((toMajor(acc.openingMinor)).toString());
+    setOpening((toMajor(acc.openingMoney.amountMinor)).toString());
     setError('');
     setShowModal(true);
   }
@@ -93,7 +89,7 @@ export function AccountsClient({ accounts, currency }: { accounts: Account[], cu
     }
   }
 
-  async function handleToggleArchive(acc: Account) {
+  async function handleToggleArchive(acc: AccountDTO) {
     try {
       await updateAccount(acc.id, { archived: !acc.archived });
       startT(() => router.refresh());
@@ -115,7 +111,7 @@ export function AccountsClient({ accounts, currency }: { accounts: Account[], cu
     }
   }
 
-  function renderList(list: Account[], isArchivedList = false) {
+  function renderList(list: AccountDTO[], isArchivedList = false) {
     if (list.length === 0) {
       return <div style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', padding: '1rem' }}>No accounts found.</div>;
     }
@@ -140,8 +136,8 @@ export function AccountsClient({ accounts, currency }: { accounts: Account[], cu
               <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
                 <div style={{ textAlign: 'right' }}>
                   <p style={{ margin: 0, fontSize: '0.7rem', color: 'var(--color-text-secondary)' }}>Balance</p>
-                  <p style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600, color: acc.balanceMinor < 0 ? 'var(--color-expense)' : 'var(--color-text-primary)' }}>
-                    {formatKES(acc.balanceMinor)}
+                  <p style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600, color: acc.balanceMoney.amountMinor < 0 ? 'var(--color-expense)' : 'var(--color-text-primary)' }}>
+                    {formatKES(acc.balanceMoney.amountMinor)}
                   </p>
                 </div>
                 
@@ -164,7 +160,7 @@ export function AccountsClient({ accounts, currency }: { accounts: Account[], cu
     );
   }
 
-  function renderGroupedList(list: Account[], isArchivedList = false) {
+  function renderGroupedList(list: AccountDTO[], isArchivedList = false) {
     if (list.length === 0) {
       return <div style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', padding: '1rem' }}>No accounts found.</div>;
     }

@@ -44,7 +44,7 @@ export default async function Transactions({
   const mappedTransfers = transfers.map(t => ({
     id: t.id,
     name: 'Transfer',
-    baseAmountMinor: t.amountMinor, // it's already a number
+    baseMoney: t.baseMoney,
     type: 'transfer',
     date: t.date, // already an ISO string
     note: t.note,
@@ -57,7 +57,7 @@ export default async function Transactions({
     toAccountId: t.toAccountId,
     goalId: t.goalId,
     loanId: t.loanId,
-    interestMinor: t.interestMinor,
+    interestMoney: t.interestMoney,
   }));
 
   const mappedTransactions = transactions;
@@ -71,8 +71,8 @@ export default async function Transactions({
     ? await getTransactions({ userId: user.id, period })
     : transactions;
 
-  const totalIncome  = allForPeriod.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.baseAmountMinor), 0);
-  const totalExpense = allForPeriod.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.baseAmountMinor), 0);
+  const totalIncome  = allForPeriod.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.baseMoney.amountMinor), 0);
+  const totalExpense = allForPeriod.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.baseMoney.amountMinor), 0);
 
   const { moneyOut } = await getTransactionSummary({ userId: user.id, period });
 

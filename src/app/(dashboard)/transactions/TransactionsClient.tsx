@@ -21,20 +21,22 @@ import { CurrencyDisplay } from '@/components/finance/display/currency-display';
 import { TransactionRow } from '@/components/finance/TransactionRow';
 import { getErrorMessage } from '@/lib/format';
 
+import type { MoneyDTO } from '@/lib/types/domain';
+
 type Tx = {
-  id: string; name: string; baseAmountMinor: number; type: string;
+  id: string; name: string; baseMoney: MoneyDTO; type: string;
   date: string; note: string | null;
   category?: { id: string; name: string; icon: string | null } | null;
   fromAccountId?: string | null;
   toAccountId?: string | null;
   goalId?: string | null;
   loanId?: string | null;
-  interestMinor?: number;
+  interestMoney?: MoneyDTO;
 };
 type Category = { id: string; name: string; type: string; icon: string | null };
 type Account = { id: string; name: string };
 type Goal = { id: string; name: string };
-type Loan = { id: string; name: string; balanceMinor: number; annualRate: number };
+type Loan = { id: string; name: string; balanceMoney: MoneyDTO; annualRate: number };
 
 interface Props {
   transactions: Tx[];
@@ -62,7 +64,7 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
   const [name,       setName]       = useState(tx?.name ?? '');
-  const [amount,     setAmount]     = useState(tx ? (toMajor(tx.baseAmountMinor)).toString() : '');
+  const [amount,     setAmount]     = useState(tx ? (toMajor(tx.baseMoney.amountMinor)).toString() : '');
   const [type,       setType]       = useState<'income' | 'expense' | 'transfer'>(tx ? (tx.type as 'income' | 'expense' | 'transfer') : 'expense');
   const [categoryId, setCategoryId] = useState(tx?.category?.id ?? '');
   
@@ -72,7 +74,7 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
   const [toAccountId,setToAccountId]= useState(tx?.toAccountId ?? '');
   const [goalId,     setGoalId]     = useState(tx?.goalId ?? '');
   const [loanId,     setLoanId]     = useState(tx?.loanId ?? '');
-  const [interestAmount, setInterestAmount] = useState(tx && tx.interestMinor !== undefined && tx.interestMinor !== null ? (toMajor(tx.interestMinor)).toString() : '');
+  const [interestAmount, setInterestAmount] = useState(tx && tx.interestMoney ? (toMajor(tx.interestMoney.amountMinor)).toString() : '');
   const [date,       setDate]       = useState(tx ? new Date(tx.date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10));
   const [note,       setNote]       = useState(tx?.note ?? '');
   const isEdit = Boolean(tx);
@@ -83,7 +85,7 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
     if (loanId && !isEdit) {
       const selectedLoan = loans.find(l => l.id === loanId);
       if (selectedLoan) {
-        const autoInterestMinor = Math.round(selectedLoan.balanceMinor * (selectedLoan.annualRate / 100) / 12);
+        const autoInterestMinor = Math.round(selectedLoan.balanceMoney.amountMinor * (selectedLoan.annualRate / 100) / 12);
         setInterestAmount((toMajor(autoInterestMinor)).toString());
       }
     } else if (!loanId) {
@@ -296,7 +298,7 @@ export function TransactionsClient({
       tx.name?.toLowerCase().includes(q) ||
       tx.category?.name?.toLowerCase().includes(q) ||
       (tx.note && tx.note.toLowerCase().includes(q)) ||
-      String(toMajor(tx.baseAmountMinor)).includes(q)
+      String(toMajor(tx.baseMoney.amountMinor)).includes(q)
     );
   });
   const totalPages = Math.max(1, Math.ceil(filteredTxs.length / PAGE_SIZE));
@@ -437,7 +439,7 @@ export function TransactionsClient({
                   <TransactionRow
                     title={tx.name}
                     subtitle={tx.note ? `${tx.category?.name || 'Uncategorized'} • ${tx.note}` : (tx.category?.name || 'Uncategorized')}
-                    amountMinor={tx.baseAmountMinor}
+                    amountMinor={tx.baseMoney.amountMinor}
                     type={tx.type}
                     icon={
                       <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 shadow-sm" style={{ 

@@ -7,6 +7,7 @@ import { getAccountBalances } from './accounts';
 import type { Category } from '@prisma/client';
 import { z } from 'zod';
 import { mapTransactionToDTO } from '@/lib/mappers/transactions';
+import { mapCategoryToDTO } from '@/lib/mappers/categories';
 
 const PeriodSchema = z.enum(['this-week', 'this-month', 'this-year', 'all', 'all-time']);
 const TypeSchema = z.enum(['income', 'expense', 'transfer', 'savings', 'all']);
@@ -204,13 +205,15 @@ export async function getCategories({ userId, type: inputType }: { userId: strin
   if (!parsed.success) throw new Error('Invalid input');
   const { type } = parsed.data;
 
-  return prisma.category.findMany({
+  const categories = await prisma.category.findMany({
     where: {
       userId,
       ...(type ? { type } : {}),
     },
     orderBy: { name: 'asc' },
   });
+  
+  return categories.map(mapCategoryToDTO);
 }
 
 /* -- Add (Zod-validated) ------------------------------------ */

@@ -10,12 +10,7 @@ import { Plus, CheckCircle2, Trash2, Loader2, X, PiggyBank, Info } from 'lucide-
 import { inflationAdjustedTarget, yearsUntil } from '@/lib/api/inflation';
 import { toMinor, toMajor } from '@/lib/money';
 import { getErrorMessage } from '@/lib/format';
-
-type Goal = {
-  id: string; name: string; category: string;
-  targetAmountMinor: number; currentAmountMinor?: number;
-  deadline: string | null;
-};
+import type { GoalDTO } from '@/lib/mappers/goals';
 
 /* -- Status: fully token-based, no hardcoded hex ------------ */
 function goalStyle(pct: number) {
@@ -62,14 +57,14 @@ function goalStyle(pct: number) {
 }
 
 /* -- Add Goal Modal ----------------------------------------- */
-function GoalModal({ goal, onClose, currency }: { goal?: Goal; onClose: () => void; currency: string }) {
+function GoalModal({ goal, onClose, currency }: { goal?: GoalDTO; onClose: () => void; currency: string }) {
   const router     = useRouter();
   const [, startT] = useTransition();
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
   const [name,          setName]          = useState(goal?.name ?? '');
   const [category,      setCategory]      = useState(goal?.category ?? 'savings');
-  const [targetAmount,  setTargetAmount]  = useState(goal ? String(toMajor(goal.targetAmountMinor)) : '');
+  const [targetAmount,  setTargetAmount]  = useState(goal ? String(toMajor(goal.targetMoney.amountMinor)) : '');
   const [deadline,      setDeadline]      = useState(goal?.deadline ? new Date(goal.deadline).toISOString().slice(0, 10) : '');
   const isEdit = Boolean(goal);
 
@@ -149,18 +144,18 @@ function GoalModal({ goal, onClose, currency }: { goal?: Goal; onClose: () => vo
 }
 
 /* -- Main Client Component ---------------------------------- */
-export function GoalsClient({ goals, currency }: { goals: Goal[], currency: string }) {
+export function GoalsClient({ goals, currency }: { goals: GoalDTO[], currency: string }) {
   const router     = useRouter();
   const [, startT] = useTransition();
   const [showAdd,      setShowAdd]      = useState(false);
-  const [editGoalObj,  setEditGoalObj]  = useState<Goal | null>(null);
+  const [editGoalObj,  setEditGoalObj]  = useState<GoalDTO | null>(null);
   const [celebrating,  setCelebrate]    = useState<string | null>(null);
   const [deletingId,   setDeletingId]   = useState<string | null>(null);
 
-  const totalSaved  = goals.reduce((s, g) => s + (g.currentAmountMinor ?? 0), 0);
-  const totalTarget = goals.reduce((s, g) => s + g.targetAmountMinor,  0);
-  const achieved    = goals.filter(g => (g.currentAmountMinor ?? 0) >= g.targetAmountMinor).length;
-  const almostThere = goals.filter(g => { const p = ((g.currentAmountMinor ?? 0)/g.targetAmountMinor)*100; return p >= 70 && p < 100; }).length;
+  const totalSaved  = goals.reduce((s, g) => s + (g.currentMoney?.amountMinor ?? 0), 0);
+  const totalTarget = goals.reduce((s, g) => s + g.targetMoney.amountMinor,  0);
+  const achieved    = goals.filter(g => (g.currentMoney?.amountMinor ?? 0) >= g.targetMoney.amountMinor).length;
+  const almostThere = goals.filter(g => { const p = ((g.currentMoney?.amountMinor ?? 0)/g.targetMoney.amountMinor)*100; return p >= 70 && p < 100; }).length;
   const overallPct  = totalTarget > 0 ? Math.min(100, Math.round((totalSaved/totalTarget)*100)) : 0;
 
   async function handleDelete(id: string) {
@@ -239,17 +234,17 @@ export function GoalsClient({ goals, currency }: { goals: Goal[], currency: stri
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(300px,1fr))', gap:'1.125rem' }}>
           {goals.map((g, i) => {
             // Guard against division-by-zero when targetAmountMinor is 0
-            const pct  = g.targetAmountMinor > 0
-              ? Math.min(100, Math.round(((g.currentAmountMinor ?? 0) / g.targetAmountMinor) * 100))
+            const pct  = g.targetMoney.amountMinor > 0
+              ? Math.min(100, Math.round(((g.currentMoney?.amountMinor ?? 0) / g.targetMoney.amountMinor) * 100))
               : 0;
             const st   = goalStyle(pct);
-            const left = Math.max(0, g.targetAmountMinor - (g.currentAmountMinor ?? 0));
+            const left = Math.max(0, g.targetMoney.amountMinor - (g.currentMoney?.amountMinor ?? 0));
             const deadlineLabel = g.deadline
               ? new Date(g.deadline).toLocaleDateString('en-GB', { month:'short', year:'numeric' })
               : 'No deadline';
             const yrsLeft = g.deadline ? yearsUntil(g.deadline) : 0;
             const inflTargetMinor = (g.deadline && yrsLeft > 0.25)
-              ? inflationAdjustedTarget(g.targetAmountMinor, yrsLeft)
+              ? inflationAdjustedTarget(g.targetMoney.amountMinor, yrsLeft)
               : null;
 
             return (
@@ -294,17 +289,17 @@ export function GoalsClient({ goals, currency }: { goals: Goal[], currency: stri
                   <div style={{ minWidth:0, flex:1, marginRight:'0.5rem' }}>
                     <div style={{
                       fontFamily:'Space Grotesk,sans-serif',
-                      fontSize: (g.currentAmountMinor ?? 0) > 9_999_99900 ? '1.1rem' : (g.currentAmountMinor ?? 0) > 999_99900 ? '1.25rem' : '1.5rem',
+                      fontSize: (g.currentMoney?.amountMinor ?? 0) > 9_999_99900 ? '1.1rem' : (g.currentMoney?.amountMinor ?? 0) > 999_99900 ? '1.25rem' : '1.5rem',
                       fontWeight:800, color:st.numColor,
                       letterSpacing:'-0.04em', lineHeight:1.1,
                       whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
                     }}>
-                      {fmtAdaptive((g.currentAmountMinor ?? 0), currency)}
+                      {fmtAdaptive((g.currentMoney?.amountMinor ?? 0), currency)}
                     </div>
                     <div style={{ fontSize:'0.7rem', color:'var(--color-text-secondary)', marginTop:'0.2rem', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                      of {fmtAdaptive(g.targetAmountMinor, currency)}
+                      of {fmtAdaptive(g.targetMoney.amountMinor, currency)}
                     </div>
-                    {inflTargetMinor && inflTargetMinor > g.targetAmountMinor && (
+                    {inflTargetMinor && inflTargetMinor > g.targetMoney.amountMinor && (
                       <div
                         title={`At Kenya's ~6.8% annual inflation (KNBS), you'll need ${fmtAdaptive(inflTargetMinor, currency)} in today's money to match your target by ${deadlineLabel}.`}
                         style={{ display:'inline-flex', alignItems:'center', gap:'0.25rem', marginTop:'0.3rem',
