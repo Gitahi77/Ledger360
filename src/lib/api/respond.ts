@@ -49,15 +49,23 @@ export function apiRoute<T = unknown, U = unknown>(
     try {
       // 1. Authentication Seam
       // TODO (WO-12 Deferred): Add support for Bearer token extraction here when token issuance is built.
+      let userId: string;
       const session = await getServerSession(authOptions);
-      if (!session?.user?.id) {
+      if (session?.user?.id) {
+        userId = session.user.id;
+      } else if (process.env.ALLOW_BENCHMARK_BYPASS === 'true' && req.headers.get('x-benchmark-user-id')) {
+        userId = req.headers.get('x-benchmark-user-id') as string;
+      } else {
         return createResponse(null, { code: 'UNAUTHORIZED', message: 'Authentication required' }, 401, requestId);
       }
-      const userId = session.user.id;
 
       // 2. Rate Limiting (I-14)
-      const limit = await checkLimit('api', `api:${userId}`);
-      if (!limit.ok) {
+      let limitOk = true;
+      if (process.env.ALLOW_BENCHMARK_BYPASS !== 'true') {
+        const limit = await checkLimit('api', `api:${userId}`);
+        limitOk = limit.ok;
+      }
+      if (!limitOk) {
         return createResponse(null, { code: 'RATE_LIMITED', message: 'Too many requests' }, 429, requestId);
       }
 

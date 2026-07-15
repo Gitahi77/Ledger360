@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { v4 as uuidv4 } from 'uuid';
 import { hash } from 'bcryptjs';
 import { prisma } from '../../src/lib/prisma';
@@ -57,13 +58,11 @@ async function seedPersona(name: string, config: typeof PERSONAS.light) {
         accountId: account.id,
         categoryId: cat.id,
         name: `Transaction ${t}`,
-        amountMinor: Math.floor(Math.random() * 100000),
         baseAmountMinor: Math.floor(Math.random() * 100000),
         type,
         currency: 'KES',
         date: randomDate(new Date(2020, 0, 1), new Date()),
         createdAt: new Date(),
-        updatedAt: new Date(),
       });
     }
 

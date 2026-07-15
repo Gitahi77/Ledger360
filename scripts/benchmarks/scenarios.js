@@ -35,19 +35,17 @@ export const options = {
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000';
 
 function getHeaders() {
-  // We mock a session cookie or auth header. For real tests, this needs a valid token.
   return {
     headers: {
       'Content-Type': 'application/json',
       'x-request-id': `k6-${Math.floor(Math.random() * 1000000)}`,
-      // For testing, we might need a test API key or a bypass if we are hitting API routes directly
+      'x-benchmark-user-id': 'cmrmakiuc01n5m8hqj2c4jd8m'
     },
   };
 }
 
 export function dashboardRead() {
-  // Hitting an API route for dashboard data (or a server component page)
-  const res = http.get(`${BASE_URL}/api/dashboard`, getHeaders());
+  const res = http.get(`${BASE_URL}/api/v1/net-worth`, getHeaders());
   
   check(res, {
     'status is 200': (r) => r.status === 200,
@@ -57,14 +55,15 @@ export function dashboardRead() {
 
 export function transactionWrite() {
   const payload = JSON.stringify({
-    accountId: 'acc-123',
-    categoryId: 'cat-456',
-    amountMinor: 5000,
-    date: new Date().toISOString(),
+    accountId: 'cmrmakpy401okm8hq7n12i6bl',
+    categoryId: 'cmrmakizd01n6m8hq23gzhng7',
+    baseAmountMinor: 5000,
+    type: 'expense',
+    date: '2026-07-15',
     name: 'Grocery Shopping',
   });
 
-  const res = http.post(`${BASE_URL}/api/transactions`, payload, getHeaders());
+  const res = http.post(`${BASE_URL}/api/v1/transactions`, payload, getHeaders());
   
   check(res, {
     'status is 200 or 201': (r) => r.status === 200 || r.status === 201,
@@ -72,7 +71,7 @@ export function transactionWrite() {
 }
 
 export function reportingQueries() {
-  const res = http.get(`${BASE_URL}/api/reports?type=cashflow&timeframe=ytd`, getHeaders());
+  const res = http.get(`${BASE_URL}/api/v1/transactions?limit=100`, getHeaders());
   
   check(res, {
     'status is 200': (r) => r.status === 200,

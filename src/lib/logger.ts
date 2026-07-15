@@ -47,6 +47,7 @@ class Logger {
       message: payload.message,
       metadata: payload.metadata,
       error: errorDetails,
+      ...Object.fromEntries(Object.entries(payload).filter(([k]) => !['level', 'timestamp', 'environment', 'requestId', 'userId', 'component', 'action', 'durationMs', 'outcome', 'errorCode', 'message', 'metadata', 'error'].includes(k)))
     };
 
     // Remove undefined fields
