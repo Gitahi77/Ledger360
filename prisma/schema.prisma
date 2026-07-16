@@ -182,6 +182,7 @@ model Transaction {
   @@index([userId, date(sort: Desc)])
   @@index([accountId])
   @@index([categoryId])
+  @@index([userId, type, accountId])
 }
 
 model Budget {

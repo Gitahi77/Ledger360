@@ -3,12 +3,6 @@ import { check, sleep } from 'k6';
 
 export const options = {
   scenarios: {
-    dashboard_read_heavy: {
-      executor: 'constant-vus',
-      vus: 10,
-      duration: '30s',
-      exec: 'dashboardRead',
-    },
     transaction_write_heavy: {
       executor: 'constant-arrival-rate',
       rate: 20,
@@ -18,17 +12,10 @@ export const options = {
       maxVUs: 50,
       exec: 'transactionWrite',
     },
-    reporting_complex_queries: {
-      executor: 'shared-iterations',
-      vus: 5,
-      iterations: 20,
-      maxDuration: '30s',
-      exec: 'reportingQueries',
-    },
   },
   thresholds: {
-    http_req_duration: ['p(95)<300', 'p(99)<600'], // 95% of requests should be below 300ms
-    http_req_failed: ['rate<0.01'], // less than 1% errors
+    http_req_duration: ['p(95)<300', 'p(99)<600'], 
+    http_req_failed: ['rate<0.01'], 
   },
 };
 
@@ -42,15 +29,6 @@ function getHeaders() {
       'x-benchmark-user-id': 'cmrjag4x4000004joej6vkb5p'
     },
   };
-}
-
-export function dashboardRead() {
-  const res = http.get(`${BASE_URL}/api/v1/net-worth`, getHeaders());
-  
-  check(res, {
-    'status is 200': (r) => r.status === 200,
-  });
-  sleep(1);
 }
 
 export function transactionWrite() {
@@ -68,13 +46,4 @@ export function transactionWrite() {
   check(res, {
     'status is 200 or 201': (r) => r.status === 200 || r.status === 201,
   });
-}
-
-export function reportingQueries() {
-  const res = http.get(`${BASE_URL}/api/v1/transactions?limit=100`, getHeaders());
-  
-  check(res, {
-    'status is 200': (r) => r.status === 200,
-  });
-  sleep(2);
 }

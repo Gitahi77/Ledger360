@@ -3,20 +3,17 @@
 As Ledger360 users accumulate years of financial history, data must be gracefully aged to protect performance and storage costs without compromising the ledger's integrity.
 
 ## Hot Data
-**Definition:** Active, frequently queried records.
-**Age:** Last 12 months.
-**Strategy:** Kept in primary Postgres indexes. Readily available for UI rendering, dashboards, and charts.
+**Definition:** Current month, frequently accessed.
+**Strategy:** Kept in memory or cache where applicable. Optimizes immediate dashboard rendering and validation.
 
 ## Warm Data
-**Definition:** Historical records accessed occasionally for tax reporting or year-over-year comparisons.
-**Age:** 1–5 years.
-**Strategy:** Remains in primary Postgres. May be excluded from default "Recent" queries. Subject to table partitioning strategies as volume grows.
+**Definition:** Current year.
+**Strategy:** Stored in primary Postgres with comprehensive indexes. Quickly available for year-to-date reporting and recent search.
 
 ## Cold Data
-**Definition:** Legacy historical records.
-**Age:** 5+ years.
-**Strategy:** Shifted to cold storage (e.g., compressed JSON payloads or a dedicated archival database). Not loaded into live UI unless explicitly requested via an asynchronous "Retrieve History" action.
+**Definition:** Older years.
+**Strategy:** Archive optimized. Shifted to slower storage or compressed formats as it is rarely accessed except for explicit historical lookups.
 
-## Archived Data
-**Definition:** User deleted or sunsetted data.
-**Strategy:** Offered as an explicit local export format (CSV/JSON), followed by a hard-delete from active production clusters to enforce data minimization.
+## Historical Data
+**Definition:** Read-only legacy data.
+**Strategy:** Partition eligible. Different ages of financial data have different access patterns, making this a candidate for table partitioning (e.g., in Phase 4F), but only if empirical evidence justifies the complexity.
