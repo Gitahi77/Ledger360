@@ -82,9 +82,20 @@ Every work order must include:
 **Deliverables:** Top 20 slow endpoints, slow queries, payloads, N+1 offenders, expensive aggregations, memory consumers.
 **Output:** Optimization backlog ranked by impact.
 
-## Phase 4B: Database Engineering
-Everything justified with EXPLAIN ANALYZE. Includes Index audit, Composite/Partial/Covering indexes, Materialized views, Summary tables, Cursor pagination, Vacuum analysis, Connection pool tuning, Search strategy evaluation (FTS/Typesense/Meilisearch).
-**Exit:** Every optimization measured.
+## Phase 4B: Database Engineering & Data Access Locality
+Everything justified with EXPLAIN ANALYZE.
+
+### Investigation: Data Access Locality (Working-Set Reduction)
+Evaluate whether endpoints can reduce the amount of historical data read by using:
+- Temporal filtering
+- Cursor pagination
+- Bounded reporting windows
+- Workload-specific query strategies
+
+Distinguish clearly between **validation workloads**, which require exact current state and cannot arbitrarily limit history, and **reporting or browsing workloads**, which can safely operate on bounded date ranges or paginated datasets. Document workload classification for each hotspot before selecting an optimization strategy.
+
+Includes Index audit, Composite/Partial/Covering indexes, Materialized views, Summary tables, Cursor pagination, Vacuum analysis, Connection pool tuning, Search strategy evaluation (FTS/Typesense/Meilisearch).
+**Exit:** Every optimization measured and workload classified.
 
 ## Phase 4C: Backend Platform Optimization
 **Purpose:** Make APIs efficient and stable. (No frontend work here).
@@ -155,6 +166,7 @@ Testing matures alongside the platform:
 - **Dependency Governance:** `Candidate` → `Approved` → `Core` → `Deprecated` → `Removal Candidate` → `Removed`
 - **Feature Lifecycle:** `Idea` → `Experimental` → `Beta` → `GA` → `Deprecated` → `Archived` → `Deleted`
 - **Data Classification:** `Public` → `Internal` → `Confidential` → `Financial` → `PII` → `Highly Sensitive`
+- **Financial Data Lifecycle:** `Hot Data (Current month)` → `Warm Data (Current year)` → `Cold Data (Older years)` → `Historical Data (Read-only/Partition Eligible)`
 
 ## Appendix C: Release Versioning & Operations
 - **Release Strategy:** `Major` → `Minor` → `Patch` → `Hotfix` → `LTS`

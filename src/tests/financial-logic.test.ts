@@ -15,6 +15,18 @@ vi.mock('@/lib/queries/accounts', () => ({
   getAccountBalances: sharedGetAccountBalances
 }));
 
+vi.mock('@/lib/repositories/accounts', async (importOriginal) => {
+  const actual = await importOriginal<any>();
+  return {
+    ...actual,
+    getSingleAccountBalance: async (userId: string, accountId: string) => {
+      const res = await sharedGetAccountBalances(userId);
+      const acc = res.find((a: any) => a.id === accountId);
+      return acc ? { ...acc, balanceMinor: acc.balanceMoney?.amountMinor ?? acc.balanceMinor } : null;
+    }
+  };
+});
+
 vi.mock('@/lib/actions/accounts', () => ({
   getAccountBalances: async (...args: any[]) => ({ success: true, data: await sharedGetAccountBalances(...args) })
 }));

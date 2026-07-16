@@ -78,9 +78,8 @@ export async function addTransaction(envelope: { idempotencyKey?: string; payloa
       
       // Overdraft prevention and currency validation
       let warning: string | undefined;
-      const { BalanceService } = await import('../domain/services/BalanceService');
-      const balances = await BalanceService.getEnrichedAccounts(user.id);
-      const acc = balances.find(a => a.id === accountId);
+      const { getSingleAccountBalance } = await import('../repositories/accounts');
+      const acc = await getSingleAccountBalance(user.id, accountId);
       
       // Fallback to KES if no currency available on user or account
       const currency = acc?.currency || user.currency || 'KES';
@@ -119,8 +118,10 @@ export async function addTransaction(envelope: { idempotencyKey?: string; payloa
           resolvedCategoryId = cat.id;
         }
 
+        const { categoryHint, ...prismaData } = persistencePayload;
+
         const createdTx = await createTransactionRecord(tx, {
-          ...persistencePayload,
+          ...prismaData,
           categoryId: resolvedCategoryId,
           userId: user.id
         });
