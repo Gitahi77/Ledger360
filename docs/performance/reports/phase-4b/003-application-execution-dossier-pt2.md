@@ -1,85 +1,46 @@
 # Phase 4B: Request Scope Reduction & SQL Consolidation
 
-## 1. Context & Objective
-Following the first optimization experiment (composite index), we implemented "Request Scope Reduction & SQL Consolidation" exactly as defined in the Phase 4B entry gate. 
+### Objective
+Eliminate the "Full-World Recomputation" in `BalanceService.getEnrichedAccounts()` during transaction writes, replacing it with `AccountsRepository.getSingleAccountBalance(accountId)` to validate overdrafts for only the affected account.
 
-**Objective**: Eliminate the "Full-World Recomputation" in `BalanceService.getEnrichedAccounts()` during transaction writes, replacing it with `AccountsRepo.getSingleAccountBalance(accountId)` to validate overdrafts for only the affected account.
+### Baseline
+- **p95 Latency:** ~45.61 s (from previous dossier)
+- **SQL Execution Time:** ~5.6 ms
+- **Event Loop Stall:** Up to 36 seconds.
 
-## 2. Implementation & Parity Verification
-We refactored `addTransaction` to bypass the $O(N)$ multi-account aggregation loop. 
-- **Parity Check**: Before running any benchmarks, we ran `scripts/parity-check.ts` to guarantee financial correctness.
-- **Result**: `19/19 match`. `getSingleAccountBalance` calculates exactly the same balances as `getEnrichedAccounts`. Financial integrity is perfectly preserved.
+### Evidence
+- The isolated concurrent benchmark (`write_only.js`) running only `POST /api/v1/transactions` with 50 concurrent VUs at 20 iterations/sec for 30s.
+- With default Prisma pool: p95 = 48.55s, 41 iterations complete.
+- With `connection_limit=50`: p95 = 49.05s, 65 iterations complete. Event loop still starved for 51 seconds.
+- Prisma was issuing 150 parallel `SUM` aggregations simultaneously under 50 VU load, entirely saturating DB CPU despite scope reduction.
 
-## 3. Empirical Verification (Isolated Benchmark)
-To eliminate interference from read-heavy endpoints like `/net-worth`, we created an isolated benchmark (`write_only.js`) running only `POST /api/v1/transactions` with 50 concurrent VUs at 20 iterations/sec for 30s.
+### Change
+- Refactored `addTransaction` to bypass `getEnrichedAccounts()`.
+- Introduced `AccountsRepository.getSingleAccountBalance(accountId)` using `$transaction` to fetch only the required account sums.
 
-### Run 1: Default Prisma Connection Pool
-- **p95 Latency**: 48.55s
-- **Iterations Complete**: 41
-- **Observation**: Severe query queuing at the Prisma layer. Event loop starved as 50 requests concurrently awaited 150 parallel `SUM` aggregations.
+### Result
+- **p95 Latency:** 49.05 s
+- **Throughput:** ~2.1 iters/sec
+- Scope reduction was insufficient to resolve the bottleneck because the query remains mathematically $O(N)$ with respect to account history depth. 
 
-### Run 2: `connection_limit=50` Enabled
-- **p95 Latency**: 49.05s
-- **Iterations Complete**: 65
-- **Observation**: Even with a maximized connection pool, the `http_req_waiting` time spiked from 5.97s to 51s under sustained load.
+### Regression Check
+- `parity-check.ts` execution confirmed 100% financial accuracy (19/19 accounts perfectly matched). Financial integrity preserved.
 
-## 4. Root Cause Analysis
-The bottleneck is not connection starvation—it is the algorithmic complexity of the underlying database operations.
+### Complexity Budget
+| Complexity Type | Current | Proposed |
+| --------------- | ------- | -------- |
+| Runtime         | O(N)    | O(N)     |
+| State           | 1 source| 1 source |
+| Operational     | Low     | Low      |
+| Rollback        | Low     | Low      |
+| Lifetime        | Permanent| Permanent|
 
-Even though `getSingleAccountBalance` is scoped to one account, it still executes:
-```typescript
-const [txSums, transfersOut, transfersIn] = await Promise.all([ ... ])
-```
-This forces PostgreSQL to scan and `SUM()` every historical row for that account on *every single write*. 
+### Rollback
+Revert `src/lib/actions/transactions.ts` to use `BalanceService.getEnrichedAccounts(userId)`. Not recommended, as the current change correctly isolated validation to the affected account.
 
-Under a load of 50 concurrent writers, this equates to 150 parallel full-history aggregations hitting PostgreSQL simultaneously. The database CPU and Prisma engine become completely saturated. 
+### Decision
+**Keep:** The change is kept because it properly narrows request scope (Optimization Step 2), reducing unnecessary multi-account aggregation.
+**Escalate:** The empirical evidence shows this is not enough. Proceed to history-depth and cardinality scaling benchmarks to formally trigger an ADR for state changes.
 
-**Conclusion**: As identified in the roadmap, an index only tells PostgreSQL *where* to find rows—it does not change the fact that the application is asking it to compute the entire history every time.
-
-## 5. Next Steps
-The evidence proves that algorithmic optimization (`SUM` over a single account) is insufficient for high concurrency workloads. The architecture cannot scale if validation requires `O(N)` historical queries.
-
-We are ready to proceed to the next architectural phase:
-**Phase 4B Candidate: Data Access Locality / Persisted Balances**
-We must materialize the `balanceMinor` directly onto the `Account` table, shifting validation from $O(N)$ computation to an $O(1)$ read.
-
----
-
-### Definition of Done
-
-```text
-WORK ORDER COMPLETE
-
-Root cause proven
-YES: O(N) historical aggregation per request saturates DB CPU under load.
-
-Regression test added
-YES: parity-check.ts confirms 100% financial accuracy (19/19 match).
-
-Verification Evidence
-----------------
-Vitest (Parity Check)
-Command: npx tsx src/scripts/parity-check.ts
-Summary: MATCH: 19/19 accounts show identical balances between full recomputation and single-account SQL consolidation.
-
-----------------
-k6 (Isolated Write Benchmark - 50 VUs)
-Command: k6 run scripts/benchmarks/write_only.js
-Exit Code: 104 (Threshold crossed)
-Summary: p95=49.05s, 65 total iterations complete.
-
-Architecture review completed
-YES
-
-Scalability review completed
-YES
-
-Remaining technical debt
-- `getAccounts` and `/net-worth` still invoke `BalanceService.getEnrichedAccounts`.
-- Validation is still computationally bound to full history.
-
-Confidence
-Root Cause: 100%
-Fix (Financial Parity): 100%
-Deployment Confidence: Proceed to Persisted Balances.
-```
+### Next Experiment
+Execute `history-depth-benchmark.ts` and `account-cardinality-benchmark.ts` to mathematically prove the performance degradation scales with transaction count per account.
