@@ -28,7 +28,7 @@ async function setupTestData(accountsCount: number, txPerAccount: number) {
     id: `test-card-account-${i}`,
     userId: TEST_USER_ID,
     name: `Card Account ${i}`,
-    type: 'CHECKING',
+    type: 'CHECKING' as any,
     currency: 'KES'
   }));
   await prisma.account.createMany({ data: accountsData });

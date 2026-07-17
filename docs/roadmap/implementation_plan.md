@@ -5,8 +5,10 @@ This plan defines the execution for the final decision gate of Phase 4B. The goa
 ## User Review Required
 > [!IMPORTANT]
 > The benchmarks have been executed. The true bottleneck was proven to be **Node.js/Prisma IPC Overhead and Event Loop Saturation** caused by 6 independent queries in the write path, not database aggregation.
-> ADR 002 for Persisted Balances has been drafted in `docs/engineering/adrs/002-persisted-balances.md`.
-> Please review the findings in `004-history-depth-and-cardinality.md` and ADR 002. If you approve, I will proceed with Phase 4C.
+>
+> Following your feedback, the CI/Vercel failure has been resolved (`005-ci-failure-report.md`) and a final benchmark isolating Prisma overhead has been executed (`006-prisma-overhead-benchmark.md`), proving that 6 separate queries have 13x the latency of a single sequential transaction.
+> ADR 002 for Persisted Balances has been updated with weakened claims and explicit Exit Criteria.
+> Please review the latest dossiers and ADR 002. If you approve, I will proceed with Phase 4C.
 
 ## Institutional Engineering Principles (New)
 

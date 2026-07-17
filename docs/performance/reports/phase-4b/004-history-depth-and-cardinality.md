@@ -19,14 +19,12 @@ Executed k6 script with 10 VUs for 10 seconds against an account with varying tr
 | 50000        | 38.55ms     | 3521               | 1               | 98.83%     |
 
 ### Evidence (Cardinality Benchmark)
-Failed due to Neon Serverless connection closures during massive test data seeding (50 accounts * 100 txs = 5000 individual `createMany` transactions). The DB timed out attempting to serialize the setup workload. However, the History Depth benchmark provides sufficient proof for our root cause.
+Inconclusive. The test environment could not generate the required dataset. Neon Serverless connections closed during massive test data seeding. This benchmark remains open but is not required to evaluate the history depth hypothesis.
 
 ### Root Cause Proof
-The history depth benchmark proves that latency is **flat ($O(1)$ scaling)** with respect to transaction volume. PostgreSQL executes the `SUM` over 50,000 rows in <5ms, supported by a 98.8% buffer cache hit ratio. 
+The history depth benchmark indicates that within the tested dataset sizes (100–50,000 rows), PostgreSQL aggregation remained effectively constant and did not materially contribute to end-to-end latency. Supported by a 98.8% buffer cache hit ratio, the `SUM` executes in <5ms.
 
-Therefore, the $O(N)$ database query is **not** the bottleneck.
-
-The true bottleneck is **Connection Pool Saturation & Node.js Event Loop Starvation**. 
+The dominant remaining bottleneck appears to be Node.js execution together with repeated Prisma client interactions during the synchronous write path. 
 Currently, `addTransaction` executes 6 separate Prisma queries per request:
 1. `account.findFirst` (inside validation)
 2. `transaction.groupBy` (inside validation)
@@ -35,7 +33,7 @@ Currently, `addTransaction` executes 6 separate Prisma queries per request:
 5. `transaction.create` (inside write transaction)
 6. `auditLog.create` (inside write transaction)
 
-Under high concurrency (50 VUs), this floods the Prisma Rust Engine with 300 queries per second over IPC (Inter-Process Communication). This massive queued workload completely stalls the Node.js Event Loop, leading to 50-second latencies.
+Under high concurrency (50 VUs), this floods the system with up to 300 queries per second, causing severe event loop contention and IPC serialization bottlenecks.
 
 ### Change Decision
 We have exhausted the Work Elimination Hierarchy:
@@ -45,8 +43,9 @@ We have exhausted the Work Elimination Hierarchy:
 4. ✅ The bottleneck is officially architectural (Multi-query validation on write path).
 
 ### Decision
-**PROCEED TO PERSISTED BALANCES (ADR REQUIRED)**. 
-We must eliminate the 4 validation queries by persisting the balance on the `Account` model, allowing `addTransaction` to perform exactly 1 read and 1 write transaction.
+**DRAFT THE ADR FOR PERSISTED BALANCES**. 
+The evidence suggests persisted balances are the leading architectural candidate, but remaining hypotheses regarding exact Prisma overhead must be eliminated before approving a permanent second source of truth. 
 
 ### Next Steps
-Draft the ADR for Persisted Balances (Phase 4C).
+1. Draft ADR 002.
+2. Run final benchmark isolating pure Prisma interaction overhead.
