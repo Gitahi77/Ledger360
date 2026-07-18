@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import type { Account, Prisma } from '@prisma/client';
 import { withMetric } from '../domain/metrics-proxy';
+import { Money } from '../domain/money/Money';
 import { AccountAggregator } from '../domain/calculators/AccountAggregator';
 import { MoneyFormatter } from '../domain/money/MoneyFormatter';
 import type { EnrichedAccountData } from '../domain/services/BalanceService';
@@ -26,57 +27,30 @@ export const getSingleAccountBalance = withMetric('AccountsRepository', 'getSing
   
   if (!acc) return null;
 
-  const txWhere = {
-    userId,
-    accountId,
-    NOT: [
-      { name: { contains: 'VOIDED', mode: 'insensitive' as const } },
-      { name: { contains: 'pending', mode: 'insensitive' as const } }
-    ]
-  };
-
-  // Step 2: SQL Consolidation within the reduced scope.
-  // We consolidate Income/Expense into a single `groupBy` and fetch transfers concurrently.
-  const [txSums, transfersOut, transfersIn] = await Promise.all([
-    prisma.transaction.groupBy({
-      by: ['type'],
-      where: txWhere,
-      _sum: { baseAmountMinor: true }
-    }),
-    prisma.transfer.aggregate({
-      where: { userId, fromAccountId: accountId },
-      _sum: { amountMinor: true }
-    }),
-    prisma.transfer.aggregate({
-      where: { userId, toAccountId: accountId },
-      _sum: { baseAmountMinor: true }
-    })
-  ]);
-
-  const totalIncomeMinor = Number(txSums.find(t => t.type === 'income')?._sum?.baseAmountMinor ?? 0);
-  const totalExpenseMinor = Number(txSums.find(t => t.type === 'expense')?._sum?.baseAmountMinor ?? 0);
-  const totalTransfersOutMinor = Number(transfersOut._sum?.amountMinor ?? 0);
-  const totalTransfersInMinor = Number(transfersIn._sum?.baseAmountMinor ?? 0);
-
+  // READ PATH: Denormalized Projection (O(1))
+  // The balance is now persisted directly on the account table.
   const summary = {
     accountId: acc.id,
     currency: acc.currency,
     openingMinor: Number(acc.openingMinor),
-    totalIncomeMinor,
-    totalExpenseMinor,
-    totalTransfersInMinor,
-    totalTransfersOutMinor,
+    // We mock the breakdown components because they are no longer computed individually.
+    // In the future, the UI may need them or we can drop them.
+    totalIncomeMinor: 0,
+    totalExpenseMinor: 0,
+    totalTransfersInMinor: 0,
+    totalTransfersOutMinor: 0,
   };
 
-  const balanceMoney = AccountAggregator.aggregate(summary);
+  // We explicitly override the aggregate result with the canonical persisted balance
+  const balanceMoney = Money.fromMinor(Number(acc.balanceMinor), acc.currency);
 
   return {
     ...acc,
     openingMinor: Number(acc.openingMinor),
-    balanceMinor: balanceMoney.minorUnits,
+    balanceMinor: Number(acc.balanceMinor),
     displayBalance: MoneyFormatter.format(balanceMoney),
-    isOverdrawn: balanceMoney.isNegative(),
-    availableBalanceMinor: balanceMoney.minorUnits,
+    isOverdrawn: acc.balanceMinor < 0n,
+    availableBalanceMinor: Number(acc.balanceMinor),
   };
 });
 

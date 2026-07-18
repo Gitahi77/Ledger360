@@ -98,9 +98,15 @@ export async function deleteTransfer(envelope: { idempotencyKey?: string; payloa
         const transfer = await tx.transfer.findFirst({ where: { id: validId, userId: user.id } });
         if (!transfer) throw new Error('Transfer not found or already deleted');
 
-        await tx.account.update({ where: { id: transfer.fromAccountId! }, data: { updatedAt: new Date() } });
+        await tx.account.update({ 
+          where: { id: transfer.fromAccountId! }, 
+          data: { balanceMinor: { increment: transfer.amountMinor }, updatedAt: new Date() } 
+        });
         if (transfer.toAccountId) {
-          await tx.account.update({ where: { id: transfer.toAccountId }, data: { updatedAt: new Date() } });
+          await tx.account.update({ 
+            where: { id: transfer.toAccountId }, 
+            data: { balanceMinor: { decrement: transfer.amountMinor }, updatedAt: new Date() } 
+          });
         }
 
         if (transfer.loanId) {

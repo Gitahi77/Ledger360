@@ -32,28 +32,30 @@ export class TransferService {
     // 2. Orchestrate within an atomic Database Transaction
     const result = await prisma.$transaction(async (tx) => {
       
-      // Step A: Optimistic Locking via row-level write lock on the Source Account
-      // This forces any concurrent transfers from the same account to queue up sequentially.
+      // Step A & C: Optimistic Locking via row-level write lock & Balance Update
       const fromAccount = await tx.account.update({
         where: { id: req.fromAccountId, userId: req.userId },
-        data: { updatedAt: new Date() } // Trigger lock
+        data: { balanceMinor: { decrement: req.amountMinor }, updatedAt: new Date() }
       });
 
       const toAccount = req.toAccountId 
-        ? await tx.account.update({ where: { id: req.toAccountId, userId: req.userId }, data: { updatedAt: new Date() } })
+        ? await tx.account.update({ 
+            where: { id: req.toAccountId, userId: req.userId }, 
+            data: { balanceMinor: { increment: req.amountMinor }, updatedAt: new Date() } 
+          })
         : null;
 
       // Step B: Validation
       TransferValidator.validateAccounts(fromAccount, toAccount);
 
-      // Step C: Check Overdraft Rules (must compute derived balance inside the locked transaction)
-      let currentSourceBalance = 0;
+      // Check Overdraft Rules
       if (!TransferPolicy.canOverdraft(fromAccount)) {
-        currentSourceBalance = await this.computeAccountBalance(tx, req.fromAccountId, req.userId, Number(fromAccount.openingMinor));
-        if (currentSourceBalance - req.amountMinor < 0) {
-          throw new Error(`Not enough money in ${fromAccount.name}. Available: ${fromAccount.currency} ${toMajor(currentSourceBalance)}.`);
+        if (fromAccount.balanceMinor < 0n) {
+          throw new Error(`Not enough money in ${fromAccount.name}. Available: ${fromAccount.currency} ${toMajor(Number(fromAccount.balanceMinor) + req.amountMinor)}.`);
         }
       }
+      
+      const currentSourceBalance = Number(fromAccount.balanceMinor) + req.amountMinor;
 
       // Step D: Calculate Loan Repayment if applicable
       let finalInterestMinor = 0;
@@ -148,23 +150,5 @@ export class TransferService {
     return result;
   }
 
-  /**
-   * Computes the derived balance directly from the ledger within a transaction.
-   * This guarantees consistent reads under our write-lock.
-   */
-  private static async computeAccountBalance(tx: Prisma.TransactionClient, accountId: string, userId: string, openingMinor: number): Promise<number> {
-    const [inc, exp, transOut, transIn] = await Promise.all([
-      tx.transaction.aggregate({ where: { accountId, userId, type: 'income' }, _sum: { baseAmountMinor: true } }),
-      tx.transaction.aggregate({ where: { accountId, userId, type: 'expense' }, _sum: { baseAmountMinor: true } }),
-      tx.transfer.aggregate({ where: { fromAccountId: accountId, userId }, _sum: { amountMinor: true } }),
-      tx.transfer.aggregate({ where: { toAccountId: accountId, userId }, _sum: { baseAmountMinor: true } })
-    ]);
-
-    const totalInc = Number(inc._sum.baseAmountMinor ?? 0);
-    const totalExp = Number(exp._sum.baseAmountMinor ?? 0);
-    const totalTxOut = Number(transOut._sum.amountMinor ?? 0);
-    const totalTxIn = Number(transIn._sum.baseAmountMinor ?? 0);
-
-    return openingMinor + totalInc - totalExp + totalTxIn - totalTxOut;
-  }
+  // O(N) computeAccountBalance was removed as part of Phase 4C
 }

@@ -50,7 +50,7 @@ describe('Loan Disbursement (Received Funds)', () => {
     
     // Mock the single account
     vi.mocked(prisma.account.findMany).mockResolvedValue([
-      { id: 'acc-1', type: 'bank', currency: 'KES', userId: 'user-1', name: 'Bank', openingMinor: 0, archived: false, createdAt: new Date() } as any
+      { id: 'acc-1', type: 'bank', currency: 'KES', userId: 'user-1', name: 'Bank', openingMinor: 0, balanceMinor: BigInt(LOAN_AMOUNT), allowNegativeBalance: false, archived: false, createdAt: new Date() } as any
     ]);
 
     // Mock transfers for getAccountBalances
