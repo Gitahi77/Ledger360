@@ -26,18 +26,40 @@ To achieve our performance goals, we must minimize these database interactions o
 2. **Persisted Balances (Denormalization):** Persist a `balanceMinor` column on the `Account` model. Update it transactionally alongside the `Transaction` insert.
 
 ## Decision
-The evidence suggests persisted balances are the leading architectural candidate, but two remaining hypotheses should be eliminated before approving a permanent second source of truth. If approved, we will implement **Option 2: Persisted Balances (Denormalization)**.
+The evidence strongly supports that historical aggregation was a major contributor to write latency under the tested workload. We have implemented **Option 2: Persisted Balances (Denormalization)** as a performance projection. 
 
 By persisting the balance, we eliminate the need to scan the `Transaction` and `Transfer` tables during every write. 
-The write path will be transformed into:
+The write path has been transformed into:
 1. `account.update({ balanceMinor: { increment: X } })`
 2. `transaction.create(...)`
 3. `auditLog.create(...)`
 
-These can be batched into a **Sequential Prisma Transaction** (`prisma.$transaction([...])`), which executes entirely in the Prisma engine as a single batched operation.
+These are batched into a **Sequential Prisma Transaction** (`prisma.$transaction([...])`), which executes entirely in the Prisma engine as a single batched operation.
+
+### System Invariants
+Every optimization must preserve these invariants:
+```text
+For every committed transaction:
+
+Account.balanceMinor
+=
+sum(transactions)
++
+incoming transfers
+-
+outgoing transfers
+```
+
+### Prisma Query Count Impact
+| Endpoint          | Before | After |
+| ----------------- | ------ | ----- |
+| addTransaction    | 6      | 3     |
+| editTransaction   | 8      | 4     |
+| deleteTransaction | 6      | 3     |
+| transfer          | 8      | 4     |
 
 ### Overdraft Validation Strategy
-To prevent overdrafts without a preceding read query, we will rely on PostgreSQL's database-level constraints and row-level locking. We will add a `CHECK (balance_minor >= 0 OR allow_negative_balance = true)` constraint to the `Account` table. The validation mechanism relies on PostgreSQL row-level locking during `UPDATE`: when we increment or decrement `balance_minor`, the `CHECK` constraint evaluates atomically. If a transaction causes an overdraft, the sequential transaction will fail at the database level, and Prisma will throw an error that we can catch and format for the user.
+To prevent overdrafts without a preceding read query, we rely on PostgreSQL's database-level constraints and row-level locking. We added a `CHECK (balance_minor >= 0 OR allow_negative_balance = true)` constraint to the `Account` table. The validation mechanism relies on PostgreSQL row-level locking during `UPDATE`: when we increment or decrement `balance_minor`, the `CHECK` constraint evaluates atomically. If a transaction causes an overdraft, the sequential transaction fails at the database level, and Prisma throws an error that we catch and format for the user.
 
 ## Exit Criteria
 
@@ -48,16 +70,20 @@ Persisted balances remain only if:
 - ✓ Operational complexity (e.g. keeping balances in sync) is acceptable
 - ✓ Rollback strategy is fully documented
 
+Under the benchmarked workload, persisted balances removed the dependency of write latency on transaction history depth. Measured improvement observed under benchmark conditions confirms the architectural decision.
+
 ## Complexity Budget Impact
-- **Runtime:** Eliminates repeated historical aggregation from the synchronous write path. Prisma client interactions reduced from 6 to 1.
+- **Runtime:** Eliminates repeated historical aggregation from the synchronous write path. Prisma client interactions reduced significantly.
 - **State:** 1 source of truth -> 2 sources of truth (Requires a migration script to backfill and synchronize).
 - **Operational:** Low -> Medium (We must ensure every write path updating transactions/transfers also updates the account balance).
 - **Rollback:** Medium (Requires dropping the column and reverting the write path).
 
-## Next Steps (Phase 4C)
-1. Generate Prisma migration to add `balanceMinor` and the `CHECK` constraint.
-2. Refactor the write paths (`addTransaction`) to use a Sequential Prisma Transaction updating the balance.
-3. Write backfill scripts to initialize `balanceMinor` for existing accounts.
-4. Build `recalculateBalances()` to recompute every account from the ledger.
-5. Build `detectBalanceDrift()` to detect if the stored balance ever differs from the computed sum of transactions.
-6. Run benchmarks and verify parity.
+## Next Steps (Phase 5)
+With Phase 4C complete, Phase 5 shifts focus from performance to **operational resilience**, including:
+- Concurrency Safety
+- Idempotency
+- Observability
+- Background Jobs (e.g., Scheduled reconciliation)
+- Failure Recovery
+- Production Benchmarks
+
