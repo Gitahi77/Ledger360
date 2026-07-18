@@ -110,6 +110,7 @@ model Account {
   type         AccountType   @default(CHECKING)
   currency     String
   openingMinor BigInt        @default(0)
+  balanceMinor BigInt        @default(0)
   archived     Boolean       @default(false)
   allowNegativeBalance Boolean @default(false)
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)

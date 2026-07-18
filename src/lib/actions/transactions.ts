@@ -126,6 +126,13 @@ export async function addTransaction(envelope: { idempotencyKey?: string; payloa
           userId: user.id
         });
 
+        // STAGE 5: Update balance inline within the same transaction
+        const delta = data.type === 'income' ? BigInt(data.baseAmountMinor) : -BigInt(data.baseAmountMinor);
+        await tx.account.update({
+          where: { id: accountId },
+          data: { balanceMinor: { increment: delta } }
+        });
+
         await tx.auditLog.create({
           data: {
             userId: user.id,
@@ -228,16 +235,30 @@ export async function importTransactions(rows: unknown[], targetAccountId: strin
         importHash:      r.importHash || null,
         reference:       r.reference || null,
       })),
+      skipDuplicates: true,
     });
 
-      await tx.auditLog.create({
-        data: {
-          userId: user.id,
-          action: 'IMPORT',
-          resource: 'Transactions',
-          metadata: JSON.stringify({ rowCount: validRows.length }),
-        }
+    // STAGE 5: Update balance inline within the same transaction
+    const totalDelta = validRows.reduce((acc, row) => {
+      const amt = BigInt(row.baseAmountMinor);
+      return row.type === 'income' ? acc + amt : acc - amt;
+    }, 0n);
+
+    if (totalDelta !== 0n) {
+      await tx.account.update({
+        where: { id: targetAccountId },
+        data: { balanceMinor: { increment: totalDelta } }
       });
+    }
+
+    await tx.auditLog.create({
+      data: {
+        userId: user.id,
+        action: 'IMPORT',
+        resource: 'Transactions',
+        metadata: JSON.stringify({ rowCount: validRows.length }),
+      }
+    });
 
       // Return income rows to trigger auto-save outside the transaction
       return validRows.filter(r => r.type === 'income');
@@ -290,12 +311,19 @@ export async function deleteTransaction(envelope: { idempotencyKey?: string; pay
       const parsed = safeValidate(DeleteSchema, envelope.payload, 'DeleteSchema');
       if (!parsed.success) return parsed.error;
 
-      await assertOwnsTransaction(user.id, parsed.data.id);
+      const oldTx = await assertOwnsTransaction(user.id, parsed.data.id);
       await prisma.$transaction(async (tx) => {
         const { count } = await tx.transaction.deleteMany({
           where: { id: parsed.data.id, userId: user.id },
         });
         if (count === 0) throw new Error('Transaction not found or already deleted');
+
+        // STAGE 5: Reverse the balance impact
+        const delta = oldTx.type === 'income' ? -BigInt(oldTx.baseAmountMinor) : BigInt(oldTx.baseAmountMinor);
+        await tx.account.update({
+          where: { id: oldTx.accountId },
+          data: { balanceMinor: { increment: delta } }
+        });
 
         await tx.auditLog.create({
           data: {
@@ -381,6 +409,29 @@ export async function editTransaction(id: string, envelope: { idempotencyKey?: s
           data: { ...data, currency: newCurrency },
         });
         if (count === 0) throw new Error('Transaction not found or ownership failed');
+
+        // STAGE 5: Apply balance deltas
+        const oldDelta = oldTx.type === 'income' ? -BigInt(oldTx.baseAmountMinor) : BigInt(oldTx.baseAmountMinor);
+        if (oldTx.accountId === newAccountId) {
+          const newDelta = newType === 'income' ? BigInt(newAmount) : -BigInt(newAmount);
+          const netDelta = oldDelta + newDelta;
+          if (netDelta !== 0n) {
+            await tx.account.update({
+              where: { id: newAccountId },
+              data: { balanceMinor: { increment: netDelta } }
+            });
+          }
+        } else {
+          await tx.account.update({
+            where: { id: oldTx.accountId },
+            data: { balanceMinor: { increment: oldDelta } }
+          });
+          const newDelta = newType === 'income' ? BigInt(newAmount) : -BigInt(newAmount);
+          await tx.account.update({
+            where: { id: newAccountId },
+            data: { balanceMinor: { increment: newDelta } }
+          });
+        }
 
         await tx.auditLog.create({
           data: {

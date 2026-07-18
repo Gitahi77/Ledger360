@@ -17,7 +17,7 @@ Currently, the write path requires 6 separate Prisma queries:
 5. `transaction.create` (inside an interactive `$transaction`)
 6. `auditLog.create` (inside an interactive `$transaction`)
 
-Each query incurs an IPC roundtrip between Node.js and the Prisma Rust engine. Furthermore, the interactive `$transaction` holds the database connection open while waiting for the Node.js Event Loop to schedule the next promise. Under high concurrency, these 6 interactions per request cause severe queuing and event loop starvation.
+Each query incurs interaction between Node.js and the Prisma engine, resulting in six separate Prisma client operations. Furthermore, the interactive `$transaction` holds the database connection open while waiting for the Node.js Event Loop to schedule the next promise. Under high concurrency, these 6 operations per request cause severe queuing and event loop starvation.
 
 To achieve our performance goals, we must minimize these database interactions on the critical write path.
 
@@ -34,10 +34,10 @@ The write path will be transformed into:
 2. `transaction.create(...)`
 3. `auditLog.create(...)`
 
-These can be batched into a **Sequential Prisma Transaction** (`prisma.$transaction([...])`), which executes entirely in the Prisma Rust engine with exactly **1 IPC roundtrip**.
+These can be batched into a **Sequential Prisma Transaction** (`prisma.$transaction([...])`), which executes entirely in the Prisma engine as a single batched operation.
 
 ### Overdraft Validation Strategy
-To prevent overdrafts without a preceding read query, we will rely on PostgreSQL's database-level constraints. We will add a `CHECK (balance_minor >= 0 OR allow_negative_balance = true)` constraint to the `Account` table. If a transaction causes an overdraft, the sequential transaction will fail at the database level, and Prisma will throw an error that we can catch and format for the user.
+To prevent overdrafts without a preceding read query, we will rely on PostgreSQL's database-level constraints and row-level locking. We will add a `CHECK (balance_minor >= 0 OR allow_negative_balance = true)` constraint to the `Account` table. The validation mechanism relies on PostgreSQL row-level locking during `UPDATE`: when we increment or decrement `balance_minor`, the `CHECK` constraint evaluates atomically. If a transaction causes an overdraft, the sequential transaction will fail at the database level, and Prisma will throw an error that we can catch and format for the user.
 
 ## Exit Criteria
 
@@ -46,17 +46,18 @@ Persisted balances remain only if:
 - ✓ Throughput (req/s) improves under concurrent load
 - ✓ Financial correctness remains 100%
 - ✓ Operational complexity (e.g. keeping balances in sync) is acceptable
-- ✓ Reconciliation tooling is implemented (to recalculate balances if needed)
-- ✓ Drift detection is implemented (to alert if the denormalized balance ever differs from the sum of transactions)
 - ✓ Rollback strategy is fully documented
 
 ## Complexity Budget Impact
-- **Runtime:** $O(N)$ -> $O(1)$. Prisma client interactions reduced from 6 to 1.
+- **Runtime:** Eliminates repeated historical aggregation from the synchronous write path. Prisma client interactions reduced from 6 to 1.
 - **State:** 1 source of truth -> 2 sources of truth (Requires a migration script to backfill and synchronize).
 - **Operational:** Low -> Medium (We must ensure every write path updating transactions/transfers also updates the account balance).
 - **Rollback:** Medium (Requires dropping the column and reverting the write path).
 
 ## Next Steps (Phase 4C)
-1. Complete the final experiment isolating Prisma interaction overhead.
-2. Resolve CI and Vercel build failures.
-3. If ADR is approved: Generate Prisma migration, write backfill script, add `CHECK` constraint, refactor write paths, and verify parity.
+1. Generate Prisma migration to add `balanceMinor` and the `CHECK` constraint.
+2. Refactor the write paths (`addTransaction`) to use a Sequential Prisma Transaction updating the balance.
+3. Write backfill scripts to initialize `balanceMinor` for existing accounts.
+4. Build `recalculateBalances()` to recompute every account from the ledger.
+5. Build `detectBalanceDrift()` to detect if the stored balance ever differs from the computed sum of transactions.
+6. Run benchmarks and verify parity.
