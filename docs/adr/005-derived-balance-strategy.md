@@ -1,7 +1,7 @@
 # ADR 005: Derived Balance Strategy
 
 ## Status
-Accepted
+Superseded by [ADR 011: Persisted Balances](011-persisted-balances.md)
 
 ## Context
 Storing an account's balance as an explicit row column (`balance: 100`) leads to race conditions. If two concurrent transfers update the row simultaneously, one update may overwrite the other, destroying money.
