@@ -5,15 +5,16 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *' # Nightly schedule
 
 jobs:
-  build-and-test:
+  unit-test:
+    name: Lint, Typecheck, Unit Tests
     runs-on: ubuntu-latest
-
-    # Dummy env vars so build doesn't fail parsing missing variables.
-    # No real database is connected or migrated.
     env:
-      DATABASE_URL: "postgresql://dummy_user:dummy_pass@localhost:5432/dummy_db?pgbouncer=true"
+      DATABASE_URL: "postgresql://dummy_user:dummy_pass@localhost:5432/dummy_db"
       DIRECT_DATABASE_URL: "postgresql://dummy_user:dummy_pass@localhost:5432/dummy_db"
       NEXTAUTH_SECRET: "dummy_secret_for_ci_only_do_not_use"
       NEXTAUTH_URL: "http://localhost:3000"
@@ -40,9 +41,103 @@ jobs:
         run: npx tsc --noEmit
 
       - name: Run Linting (non-blocking)
-        # Marked as continue-on-error until we do a dedicated lint cleanup chore
         run: npm run lint
         continue-on-error: true
 
       - name: Run Unit Tests (Vitest)
-        run: npx vitest run
+        run: npm run test:unit
+
+  integration-test:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: ledger_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: "postgresql://test_user:test_password@localhost:5432/ledger_test"
+      DIRECT_DATABASE_URL: "postgresql://test_user:test_password@localhost:5432/ledger_test"
+      NEXTAUTH_SECRET: "dummy_secret_for_ci_only_do_not_use"
+      NEXTAUTH_URL: "http://localhost:3000"
+      UPSTASH_REDIS_REST_URL: "https://dummy.upstash.io"
+      UPSTASH_REDIS_REST_TOKEN: "dummy_token"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Run Database Migrations
+        run: npx prisma migrate deploy
+
+      - name: Run Integration Tests
+        run: npm run test:integration
+
+  stress-test:
+    name: Stress & Concurrency Tests
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: ledger_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: "postgresql://test_user:test_password@localhost:5432/ledger_test"
+      DIRECT_DATABASE_URL: "postgresql://test_user:test_password@localhost:5432/ledger_test"
+      NEXTAUTH_SECRET: "dummy_secret_for_ci_only_do_not_use"
+      NEXTAUTH_URL: "http://localhost:3000"
+      UPSTASH_REDIS_REST_URL: "https://dummy.upstash.io"
+      UPSTASH_REDIS_REST_TOKEN: "dummy_token"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Run Database Migrations
+        run: npx prisma migrate deploy
+
+      - name: Run Stress Tests
+        run: npm run test:stress

@@ -11,9 +11,12 @@
     "migrate:deploy": "prisma migrate deploy",
     "db:push": "prisma db push",
     "test": "vitest run",
+    "test:unit": "vitest run --exclude \"src/tests/**/*.integration.ts\" --exclude \"src/tests/**/*.stress.ts\"",
+    "test:integration": "vitest run \"src/tests/**/*.integration.ts\" --passWithNoTests",
+    "test:stress": "vitest run \"src/tests/**/*.stress.ts\" --passWithNoTests",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "verify": "npm run lint && npx tsc --noEmit && npm run test && npm run build",
+    "verify": "npm run lint && npx tsc --noEmit && npm run test:unit && npm run build",
     "db:seed:benchmark": "npx tsx scripts/benchmarks/seed.ts",
     "benchmark": "k6 run scripts/benchmarks/scenarios.js"
   },
