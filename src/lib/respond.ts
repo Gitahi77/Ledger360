@@ -97,14 +97,14 @@ export async function withAction<TInput, TResult>(
       
       const existing = await checkIdempotency(fullIdempotencyKey);
       if (existing) {
-        if (existing.status === 'PROCESSING') {
+        if (existing.processingStatus === 'PROCESSING') {
           return { success: false, code: 'CONFLICT', message: 'Request already in progress' };
         }
-        if (existing.status === 'COMPLETED') {
-          if (existing.payloadHash !== phash) {
+        if (existing.processingStatus === 'COMPLETED') {
+          if (existing.requestHash !== phash) {
             return { success: false, code: 'CONFLICT', message: 'Idempotency key reused with different payload' };
           }
-          return existing.response as ActionResult<TResult>;
+          return existing.serializedResponse as ActionResult<TResult>;
         }
       }
 
@@ -118,7 +118,8 @@ export async function withAction<TInput, TResult>(
     const result = await handler();
     
     if (holdsLock && fullIdempotencyKey && result.success) {
-      await saveIdempotencyResponse(fullIdempotencyKey, phash, result);
+      const resourceId = (result.data as any)?.id;
+      await saveIdempotencyResponse(fullIdempotencyKey, phash, 200, result, resourceId);
     }
     
     // Only release lock if there was a transient failure? Wait, if it fails predictably (validation), we should release the lock so they can retry.

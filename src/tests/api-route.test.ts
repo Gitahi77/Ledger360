@@ -101,7 +101,7 @@ describe('apiRoute Wrapper', () => {
   });
 
   it('(e) a second request with the same Idempotency-Key while the first is in flight -> 409 CONFLICT', async () => {
-    vi.mocked(idempotency.checkIdempotency).mockResolvedValue({ status: 'PROCESSING', payloadHash: 'hash' });
+    vi.mocked(idempotency.checkIdempotency).mockResolvedValue({ processingStatus: 'PROCESSING', requestHash: 'hash' } as any);
     const req = createRequest('POST', { name: 'Test' }, { 'idempotency-key': 'key-1' });
     const res = await route(req);
     const json = await res.json();
@@ -113,7 +113,7 @@ describe('apiRoute Wrapper', () => {
 
   it('(f) a repeated completed key returns the exact cached envelope', async () => {
     const cachedEnvelope = { data: { success: true }, error: null, meta: { requestId: 'old-req-id' } };
-    vi.mocked(idempotency.checkIdempotency).mockResolvedValue({ status: 'COMPLETED', payloadHash: 'hash', response: cachedEnvelope });
+    vi.mocked(idempotency.checkIdempotency).mockResolvedValue({ processingStatus: 'COMPLETED', requestHash: 'hash', serializedResponse: cachedEnvelope } as any);
     const req = createRequest('POST', { name: 'Test' }, { 'idempotency-key': 'key-1' });
     const res = await route(req);
     const json = await res.json();
