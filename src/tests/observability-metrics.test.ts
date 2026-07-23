@@ -102,4 +102,60 @@ describe('Stage 5.4 — Finance-Grade Observability', () => {
       expect(retryGroup.ledger_p2034_total).toBe(2);
     });
   });
+
+  describe('Provider Swapping Regression', () => {
+    it('only the new registry receives events after setMetricsRegistry()', () => {
+      // Start with NoOp — events should be silently dropped
+      const noOpRegistry = new NoOpMetricsRegistry();
+      setMetricsRegistry(noOpRegistry);
+
+      getMetrics().incrementCounter('ledger_transactions_created_total', 10);
+
+      // NoOp always returns empty summaries
+      const noOpSummaries = getMetrics().getAllSummaries();
+      expect(noOpSummaries.financial).toEqual({});
+
+      // Swap to InMemory — only new events should appear
+      const inMemoryRegistry = new InMemoryMetricsRegistry();
+      setMetricsRegistry(inMemoryRegistry);
+
+      getMetrics().incrementCounter('ledger_transactions_created_total', 3);
+      getMetrics().incrementCounter('ledger_retry_attempts_total', 7);
+
+      const summaries = getMetrics().getAllSummaries();
+      // Should only have the 3 recorded after swap, not the 10 from NoOp
+      expect(summaries.financial.ledger_transactions_created_total).toBe(3);
+      expect(summaries.retry.ledger_retry_attempts_total).toBe(7);
+    });
+  });
+
+  describe('Edge Cases', () => {
+    it('returns sensible defaults for partially filled ring buffers', () => {
+      // Only 3 samples — less than buffer size
+      getMetrics().recordHistogram('ledger_api_latency_ms', 10);
+      getMetrics().recordHistogram('ledger_api_latency_ms', 20);
+      getMetrics().recordHistogram('ledger_api_latency_ms', 30);
+
+      const summaries = getMetrics().getAllSummaries();
+      const apiStats: any = summaries.api.ledger_api_latency_ms;
+
+      expect(apiStats.count).toBe(3);
+      expect(apiStats.avg).toBe(20);
+      // With 3 samples sorted [10, 20, 30], all percentiles resolve to valid values
+      expect(apiStats.p50).toBeGreaterThanOrEqual(10);
+      expect(apiStats.p99).toBeGreaterThanOrEqual(10);
+    });
+
+    it('returns zero defaults when no samples recorded', () => {
+      const summaries = getMetrics().getAllSummaries();
+      const apiStats: any = summaries.api.ledger_api_latency_ms;
+
+      expect(apiStats.count).toBe(0);
+      expect(apiStats.avg).toBe(0);
+      expect(apiStats.p50).toBe(0);
+      expect(apiStats.p90).toBe(0);
+      expect(apiStats.p95).toBe(0);
+      expect(apiStats.p99).toBe(0);
+    });
+  });
 });

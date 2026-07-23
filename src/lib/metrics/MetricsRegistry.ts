@@ -251,14 +251,17 @@ class SafeMetricsRegistryProxy implements MetricsRegistry {
 
 /**
  * Singleton MetricsProvider.
- * Returns a safety proxy wrapping the active registry implementation.
+ * Returns a cached safety proxy wrapping the active registry implementation.
+ * The proxy is only recreated when the registry is swapped via setMetricsRegistry().
  */
 let activeRegistry: MetricsRegistry = new InMemoryMetricsRegistry();
+let cachedProxy: MetricsRegistry = new SafeMetricsRegistryProxy(activeRegistry);
 
 export function getMetrics(): MetricsRegistry {
-  return new SafeMetricsRegistryProxy(activeRegistry);
+  return cachedProxy;
 }
 
 export function setMetricsRegistry(registry: MetricsRegistry): void {
   activeRegistry = registry;
+  cachedProxy = new SafeMetricsRegistryProxy(registry);
 }
