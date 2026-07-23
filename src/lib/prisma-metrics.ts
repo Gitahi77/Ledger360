@@ -1,5 +1,6 @@
 import { getRequestContext } from './request-context';
 import { logger } from './logger';
+import { getMetrics } from './metrics/MetricsRegistry';
 import crypto from 'crypto';
 
 function normalizeArgs(obj: any): any {
@@ -30,6 +31,13 @@ function classifyQuery(operation: string): string {
 }
 
 export async function recordQueryMetrics(model: string | undefined, operation: string, args: any, durationMs: number, result: any) {
+  // Always record query metrics into getMetrics(), even if outside request context
+  getMetrics().recordHistogram('ledger_db_query_duration_ms', durationMs);
+
+  if (durationMs > 50) {
+    getMetrics().incrementCounter('ledger_slow_queries_total');
+  }
+
   try {
     const ctx = await getRequestContext();
     ctx.metrics.prismaTimeMs += durationMs;
