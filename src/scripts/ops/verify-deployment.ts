@@ -19,13 +19,19 @@ async function verifyDeployment() {
   // 1. Verify Environment Variables
   console.log('\n[1] Verifying Environment Variables...');
   const requiredEnvVars = ['DATABASE_URL', 'DIRECT_DATABASE_URL', 'NEXTAUTH_SECRET', 'NEXTAUTH_URL'];
+  let missingDeps = false;
   for (const envVar of requiredEnvVars) {
     if (!process.env[envVar]) {
-      console.error(`❌ Missing ${envVar}`);
-      hasErrors = true;
+      console.error(`❌ ${envVar} missing`);
+      missingDeps = true;
     } else {
       console.log(`✅ ${envVar} present`);
     }
+  }
+  
+  if (missingDeps) {
+    console.error('❌ Missing required environment dependencies. Halting verification.');
+    process.exit(3);
   }
 
   // 2. Verify Database Connectivity (Prisma)

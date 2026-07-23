@@ -73,85 +73,23 @@ export async function addTransaction(envelope: { idempotencyKey?: string; payloa
       }
 
       const { TransactionService } = await import('../domain/services/TransactionService');
-      const { Money } = await import('../domain/money/Money');
-      const { createTransactionRecord, getCategoryByNameOrId } = await import('../repositories/transactions');
-      
-      // Overdraft prevention and currency validation
-      let warning: string | undefined;
-      const { getSingleAccountBalance } = await import('../repositories/accounts');
-      const acc = await getSingleAccountBalance(user.id, accountId);
-      
-      // Fallback to KES if no currency available on user or account
-      const currency = acc?.currency || user.currency || 'KES';
-      const moneyAmount = Money.fromMinor(data.baseAmountMinor, currency);
+      const idempotencyKey = envelope.idempotencyKey || crypto.randomUUID();
 
-      if (data.type === 'expense' && acc) {
-        if (acc.type !== 'CREDIT_CARD') {
-          const projectedBalance = acc.balanceMinor - data.baseAmountMinor;
-          if (projectedBalance < 0) {
-            if (!acc.allowNegativeBalance) {
-              return { success: false, code: 'VALIDATION', message: `Insufficient funds: ${acc.name} does not allow negative balances. Available: ${acc.displayBalance}.` };
-            } else {
-              warning = `Warning: This transaction will cause your account ${acc.name} to become overdrawn.`;
-            }
-          }
-        }
-      }
-
-      // 1. Process Domain Logic (Validation, Normalization, Classification)
-      const { persistencePayload } = TransactionService.processNewTransaction(
+      await TransactionService.createTransaction(
+        user.id,
         accountId,
-        moneyAmount,
+        data.categoryId,
+        data.baseAmountMinor,
         data.type === 'income' ? 'income' : 'expense',
         data.name,
         new Date(data.date),
         data.note,
-        data.categoryId // Used as explicit hint if provided
+        idempotencyKey
       );
-
-      // 2. Persist to Repository
-      const { withRetry } = await import('@/lib/db-retry');
-      await withRetry(() => prisma.$transaction(async (tx) => {
-        // Resolve category
-        let resolvedCategoryId = data.categoryId;
-        if (persistencePayload.categoryHint && !resolvedCategoryId) {
-          const cat = await getCategoryByNameOrId({ userId: user.id, hint: persistencePayload.categoryHint, type: persistencePayload.type });
-          resolvedCategoryId = cat.id;
-        }
-
-        const { categoryHint, ...prismaData } = persistencePayload;
-
-        const createdTx = await createTransactionRecord(tx, {
-          ...prismaData,
-          categoryId: resolvedCategoryId,
-          userId: user.id
-        });
-
-        const { getMetrics } = await import('@/lib/metrics/MetricsRegistry');
-        getMetrics().incrementCounter('ledger_transactions_created_total');
-
-        // STAGE 5: Update balance inline within the same transaction
-        const delta = data.type === 'income' ? BigInt(data.baseAmountMinor) : -BigInt(data.baseAmountMinor);
-        await tx.account.update({
-          where: { id: accountId },
-          data: { balanceMinor: { increment: delta } }
-        });
-
-        await tx.auditLog.create({
-          data: {
-            userId: user.id,
-            action: 'CREATE_LEDGER_ENTRY',
-            resource: 'Transaction',
-            metadata: { txId: createdTx.id, amount: data.baseAmountMinor, name: data.name },
-          }
-        });
-
-        return createdTx;
-      }), { operationName: 'addTransaction' });
 
       revalidatePath('/transactions');
       revalidatePath('/');
-      return { success: true, data: undefined, warning };
+      return { success: true, data: undefined };
     }
   });
 }
@@ -316,30 +254,10 @@ export async function deleteTransaction(envelope: { idempotencyKey?: string; pay
       const parsed = safeValidate(DeleteSchema, envelope.payload, 'DeleteSchema');
       if (!parsed.success) return parsed.error;
 
-      const oldTx = await assertOwnsTransaction(user.id, parsed.data.id);
-      const { withRetry } = await import('@/lib/db-retry');
-      await withRetry(() => prisma.$transaction(async (tx) => {
-        const { count } = await tx.transaction.deleteMany({
-          where: { id: parsed.data.id, userId: user.id },
-        });
-        if (count === 0) throw new Error('Transaction not found or already deleted');
+      const { TransactionService } = await import('../domain/services/TransactionService');
+      const idempotencyKey = envelope.idempotencyKey || crypto.randomUUID();
 
-        // STAGE 5: Reverse the balance impact
-        const delta = oldTx.type === 'income' ? -BigInt(oldTx.baseAmountMinor) : BigInt(oldTx.baseAmountMinor);
-        await tx.account.update({
-          where: { id: oldTx.accountId },
-          data: { balanceMinor: { increment: delta } }
-        });
-
-        await tx.auditLog.create({
-          data: {
-            userId:   user.id,
-            action:   'DELETE',
-            resource: 'Transaction',
-            metadata: { txId: parsed.data.id },
-          }
-        });
-      }), { operationName: 'deleteTransaction' });
+      await TransactionService.voidTransaction(user.id, parsed.data.id, idempotencyKey);
 
       revalidatePath('/transactions');
       revalidatePath('/');

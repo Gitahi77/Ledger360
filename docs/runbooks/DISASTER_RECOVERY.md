@@ -1,73 +1,48 @@
 # Disaster Recovery Runbook
 
-## 1. Disaster Severity Levels
+## Purpose
+To define the standard recovery process, severity levels, and RTO/RPO objectives for Ledger360 during major outages.
 
-When declaring an incident, assess the severity based on the following:
+## Scope
+This runbook covers system-wide failures, database corruption, and cloud provider outages.
 
-- **SEV-1 (Critical)**: Production is fully unavailable or significant data corruption has occurred. (e.g. database dropped, region offline).
-- **SEV-2 (High)**: Major feature unavailable, but core system functional. (e.g. cron jobs failing, emails not sending).
-- **SEV-3 (Low)**: Partial degradation or latency issues affecting some users.
+## Prerequisites
+- Access to Vercel dashboard.
+- Access to Database provider (e.g., Neon/Supabase).
+- Incident Commander designation.
 
-## 2. Recovery Objectives
+## Procedure
 
-Ledger360 operates with the following targets:
-
-| Metric | Recommendation                        |
-| ------ | ------------------------------------- |
-| **RTO (Recovery Time)** | ≤ 2 hours                             |
-| **RPO (Recovery Point)**| ≤ 15 minutes with PITR, otherwise 24h |
-
-**Current Capability**
-- **Without PITR**: RPO = Last daily backup (24 hours max data loss).
-- **With PITR**: RPO = < 15 minutes.
-- **Target RTO**: 2 hours (restoration, deployment, and verification).
-
-## 3. Incident Commander Checklist
-
-When acting as Incident Commander (IC), follow this strict checklist:
-
+### 1. Incident Commander Checklist
 - [ ] **Confirm outage**: Verify alerts in Vercel / Datadog / Sentry.
-- [ ] **Freeze deployments**: Pause any ongoing CI/CD to prevent further state mutation.
-- [ ] **Notify stakeholders**: Post in incident slack channel / notify the team.
-- [ ] **Identify failure domain**: E.g. Database, API layer, Third-party service.
-- [ ] **Decide recovery action**: 
-  - Rollback vs. Restore?
+- [ ] **Freeze deployments**: Pause any ongoing CI/CD.
+- [ ] **Notify stakeholders**: Post in incident slack channel.
+- [ ] **Identify failure domain**: E.g., Database, API layer, Third-party service.
+- [ ] **Decide recovery action**: Rollback vs. Restore.
 - [ ] **Record timeline**: Create an incident document and log timestamps of every action.
 
-## 4. Recovery Decision Tree
-
-Use this tree to decide on the immediate operational response:
-
+### 2. Recovery Decision Tree
 ```text
 Deployment failure / Bad code deployed?
     ↓
 Execute Vercel Rollback (Instant)
 
-
 Database corruption / Bad schema migration?
     ↓
 Execute Database Restore (via PITR or Snapshot)
-Do NOT attempt to run Prisma "migrate down".
-
 
 Cloud provider or region outage?
     ↓
 Fail over (if multi-region) OR Wait for provider resolution.
-
-
-Third-party API failure (e.g., Upstash / Neon / Vercel)?
-    ↓
-Update status page and wait for upstream provider to resolve.
 ```
 
-## 5. Post-Recovery Monitoring
+## Verification
+- Run `npm run verify:deployment` (or use `verify-deployment.ts`).
+- Monitor CPU, Memory, 5xx responses, Database connections, and Latency for 30 minutes.
 
-Do not immediately close the incident. Monitor the following for 30 minutes after mitigation:
+## Rollback
+- If a restoration fails or corrupts data further, fall back to the secondary backup tier (e.g., Daily Snapshot if PITR failed).
 
-- [ ] CPU / Memory usage
-- [ ] Error rate & 5xx responses
-- [ ] Database active connections
-- [ ] Queue depth (if applicable)
-- [ ] API Latency
-
-If metrics remain stable for 30 minutes, you may declare the incident mitigated and begin the postmortem.
+## References
+- [DB_BACKUP_RESTORE.md](./DB_BACKUP_RESTORE.md)
+- [DEPLOYMENT_ROLLBACK.md](./DEPLOYMENT_ROLLBACK.md)

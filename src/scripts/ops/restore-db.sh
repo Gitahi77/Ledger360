@@ -6,12 +6,12 @@ set -euo pipefail
 
 if ! command -v pg_restore &> /dev/null; then
     echo "ERROR: pg_restore could not be found. Please install postgresql-client."
-    exit 1
+    exit 3
 fi
 
 if [ "$#" -ne 2 ]; then
     echo "Usage: $0 <database_url> <input_file.dump>"
-    exit 1
+    exit 2
 fi
 
 DB_URL=$1

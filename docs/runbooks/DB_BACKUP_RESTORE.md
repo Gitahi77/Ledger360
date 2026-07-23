@@ -1,55 +1,45 @@
 # Database Backup and Restore Strategy
 
-Ledger360 data is the most critical asset. We do not rely exclusively on manual shell scripts. Our backup strategy is tiered.
+## Purpose
+To outline the tiered backup strategy and restoration procedures for the Ledger360 database.
 
-## 1. Backup Hierarchy
+## Scope
+This covers managed Point-In-Time-Recovery (PITR), managed snapshots, and manual logical backups (`pg_dump`).
 
-Engineers should ALWAYS prefer the higher tiers before falling back to manual scripts.
+## Prerequisites
+- Production database credentials.
+- `postgresql-client` installed (for manual scripts).
+- Access to the managed database provider console.
 
-1. **Primary: Managed PITR (Point-In-Time-Recovery)**
-   - Continuous WAL archiving provided by the managed database (e.g. Neon, Supabase, AWS RDS).
-   - Allows restoring to any precise second.
-2. **Secondary: Managed Daily Snapshots**
-   - Automated full-disk snapshots taken by the cloud provider daily.
-3. **Tertiary: Encrypted `pg_dump`**
-   - Scheduled logical backups stored in encrypted cloud storage (S3).
-4. **Emergency: Manual `pg_dump`**
-   - Developer-initiated logical backup via the `backup-db.sh` script prior to manual interventions.
+## Procedure
 
-## 2. Backup Restoration Validation
+### 1. Backup Hierarchy
+Engineers should ALWAYS prefer the higher tiers:
+1. **Primary: Managed PITR** - Continuous WAL archiving. Restores to any precise second.
+2. **Secondary: Managed Daily Snapshots** - Automated full-disk snapshots.
+3. **Tertiary: Encrypted `pg_dump`** - Scheduled logical backups.
+4. **Emergency: Manual `pg_dump`** - Executed via `backup-db.sh`.
 
-A backup is useless unless we know it can be restored.
+### 2. Provider-Specific Restores (Appendices)
+**Appendix A: Neon Postgres**
+- Branch section -> "Restore to point in time" -> Create branch -> Promote.
 
+**Appendix B: Supabase**
+- Database -> Backups -> PITR or Daily Backup -> Restore.
+
+### 3. Manual / Emergency Restore Procedure
+1. Execute `./src/scripts/ops/restore-db.sh <database_url> <input_file.dump>`
+2. Type `YES RESTORE` to confirm.
+
+## Verification
 **Monthly Validation Routine:**
-1. Create a clean, temporary staging database instance.
-2. Restore the latest automated backup or snapshot into the staging instance.
-3. Run Prisma migrations (`npx prisma migrate deploy`) to ensure schema parity.
-4. Verify table row counts against the production snapshot time.
-5. Destroy the temporary staging database.
+1. Restore backup to a staging database.
+2. Run migrations (`npx prisma migrate deploy`).
+3. Verify row counts.
+4. Destroy staging database.
 
-## 3. Provider-Specific Restores (Appendices)
+## Rollback
+- If the restore introduces corrupted data, halt the application and revert to the snapshot taken immediately before the restore attempt.
 
-While the concepts are standard PostgreSQL, the exact clicks depend on the vendor.
-
-### Appendix A: Neon Postgres
-- Navigate to the **Branches** section in the Neon Console.
-- Select the Production branch and choose **"Restore to point in time"**.
-- Specify the timestamp just before the disaster.
-- Create a new branch, verify the data, and promote it to Production.
-
-### Appendix B: Supabase
-- Navigate to Database -> Backups.
-- Choose PITR or Daily Backup.
-- Click "Restore". Wait for the infrastructure to restart.
-
-### Appendix C: AWS RDS
-- Use `RestoreDBInstanceToPointInTime` or select the instance in the AWS Console and choose "Restore to point in time".
-
-## 4. Manual / Emergency Restore Procedure
-
-If managed services fail and you must use a logical backup via `pg_restore`:
-
-1. Ensure no applications are writing to the database.
-2. Connect to the target DB using `restore-db.sh`.
-3. The script requires you to explicitly type `YES RESTORE` to prevent accidental overwrites.
-4. Always verify the data before repointing the application.
+## References
+- [DISASTER_RECOVERY.md](./DISASTER_RECOVERY.md)
