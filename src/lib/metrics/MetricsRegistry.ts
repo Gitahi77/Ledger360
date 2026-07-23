@@ -23,6 +23,7 @@ export interface MetricsGroupSummary {
   api: Record<string, unknown>;
   retry: Record<string, unknown>;
   business: Record<string, unknown>;
+  jobs: Record<string, unknown>;
   health: Record<string, unknown>;
 }
 
@@ -39,7 +40,7 @@ export class NoOpMetricsRegistry implements MetricsRegistry {
   recordHistogram(): void {}
   getGroupSummary(): Record<string, unknown> { return {}; }
   getAllSummaries(): MetricsGroupSummary {
-    return { financial: {}, database: {}, api: {}, retry: {}, business: {}, health: {} };
+    return { financial: {}, database: {}, api: {}, retry: {}, business: {}, jobs: {}, health: {} };
   }
   reset(): void {}
 }
@@ -187,6 +188,14 @@ export class InMemoryMetricsRegistry implements MetricsRegistry {
         ledger_idempotency_hits_total: this.counters.get('ledger_idempotency_hits_total') || 0,
         ledger_idempotency_misses_total: this.counters.get('ledger_idempotency_misses_total') || 0,
       },
+      jobs: {
+        ledger_jobs_started_total: this.counters.get('ledger_jobs_started_total') || 0,
+        ledger_jobs_completed_total: this.counters.get('ledger_jobs_completed_total') || 0,
+        ledger_jobs_failed_total: this.counters.get('ledger_jobs_failed_total') || 0,
+        ledger_jobs_skipped_total: this.counters.get('ledger_jobs_skipped_total') || 0,
+        ledger_jobs_lock_contention_total: this.counters.get('ledger_jobs_lock_contention_total') || 0,
+        ledger_job_duration_ms: this.getHistogramStats('ledger_job_duration_ms'),
+      },
       health: {
         ledger_metrics_registry_status: 'healthy',
         ledger_metrics_dropped_events_total: this.droppedEvents,
@@ -240,7 +249,7 @@ class SafeMetricsRegistryProxy implements MetricsRegistry {
     try {
       return this.target.getAllSummaries();
     } catch {
-      return { financial: {}, database: {}, api: {}, retry: {}, business: {}, health: {} };
+      return { financial: {}, database: {}, api: {}, retry: {}, business: {}, jobs: {}, health: {} };
     }
   }
 

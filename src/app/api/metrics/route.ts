@@ -23,8 +23,10 @@ export async function GET(req: NextRequest) {
     const data = getMetrics().getGroupSummary(group);
 
     return NextResponse.json({
+      schemaVersion: 1,
+      generatedAt: new Date().toISOString(),
+      registry: (getMetrics() as any).target?.constructor?.name || 'SafeMetricsRegistryProxy',
       success: true,
-      timestamp: new Date().toISOString(),
       group: group || 'all',
       data
     });

@@ -11,14 +11,13 @@
     "migrate:deploy": "prisma migrate deploy",
     "db:push": "prisma db push",
     "test": "vitest run",
-    "test:unit": "vitest run --exclude \"src/tests/**/*.integration.ts\" --exclude \"src/tests/**/*.stress.ts\"",
-    "test:integration": "vitest run \"src/tests/**/*.integration.ts\" --passWithNoTests",
+    "test:unit": "vitest run --exclude src/tests/**/*.integration.test.ts --exclude src/tests/**/*.stress.ts",
+    "test:integration": "vitest run src/tests/jobs.integration.test.ts --passWithNoTests",
     "test:stress": "vitest run \"src/tests/**/*.stress.ts\" --passWithNoTests",
+    "benchmark": "npx tsx --env-file=.env src/scripts/benchmarks/runner.ts",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "verify": "npm run lint && npx tsc --noEmit && npm run test:unit && npm run build",
-    "db:seed:benchmark": "npx tsx scripts/benchmarks/seed.ts",
-    "benchmark": "k6 run scripts/benchmarks/scenarios.js"
+    "verify": "npm run lint && npx tsc --noEmit && npm run test:unit && npm run build"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",
