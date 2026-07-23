@@ -3,8 +3,10 @@ import { RedisLockProvider } from '@/lib/jobs/LockProvider';
 import { Redis } from '@upstash/redis';
 import { getMetrics, setMetricsRegistry, InMemoryMetricsRegistry } from '@/lib/metrics/MetricsRegistry';
 
-// Only test Redis logic if Redis is available
-const hasRedis = !!process.env.UPSTASH_REDIS_REST_URL;
+// Only test Redis logic if a real Redis instance is configured
+const hasRedis = 
+  !!process.env.UPSTASH_REDIS_REST_URL && 
+  !process.env.UPSTASH_REDIS_REST_URL.includes("dummy");
 
 describe.runIf(hasRedis)('RedisLockProvider Integration', () => {
   let provider: RedisLockProvider;
@@ -17,6 +19,8 @@ describe.runIf(hasRedis)('RedisLockProvider Integration', () => {
   });
 
   afterEach(async () => {
+    if (!hasRedis) return;
+    
     // Cleanup keys
     await redis.del('integration:lock1');
     await redis.del('integration:lock2');
