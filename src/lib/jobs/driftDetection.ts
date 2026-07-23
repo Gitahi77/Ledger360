@@ -5,7 +5,7 @@ import { getMetrics } from '@/lib/metrics/MetricsRegistry';
 
 export const DriftDetectionJob: JobDefinition = {
   name: 'driftDetection',
-  scheduleHint: '0 0 * * *', // Run daily at midnight
+  scheduleHint: '0 0 * * *', // Intended: Run daily at midnight (On Vercel Hobby, runs daily)
   timeoutMs: 120000,         // 2 minutes max execution (could be long if many accounts)
   lockTTLMs: 180000,         // 3 minutes lock
   

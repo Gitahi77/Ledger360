@@ -4,7 +4,7 @@ import { logger } from '@/lib/logger';
 
 export const CleanupJob: JobDefinition = {
   name: 'cleanup',
-  scheduleHint: '0 * * * *', // Run hourly
+  scheduleHint: '0 * * * *', // Intended: Run hourly (On Vercel Hobby, runs daily)
   timeoutMs: 30000,          // 30 seconds max execution
   lockTTLMs: 60000,          // 60 seconds lock (must be > timeoutMs)
   expectedDurationMs: 5000,
