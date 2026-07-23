@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { JobRegistry } from '@/lib/jobs';
 import { JobRunner } from '@/lib/jobs/JobRunner';
+import { initializeLockProvider } from '@/lib/jobs/LockProvider';
+
+export const dynamic = 'force-dynamic';
 
 /**
  * Scheduled Vercel Cron Endpoint (GET)
  * Runs all registered background jobs if invoked by Vercel Cron.
  */
 export async function GET(req: NextRequest) {
+  // Initialize lock provider for production
+  initializeLockProvider();
+
   const authHeader = req.headers.get('authorization');
   const cronSecret = process.env.CRON_SECRET;
 

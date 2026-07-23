@@ -5,7 +5,7 @@ import { CleanupJob } from '@/lib/jobs/cleanup';
 import { DriftDetectionJob } from '@/lib/jobs/driftDetection';
 import { prisma } from '@/lib/prisma';
 import { getMetrics, setMetricsRegistry, InMemoryMetricsRegistry } from '@/lib/metrics/MetricsRegistry';
-import { Redis } from '@upstash/redis';
+import { setLockProvider, InMemoryLockProvider, getLockProvider } from '@/lib/jobs/LockProvider';
 
 process.env.DATABASE_URL = 'postgresql://dummy:dummy@localhost/dummy';
 
@@ -38,15 +38,13 @@ vi.mock('@/lib/prisma', () => ({
   }
 }));
 
-// Only test Redis logic if Redis is available, otherwise skip (for local test environments without Redis)
-const hasRedis = !!process.env.UPSTASH_REDIS_REST_URL;
-
 describe('Stage 5.5 — Background Jobs', () => {
   let registry: InMemoryMetricsRegistry;
 
   beforeEach(() => {
     registry = new InMemoryMetricsRegistry();
     setMetricsRegistry(registry);
+    setLockProvider(new InMemoryLockProvider());
     vi.restoreAllMocks();
   });
 
@@ -87,8 +85,7 @@ describe('Stage 5.5 — Background Jobs', () => {
     });
   });
 
-  // Skip these if we don't have real Redis configured for tests
-  describe.runIf(hasRedis)('Distributed Locking via Redis', () => {
+  describe('Distributed Locking via InMemoryProvider', () => {
     it('prevents duplicate cron invocations (parallel execution)', async () => {
       let executionCount = 0;
       
@@ -102,10 +99,6 @@ describe('Stage 5.5 — Background Jobs', () => {
           await new Promise(r => setTimeout(r, 100)); // Keep lock held slightly
         },
       };
-
-      // Ensure clear lock state
-      const redis = Redis.fromEnv();
-      await redis.del('job:lock:fastJob');
 
       // Fire 20 simultaneous requests
       const promises = Array.from({ length: 20 }).map(() => JobRunner.execute(fastJob));
@@ -126,26 +119,24 @@ describe('Stage 5.5 — Background Jobs', () => {
     });
 
     it('recovers from lock expiry if previous job crashed', async () => {
-      const redis = Redis.fromEnv();
-      await redis.del('job:lock:crashJob');
-
       const crashJob: JobDefinition = {
         name: 'crashJob',
         scheduleHint: '0 * * * *',
-        timeoutMs: 5000,
-        lockTTLMs: 1000, // Short lock TTL
+        timeoutMs: 50,
+        lockTTLMs: 100, // Very short lock TTL
         execute: async () => {
-          throw new Error('Simulated crash without releasing lock');
+          // This simulates a catastrophic crash that bypassed finally {} blocks
+          // We achieve this by overriding the release method on the provider temporarily
         },
       };
 
-      // Job A crashes
-      const resultA = await JobRunner.execute(crashJob);
-      expect(resultA.success).toBe(false);
+      const provider = getLockProvider();
+      const originalRelease = provider.release.bind(provider);
+      provider.release = async () => {}; // Never release lock!
 
-      // Verify lock is still held immediately after crash (since finally block might not release on hard crash, though our wrapper does)
-      // Actually, our JobRunner releases it in finally. Let's simulate a HARD crash by manually setting the lock as if the server died.
-      await redis.set('job:lock:crashJob', 'stale-token', { px: 100 }); // 100ms TTL
+      // Job A crashes (simulated by not releasing)
+      const resultA = await JobRunner.execute(crashJob);
+      expect(resultA.success).toBe(true);
 
       // Immediate attempt should skip because lock is held by stale token
       const immediateJobB: JobDefinition = { ...crashJob, execute: async () => {} };
@@ -155,10 +146,39 @@ describe('Stage 5.5 — Background Jobs', () => {
       // Wait for TTL to expire
       await new Promise(r => setTimeout(r, 150));
 
+      // Restore release method just in case
+      provider.release = originalRelease;
+
       // Attempt after expiry should succeed
       const resultC = await JobRunner.execute(immediateJobB);
       expect(resultC.success).toBe(true);
       expect(resultC.skipped).toBe(false);
+    });
+    
+    it('enforces lock ownership when releasing', async () => {
+      const provider = getLockProvider();
+      
+      const successAcquire = await provider.acquire('test-lock', 'token-1', 10000);
+      expect(successAcquire).toBe(true);
+      
+      // Try releasing with wrong token
+      await provider.release('test-lock', 'wrong-token');
+      
+      // Lock should still be held
+      const acquireAttempt = await provider.acquire('test-lock', 'token-2', 10000);
+      expect(acquireAttempt).toBe(false);
+      
+      // Release with correct token
+      await provider.release('test-lock', 'token-1');
+      
+      // Can acquire now
+      const finalAttempt = await provider.acquire('test-lock', 'token-3', 10000);
+      expect(finalAttempt).toBe(true);
+    });
+
+    it('releasing nonexistent lock is harmless', async () => {
+      const provider = getLockProvider();
+      await expect(provider.release('ghost-lock', 'token')).resolves.toBeUndefined();
     });
   });
 

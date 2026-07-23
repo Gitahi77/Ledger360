@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { JobRegistry } from '@/lib/jobs';
 import { JobRunner } from '@/lib/jobs/JobRunner';
+import { initializeLockProvider } from '@/lib/jobs/LockProvider';
 
 /**
  * Manual Parameterized Runner Endpoint (POST)
  * Accepts a specific job name in the body to run manually.
  */
 export async function POST(req: NextRequest) {
+  // Initialize lock provider for production
+  initializeLockProvider();
+  
   // Use the same CRON_SECRET for manual triggering for now
   const authHeader = req.headers.get('authorization');
   const cronSecret = process.env.CRON_SECRET;
