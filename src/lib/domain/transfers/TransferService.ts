@@ -30,7 +30,8 @@ export class TransferService {
     }
 
     // 2. Orchestrate within an atomic Database Transaction
-    const result = await prisma.$transaction(async (tx) => {
+    const { withRetry } = await import('@/lib/db-retry');
+    const result = await withRetry(() => prisma.$transaction(async (tx) => {
       
       // Step A & C: Optimistic Locking via row-level write lock & Balance Update
       const fromAccount = await tx.account.update({
@@ -136,7 +137,7 @@ export class TransferService {
         remainingLoanBalanceMinor,
         updatedSourceBalanceMinor: currentSourceBalance - req.amountMinor,
       };
-    });
+    }), { operationName: 'executeTransfer' });
 
     // 3. Dispatch Domain Events POST-COMMIT
     EventBus.dispatch({ type: 'TransferCompleted', payload: { transferId: result.transferId as string, referenceNumber: result.referenceNumber as string } });

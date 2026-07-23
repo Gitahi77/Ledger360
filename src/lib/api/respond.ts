@@ -118,7 +118,7 @@ export function apiRoute<T = unknown, U = unknown>(
         const existing = await checkIdempotency(idempotencyKey);
         
         if (existing) {
-          if (existing.status === 'PROCESSING') {
+          if (existing.processingStatus === 'PROCESSING') {
             return createResponse(
               null, 
               { code: 'CONFLICT', message: 'Request already in progress' }, 
@@ -126,8 +126,8 @@ export function apiRoute<T = unknown, U = unknown>(
               requestId
             );
           }
-          if (existing.status === 'COMPLETED') {
-            if (existing.payloadHash !== phash) {
+          if (existing.processingStatus === 'COMPLETED') {
+            if (existing.requestHash !== phash) {
                return createResponse(
                  null,
                  { code: 'CONFLICT', message: 'Idempotency key reused with different payload' },
@@ -136,7 +136,7 @@ export function apiRoute<T = unknown, U = unknown>(
                );
             }
             // Note: cached response is the exact JSON structure we returned previously
-            return NextResponse.json(existing.response, { status: 200 });
+            return NextResponse.json(existing.serializedResponse, { status: 200 });
           }
         }
 
@@ -161,7 +161,7 @@ export function apiRoute<T = unknown, U = unknown>(
       const envelope = { data: result, error: null, meta: { requestId } };
       
       if (holdsLock && idempotencyKey) {
-        await saveIdempotencyResponse(idempotencyKey, phash, envelope);
+        await saveIdempotencyResponse(idempotencyKey, phash, 200, envelope);
       }
 
       return NextResponse.json(envelope, { status: 200 });

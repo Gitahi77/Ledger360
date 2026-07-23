@@ -186,6 +186,19 @@ model Transaction {
   @@index([userId, type, accountId])
 }
 
+model IdempotencyRecord {
+  idempotencyKey    String   @id
+  requestHash       String
+  responseStatus    Int
+  serializedResponse Json?
+  resourceId        String?
+  processingStatus  String   // "PROCESSING" | "COMPLETED"
+  createdAt         DateTime @default(now())
+  expiresAt         DateTime
+
+  @@index([expiresAt])
+}
+
 model Budget {
   id               String @id @default(cuid())
   name             String

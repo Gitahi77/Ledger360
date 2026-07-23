@@ -110,7 +110,8 @@ export async function addTransaction(envelope: { idempotencyKey?: string; payloa
       );
 
       // 2. Persist to Repository
-      await prisma.$transaction(async (tx) => {
+      const { withRetry } = await import('@/lib/db-retry');
+      await withRetry(() => prisma.$transaction(async (tx) => {
         // Resolve category
         let resolvedCategoryId = data.categoryId;
         if (persistencePayload.categoryHint && !resolvedCategoryId) {
@@ -143,7 +144,7 @@ export async function addTransaction(envelope: { idempotencyKey?: string; payloa
         });
 
         return createdTx;
-      });
+      }), { operationName: 'addTransaction' });
 
       revalidatePath('/transactions');
       revalidatePath('/');
@@ -198,7 +199,8 @@ export async function importTransactions(rows: unknown[], targetAccountId: strin
 
   // Use an interactive transaction so category resolution + bulk insert are atomic.
   // If the createMany fails, no orphaned categories are left behind.
-  const createdIds = await prisma.$transaction(async (tx) => {
+  const { withRetry } = await import('@/lib/db-retry');
+  const createdIds = await withRetry(() => prisma.$transaction(async (tx) => {
     // Resolve or create categories
     const categoryNames = [...new Set(validRows.map(r => String(r.categoryName)))];
     const existingCats = await tx.category.findMany({ where: { userId: user.id, name: { in: categoryNames } } });
@@ -262,7 +264,7 @@ export async function importTransactions(rows: unknown[], targetAccountId: strin
 
       // Return income rows to trigger auto-save outside the transaction
       return validRows.filter(r => r.type === 'income');
-    });
+    }), { operationName: 'importTransactions' });
 
   // WO-15: Save-More-Tomorrow auto-save trigger for imported income rows.
   const incomeRows = createdIds;
@@ -312,7 +314,8 @@ export async function deleteTransaction(envelope: { idempotencyKey?: string; pay
       if (!parsed.success) return parsed.error;
 
       const oldTx = await assertOwnsTransaction(user.id, parsed.data.id);
-      await prisma.$transaction(async (tx) => {
+      const { withRetry } = await import('@/lib/db-retry');
+      await withRetry(() => prisma.$transaction(async (tx) => {
         const { count } = await tx.transaction.deleteMany({
           where: { id: parsed.data.id, userId: user.id },
         });
@@ -333,7 +336,7 @@ export async function deleteTransaction(envelope: { idempotencyKey?: string; pay
             metadata: { txId: parsed.data.id },
           }
         });
-      });
+      }), { operationName: 'deleteTransaction' });
 
       revalidatePath('/transactions');
       revalidatePath('/');
@@ -403,7 +406,8 @@ export async function editTransaction(id: string, envelope: { idempotencyKey?: s
         }
       }
 
-      await prisma.$transaction(async (tx) => {
+      const { withRetry } = await import('@/lib/db-retry');
+      await withRetry(() => prisma.$transaction(async (tx) => {
         const { count } = await tx.transaction.updateMany({
           where: { id: validId, userId: user.id },
           data: { ...data, currency: newCurrency },
@@ -441,7 +445,7 @@ export async function editTransaction(id: string, envelope: { idempotencyKey?: s
             metadata: { txId: validId, fields: Object.keys(data) },
           }
         });
-      });
+      }), { operationName: 'editTransaction' });
 
       revalidatePath('/transactions');
       revalidatePath('/');
