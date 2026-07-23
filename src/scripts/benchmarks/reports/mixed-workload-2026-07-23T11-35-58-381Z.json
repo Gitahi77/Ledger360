@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "metadata": {
+    "gitCommit": "26161f32130e482e61e893d8878684bee7072159",
+    "nodeVersion": "v24.15.0",
+    "database": "configured",
+    "benchmarkTarget": "http://localhost:3000",
+    "timestamp": "2026-07-23T11:35:54.566Z",
+    "scenario": "mixed-workload",
+    "hardware": "Intel(R) Core(TM) i7-5600U CPU @ 2.60GHz (4 cores), 11GB RAM",
+    "vus": 10
+  },
+  "scenario": "mixed-workload",
+  "summary": {
+    "status": "failed",
+    "durationSeconds": 3.5410360999999995,
+    "iterations": 0,
+    "errors": 0
+  },
+  "http": {
+    "p50LatencyMs": 0,
+    "p95LatencyMs": 0,
+    "p99LatencyMs": 0,
+    "requestsPerSecond": 0,
+    "failureRate": 0
+  },
+  "database": {
+    "activeConnections": 0,
+    "cacheHitRatio": 0,
+    "totalQueries": 0
+  },
+  "ledger": {
+    "driftDetected": 0,
+    "deadlocks": 0,
+    "lockContentionRate": 0,
+    "retryRate": 0,
+    "p2034Count": 0,
+    "p2024Count": 0
+  },
+  "system": {
+    "peakMemoryMB": 74,
+    "cpuUtilization": 0
+  }
+}
