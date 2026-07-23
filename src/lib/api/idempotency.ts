@@ -2,6 +2,7 @@ import { Redis } from '@upstash/redis';
 import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
+import { getMetrics } from '@/lib/metrics/MetricsRegistry';
 
 // We share the same Upstash Redis instance as the rate limiter
 const hasRedis = !!process.env.UPSTASH_REDIS_REST_URL && !!process.env.UPSTASH_REDIS_REST_TOKEN;
@@ -32,6 +33,7 @@ export async function checkIdempotency(key: string): Promise<IdempotencyRecord |
     try {
       const cached = await redis.get<IdempotencyRecord | string>(key);
       if (cached !== null) {
+        getMetrics().incrementCounter('ledger_idempotency_hits_total');
         if (cached === 'PROCESSING' || cached === '"PROCESSING"') {
           return { idempotencyKey: key, requestHash: '', responseStatus: 202, createdAt: Date.now(), expiresAt: Date.now() + 86400000, processingStatus: 'PROCESSING' };
         }
@@ -53,6 +55,7 @@ export async function checkIdempotency(key: string): Promise<IdempotencyRecord |
   try {
     const dbRecord = await prisma.idempotencyRecord.findUnique({ where: { idempotencyKey: key } });
     if (dbRecord) {
+      getMetrics().incrementCounter('ledger_idempotency_hits_total');
       return {
         idempotencyKey: dbRecord.idempotencyKey,
         requestHash: dbRecord.requestHash,
@@ -68,6 +71,7 @@ export async function checkIdempotency(key: string): Promise<IdempotencyRecord |
     console.error('Idempotency DB check failed:', error);
   }
 
+  getMetrics().incrementCounter('ledger_idempotency_misses_total');
   return null;
 }
 

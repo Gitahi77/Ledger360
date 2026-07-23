@@ -51,6 +51,7 @@ export function validate<T>(schema: ZodSchema<T>, input: unknown, context: strin
 import { AppError } from './errors';
 import { logger } from './logger';
 import { getRequestId, getRequestContext } from './request-context';
+import { getMetrics } from './metrics/MetricsRegistry';
 
 /**
  * Safe validate helper that returns a Result tuple instead of throwing.
@@ -129,6 +130,12 @@ export async function withAction<TInput, TResult>(
     }
 
     const durationMs = Math.round(performance.now() - started);
+    getMetrics().incrementCounter('ledger_api_requests_total');
+    getMetrics().recordHistogram('ledger_api_latency_ms', durationMs);
+
+    if (!result.success) {
+      getMetrics().incrementCounter('ledger_api_errors_total');
+    }
     
     let metrics = {};
     let poolMetrics = {};
@@ -180,11 +187,14 @@ export async function withAction<TInput, TResult>(
     
     return result;
   } catch (error) {
+    const durationMs = Math.round(performance.now() - started);
+    getMetrics().incrementCounter('ledger_api_requests_total');
+    getMetrics().incrementCounter('ledger_api_errors_total');
+    getMetrics().recordHistogram('ledger_api_latency_ms', durationMs);
+
     if (holdsLock && fullIdempotencyKey) {
       await releaseIdempotencyLock(fullIdempotencyKey);
     }
-
-    const durationMs = Math.round(performance.now() - started);
     
     let appError: AppError;
     if (error instanceof AppError) {

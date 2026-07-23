@@ -127,6 +127,9 @@ export async function addTransaction(envelope: { idempotencyKey?: string; payloa
           userId: user.id
         });
 
+        const { getMetrics } = await import('@/lib/metrics/MetricsRegistry');
+        getMetrics().incrementCounter('ledger_transactions_created_total');
+
         // STAGE 5: Update balance inline within the same transaction
         const delta = data.type === 'income' ? BigInt(data.baseAmountMinor) : -BigInt(data.baseAmountMinor);
         await tx.account.update({

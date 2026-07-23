@@ -1,6 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { logger } from './logger';
 import { getRetryCollector } from './metrics/RetryCollector';
+import { getMetrics } from './metrics/MetricsRegistry';
 
 interface RetryOptions {
   maxRetries?: number;
@@ -43,10 +44,14 @@ export async function withRetry<T>(
   while (true) {
     try {
       getRetryCollector().recordAttempt();
+      getMetrics().incrementCounter('ledger_retry_attempts_total');
+      
       const result = await operation();
       
       const elapsedMs = Date.now() - startTime;
       getRetryCollector().recordSuccess(attempt, elapsedMs);
+      getMetrics().incrementCounter('ledger_retry_successes_total');
+      getMetrics().recordHistogram('ledger_transaction_duration_ms', elapsedMs);
 
       if (attempt > 1) {
         logger.info({
@@ -59,17 +64,19 @@ export async function withRetry<T>(
       
       return result;
     } catch (error) {
+      const elapsedMs = Date.now() - startTime;
+
       if (!isTransientError(error)) {
-        // Business errors, validations, duplicate keys, etc.
-        // Also record this as a failure so it counts towards total ops and latency
-        getRetryCollector().recordFailure(attempt, Date.now() - startTime);
+        getRetryCollector().recordFailure(attempt, elapsedMs);
+        getMetrics().incrementCounter('ledger_retry_aborted_total');
+        getMetrics().recordHistogram('ledger_transaction_duration_ms', elapsedMs);
         throw error; 
       }
 
-      const elapsedMs = Date.now() - startTime;
-      
       if (attempt > config.maxRetries || elapsedMs >= config.maxElapsedMs) {
         getRetryCollector().recordFailure(attempt, elapsedMs);
+        getMetrics().incrementCounter('ledger_retry_exhausted_total');
+        getMetrics().recordHistogram('ledger_transaction_duration_ms', elapsedMs);
         logger.error({
           component: 'db-retry',
           action: 'retry_exhausted',
@@ -117,6 +124,7 @@ function isTransientError(error: unknown): boolean {
     // P2034: Transaction failed due to a write conflict or a deadlock.
     if (error.code === 'P2034') {
       getRetryCollector().recordP2034();
+      getMetrics().incrementCounter('ledger_p2034_total');
       return true;
     }
     
@@ -124,6 +132,7 @@ function isTransientError(error: unknown): boolean {
     // until we perform RCAs on pool exhaustion limits.
     if (error.code === 'P2024') {
       getRetryCollector().recordP2024();
+      getMetrics().incrementCounter('ledger_p2024_total');
       logger.warn({
         component: 'db-retry',
         action: 'pool_exhaustion_detected',
