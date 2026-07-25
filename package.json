@@ -12,7 +12,7 @@
     "db:push": "prisma db push",
     "test": "vitest run",
     "test:unit": "vitest run --exclude src/tests/**/*.integration.test.ts --exclude src/tests/**/*.stress.ts",
-    "test:integration": "vitest run src/tests/jobs.integration.test.ts --passWithNoTests",
+    "test:integration": "vitest run \"src/tests/**/*.integration.test.ts\" --passWithNoTests",
     "test:stress": "vitest run \"src/tests/**/*.stress.ts\" --passWithNoTests",
     "benchmark": "npx tsx --env-file=.env src/scripts/benchmarks/runner.ts",
     "storybook": "storybook dev -p 6006",

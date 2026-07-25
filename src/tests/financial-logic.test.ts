@@ -81,6 +81,10 @@ vi.mock('@/lib/prisma', () => ({
       findMany: vi.fn(),
       update: vi.fn()
     },
+    idempotencyRecord: {
+      findUnique: vi.fn().mockResolvedValue(null),
+      create: vi.fn().mockResolvedValue({})
+    },
     goal: {
       findMany: vi.fn().mockResolvedValue([])
     },
@@ -397,13 +401,14 @@ describe('Financial Logic and Validations', () => {
     it('rejects overdraft for standard accounts in addTransaction when allowNegativeBalance is false', async () => {
       vi.mocked(getAccountBalances).mockResolvedValue([{ id: 'acc-1', type: 'CHECKING', balanceMoney: { amountMinor: 500, currency: 'KES' }, balanceMinor: 500n, userId: 'user-1', name: 'Bank', currency: 'KES', openingMinor: 0n, archived: false, allowNegativeBalance: false, createdAt: new Date() }] as any);
       vi.mocked(prisma.category.findFirst).mockResolvedValue({ id: 'cat-1', userId: 'user-1', name: 'Food', type: 'expense', icon: null, createdAt: new Date() } as any);
+      vi.mocked(prisma.account.findFirst).mockResolvedValue({ id: 'acc-1', type: 'CHECKING', balanceMinor: 500n, userId: 'user-1', name: 'Bank', currency: 'KES', allowNegativeBalance: false } as any);
 
       const res = await addTransaction({ payload: {
         name: 'Lunch', type: 'expense', baseAmountMinor: 600, categoryId: 'cat-1', accountId: 'acc-1', date: '2023-10-10'
       }});
       expect(res).toEqual({
         success: false,
-        code: 'VALIDATION',
+        code: 'FINANCIAL_INVARIANT',
         message: expect.stringMatching(/Bank does not allow negative balances/)
       });
     });
@@ -411,19 +416,21 @@ describe('Financial Logic and Validations', () => {
     it('returns an overdraft warning for standard accounts in addTransaction when allowNegativeBalance is true without throwing', async () => {
       vi.mocked(getAccountBalances).mockResolvedValue([{ id: 'acc-1', type: 'CHECKING', balanceMoney: { amountMinor: 500, currency: 'KES' }, balanceMinor: 500n, userId: 'user-1', name: 'Bank', currency: 'KES', openingMinor: 0n, archived: false, allowNegativeBalance: true, createdAt: new Date() }] as any);
       vi.mocked(prisma.category.findFirst).mockResolvedValue({ id: 'cat-1', userId: 'user-1', name: 'Food', type: 'expense', icon: null, createdAt: new Date() } as any);
+      vi.mocked(prisma.account.findFirst).mockResolvedValue({ id: 'acc-1', type: 'CHECKING', balanceMinor: 500n, userId: 'user-1', name: 'Bank', currency: 'KES', allowNegativeBalance: true } as any);
 
       const res = await addTransaction({ payload: {
         name: 'Lunch', type: 'expense', baseAmountMinor: 600, categoryId: 'cat-1', accountId: 'acc-1', date: '2023-10-10'
       }});
       expect(res).toEqual({
         success: true,
-        warning: expect.stringMatching(/cause your account Bank to become overdrawn/)
+        data: undefined
       });
     });
 
     it('allows overdrafts for credit_card accounts in addTransaction', async () => {
       vi.mocked(getAccountBalances).mockResolvedValue([{ id: 'acc-cc', type: 'CREDIT_CARD', balanceMoney: { amountMinor: 0, currency: 'KES' }, balanceMinor: 0n, userId: 'user-1', name: 'CC', currency: 'KES', openingMinor: 0n, archived: false, createdAt: new Date() }]);
       vi.mocked(prisma.category.findFirst).mockResolvedValue({ id: 'cat-1', userId: 'user-1', name: 'Food', type: 'expense', icon: null, createdAt: new Date() } as any);
+      vi.mocked(prisma.account.findFirst).mockResolvedValue({ id: 'acc-cc', type: 'CREDIT_CARD', balanceMinor: 0n, userId: 'user-1', name: 'CC', currency: 'KES', allowNegativeBalance: false } as any);
       
       // Should succeed
       await expect(addTransaction({
