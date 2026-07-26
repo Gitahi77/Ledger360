@@ -5,6 +5,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 vi.mock('@/lib/actions/_auth', () => ({
   requireAuth: vi.fn().mockResolvedValue({ id: 'user-1', currency: 'KES' })
 }));
+vi.mock('../lib/actions/_auth', () => ({
+  requireAuth: vi.fn().mockResolvedValue({ id: 'user-1', currency: 'KES' })
+}));
+
+vi.mock('@/lib/api/frankfurter', () => ({
+  getRates: vi.fn().mockResolvedValue({ amount: 1, base: 'USD', date: '2023-01-01', rates: { KES: 130 } })
+}));
 
 vi.mock('@/lib/prisma', () => ({
   prisma: {

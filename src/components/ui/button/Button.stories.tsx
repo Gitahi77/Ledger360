@@ -59,3 +59,10 @@ export const Disabled: Story = {
     disabled: true,
   },
 };
+
+export const Loading: Story = {
+  args: {
+    children: 'Loading...',
+    loading: true,
+  },
+};

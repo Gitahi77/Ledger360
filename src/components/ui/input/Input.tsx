@@ -10,11 +10,12 @@ export interface InputProps
 }
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, error, iconLeft, iconRight, type, ...props }, ref) => {
+  ({ className, error, iconLeft, iconRight, type, "aria-describedby": ariaDescribedBy, ...props }, ref) => {
+    const errorId = React.useId();
     return (
       <div className="relative w-full">
         {iconLeft && (
-          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
             {iconLeft}
           </div>
         )}
@@ -30,15 +31,16 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           )}
           ref={ref}
           aria-invalid={!!error}
+          aria-describedby={error ? `${errorId} ${ariaDescribedBy || ""}`.trim() : ariaDescribedBy}
           {...props}
         />
         {iconRight && (
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
             {iconRight}
           </div>
         )}
         {error && (
-          <p className="mt-1 text-xs font-medium text-destructive">{error}</p>
+          <p id={errorId} className="mt-1.5 text-xs font-medium text-destructive">{error}</p>
         )}
       </div>
     );

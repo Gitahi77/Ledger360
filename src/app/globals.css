@@ -38,14 +38,30 @@
   --color-warning: hsl(var(--warning));
   --color-warning-foreground: hsl(var(--warning-foreground));
   
-  --radius-lg: var(--radius);
-  --radius-md: calc(var(--radius) - 2px);
+  /* Spacing Variables (Tailwind's 4px multiplier is used, but we define bases) */
+  --spacing: 0.25rem;
+  
+  /* Typography */
+  --font-heading: var(--font-space-grotesk), Space Grotesk, sans-serif;
+  --font-body: var(--font-inter), Inter, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  
+  /* Radius Scale */
   --radius-sm: calc(var(--radius) - 4px);
-  
-  --font-sans: var(--font-inter), Inter, sans-serif;
-  --font-display: var(--font-space-grotesk), Space Grotesk, sans-serif;
-  
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  /* Elevation (Shadows) */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
   --shadow-soft: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+
+  /* Motion (Durations) */
+  --duration-fast: 150ms;
+  --duration-normal: 300ms;
+  --duration-slow: 500ms;
 
   /* Ledger360 Semantic Tokens */
   --color-finance-positive: hsl(var(--finance-positive));
@@ -254,7 +270,7 @@
 
 @layer utilities {
   .text-balance-hero {
-    @apply font-display text-4xl sm:text-5xl font-extrabold tracking-tight;
+    @apply font-heading text-4xl sm:text-5xl font-extrabold tracking-tight;
   }
 }
 
