@@ -23,6 +23,22 @@ import {
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { SavingsAutomationSection } from './SavingsAutomationSection';
 
+import { Button } from '@/components/ui/button/Button';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card/Card';
+import { Input } from '@/components/ui/input/Input';
+import { Switch } from '@/components/ui/switch';
+import { Separator } from '@/components/ui/separator';
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog';
+
 
 type Section = 'profile' | 'appearance' | 'preferences' | 'savings' | 'notifications' | 'security' | 'data' | 'help';
 
@@ -40,47 +56,19 @@ const ACCENTS = [
 /* -- Shared sub-components ---------------------------------- */
 function Row({ label, desc, children }: { label: string; desc?: string; children: React.ReactNode }) {
   return (
-    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0.875rem 0', borderBottom:'1px solid var(--border-light)', gap:'1rem', flexWrap:'wrap' }}>
-      <div style={{ flex:1, minWidth:0 }}>
-        <div style={{ fontSize:'0.8125rem', fontWeight:600, color:'var(--color-text-primary)' }}>{label}</div>
-        {desc && <div style={{ fontSize:'0.72rem', color:'var(--color-text-secondary)', marginTop:'0.15rem' }}>{desc}</div>}
+    <div className="flex flex-wrap items-center justify-between gap-4 py-3.5 border-b border-border">
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-semibold text-foreground">{label}</div>
+        {desc && <div className="text-xs text-muted-foreground mt-0.5">{desc}</div>}
       </div>
-      <div style={{ flexShrink:0 }}>{children}</div>
+      <div className="shrink-0">{children}</div>
     </div>
-  );
-}
-
-function Toggle({ checked, onChange, disabled }: { checked: boolean; onChange: () => void; disabled?: boolean }) {
-  return (
-    <button
-      type="button"
-      onClick={onChange}
-      disabled={disabled}
-      aria-pressed={checked}
-      style={{
-        minWidth: 64, minHeight: 44,
-        display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
-        background: 'transparent', border: 'none',
-        cursor: disabled ? 'not-allowed' : 'pointer',
-        padding: '0.5rem',
-        margin: '-0.5rem'
-      }}
-    >
-      <div style={{
-        width: 42, height: 24, borderRadius: 999,
-        background: checked ? 'var(--color-brand)' : 'var(--border)',
-        position: 'relative', transition: 'background 0.2s',
-        opacity: disabled ? 0.5 : 1,
-      }}>
-        <div style={{ position: 'absolute', top: 3, left: checked ? 21 : 3, width: 18, height: 18, borderRadius: '50%', background: 'white', transition: 'left 0.2s' }} />
-      </div>
-    </button>
   );
 }
 
 function SettingSelect({ value, onChange, children }: { value: string; onChange: (v: string) => void; children: React.ReactNode }) {
   return (
-    <select value={value} onChange={e => onChange(e.target.value)} style={{ padding:'0.375rem 0.625rem', borderRadius:6, border:'1px solid var(--border)', background:'var(--surface-card)', color:'var(--color-text-primary)', fontSize:'0.8rem', fontFamily:'inherit', outline:'none', cursor:'pointer', maxWidth:'100%' }}>
+    <select value={value} onChange={e => onChange(e.target.value)} className="w-full max-w-full px-3 py-1.5 text-sm rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 cursor-pointer">
       {children}
     </select>
   );
@@ -88,8 +76,8 @@ function SettingSelect({ value, onChange, children }: { value: string; onChange:
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div style={{ marginBottom:'1.125rem' }}>
-      <label style={{ display:'block', fontSize:'0.7rem', fontWeight:700, color:'var(--color-text-secondary)', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:'0.375rem' }}>{label}</label>
+    <div className="mb-4">
+      <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">{label}</label>
       {children}
     </div>
   );
@@ -97,19 +85,18 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 function SaveRow({ saving, saved, error }: { saving: boolean; saved: boolean; error: string }) {
   return (
-    <div style={{ display:'flex', alignItems:'center', gap:'0.75rem', marginTop:'1rem' }}>
-      <button type="submit" disabled={saving} className="btn btn-primary" style={{ display:'flex', alignItems:'center', gap:'0.4rem' }}>
-        {saving ? <Loader2 size={13} style={{ animation:'spin 1s linear infinite' }}/> : null}
-        {saving ? 'Saving…' : 'Save Changes'}
-      </button>
+    <div className="flex items-center gap-3 mt-4">
+      <Button type="submit" disabled={saving} loading={saving}>
+        Save Changes
+      </Button>
       {saved && (
-        <div className="animate-in" style={{ display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.78rem', color:'var(--color-income)', fontWeight:600 }}>
-          <CheckCircle2 size={14}/> Saved!
+        <div className="animate-in fade-in flex items-center gap-1.5 text-sm font-semibold text-success">
+          <CheckCircle2 size={14} /> Saved!
         </div>
       )}
       {error && (
-        <div style={{ display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.78rem', color:'var(--color-expense)', fontWeight:600 }}>
-          <AlertTriangle size={14}/> {error}
+        <div className="flex items-center gap-1.5 text-sm font-semibold text-destructive">
+          <AlertTriangle size={14} /> {error}
         </div>
       )}
     </div>
@@ -183,12 +170,7 @@ export function SettingsClient({
   const [deleteAcctConfirm, setDeleteAcctConfirm] = useState(false);
   const [deleteAcctText, setDeleteAcctText] = useState('');
 
-  const inputStyle: React.CSSProperties = {
-    width:'100%', padding:'0.5rem 0.75rem', borderRadius:6,
-    border:'1px solid var(--border)', background:'var(--surface-card)',
-    color:'var(--color-text-primary)', fontSize:'0.8rem', fontFamily:'inherit',
-    outline:'none', boxShadow:'0 1px 2px rgba(0,0,0,0.05)',
-  };
+
 
   const initials = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || '??';
 
@@ -287,391 +269,439 @@ export function SettingsClient({
   }
 
   return (
-    <div className="settings-container">
-      <div className="settings-sidebar">
-        <button className={`settings-sidebar-btn ${['profile', 'appearance'].includes(openSection || '') ? 'active' : ''}`} onClick={() => setOpenSection('profile')}>
+    <div className="flex flex-col md:flex-row gap-8 items-start w-full max-w-6xl mx-auto">
+      <div className="flex flex-col gap-1 w-full md:w-64 shrink-0 md:sticky md:top-6">
+        <button className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left ${['profile', 'appearance'].includes(openSection || '') ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'}`} onClick={() => setOpenSection('profile')}>
           <User size={16} /> Profile
         </button>
-        <button className={`settings-sidebar-btn ${['preferences', 'savings', 'notifications'].includes(openSection || '') ? 'active' : ''}`} onClick={() => setOpenSection('preferences')}>
+        <button className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left ${['preferences', 'savings', 'notifications'].includes(openSection || '') ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'}`} onClick={() => setOpenSection('preferences')}>
           <Globe size={16} /> Preferences
         </button>
-        <button className={`settings-sidebar-btn ${['security'].includes(openSection || '') ? 'active' : ''}`} onClick={() => setOpenSection('security')}>
+        <button className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left ${['security'].includes(openSection || '') ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'}`} onClick={() => setOpenSection('security')}>
           <ShieldCheck size={16} /> Account & Security
         </button>
-        <button className={`settings-sidebar-btn ${['data', 'help'].includes(openSection || '') ? 'active' : ''}`} onClick={() => setOpenSection('data')}>
+        <button className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left ${['data', 'help'].includes(openSection || '') ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'}`} onClick={() => setOpenSection('data')}>
           <Database size={16} /> Audit Logs & Data
         </button>
       </div>
 
-      <div className="settings-content animate-in">
+      <div className="flex-1 w-full min-w-0 animate-in">
         {/* Profile & Appearance */}
         {(openSection === 'profile' || openSection === 'appearance') && (
           <>
-            <div className="settings-card">
-              <h2 className="settings-card-title">Profile</h2>
-              <p className="settings-card-desc">Manage your personal information</p>
-              <div style={{ display:'flex', alignItems:'center', gap:'0.875rem', padding:'0.875rem', background:'var(--bg-app)', borderRadius:8, marginBottom:'1.25rem' }}>
-                <div style={{ width:48, height:48, borderRadius:'50%', background:'linear-gradient(135deg,rgb(43, 125, 233),rgb(26, 111, 212))', display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontFamily:'Space Grotesk,sans-serif', fontWeight:700, fontSize:'1.1rem', flexShrink:0 }}>
-                  {initials}
-                </div>
-                <div style={{ minWidth:0 }}>
-                  <div style={{ fontWeight:700, fontSize:'0.875rem', color:'var(--color-text-primary)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{name || '—'}</div>
-                  <div style={{ fontSize:'0.7rem', color:'var(--color-text-secondary)', marginTop:'0.1rem', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{initialEmail} · {accountType}</div>
-                </div>
-              </div>
-              <form onSubmit={handleSaveProfile} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <Field label="Full Name">
-                  <input style={inputStyle} type="text" value={name} onChange={e => setName(e.target.value)} required placeholder="Your name" autoComplete="name" />
-                </Field>
-                <Field label="Email Address">
-                  <input style={{ ...inputStyle, opacity:0.7, cursor:'not-allowed' }} type="email" value={initialEmail} disabled title="Email cannot be changed" autoComplete="email" />
-                </Field>
-                <Field label="Account Type">
-                  <select style={{ ...inputStyle, cursor:'pointer' }} value={accountType} onChange={e => setAccountType(e.target.value)}>
-                    <option value="individual">Individual</option>
-                    <option value="freelancer">Freelancer</option>
-                    <option value="small_business">Small Business</option>
-                  </select>
-                </Field>
-                <Field label="Currency">
-                  <input style={{ ...inputStyle, opacity:0.7, cursor:'not-allowed' }} type="text" value="KES" disabled title="Base currency is locked to KES for now" />
-                </Field>
-                <div style={{ paddingTop: '1rem', borderTop: '1px solid var(--border-light)' }}>
-                  <SaveRow {...profileState} />
-                </div>
-              </form>
-            </div>
-
-            <div className="settings-card mt-6">
-              <h2 className="settings-card-title">Appearance</h2>
-              <p className="settings-card-desc">Customize how Ledger360 looks</p>
-              <form onSubmit={handleSaveAppearance} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <Row label="Theme" desc="Toggle between light and dark mode">
-                  <ThemeToggle />
-                </Row>
-                <div style={{ padding:'0.875rem 0', borderBottom:'1px solid var(--border-light)' }}>
-                  <div style={{ fontSize:'0.8125rem', fontWeight:600, color:'var(--color-text-primary)', marginBottom:'0.2rem' }}>Accent Color</div>
-                  <div style={{ fontSize:'0.72rem', color:'var(--color-text-secondary)', marginBottom:'0.75rem' }}>Choose your brand accent color</div>
-                  <div style={{ display:'flex', gap:'0.625rem', flexWrap:'wrap' }}>
-                    {ACCENTS.map(a => (
-                      <button key={a.value} type="button" onClick={() => setAccent(a.value)} title={a.label}
-                        style={{ width:28, height:28, borderRadius:'50%', background:a.value, border:'none', cursor:'pointer', outline: accent === a.value ? `3px solid ${a.value}` : '3px solid transparent', outlineOffset:2, transition:'all 0.15s', boxShadow:'0 2px 4px rgba(0,0,0,0.2)' }} />
-                    ))}
+            <Card>
+              <CardHeader>
+                <CardTitle>Profile</CardTitle>
+                <CardDescription>Manage your personal information</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-3.5 p-3.5 bg-muted/30 rounded-lg mb-5 border border-border">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-heading font-bold text-lg shrink-0">
+                    {initials}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-bold text-sm text-foreground truncate">{name || '—'}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5 truncate">{initialEmail} · {accountType}</div>
                   </div>
                 </div>
-                <Row label="Compact Mode" desc="Display more information in less space">
-                  <Toggle checked={compactMode} onChange={() => setCompactMode(v => !v)} />
-                </Row>
-                <Row label="Smooth Animations" desc="Page entry and transition animations">
-                  <Toggle checked={smoothAnims} onChange={() => setSmoothAnims(v => !v)} />
-                </Row>
-                <div style={{ paddingTop: '1rem', borderTop: '1px solid var(--border-light)' }}>
-                  <SaveRow {...appearState} />
-                </div>
-              </form>
-            </div>
+                <form onSubmit={handleSaveProfile} className="flex flex-col gap-4">
+                  <Field label="Full Name">
+                    <Input type="text" value={name} onChange={e => setName(e.target.value)} required placeholder="Your name" autoComplete="name" />
+                  </Field>
+                  <Field label="Email Address">
+                    <Input type="email" value={initialEmail} disabled title="Email cannot be changed" autoComplete="email" className="opacity-70 cursor-not-allowed" />
+                  </Field>
+                  <Field label="Account Type">
+                    <select className="w-full px-3 py-2 text-sm rounded-md border border-input bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 cursor-pointer" value={accountType} onChange={e => setAccountType(e.target.value)}>
+                      <option value="individual">Individual</option>
+                      <option value="freelancer">Freelancer</option>
+                      <option value="small_business">Small Business</option>
+                    </select>
+                  </Field>
+                  <Field label="Currency">
+                    <Input type="text" value="KES" disabled title="Base currency is locked to KES for now" className="opacity-70 cursor-not-allowed" />
+                  </Field>
+                  <div className="pt-4 border-t border-border">
+                    <SaveRow {...profileState} />
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle>Appearance</CardTitle>
+                <CardDescription>Customize how Ledger360 looks</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSaveAppearance} className="flex flex-col gap-2">
+                  <Row label="Theme" desc="Toggle between light and dark mode">
+                    <ThemeToggle />
+                  </Row>
+                  <div className="py-3.5 border-b border-border">
+                    <div className="text-sm font-semibold text-foreground mb-1">Accent Color</div>
+                    <div className="text-xs text-muted-foreground mb-3">Choose your brand accent color</div>
+                    <div className="flex gap-2.5 flex-wrap">
+                      {ACCENTS.map(a => (
+                        <button key={a.value} type="button" onClick={() => setAccent(a.value)} title={a.label}
+                          className={`w-7 h-7 rounded-full border-none cursor-pointer outline-[3px] outline-offset-2 transition-all shadow-md ${accent === a.value ? 'outline' : 'outline-transparent'}`}
+                          style={{ background: a.value, outlineColor: accent === a.value ? a.value : 'transparent' }} />
+                      ))}
+                    </div>
+                  </div>
+                  <Row label="Compact Mode" desc="Display more information in less space">
+                    <Switch checked={compactMode} onCheckedChange={() => setCompactMode(v => !v)} />
+                  </Row>
+                  <Row label="Smooth Animations" desc="Page entry and transition animations">
+                    <Switch checked={smoothAnims} onCheckedChange={() => setSmoothAnims(v => !v)} />
+                  </Row>
+                  <div className="pt-4 border-t border-border">
+                    <SaveRow {...appearState} />
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
           </>
         )}
 
         {/* Preferences, Savings, Notifications */}
         {(openSection === 'preferences' || openSection === 'savings' || openSection === 'notifications') && (
           <>
-            <div className="settings-card">
-              <h2 className="settings-card-title">Preferences</h2>
-              <p className="settings-card-desc">Regional and display preferences</p>
-              <form onSubmit={handleSavePrefs} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <Row label="Date Format" desc="How dates appear throughout the app">
-                  <SettingSelect value={dateFormat} onChange={setDateFmt}>
-                    <option>DD/MM/YYYY</option><option>MM/DD/YYYY</option><option>YYYY-MM-DD</option>
-                  </SettingSelect>
-                </Row>
-                <Row label="Target Saving Rate" desc="Your personal monthly savings goal">
-                  <div style={{ display:'flex', alignItems:'center', gap:'0.4rem' }}>
-                    <input type="number" value={savingRate} min={1} max={80} onChange={e => setSavingRate(e.target.value)}
-                      style={{ width:60, padding:'0.375rem 0.5rem', borderRadius:6, border:'1px solid var(--border)', background:'var(--surface-card)', color:'var(--color-text-primary)', fontSize:'0.8rem', textAlign:'center', fontFamily:'Space Grotesk,sans-serif', fontWeight:700 }} />
-                    <span style={{ fontSize:'0.8rem', color:'var(--color-text-secondary)' }}>% of income</span>
+            <Card>
+              <CardHeader>
+                <CardTitle>Preferences</CardTitle>
+                <CardDescription>Regional and display preferences</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSavePrefs} className="flex flex-col gap-2">
+                  <Row label="Date Format" desc="How dates appear throughout the app">
+                    <SettingSelect value={dateFormat} onChange={setDateFmt}>
+                      <option>DD/MM/YYYY</option><option>MM/DD/YYYY</option><option>YYYY-MM-DD</option>
+                    </SettingSelect>
+                  </Row>
+                  <Row label="Target Saving Rate" desc="Your personal monthly savings goal">
+                    <div className="flex items-center gap-2">
+                      <div className="w-20">
+                        <Input type="number" value={savingRate} min={1} max={80} onChange={e => setSavingRate(e.target.value)} className="text-center font-heading font-bold" />
+                      </div>
+                      <span className="text-xs text-muted-foreground">% of income</span>
+                    </div>
+                  </Row>
+                  <Row label="Expected Monthly Income" desc="Optional. Overrides actual income for Safe-to-Spend calculations.">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">{initialCurrency}</span>
+                      <div className="w-32">
+                        <Input type="number" value={expectedMonthlyIncome} onChange={e => setExpectedMonthlyIncome(e.target.value)} placeholder="Auto" className="text-right font-heading font-bold" />
+                      </div>
+                    </div>
+                  </Row>
+                  <Row label="Week Start Day" desc="First day shown in calendar views">
+                    <SettingSelect value={weekStart} onChange={setWeekStart}>
+                      <option>Monday</option><option>Sunday</option>
+                    </SettingSelect>
+                  </Row>
+                  <div className="pt-4 border-t border-border">
+                    <SaveRow {...prefsState} />
                   </div>
-                </Row>
-                <Row label="Expected Monthly Income" desc="Optional. Overrides actual income for Safe-to-Spend calculations.">
-                  <div style={{ display:'flex', alignItems:'center', gap:'0.4rem' }}>
-                    <span style={{ fontSize:'0.8rem', color:'var(--color-text-secondary)' }}>{initialCurrency}</span>
-                    <input type="number" value={expectedMonthlyIncome} onChange={e => setExpectedMonthlyIncome(e.target.value)} placeholder="Auto"
-                      style={{ width:100, padding:'0.375rem 0.5rem', borderRadius:6, border:'1px solid var(--border)', background:'var(--surface-card)', color:'var(--color-text-primary)', fontSize:'0.8rem', textAlign:'right', fontFamily:'Space Grotesk,sans-serif', fontWeight:700 }} />
+                </form>
+              </CardContent>
+            </Card>
+
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle>Save-More-Tomorrow</CardTitle>
+                <CardDescription>Automate your savings and goals</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <SavingsAutomationSection
+                  plan={savingsPlan}
+                  accounts={accounts}
+                  goals={goals}
+                  autoSaves={autoSaves}
+                  currency={currency}
+                />
+              </CardContent>
+            </Card>
+
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle>Notifications</CardTitle>
+                <CardDescription>Alerts and reminders</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSaveNotifs} className="flex flex-col gap-2">
+                  <Row label="Overbudget Alerts" desc="Notify when spending exceeds its limit">
+                    <Switch checked={notifs.overbudget} onCheckedChange={() => setNotifs(n => ({ ...n, overbudget: !n.overbudget }))} />
+                  </Row>
+                  <Row label="Goal Progress Updates" desc="Weekly updates on savings milestones">
+                    <Switch checked={notifs.goals} onCheckedChange={() => setNotifs(n => ({ ...n, goals: !n.goals }))} />
+                  </Row>
+                  <Row label="Upcoming Loan Payments" desc="3-day reminder before each due date">
+                    <Switch checked={notifs.loanDue} onCheckedChange={() => setNotifs(n => ({ ...n, loanDue: !n.loanDue }))} />
+                  </Row>
+                  <Row label="Upcoming Bills" desc="Remind me when regular bills are due">
+                    <Switch checked={notifs.bills} onCheckedChange={() => setNotifs(n => ({ ...n, bills: !n.bills }))} />
+                  </Row>
+                  <Row label="Monthly Financial Summary" desc="End-of-month report on income and spending">
+                    <Switch checked={notifs.insights} onCheckedChange={() => setNotifs(n => ({ ...n, insights: !n.insights }))} />
+                  </Row>
+                  <div className="pt-4 border-t border-border">
+                    <SaveRow {...notifState} />
                   </div>
-                </Row>
-                <Row label="Week Start Day" desc="First day shown in calendar views">
-                  <SettingSelect value={weekStart} onChange={setWeekStart}>
-                    <option>Monday</option><option>Sunday</option>
-                  </SettingSelect>
-                </Row>
-                <div style={{ paddingTop: '1rem', borderTop: '1px solid var(--border-light)' }}>
-                  <SaveRow {...prefsState} />
-                </div>
-              </form>
-            </div>
-
-            <div className="settings-card mt-6">
-              <h2 className="settings-card-title">Save-More-Tomorrow</h2>
-              <p className="settings-card-desc">Automate your savings and goals</p>
-              <SavingsAutomationSection
-                plan={savingsPlan}
-                accounts={accounts}
-                goals={goals}
-                autoSaves={autoSaves}
-                currency={currency}
-              />
-            </div>
-
-            <div className="settings-card mt-6">
-              <h2 className="settings-card-title">Notifications</h2>
-              <p className="settings-card-desc">Alerts and reminders</p>
-              <form onSubmit={handleSaveNotifs} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <Row label="Overbudget Alerts" desc="Notify when spending exceeds its limit">
-                  <Toggle checked={notifs.overbudget} onChange={() => setNotifs(n => ({ ...n, overbudget: !n.overbudget }))} />
-                </Row>
-                <Row label="Goal Progress Updates" desc="Weekly updates on savings milestones">
-                  <Toggle checked={notifs.goals} onChange={() => setNotifs(n => ({ ...n, goals: !n.goals }))} />
-                </Row>
-                <Row label="Upcoming Loan Payments" desc="3-day reminder before each due date">
-                  <Toggle checked={notifs.loanDue} onChange={() => setNotifs(n => ({ ...n, loanDue: !n.loanDue }))} />
-                </Row>
-                <Row label="Upcoming Bills" desc="Remind me when regular bills are due">
-                  <Toggle checked={notifs.bills} onChange={() => setNotifs(n => ({ ...n, bills: !n.bills }))} />
-                </Row>
-                <Row label="Monthly Financial Summary" desc="End-of-month report on income and spending">
-                  <Toggle checked={notifs.insights} onChange={() => setNotifs(n => ({ ...n, insights: !n.insights }))} />
-                </Row>
-                <div style={{ paddingTop: '1rem', borderTop: '1px solid var(--border-light)' }}>
-                  <SaveRow {...notifState} />
-                </div>
-                <div style={{ marginTop:'1rem', padding:'0.75rem', background:'var(--bg-app)', borderRadius:8, display:'flex', gap:'0.5rem' }}>
-                  <Info size={14} color="var(--color-text-secondary)" style={{ flexShrink:0, marginTop:1 }} />
-                  <p style={{ fontSize:'0.72rem', color:'var(--color-text-secondary)' }}>Notifications are in-app only. Email and push notifications coming soon.</p>
-                </div>
-              </form>
-            </div>
+                  <div className="mt-4 p-3 bg-muted/50 rounded-lg flex items-start gap-2">
+                    <Info className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+                    <p className="text-xs text-muted-foreground">Notifications are in-app only. Email and push notifications coming soon.</p>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
           </>
         )}
 
         {/* Security */}
         {openSection === 'security' && (
-          <div className="settings-card">
-            <h2 className="settings-card-title">Security & Activity</h2>
-            <p className="settings-card-desc">Recent security events and account actions.</p>
-            {logs.length === 0 ? (
-              <p style={{ textAlign: 'center', color: 'var(--color-text-secondary)', padding: '2rem' }}>No activity logged yet.</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: 400, overflowY: 'auto', paddingRight: '0.5rem' }}>
-                {logs.map(log => {
-                  const date = new Date(log.createdAt);
-                  const rawAction = log.action.split('_')[0].toUpperCase();
-                  const actionVerbs: Record<string, string> = { CREATE: 'added', UPDATE: 'updated', DELETE: 'deleted', IMPORT: 'imported' };
-                  const verb = actionVerbs[rawAction] || 'modified';
-                  const resourceNoun = (log.resource || 'item').toLowerCase();
-                  
-                  let details = '';
-                  if (log.metadata) {
-                    try {
-                      // metadata is already a Json object (or string if it was old JSON.stringify)
-                      const meta = typeof log.metadata === 'string' ? JSON.parse(log.metadata) : log.metadata;
-                      if (meta && typeof meta === 'object' && !Array.isArray(meta)) {
-                        const parts = [];
-                        if (meta.name) parts.push(`"${meta.name}"`);
-                        const minorAmt = meta.amountMinor ?? meta.baseAmountMinor;
-                        if (minorAmt !== undefined) parts.push(`for ${fmtAdaptive(toMajor(minorAmt), initialCurrency || 'KES')}`);
-                        
-                        if (parts.length > 0) details = parts.join(' ');
-                        else {
-                          const keys = Object.keys(meta).filter(k => !k.includes('Id'));
-                          if (keys.length > 0) details = `(Fields: ${keys.join(', ')})`;
+          <Card>
+            <CardHeader>
+              <CardTitle>Security & Activity</CardTitle>
+              <CardDescription>Recent security events and account actions.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {logs.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">No activity logged yet.</p>
+              ) : (
+                <div className="flex flex-col gap-2 max-h-[400px] overflow-y-auto pr-2">
+                  {logs.map(log => {
+                    const date = new Date(log.createdAt);
+                    const rawAction = log.action.split('_')[0].toUpperCase();
+                    const actionVerbs: Record<string, string> = { CREATE: 'added', UPDATE: 'updated', DELETE: 'deleted', IMPORT: 'imported' };
+                    const verb = actionVerbs[rawAction] || 'modified';
+                    const resourceNoun = (log.resource || 'item').toLowerCase();
+                    
+                    let details = '';
+                    if (log.metadata) {
+                      try {
+                        const meta = typeof log.metadata === 'string' ? JSON.parse(log.metadata) : log.metadata;
+                        if (meta && typeof meta === 'object' && !Array.isArray(meta)) {
+                          const parts = [];
+                          if (meta.name) parts.push(`"${meta.name}"`);
+                          const minorAmt = meta.amountMinor ?? meta.baseAmountMinor;
+                          if (minorAmt !== undefined) parts.push(`for ${fmtAdaptive(toMajor(minorAmt), initialCurrency || 'KES')}`);
+                          
+                          if (parts.length > 0) details = parts.join(' ');
+                          else {
+                            const keys = Object.keys(meta).filter(k => !k.includes('Id'));
+                            if (keys.length > 0) details = `(Fields: ${keys.join(', ')})`;
+                          }
                         }
+                      } catch {
+                        details = typeof log.metadata === 'string' && !log.metadata.startsWith('{') ? log.metadata : '';
                       }
-                    } catch {
-                      details = typeof log.metadata === 'string' && !log.metadata.startsWith('{') ? log.metadata : '';
                     }
-                  }
 
-                  return (
-                    <div key={log.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.875rem', background: 'var(--bg-app)', borderRadius: 8, border: '1px solid var(--border)' }}>
-                      <div style={{ flex: 1, minWidth: 0, marginRight: '1rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                          <span style={{ fontWeight: 600, color: 'var(--color-text-primary)', fontSize: '0.85rem' }}>
-                            You {verb} a {resourceNoun}
-                          </span>
-                        </div>
-                        {details && (
-                          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {details}
+                    return (
+                      <div key={log.id} className="flex justify-between items-center p-3.5 bg-muted/30 rounded-lg border border-border">
+                        <div className="flex-1 min-w-0 pr-4">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-semibold text-foreground text-sm">
+                              You {verb} a {resourceNoun}
+                            </span>
                           </div>
-                        )}
+                          {details && (
+                            <div className="text-xs text-muted-foreground truncate">
+                              {details}
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-right text-xs text-muted-foreground shrink-0">
+                          {date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                          <div className="text-[11px] mt-0.5">{date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}</div>
+                        </div>
                       </div>
-                      <div style={{ textAlign: 'right', fontSize: '0.75rem', color: 'var(--color-text-secondary)', flexShrink: 0 }}>
-                        {date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                        <div style={{ fontSize: '0.7rem' }}>{date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}</div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         )}
 
         {/* Data & Help */}
         {(openSection === 'data' || openSection === 'help') && (
           <>
-            <div className="settings-card">
-              <h2 className="settings-card-title">Data & Privacy</h2>
-              <p className="settings-card-desc">Manage your data exports and imports</p>
-              <div style={{ display:'flex', flexDirection:'column', gap:'0.625rem', marginBottom:'1.25rem' }}>
-                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0.875rem 1rem', background:'var(--bg-app)', borderRadius:8, gap:'0.75rem' }}>
-                  <div style={{ minWidth:0, flex:1 }}>
-                    <div style={{ fontSize:'0.8125rem', fontWeight:600, color:'var(--color-text-primary)' }}>Export All Data</div>
-                    <div style={{ fontSize:'0.72rem', color:'var(--color-text-secondary)' }}>Download all your financial data as JSON</div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleExportData}
-                    disabled={dataState.saving}
-                    className="btn btn-outline"
-                    style={{ display:'flex', alignItems:'center', gap:'0.3rem', fontSize:'0.78rem', flexShrink:0 }}
-                  >
-                    {dataState.saving ? <Loader2 size={12} style={{ animation:'spin 1s linear infinite' }}/> : <Download size={12}/>}
-                    Export
-                  </button>
-                </div>
-
-                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0.875rem 1rem', background:'var(--bg-app)', borderRadius:8, gap:'0.75rem' }}>
-                  <div style={{ minWidth:0, flex:1 }}>
-                    <div style={{ fontSize:'0.8125rem', fontWeight:600, color:'var(--color-text-primary)' }}>Import Bank Statement</div>
-                    <div style={{ fontSize:'0.72rem', color:'var(--color-text-secondary)' }}>Upload M-Pesa or bank CSV/Excel/PDF</div>
-                  </div>
-                  <a href="/transactions" className="btn btn-outline" style={{ display:'flex', alignItems:'center', gap:'0.3rem', fontSize:'0.78rem', flexShrink:0, textDecoration:'none' }}>
-                    <Database size={12}/> Go
-                  </a>
-                </div>
-              </div>
-
-              <div style={{ padding:'1.5rem', background:'var(--color-expense-light)', borderRadius:12, border:'1px solid var(--color-expense)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                  <AlertTriangle size={18} color="var(--color-expense)" />
-                  <div style={{ fontSize:'1rem', fontWeight:800, color:'var(--color-expense)', letterSpacing: '-0.01em' }}>Danger Zone</div>
-                </div>
-                <div style={{ fontSize:'0.85rem', color:'var(--color-text-secondary)', marginBottom:'1.5rem', lineHeight: 1.5 }}>
-                  Deleting your data is permanent and cannot be undone. Please export your data first.
-                </div>
-                {deleteConfirm ? (
-                  <div style={{ display:'flex', gap:'0.75rem', alignItems:'center', flexWrap:'wrap', background: 'var(--surface-card)', padding: '1rem', borderRadius: 8, border: '1px solid var(--border)' }}>
-                    <span style={{ fontSize:'0.85rem', color:'var(--color-text-primary)', fontWeight:600 }}>Type &quot;DELETE&quot; to confirm:</span>
-                    <input
-                      type="text"
-                      value={deleteAllText}
-                      onChange={(e) => setDeleteAllText(e.target.value)}
-                      placeholder="DELETE"
-                      style={{ width: 100, padding: '0.45rem 0.75rem', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface-sunken)', color: 'var(--color-text-primary)', fontSize: '0.85rem', textAlign: 'center', fontWeight: 700, textTransform: 'uppercase' }}
-                    />
-                    <button
-                      type="button"
-                      onClick={handleDeleteAll}
-                      disabled={dataState.saving || deleteAllText !== 'DELETE'}
-                      className="btn"
-                      style={{ background:'var(--color-expense)', color:'white', display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.85rem', fontWeight: 700, opacity: deleteAllText === 'DELETE' ? 1 : 0.5, padding: '0.5rem 1rem', borderRadius: 6 }}
-                    >
-                      {dataState.saving ? <Loader2 size={14} style={{ animation:'spin 1s linear infinite' }}/> : <Trash2 size={14}/>}
-                      Yes, Delete Everything
-                    </button>
-                    <button type="button" onClick={() => { setDeleteConfirm(false); setDeleteAllText(''); }} className="btn btn-outline" style={{ fontSize:'0.85rem', padding: '0.5rem 1rem' }}>
-                      Cancel
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setDeleteConfirm(true)}
-                    className="btn"
-                    style={{ background:'var(--color-expense)', color:'white', display:'flex', alignItems:'center', gap:'0.4rem', fontSize:'0.85rem', fontWeight: 700, padding: '0.6rem 1.25rem', borderRadius: 6, border: 'none' }}
-                  >
-                    <Trash2 size={14}/> Delete All Data
-                  </button>
-                )}
-
-                <div style={{ marginTop: '2.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)' }}>
-                  <div style={{ fontSize:'0.9rem', fontWeight:700, color:'var(--color-text-primary)', marginBottom:'0.35rem' }}>Delete Account</div>
-                  <div style={{ fontSize:'0.85rem', color:'var(--color-text-secondary)', marginBottom:'1.25rem', lineHeight: 1.5 }}>
-                    Permanently delete your account and all associated data. This action is irreversible.
-                  </div>
-                  {deleteAcctConfirm ? (
-                    <div style={{ display:'flex', gap:'0.75rem', alignItems:'center', flexWrap:'wrap', background: 'var(--surface-card)', padding: '1rem', borderRadius: 8, border: '1px solid var(--border)' }}>
-                      <span style={{ fontSize:'0.85rem', color:'var(--color-text-primary)', fontWeight:600 }}>Type &quot;DELETE&quot; to confirm:</span>
-                      <input
-                        type="text"
-                        value={deleteAcctText}
-                        onChange={(e) => setDeleteAcctText(e.target.value)}
-                        placeholder="DELETE"
-                        style={{ width: 100, padding: '0.45rem 0.75rem', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--surface-sunken)', color: 'var(--color-text-primary)', fontSize: '0.85rem', textAlign: 'center', fontWeight: 700, textTransform: 'uppercase' }}
-                      />
-                      <button
-                        type="button"
-                        onClick={handleDeleteAccount}
-                        disabled={dataState.saving || deleteAcctText !== 'DELETE'}
-                        className="btn"
-                        style={{ background:'var(--color-expense)', color:'white', display:'flex', alignItems:'center', gap:'0.35rem', fontSize:'0.85rem', fontWeight: 700, opacity: deleteAcctText === 'DELETE' ? 1 : 0.5, padding: '0.5rem 1rem', borderRadius: 6 }}
-                      >
-                        {dataState.saving ? <Loader2 size={14} style={{ animation:'spin 1s linear infinite' }}/> : <Trash2 size={14}/>}
-                        Yes, Delete My Account
-                      </button>
-                      <button type="button" onClick={() => { setDeleteAcctConfirm(false); setDeleteAcctText(''); }} className="btn btn-outline" style={{ fontSize:'0.85rem', padding: '0.5rem 1rem' }}>
-                        Cancel
-                      </button>
+            <Card>
+              <CardHeader>
+                <CardTitle>Data & Privacy</CardTitle>
+                <CardDescription>Manage your data exports and imports</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col gap-2.5 mb-5">
+                  <div className="flex items-center justify-between p-3.5 bg-muted/30 rounded-lg gap-3 border border-border">
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-semibold text-foreground">Export All Data</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">Download all your financial data as JSON</div>
                     </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setDeleteAcctConfirm(true)}
-                      className="btn"
-                      style={{ background:'transparent', color:'var(--color-expense)', display:'flex', alignItems:'center', gap:'0.4rem', fontSize:'0.85rem', fontWeight: 700, padding: '0.6rem 1.25rem', borderRadius: 6, border: '1px solid var(--color-expense)' }}
-                    >
-                      <Trash2 size={14}/> Delete Account
-                    </button>
+                    <Button variant="secondary" onClick={handleExportData} disabled={dataState.saving} loading={dataState.saving} iconLeft={!dataState.saving && <Download size={14} />}>
+                      Export
+                    </Button>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3.5 bg-muted/30 rounded-lg gap-3 border border-border">
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-semibold text-foreground">Import Bank Statement</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">Upload M-Pesa or bank CSV/Excel/PDF</div>
+                    </div>
+                    <a href="/transactions" className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2 gap-2 text-foreground no-underline">
+                      <Database size={14} /> Go
+                    </a>
+                  </div>
+                </div>
+
+                <div className="p-6 bg-destructive/10 rounded-xl border border-destructive/20">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertTriangle size={18} className="text-destructive" />
+                    <div className="text-base font-bold text-destructive tracking-tight">Danger Zone</div>
+                  </div>
+                  <div className="text-sm text-muted-foreground mb-6 leading-relaxed">
+                    Deleting your data is permanent and cannot be undone. Please export your data first.
+                  </div>
+                  <Dialog open={deleteConfirm} onOpenChange={setDeleteConfirm}>
+                    <DialogTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="danger"
+                        iconLeft={<Trash2 size={14}/>}
+                      >
+                        Delete All Data
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Are you absolutely sure?</DialogTitle>
+                        <DialogDescription>
+                          This will delete all your financial data, including transactions, budgets, and goals. 
+                          This action cannot be undone. Please type "DELETE" to confirm.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="flex flex-col gap-4 py-4">
+                        <Input
+                          type="text"
+                          value={deleteAllText}
+                          onChange={(e) => setDeleteAllText(e.target.value)}
+                          placeholder="DELETE"
+                          className="font-bold uppercase text-sm"
+                        />
+                      </div>
+                      <DialogFooter>
+                        <DialogClose asChild>
+                          <Button variant="secondary" type="button" onClick={() => setDeleteAllText('')}>Cancel</Button>
+                        </DialogClose>
+                        <Button
+                          type="button"
+                          variant="danger"
+                          onClick={handleDeleteAll}
+                          disabled={dataState.saving || deleteAllText !== 'DELETE'}
+                          loading={dataState.saving}
+                          iconLeft={!dataState.saving && <Trash2 size={14}/>}
+                        >
+                          Yes, Delete Everything
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+
+                  <div className="mt-10 pt-6 border-t border-destructive/20">
+                    <div className="text-sm font-bold text-foreground mb-1">Delete Account</div>
+                    <div className="text-sm text-muted-foreground mb-5 leading-relaxed">
+                      Permanently delete your account and all associated data. This action is irreversible.
+                    </div>
+                    <Dialog open={deleteAcctConfirm} onOpenChange={setDeleteAcctConfirm}>
+                      <DialogTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          iconLeft={<Trash2 size={14}/>}
+                          className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        >
+                          Delete Account
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Are you absolutely sure?</DialogTitle>
+                          <DialogDescription>
+                            This will permanently delete your account and all associated data. 
+                            This action is irreversible. Please type "DELETE" to confirm.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="flex flex-col gap-4 py-4">
+                          <Input
+                            type="text"
+                            value={deleteAcctText}
+                            onChange={(e) => setDeleteAcctText(e.target.value)}
+                            placeholder="DELETE"
+                            className="font-bold uppercase text-sm"
+                          />
+                        </div>
+                        <DialogFooter>
+                          <DialogClose asChild>
+                            <Button variant="secondary" type="button" onClick={() => setDeleteAcctText('')}>Cancel</Button>
+                          </DialogClose>
+                          <Button
+                            type="button"
+                            variant="danger"
+                            onClick={handleDeleteAccount}
+                            disabled={dataState.saving || deleteAcctText !== 'DELETE'}
+                            loading={dataState.saving}
+                            iconLeft={!dataState.saving && <Trash2 size={14}/>}
+                          >
+                            Yes, Delete My Account
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+
+                  {dataState.error && (
+                    <div className="mt-4 text-sm font-semibold text-destructive">{dataState.error}</div>
                   )}
                 </div>
+              </CardContent>
+            </Card>
 
-                {dataState.error && (
-                  <div style={{ marginTop:'1rem', fontSize:'0.85rem', color:'var(--color-expense)', fontWeight: 600 }}>{dataState.error}</div>
-                )}
-              </div>
-            </div>
-
-            <div className="settings-card mt-6">
-              <h2 className="settings-card-title">Help & About</h2>
-              <p className="settings-card-desc">Information and resources</p>
-              <div style={{ display:'flex', flexDirection:'column', gap:'0.375rem', marginBottom:'1.25rem' }}>
-                {[
-                  { title:'Privacy Policy', desc:'How we handle your data', href: '/privacy' },
-                  { title:'Terms of Service', desc:'Rules and agreements', href: '/tos' },
-                  { title:'Contact Support', desc:'Email our support team', href: 'mailto:support@ledger360.com' },
-                ].map(h => (
-                  <a href={h.href} key={h.title} style={{ textDecoration: 'none', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0.75rem 0.875rem', background:'var(--bg-app)', borderRadius:7, cursor:'pointer', gap:'0.5rem' }}>
-                    <div style={{ minWidth:0, flex:1 }}>
-                      <div style={{ fontSize:'0.8125rem', fontWeight:600, color:'var(--color-text-primary)' }}>{h.title}</div>
-                      <div style={{ fontSize:'0.7rem', color:'var(--color-text-secondary)', marginTop:'0.1rem' }}>{h.desc}</div>
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle>Help & About</CardTitle>
+                <CardDescription>Information and resources</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col gap-1.5 mb-5">
+                  {[
+                    { title:'Privacy Policy', desc:'How we handle your data', href: '/privacy' },
+                    { title:'Terms of Service', desc:'Rules and agreements', href: '/tos' },
+                    { title:'Contact Support', desc:'Email our support team', href: 'mailto:support@ledger360.com' },
+                  ].map(h => (
+                    <a href={h.href} key={h.title} className="flex items-center justify-between p-3 bg-muted/30 hover:bg-muted/50 rounded-lg transition-colors no-underline text-foreground border border-transparent hover:border-border gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-semibold">{h.title}</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">{h.desc}</div>
+                      </div>
+                      <ExternalLink size={14} className="text-muted-foreground shrink-0" />
+                    </a>
+                  ))}
+                </div>
+                <div className="px-4 py-3 bg-muted/30 rounded-lg border border-border">
+                  {[
+                    { label:'App Version', val:'Ledger360 v1.0.0' },
+                    { label:'Stack', val:'Next.js 16 · Prisma 7 · Neon' },
+                  ].map(r => (
+                    <div key={r.label} className="flex justify-between items-center mb-1.5 last:mb-0">
+                      <span className="text-xs text-muted-foreground">{r.label}</span>
+                      <span className="text-xs font-semibold font-mono text-foreground">{r.val}</span>
                     </div>
-                    <ExternalLink size={13} color="var(--color-text-secondary)" style={{ flexShrink:0 }} />
-                  </a>
-                ))}
-              </div>
-              <div style={{ padding:'0.875rem 1rem', background:'var(--bg-app)', borderRadius:8 }}>
-                {[
-                  { label:'App Version', val:'Ledger360 v1.0.0' },
-                  { label:'Stack', val:'Next.js 16 · Prisma 7 · Neon' },
-                ].map(r => (
-                  <div key={r.label} style={{ display:'flex', justifyContent:'space-between', marginBottom:'0.375rem' }}>
-                    <span style={{ fontSize:'0.72rem', color:'var(--color-text-secondary)' }}>{r.label}</span>
-                    <span style={{ fontSize:'0.72rem', fontWeight:600, fontFamily:'Space Grotesk,sans-serif', color:'var(--color-text-primary)' }}>{r.val}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           </>
         )}
       </div>

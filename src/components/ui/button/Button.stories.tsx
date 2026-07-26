@@ -1,5 +1,5 @@
 /* eslint-disable storybook/no-renderer-packages */
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { Button } from './Button';
 
 const meta = {
@@ -57,5 +57,12 @@ export const Disabled: Story = {
   args: {
     children: 'Disabled Button',
     disabled: true,
+  },
+};
+
+export const Loading: Story = {
+  args: {
+    children: 'Loading...',
+    loading: true,
   },
 };

@@ -1,5 +1,5 @@
 /* eslint-disable storybook/no-renderer-packages */
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { Surface } from './Surface';
 
 const meta = {
