@@ -40,7 +40,10 @@ ARCHITECTURE / ANTI-DRIFT
 - Do not rename existing models, exported functions, routes, or env-var names.
 - Do not add npm packages unless the work order names them.
 - Keep DEFAULT_CATEGORIES a flat array (no enums/metadata/hierarchy).
-- All money display goes through src/lib/format.ts.
+- **Financial Rule 1:** Feature components must not format monetary values directly. All monetary rendering must go through `src/components/finance`.
+- **Financial Rule 2:** No component outside `src/lib/finance` should call `Intl.NumberFormat`.
+- **Financial Rule 3:** Feature components must not manually concatenate "$", "%", "+", or "-".
+- **Financial Rule 4:** Feature components must not determine semantic financial colors. They should pass tones (e.g. `positive`, `negative`) to the finance layer.
 - Every JSON API responds { data, error, meta }.
 - Preserve existing philosophy/intent comments.
 
