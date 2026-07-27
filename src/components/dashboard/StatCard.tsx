@@ -1,12 +1,11 @@
 import React from 'react';
-import { Surface } from '@/components/ui/surface/Surface';
-import { CurrencyDisplay, type MoneyDTO } from '@/components/finance/display/currency-display/CurrencyDisplay';
-import { FinancialMetric } from '@/components/finance/metrics/FinancialMetric';
+import { MetricCard } from '@/components/finance';
+import { CurrencyDisplay } from '@/components/finance';
 
 export interface StatCardProps {
   label: string;
   subLabel?: string;
-  money?: MoneyDTO;
+  money?: { amountMinor: number | bigint; currencyCode: string };
   value?: string | React.ReactNode;
   icon?: React.ReactNode;
   iconBgClass?: string;
@@ -19,22 +18,26 @@ export function StatCard({
   money,
   value,
   icon,
-  iconBgClass = "bg-brand/10",
-  iconColorClass = "text-brand",
+  iconBgClass = "bg-brand/10 text-brand",
+  iconColorClass = "", // Unused now, merged with bg class for simplicity, or keeping for compatibility
 }: StatCardProps) {
+  
+  const iconNode = icon ? (
+    <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${iconBgClass} ${iconColorClass}`} aria-hidden="true">
+      {icon}
+    </div>
+  ) : undefined;
+
+  const primaryMetric = money ? (
+    <CurrencyDisplay money={{ amountMinor: money.amountMinor, currency: money.currencyCode }} />
+  ) : value;
+
   return (
-    <Surface padding="sm" className="flex items-start gap-4">
-      {icon && (
-        <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${iconBgClass} ${iconColorClass}`} aria-hidden="true">
-          {icon}
-        </div>
-      )}
-      <FinancialMetric 
-        label={label}
-        value={money ? <CurrencyDisplay value={money} /> : value}
-        subLabel={subLabel}
-        className="flex-1"
-      />
-    </Surface>
+    <MetricCard
+      title={label}
+      primaryMetric={primaryMetric}
+      secondaryMetric={subLabel}
+      icon={iconNode}
+    />
   );
 }

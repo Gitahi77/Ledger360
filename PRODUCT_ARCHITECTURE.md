@@ -10,11 +10,12 @@ Help people understand, control, and improve their financial lives. The goal is 
 
 ## Core Abstractions
 1. **Money:** The fundamental unit. Immutable, currency-aware, and precise (minor units).
-2. **Ledger Entry:** The canonical record of financial movement. Transactions, transfers, loan payments, and interest are all just semantic variations of Ledger Entries.
-3. **Account:** A collection of Ledger Entries that compute to a balance.
-4. **Budget & Goal:** Planning primitives that monitor Ledger Entries against targets.
-5. **Loan:** A liability primitive integrated directly into the unified Ledger.
-6. **Insight & Report:** Read-only aggregations that provide reassurance and clarity.
+2. **Finance UI Foundation:** A dedicated presentation layer (`src/components/finance` and `src/lib/finance`) responsible for all monetary, percentage, and trend presentation. No raw monetary formatting occurs in feature components.
+3. **Ledger Entry:** The canonical record of financial movement. Transactions, transfers, loan payments, and interest are all just semantic variations of Ledger Entries.
+4. **Account:** A collection of Ledger Entries that compute to a balance.
+5. **Budget & Goal:** Planning primitives that monitor Ledger Entries against targets.
+6. **Loan:** A liability primitive integrated directly into the unified Ledger.
+7. **Insight & Report:** Read-only aggregations that provide reassurance and clarity.
 
 ## Non-Functional Goals
 - **Reliability:** The system must never lose or silently corrupt a ledger entry. N+1 balance computations are prevented; state is strongly reconciled.
