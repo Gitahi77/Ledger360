@@ -8,7 +8,7 @@ import {
   PieChart, Pie, Cell
 } from 'recharts';
 import { TrendingUp, TrendingDown, Minus, Info } from 'lucide-react';
-import { fmtAdaptive, fmtCompact } from '@/lib/format';
+import { formatCurrency } from '@/lib/finance/formatCurrency';
 
 type TrendRow     = { label: string; Income: number; Expenses: number; Savings: number; DebtRepayment?: number; };
 type Summary      = { 
@@ -51,7 +51,7 @@ function BarTip(props: { active?: boolean; payload?: unknown; label?: string; cu
             <div style={{ width:8, height:8, borderRadius:'50%', background:p.color, flexShrink:0 }} />
             <span style={{ fontSize:'0.8rem', color:'var(--color-text-secondary)', fontWeight: 500 }}>{p.name}</span>
           </div>
-          <span style={{ fontSize:'0.8rem', fontWeight:700, fontFamily:'Space Grotesk,sans-serif', color:'var(--color-text-primary)' }}>{fmtAdaptive(p.value, currency)}</span>
+          <span style={{ fontSize:'0.8rem', fontWeight:700, fontFamily:'Space Grotesk,sans-serif', color:'var(--color-text-primary)' }}>{formatCurrency({ amountMinor: p.value, currency: currency }, { variant: 'compact' })}</span>
         </div>
       ))}
     </div>
@@ -68,7 +68,7 @@ function PieTip(props: { active?: boolean; payload?: unknown; label?: string; cu
     <div style={{ background: 'var(--surface-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '0.75rem 1rem', boxShadow: 'var(--shadow-md)' }}>
       <p style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--color-text-primary)', marginBottom: '0.2rem' }}>{payload[0].name}</p>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
-        <p style={{ fontSize: '0.9rem', fontWeight: 700, fontFamily: 'Space Grotesk, sans-serif', color: 'var(--color-text-primary)' }}>{fmtAdaptive(payload[0].value, currency)}</p>
+        <p style={{ fontSize: '0.9rem', fontWeight: 700, fontFamily: 'Space Grotesk, sans-serif', color: 'var(--color-text-primary)' }}>{formatCurrency({ amountMinor: payload[0].value, currency: currency }, { variant: 'compact' })}</p>
         {total > 0 && <p style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>{((payload[0].value / total) * 100).toFixed(1)}%</p>}
       </div>
     </div>
@@ -172,7 +172,7 @@ export function ReportsClient({
               whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
               margin: '0.5rem 0'
             }}>
-              {summary.netCashFlow >= 0 ? '+' : '−'}{fmtAdaptive(Math.abs(summary.netCashFlow), currency)}
+              {summary.netCashFlow >= 0 ? '+' : '−'}{formatCurrency({ amountMinor: Math.abs(summary.netCashFlow), currency: currency }, { variant: 'compact' })}
             </p>
             <p className="hero-sub" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(0,0,0,0.1)', padding: '0.25rem 0.6rem', borderRadius: 6, width: 'fit-content' }}>
               <span style={{ fontWeight: 600 }}>Saving rate: {summary.savingRate}%</span>
@@ -192,7 +192,7 @@ export function ReportsClient({
           <div className="hero-stats-grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '1.25rem' }}>
             <div className="hero-stat-card" style={{ background: 'rgba(0,0,0,0.15)', borderRadius: 12, padding: '1.25rem' }}>
               <p className="hero-label">{periodLabel} Income</p>
-              <p className="hero-stat-value tabular" style={{ color:'var(--hero-income)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', fontSize: '1.5rem', margin: '0.25rem 0' }}>+{fmtAdaptive(summary.income, currency)}</p>
+              <p className="hero-stat-value tabular" style={{ color:'var(--hero-income)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', fontSize: '1.5rem', margin: '0.25rem 0' }}>+{formatCurrency({ amountMinor: summary.income, currency: currency }, { variant: 'compact' })}</p>
               <p className="hero-sub" style={{ display: 'flex', alignItems: 'center', gap: '0.15rem', color: summary.previous.incomeChange > 0 ? 'var(--hero-income)' : summary.previous.incomeChange < 0 ? 'var(--hero-expense)' : 'var(--hero-text-muted)', fontWeight: 600 }}>
                 {renderTrendIcon(summary.previous.incomeChange)}
                 {Math.abs(summary.previous.incomeChange)}% vs {prevLabel}
@@ -200,7 +200,7 @@ export function ReportsClient({
             </div>
             <div className="hero-stat-card" style={{ background: 'rgba(0,0,0,0.15)', borderRadius: 12, padding: '1.25rem' }}>
               <p className="hero-label">{periodLabel} Spending</p>
-              <p className="hero-stat-value tabular" style={{ color:'var(--hero-expense)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', fontSize: '1.5rem', margin: '0.25rem 0' }}>−{fmtAdaptive(summary.expenses, currency)}</p>
+              <p className="hero-stat-value tabular" style={{ color:'var(--hero-expense)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', fontSize: '1.5rem', margin: '0.25rem 0' }}>−{formatCurrency({ amountMinor: summary.expenses, currency: currency }, { variant: 'compact' })}</p>
               <p className="hero-sub" style={{ display: 'flex', alignItems: 'center', gap: '0.15rem', color: summary.previous.expensesChange < 0 ? 'var(--hero-income)' : summary.previous.expensesChange > 0 ? 'var(--hero-expense)' : 'var(--hero-text-muted)', fontWeight: 600 }}>
                 {renderTrendIcon(summary.previous.expensesChange, true)}
                 {Math.abs(summary.previous.expensesChange)}% vs {prevLabel}
@@ -228,11 +228,11 @@ export function ReportsClient({
                 <h4 style={{ fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-text-secondary)', fontWeight: 700, marginBottom: '1rem' }}>Cashflow Health</h4>
                 {summary.netCashFlow > 0 ? (
                   <p style={{ fontSize: '0.95rem', lineHeight: 1.5, color: 'var(--color-text-primary)' }}>
-                    You have a <strong className="text-success">positive cashflow</strong> of {fmtAdaptive(summary.netCashFlow, currency)} this {periodLabel.split(' ')[1].toLowerCase()}. You are saving <strong>{summary.savingRate}%</strong> of your income, which is a great sign of financial health.
+                    You have a <strong className="text-success">positive cashflow</strong> of {formatCurrency({ amountMinor: summary.netCashFlow, currency: currency }, { variant: 'compact' })} this {periodLabel.split(' ')[1].toLowerCase()}. You are saving <strong>{summary.savingRate}%</strong> of your income, which is a great sign of financial health.
                   </p>
                 ) : (
                   <p style={{ fontSize: '0.95rem', lineHeight: 1.5, color: 'var(--color-text-primary)' }}>
-                    Your expenses have exceeded your income by <strong className="text-danger">{fmtAdaptive(Math.abs(summary.netCashFlow), currency)}</strong> this {periodLabel.split(' ')[1].toLowerCase()}. Consider reviewing your top spending categories to find areas to cut back.
+                    Your expenses have exceeded your income by <strong className="text-danger">{formatCurrency({ amountMinor: Math.abs(summary.netCashFlow), currency: currency }, { variant: 'compact' })}</strong> this {periodLabel.split(' ')[1].toLowerCase()}. Consider reviewing your top spending categories to find areas to cut back.
                   </p>
                 )}
               </div>
@@ -282,7 +282,7 @@ export function ReportsClient({
                 <BarChart data={trend} margin={{ top:10, right:10, left:-20, bottom:0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.5} />
                   <XAxis dataKey="label" tick={tick} tickLine={false} axisLine={false} dy={10} />
-                  <YAxis tick={tick} tickLine={false} axisLine={false} tickFormatter={v => fmtCompact(v, currency)} />
+                  <YAxis tick={tick} tickLine={false} axisLine={false} tickFormatter={v => formatCurrency({ amountMinor: v, currency: currency }, { variant: 'compact' })} />
                   <Tooltip content={<BarTip currency={currency} />} cursor={{ fill: 'var(--bg-hover)', opacity: 0.5 }} />
                   <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize:'0.8rem', paddingTop: 20, fontWeight: 600 }} />
                   {/* Monarch-style grouped bar chart for cash flow */}
@@ -318,7 +318,7 @@ export function ReportsClient({
                   {/* Center Label for Donut Chart */}
                   <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center', pointerEvents: 'none' }}>
                     <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total {tab}</p>
-                    <p style={{ fontSize: '1.4rem', fontWeight: 800, fontFamily: 'Space Grotesk, sans-serif', color: 'var(--color-text-primary)' }}>{fmtAdaptive(totalCategoryValue, currency)}</p>
+                    <p style={{ fontSize: '1.4rem', fontWeight: 800, fontFamily: 'Space Grotesk, sans-serif', color: 'var(--color-text-primary)' }}>{formatCurrency({ amountMinor: totalCategoryValue, currency: currency }, { variant: 'compact' })}</p>
                   </div>
                 </div>
                 <div style={{ display:'flex', flexDirection:'column', gap:'1.25rem', maxHeight: 350, overflowY: 'auto', paddingRight: '1rem' }}>
@@ -333,7 +333,7 @@ export function ReportsClient({
                         <div className="flex items-center gap-4">
                           <span style={{ fontSize:'0.85rem', color:'var(--color-text-secondary)', fontWeight:600 }}>{cat.pct}%</span>
                           <span style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'0.9rem', fontWeight:700, minWidth:90, textAlign:'right', color:'var(--color-text-primary)' }}>
-                            {fmtAdaptive(cat.value, currency)}
+                            {formatCurrency({ amountMinor: cat.value, currency: currency }, { variant: 'compact' })}
                           </span>
                         </div>
                       </div>
@@ -357,7 +357,7 @@ export function ReportsClient({
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.5} />
                   <XAxis dataKey="label" tick={tick} tickLine={false} axisLine={false} dy={10} />
-                  <YAxis tick={tick} tickLine={false} axisLine={false} tickFormatter={v => fmtCompact(v, currency)} />
+                  <YAxis tick={tick} tickLine={false} axisLine={false} tickFormatter={v => formatCurrency({ amountMinor: v, currency: currency }, { variant: 'compact' })} />
                   <Tooltip content={<BarTip currency={currency} />} cursor={{ stroke: 'var(--border)', strokeWidth: 1, strokeDasharray: '3 3' }} />
                   <Area name={tab === 'income' ? 'Income' : 'Spending'} dataKey={tab === 'income' ? 'Income' : 'Expenses'} type="monotone"
                     stroke={tab === 'income' ? 'var(--chart-income)' : 'var(--chart-expense)'} strokeWidth={3} fill="url(#gTrend)"

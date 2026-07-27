@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createCategory, editCategory, deleteCategory } from '@/lib/actions/categories';
 import { DynamicCategoryIcon } from '@/lib/icons';
 import { Plus, Trash2, Edit2, Loader2, X, AlertTriangle } from 'lucide-react';
-import { getErrorMessage } from '@/lib/format';
+import { getErrorMessage } from '@/lib/errors';
 
 type Category = {
   id: string;

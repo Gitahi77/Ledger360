@@ -1,5 +1,5 @@
 'use server';
-import { getErrorMessage } from '@/lib/format';
+import { getErrorMessage } from '@/lib/errors';
 
 // src/lib/actions/transactions.ts
 import { prisma } from '@/lib/prisma';

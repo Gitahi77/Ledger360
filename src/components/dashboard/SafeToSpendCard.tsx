@@ -1,7 +1,7 @@
 'use client';
 // src/components/dashboard/SafeToSpendCard.tsx
 import { useState } from 'react';
-import { fmtAdaptive } from '@/lib/format';
+import { formatCurrency } from '@/lib/finance/formatCurrency';
 import { ChevronDown, ChevronUp, ShieldCheck } from 'lucide-react';
 
 export function SafeToSpendCard({
@@ -99,12 +99,12 @@ export function SafeToSpendCard({
               letterSpacing: '-0.04em',
               marginBottom: '0.5rem'
             }}>
-              {fmtAdaptive(remainingMinor, currency)}
+              {formatCurrency({ amountMinor: remainingMinor, currency }, { variant: 'compact' })}
             </div>
             
             <div style={{ fontSize: '0.85rem', opacity: 0.9, fontWeight: 500 }}>
               {isSafe 
-                ? `${fmtAdaptive(perDayMinor, currency)} / day for ${daysLeft} days` 
+                ? `${formatCurrency({ amountMinor: perDayMinor, currency }, { variant: 'compact' })} / day for ${daysLeft} days` 
                 : 'Reduce spending to get back on track'
               }
             </div>
@@ -129,28 +129,28 @@ export function SafeToSpendCard({
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
               <span style={{ opacity: 0.9 }}>Expected Income</span>
-              <span style={{ fontWeight: 600 }}>{fmtAdaptive(breakdown.expectedIncome, currency)}</span>
+              <span style={{ fontWeight: 600 }}>{formatCurrency({ amountMinor: breakdown.expectedIncome, currency: currency }, { variant: 'compact' })}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
               <span style={{ opacity: 0.9 }}>Planned Savings</span>
-              <span style={{ fontWeight: 600 }}>-{fmtAdaptive(breakdown.plannedSavings, currency)}</span>
+              <span style={{ fontWeight: 600 }}>-{formatCurrency({ amountMinor: breakdown.plannedSavings, currency: currency }, { variant: 'compact' })}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
               <span style={{ opacity: 0.9 }}>Debt & Loan Payments</span>
-              <span style={{ fontWeight: 600 }}>-{fmtAdaptive(breakdown.loanDue, currency)}</span>
+              <span style={{ fontWeight: 600 }}>-{formatCurrency({ amountMinor: breakdown.loanDue, currency: currency }, { variant: 'compact' })}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
               <span style={{ opacity: 0.9 }}>Base Envelope Limits</span>
-              <span style={{ fontWeight: 600 }}>-{fmtAdaptive(breakdown.baseEnvelopeLimits, currency)}</span>
+              <span style={{ fontWeight: 600 }}>-{formatCurrency({ amountMinor: breakdown.baseEnvelopeLimits, currency: currency }, { variant: 'compact' })}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
               <span style={{ opacity: 0.9 }}>Unbudgeted Spend</span>
-              <span style={{ fontWeight: 600 }}>-{fmtAdaptive(breakdown.unbudgetedSpendThisPeriod, currency)}</span>
+              <span style={{ fontWeight: 600 }}>-{formatCurrency({ amountMinor: breakdown.unbudgetedSpendThisPeriod, currency: currency }, { variant: 'compact' })}</span>
             </div>
             {breakdown.envelopeOverspendPenalty > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
                 <span style={{ fontWeight: 600 }}>Envelope Overspend Penalty</span>
-                <span style={{ fontWeight: 700 }}>-{fmtAdaptive(breakdown.envelopeOverspendPenalty, currency)}</span>
+                <span style={{ fontWeight: 700 }}>-{formatCurrency({ amountMinor: breakdown.envelopeOverspendPenalty, currency: currency }, { variant: 'compact' })}</span>
               </div>
             )}
           </div>

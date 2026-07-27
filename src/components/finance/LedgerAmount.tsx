@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { fmtFull } from '@/lib/format';
+import { formatCurrency } from '@/lib/finance/formatCurrency';
 
 interface LedgerAmountProps {
   amountMinor: number;
@@ -22,7 +22,7 @@ export function LedgerAmount({
   // We let fmtFull handle the currency formatting. It will include the currency symbol.
   // We remove the Math.abs here because fmtFull handles the value, but since we are
   // adding +/- manually, we might want to pass Math.abs to fmtFull.
-  const formatted = fmtFull(Math.abs(amountMinor), currency);
+  const formatted = formatCurrency({ amountMinor: Math.abs(amountMinor), currency });
 
   return (
     <div

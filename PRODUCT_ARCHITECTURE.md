@@ -31,3 +31,6 @@ Help people understand, control, and improve their financial lives. The goal is 
 - Collaborative household ledgers.
 - Recurring transactions and subscription forecasting.
 - Investment tracking and wealth projection.
+  
+## Premium UX Principle  
+New features should not be implemented by introducing bespoke layouts or styling. They must be composed from the shared design system (design tokens, UI primitives, finance primitives, and interaction patterns). This ensures that every feature inherits a consistent premium experience rather than creating isolated visual designs. 

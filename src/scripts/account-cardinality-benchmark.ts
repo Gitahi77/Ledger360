@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { prisma } from '../lib/prisma';
 import { execSync } from 'child_process';
 import fs from 'fs';
@@ -35,7 +36,7 @@ async function setupTestData(accountsCount: number, txPerAccount: number) {
 
   // Seed transactions
   for (const acc of accountsData) {
-    const txData = Array.from({ length: txPerAccount }).map((_, j) => ({
+    const txData = Array.from({ length: txPerAccount }).map((_, _j) => ({
       userId: TEST_USER_ID,
       accountId: acc.id,
       categoryId: TEST_CATEGORY_ID,

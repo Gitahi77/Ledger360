@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { loadEnvConfig } from '@next/env';
 loadEnvConfig(process.cwd());
 
@@ -68,7 +69,7 @@ async function run() {
   const start = performance.now();
   const startMem = process.memoryUsage().heapUsed;
 
-  const result = await DriftDetectionJob.execute({ jobId: 'bench', correlationId: 'bench' });
+  const _result = await DriftDetectionJob.execute({ jobId: 'bench', correlationId: 'bench' });
 
   const durationMs = performance.now() - start;
   const peakMemMB = Math.round((process.memoryUsage().heapUsed - startMem) / 1024 / 1024);

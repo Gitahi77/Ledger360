@@ -1,7 +1,6 @@
 import { prisma } from '../lib/prisma';
 import { BalanceService } from '../lib/domain/services/BalanceService';
 import { getSingleAccountBalance } from '../lib/repositories/accounts';
-import { MoneyFormatter } from '../lib/domain/money/MoneyFormatter';
 
 async function runParityCheck() {
   console.log('Starting Financial Correctness Verification (Parity Check)...');
