@@ -6,7 +6,8 @@ import { Sidebar } from './Sidebar';
 import { ThemeToggle } from '../ThemeToggle';
 import { MobileNav } from '../navigation/MobileNav';
 import { AppFooter } from './AppFooter';
-import { CommandPalette } from '../ui/command/CommandPalette';
+import dynamic from 'next/dynamic';
+const CommandPalette = dynamic(() => import('../ui/command').then(mod => ({ default: mod.CommandPalette })));
 import { Search } from 'lucide-react';
 
 const PAGE_TITLES: Record<string, string> = {

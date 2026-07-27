@@ -12,14 +12,9 @@ import { Plus, FileDown, X, Loader2, Search, ChevronLeft, ChevronRight, AlertTri
 import { toMinor, toMajor } from '@/lib/money';
 import { Grid } from '@/components/layout/grid';
 import { Stack } from '@/components/layout/stack';
-import { Surface } from '@/components/ui/surface';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Surface, Button, Input, Label, Combobox, CreatableCombobox } from '@/components/ui';
 import { FinancialMetric } from '@/components/finance/metrics/FinancialMetric';
-import { CurrencyDisplay } from '@/components/finance/display/currency-display';
-import { TransactionRow } from '@/components/finance/TransactionRow';
-import { Combobox, CreatableCombobox } from '@/components/ui/combobox';
+import { CurrencyDisplay, TransactionRow } from '@/components/finance';
 import { getErrorMessage } from '@/lib/format';
 
 import type { MoneyDTO } from '@/lib/types/domain';
@@ -429,7 +424,7 @@ export function TransactionsClient({
           <div className="relative z-10">
             <FinancialMetric
               label={`Net Flow · ${periodLabel}`}
-              value={<CurrencyDisplay value={{ amountMinor: Math.abs(net), currencyCode: currency }} size="hero" signDisplay="always" colorize />}
+              value={<CurrencyDisplay money={{ amountMinor: net, currency: currency }} tone={net >= 0 ? 'positive' : 'negative'} className="text-4xl md:text-5xl font-semibold tracking-tight" showSymbol />}
               subLabel={`${(transactions || []).length} transactions`}
             />
           </div>
@@ -439,13 +434,13 @@ export function TransactionsClient({
           <Surface variant="raised" className="p-5">
             <FinancialMetric
               label={`${periodLabel} Income`}
-              value={<CurrencyDisplay value={{ amountMinor: totalIncome, currencyCode: currency }} size="lg" colorize />}
+              value={<CurrencyDisplay money={{ amountMinor: totalIncome, currency: currency }} tone="positive" className="text-2xl font-semibold tracking-tight" />}
             />
           </Surface>
           <Surface variant="raised" className="p-5">
             <FinancialMetric
               label={`${PERIOD_LABELS[period] || 'All Time'} Outflow`}
-              value={<CurrencyDisplay value={{ amountMinor: moneyOut, currencyCode: currency }} size="lg" colorize />}
+              value={<CurrencyDisplay money={{ amountMinor: Math.abs(moneyOut), currency: currency }} tone="negative" className="text-2xl font-semibold tracking-tight" />}
             />
           </Surface>
         </Stack>
