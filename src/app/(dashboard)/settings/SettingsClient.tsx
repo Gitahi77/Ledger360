@@ -4,7 +4,9 @@
 // Fully wired: every toggle/field saves to the database via server actions.
 import { useState, useTransition } from 'react';
 import { getErrorMessage } from '@/lib/format';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { useSession } from 'next-auth/react';
 import { updateProfile } from '@/lib/actions/reports';
 import {
@@ -127,10 +129,15 @@ export function SettingsClient({
   goals: { id: string; name: string }[];
 }) {
   const router       = useRouter();
+  const searchParams = useSearchParams();
   const { update: updateSession } = useSession();
   const [, startT]   = useTransition();
 
-  const [openSection, setOpenSection] = useState<Section | null>('profile');
+  const currentTab = searchParams?.get('tab') || 'profile';
+
+  function handleTabChange(value: string) {
+    router.replace(`?tab=${value}`, { scroll: false });
+  }
 
   // Per-section save state
   const [profileState, setProfileState] = useState({ saving: false, saved: false, error: '' });
@@ -269,26 +276,16 @@ export function SettingsClient({
   }
 
   return (
-    <div className="flex flex-col md:flex-row gap-8 items-start w-full max-w-6xl mx-auto">
-      <div className="flex flex-col gap-1 w-full md:w-64 shrink-0 md:sticky md:top-6">
-        <button className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left ${['profile', 'appearance'].includes(openSection || '') ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'}`} onClick={() => setOpenSection('profile')}>
-          <User size={16} /> Profile
-        </button>
-        <button className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left ${['preferences', 'savings', 'notifications'].includes(openSection || '') ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'}`} onClick={() => setOpenSection('preferences')}>
-          <Globe size={16} /> Preferences
-        </button>
-        <button className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left ${['security'].includes(openSection || '') ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'}`} onClick={() => setOpenSection('security')}>
-          <ShieldCheck size={16} /> Account & Security
-        </button>
-        <button className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left ${['data', 'help'].includes(openSection || '') ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'}`} onClick={() => setOpenSection('data')}>
-          <Database size={16} /> Audit Logs & Data
-        </button>
-      </div>
+    <div className="w-full max-w-4xl mx-auto animate-in fade-in">
+      <Tabs value={currentTab} onValueChange={handleTabChange} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 mb-8 h-auto p-1.5 gap-1">
+          <TabsTrigger value="profile" className="py-2 data-[state=active]:bg-background/80 shadow-none"><User size={16} className="mr-2"/> Profile</TabsTrigger>
+          <TabsTrigger value="preferences" className="py-2 data-[state=active]:bg-background/80 shadow-none"><Globe size={16} className="mr-2"/> Preferences</TabsTrigger>
+          <TabsTrigger value="security" className="py-2 data-[state=active]:bg-background/80 shadow-none"><ShieldCheck size={16} className="mr-2"/> Security</TabsTrigger>
+          <TabsTrigger value="data" className="py-2 data-[state=active]:bg-background/80 shadow-none"><Database size={16} className="mr-2"/> Data & Privacy</TabsTrigger>
+        </TabsList>
 
-      <div className="flex-1 w-full min-w-0 animate-in">
-        {/* Profile & Appearance */}
-        {(openSection === 'profile' || openSection === 'appearance') && (
-          <>
+        <TabsContent value="profile" className="space-y-6 animate-in fade-in-50 duration-500">
             <Card>
               <CardHeader>
                 <CardTitle>Profile</CardTitle>
@@ -361,12 +358,9 @@ export function SettingsClient({
                 </form>
               </CardContent>
             </Card>
-          </>
-        )}
+        </TabsContent>
 
-        {/* Preferences, Savings, Notifications */}
-        {(openSection === 'preferences' || openSection === 'savings' || openSection === 'notifications') && (
-          <>
+        <TabsContent value="preferences" className="space-y-6 animate-in fade-in-50 duration-500">
             <Card>
               <CardHeader>
                 <CardTitle>Preferences</CardTitle>
@@ -455,11 +449,9 @@ export function SettingsClient({
                 </form>
               </CardContent>
             </Card>
-          </>
-        )}
+        </TabsContent>
 
-        {/* Security */}
-        {openSection === 'security' && (
+        <TabsContent value="security" className="space-y-6 animate-in fade-in-50 duration-500">
           <Card>
             <CardHeader>
               <CardTitle>Security & Activity</CardTitle>
@@ -523,11 +515,9 @@ export function SettingsClient({
               )}
             </CardContent>
           </Card>
-        )}
+        </TabsContent>
 
-        {/* Data & Help */}
-        {(openSection === 'data' || openSection === 'help') && (
-          <>
+        <TabsContent value="data" className="space-y-6 animate-in fade-in-50 duration-500">
             <Card>
               <CardHeader>
                 <CardTitle>Data & Privacy</CardTitle>
@@ -556,115 +546,121 @@ export function SettingsClient({
                   </div>
                 </div>
 
-                <div className="p-6 bg-destructive/10 rounded-xl border border-destructive/20">
-                  <div className="flex items-center gap-2 mb-2">
-                    <AlertTriangle size={18} className="text-destructive" />
-                    <div className="text-base font-bold text-destructive tracking-tight">Danger Zone</div>
-                  </div>
-                  <div className="text-sm text-muted-foreground mb-6 leading-relaxed">
-                    Deleting your data is permanent and cannot be undone. Please export your data first.
-                  </div>
-                  <Dialog open={deleteConfirm} onOpenChange={setDeleteConfirm}>
-                    <DialogTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="danger"
-                        iconLeft={<Trash2 size={14}/>}
-                      >
-                        Delete All Data
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Are you absolutely sure?</DialogTitle>
-                        <DialogDescription>
-                          This will delete all your financial data, including transactions, budgets, and goals. 
-                          This action cannot be undone. Please type "DELETE" to confirm.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="flex flex-col gap-4 py-4">
-                        <Input
-                          type="text"
-                          value={deleteAllText}
-                          onChange={(e) => setDeleteAllText(e.target.value)}
-                          placeholder="DELETE"
-                          className="font-bold uppercase text-sm"
-                        />
+                <Accordion type="single" collapsible className="w-full mt-8 border border-destructive/20 rounded-xl overflow-hidden bg-destructive/5">
+                  <AccordionItem value="danger-zone" className="border-b-0">
+                    <AccordionTrigger className="px-6 py-4 hover:bg-destructive/10 text-destructive hover:no-underline">
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle size={18} />
+                        <span className="font-bold tracking-tight text-base">Danger Zone</span>
                       </div>
-                      <DialogFooter>
-                        <DialogClose asChild>
-                          <Button variant="secondary" type="button" onClick={() => setDeleteAllText('')}>Cancel</Button>
-                        </DialogClose>
-                        <Button
-                          type="button"
-                          variant="danger"
-                          onClick={handleDeleteAll}
-                          disabled={dataState.saving || deleteAllText !== 'DELETE'}
-                          loading={dataState.saving}
-                          iconLeft={!dataState.saving && <Trash2 size={14}/>}
-                        >
-                          Yes, Delete Everything
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-
-                  <div className="mt-10 pt-6 border-t border-destructive/20">
-                    <div className="text-sm font-bold text-foreground mb-1">Delete Account</div>
-                    <div className="text-sm text-muted-foreground mb-5 leading-relaxed">
-                      Permanently delete your account and all associated data. This action is irreversible.
-                    </div>
-                    <Dialog open={deleteAcctConfirm} onOpenChange={setDeleteAcctConfirm}>
-                      <DialogTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          iconLeft={<Trash2 size={14}/>}
-                          className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                        >
-                          Delete Account
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Are you absolutely sure?</DialogTitle>
-                          <DialogDescription>
-                            This will permanently delete your account and all associated data. 
-                            This action is irreversible. Please type "DELETE" to confirm.
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className="flex flex-col gap-4 py-4">
-                          <Input
-                            type="text"
-                            value={deleteAcctText}
-                            onChange={(e) => setDeleteAcctText(e.target.value)}
-                            placeholder="DELETE"
-                            className="font-bold uppercase text-sm"
-                          />
-                        </div>
-                        <DialogFooter>
-                          <DialogClose asChild>
-                            <Button variant="secondary" type="button" onClick={() => setDeleteAcctText('')}>Cancel</Button>
-                          </DialogClose>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-6 pb-6 pt-2">
+                      <div className="text-sm text-muted-foreground mb-6 leading-relaxed">
+                        Deleting your data is permanent and cannot be undone. Please export your data first.
+                      </div>
+                      <Dialog open={deleteConfirm} onOpenChange={setDeleteConfirm}>
+                        <DialogTrigger asChild>
                           <Button
                             type="button"
                             variant="danger"
-                            onClick={handleDeleteAccount}
-                            disabled={dataState.saving || deleteAcctText !== 'DELETE'}
-                            loading={dataState.saving}
-                            iconLeft={!dataState.saving && <Trash2 size={14}/>}
+                            iconLeft={<Trash2 size={14}/>}
                           >
-                            Yes, Delete My Account
+                            Delete All Data
                           </Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                  </div>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Are you absolutely sure?</DialogTitle>
+                            <DialogDescription>
+                              This will delete all your financial data, including transactions, budgets, and goals. 
+                              This action cannot be undone. Please type "DELETE" to confirm.
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="flex flex-col gap-4 py-4">
+                            <Input
+                              type="text"
+                              value={deleteAllText}
+                              onChange={(e) => setDeleteAllText(e.target.value)}
+                              placeholder="DELETE"
+                              className="font-bold uppercase text-sm"
+                            />
+                          </div>
+                          <DialogFooter>
+                            <DialogClose asChild>
+                              <Button variant="secondary" type="button" onClick={() => setDeleteAllText('')}>Cancel</Button>
+                            </DialogClose>
+                            <Button
+                              type="button"
+                              variant="danger"
+                              onClick={handleDeleteAll}
+                              disabled={dataState.saving || deleteAllText !== 'DELETE'}
+                              loading={dataState.saving}
+                              iconLeft={!dataState.saving && <Trash2 size={14}/>}
+                            >
+                              Yes, Delete Everything
+                            </Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
 
-                  {dataState.error && (
-                    <div className="mt-4 text-sm font-semibold text-destructive">{dataState.error}</div>
-                  )}
-                </div>
+                      <div className="mt-10 pt-6 border-t border-destructive/20">
+                        <div className="text-sm font-bold text-foreground mb-1">Delete Account</div>
+                        <div className="text-sm text-muted-foreground mb-5 leading-relaxed">
+                          Permanently delete your account and all associated data. This action is irreversible.
+                        </div>
+                        <Dialog open={deleteAcctConfirm} onOpenChange={setDeleteAcctConfirm}>
+                          <DialogTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              iconLeft={<Trash2 size={14}/>}
+                              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                            >
+                              Delete Account
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Are you absolutely sure?</DialogTitle>
+                              <DialogDescription>
+                                This will permanently delete your account and all associated data. 
+                                This action is irreversible. Please type "DELETE" to confirm.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="flex flex-col gap-4 py-4">
+                              <Input
+                                type="text"
+                                value={deleteAcctText}
+                                onChange={(e) => setDeleteAcctText(e.target.value)}
+                                placeholder="DELETE"
+                                className="font-bold uppercase text-sm"
+                              />
+                            </div>
+                            <DialogFooter>
+                              <DialogClose asChild>
+                                <Button variant="secondary" type="button" onClick={() => setDeleteAcctText('')}>Cancel</Button>
+                              </DialogClose>
+                              <Button
+                                type="button"
+                                variant="danger"
+                                onClick={handleDeleteAccount}
+                                disabled={dataState.saving || deleteAcctText !== 'DELETE'}
+                                loading={dataState.saving}
+                                iconLeft={!dataState.saving && <Trash2 size={14}/>}
+                              >
+                                Yes, Delete My Account
+                              </Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+
+                      {dataState.error && (
+                        <div className="mt-4 text-sm font-semibold text-destructive">{dataState.error}</div>
+                      )}
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
               </CardContent>
             </Card>
 
@@ -702,9 +698,8 @@ export function SettingsClient({
                 </div>
               </CardContent>
             </Card>
-          </>
-        )}
-      </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
