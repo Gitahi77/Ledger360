@@ -5,10 +5,10 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { addBudget, editBudget, deleteBudget } from '@/lib/actions/budgets';
 import { SmartUpload } from '@/components/SmartUpload';
-import { fmtAdaptive } from '@/lib/format';
+import { formatCurrency } from '@/lib/finance/formatCurrency';
 import { Plus, Trash2, Loader2, X, FileDown, LayoutGrid } from 'lucide-react';
 import { toMinor, toMajor } from '@/lib/money';
-import { getErrorMessage } from '@/lib/format';
+import { getErrorMessage } from '@/lib/errors';
 
 type Budget = { id: string; name: string; category: string; icon: string; limit: number; spent: number; period: string; rollover?: boolean };
 type Category = { id: string; name: string; type: string };
@@ -182,8 +182,8 @@ export function BudgetsClient({ budgets = [], categories = [], totalBudgeted = 0
               fontSize: totalBudgeted > 9_999_999 ? '2.2rem' : totalBudgeted > 999_999 ? '2.5rem' : '3rem',
               fontWeight:800, letterSpacing:'-0.04em', lineHeight:1.1,
               color:'var(--color-text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
-            }}>{fmtAdaptive(totalBudgeted, currency)}</p>
-            <p className="text-sm font-medium text-muted-foreground mt-1">{fmtAdaptive(totalSpent, currency)} spent · {overallPct}% used</p>
+            }}>{formatCurrency({ amountMinor: totalBudgeted, currency: currency }, { variant: 'compact' })}</p>
+            <p className="text-sm font-medium text-muted-foreground mt-1">{formatCurrency({ amountMinor: totalSpent, currency: currency }, { variant: 'compact' })} spent · {overallPct}% used</p>
             
             {/* Overall progress bar */}
             <div className="mt-5" style={{ background: 'var(--surface-sunken)', padding: '0.35rem', borderRadius: 12 }}>
@@ -271,8 +271,8 @@ export function BudgetsClient({ budgets = [], categories = [], totalBudgeted = 0
                         fontSize: b.spent > 9_999_999 ? '1.4rem' : b.spent > 999_999 ? '1.6rem' : '1.8rem',
                         fontWeight:800, color:st.numColor, letterSpacing:'-0.04em', lineHeight:1.1,
                         whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
-                      }}>{fmtAdaptive(b.spent, currency)}</div>
-                      <div style={{ fontSize:'0.7rem', color:'var(--color-text-secondary)', marginTop:'0.2rem' }}>of {fmtAdaptive(b.limit, currency)}</div>
+                      }}>{formatCurrency({ amountMinor: b.spent, currency: currency }, { variant: 'compact' })}</div>
+                      <div style={{ fontSize:'0.7rem', color:'var(--color-text-secondary)', marginTop:'0.2rem' }}>of {formatCurrency({ amountMinor: b.limit, currency: currency }, { variant: 'compact' })}</div>
                     </div>
                     <div style={{ textAlign:'right', flexShrink:0 }}>
                       <div style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'1.4rem', fontWeight:800, color:st.numColor, lineHeight:1, padding: '0.3rem', background: 'var(--card)', borderRadius: 8 }}>{Math.round(st.pct)}%</div>
@@ -285,7 +285,7 @@ export function BudgetsClient({ budgets = [], categories = [], totalBudgeted = 0
                   
                   <div className="flex items-center justify-between px-1">
                     <span style={{ fontSize:'0.8rem', color:'var(--color-text-secondary)', fontWeight:600, overflow:'hidden', textOverflow:'ellipsis', flex:1, marginRight:'0.5rem' }}>
-                      {rem > 0 ? `${fmtAdaptive(rem, currency)} left` : `${fmtAdaptive(b.spent - b.limit, currency)} over`}
+                      {rem > 0 ? `${formatCurrency({ amountMinor: rem, currency: currency }, { variant: 'compact' })} left` : `${formatCurrency({ amountMinor: b.spent - b.limit, currency: currency }, { variant: 'compact' })} over`}
                     </span>
                     <span className={`badge ${st.badge}`}>{st.label}</span>
                   </div>

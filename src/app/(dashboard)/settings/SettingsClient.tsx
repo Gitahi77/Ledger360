@@ -3,7 +3,7 @@
 // Copyright (c) 2024-present Eric Gitahi. All rights reserved.
 // Fully wired: every toggle/field saves to the database via server actions.
 import { useState, useTransition } from 'react';
-import { getErrorMessage } from '@/lib/format';
+import { getErrorMessage } from '@/lib/errors';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
@@ -15,7 +15,7 @@ import {
 } from '@/lib/actions/settings';
 import { signOut } from 'next-auth/react';
 import { toMajor, toMinor } from '@/lib/money';
-import { fmtAdaptive } from '@/lib/format';
+import { formatCurrency } from '@/lib/finance/formatCurrency';
 import {
   User, ShieldCheck, Database,
   Download, Trash2, ExternalLink, Info,
@@ -477,7 +477,7 @@ export function SettingsClient({
                           const parts = [];
                           if (meta.name) parts.push(`"${meta.name}"`);
                           const minorAmt = meta.amountMinor ?? meta.baseAmountMinor;
-                          if (minorAmt !== undefined) parts.push(`for ${fmtAdaptive(toMajor(minorAmt), initialCurrency || 'KES')}`);
+                          if (minorAmt !== undefined) parts.push(`for ${formatCurrency({ amountMinor: toMajor(minorAmt), currency: initialCurrency || 'KES' }, { variant: 'compact' })}`);
                           
                           if (parts.length > 0) details = parts.join(' ');
                           else {

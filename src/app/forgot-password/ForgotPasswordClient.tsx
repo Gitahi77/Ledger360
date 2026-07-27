@@ -3,7 +3,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Loader2 } from 'lucide-react';
 import { requestPasswordReset } from '@/lib/actions/password';
-import { getErrorMessage } from '@/lib/format';
+import { getErrorMessage } from '@/lib/errors';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail]     = useState('');

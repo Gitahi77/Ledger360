@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { prisma } from '../lib/prisma';
 import { execSync } from 'child_process';
 import fs from 'fs';
@@ -75,7 +76,7 @@ async function runBenchmark(depth: number) {
   console.log(`\n--- Running benchmark for depth: ${depth} ---`);
   await seedTransactions(depth);
 
-  const preMetrics = await getPgMetrics();
+  const _preMetrics = await getPgMetrics();
 
   console.log(`Running k6...`);
   // Update scenarios to target the test account

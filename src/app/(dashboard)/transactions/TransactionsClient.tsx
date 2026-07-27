@@ -15,7 +15,7 @@ import { Stack } from '@/components/layout/stack';
 import { Surface, Button, Input, Label, Combobox, CreatableCombobox } from '@/components/ui';
 import { FinancialMetric } from '@/components/finance/metrics/FinancialMetric';
 import { CurrencyDisplay, TransactionRow } from '@/components/finance';
-import { getErrorMessage } from '@/lib/format';
+import { getErrorMessage } from '@/lib/errors';
 
 import type { MoneyDTO } from '@/lib/types/domain';
 

@@ -40,7 +40,7 @@ function invalidateAccountPaths() {
 import { BalanceService } from '../domain/services/BalanceService';
 import { mapAccountToDTO, AccountDTO } from '../mappers/accounts';
 import { ActionResult } from '../types/action-result';
-import { getErrorMessage } from '@/lib/format';
+import { getErrorMessage } from '@/lib/errors';
 
 export async function getAccounts(): Promise<ActionResult<AccountDTO[]>> {
   try {

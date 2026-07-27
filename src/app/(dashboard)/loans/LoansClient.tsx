@@ -4,10 +4,10 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { addLoan, editLoan, deleteLoan } from '@/lib/actions/loans';
-import { formatKES } from '@/lib/format';
+import { formatCurrency } from '@/lib/finance/formatCurrency';
 import { Plus, Trash2, Loader2, X, CreditCard, AlertTriangle, ChevronDown, ChevronUp, Edit2 } from 'lucide-react';
 import { toMinor, toMajor } from '@/lib/money';
-import { getErrorMessage } from '@/lib/format';
+import { getErrorMessage } from '@/lib/errors';
 import type { LoanDTO } from '@/lib/mappers/loans';
 
 // All colours via CSS token vars — adapts to light and dark automatically
@@ -254,7 +254,7 @@ function ExpandedForecast({ loan, monthsLeft, totalInterest, currency }: { loan:
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(150px, 1fr))', gap:'0.75rem', marginBottom:'1rem' }}>
         {[
           { label:'Months Left',    value: isFinite(monthsLeft) ? `~${monthsLeft}` : '⚠ Check payment', sub:'at current pace' },
-          { label:'Total Interest', value: formatKES(totalInterest), sub:'estimated remaining' },
+          { label:'Total Interest', value: formatCurrency({ amountMinor: totalInterest, currency: 'KES' }), sub:'estimated remaining' },
           { label:'Payoff Date',    value: payoffDate(monthsLeft), sub:'projected' },
         ].map(f => (
           <div key={f.label} style={{ background:'var(--bg-app)', borderRadius:8, padding:'0.625rem 0.875rem', border:'1px solid var(--border)' }}>
@@ -285,7 +285,7 @@ function ExpandedForecast({ loan, monthsLeft, totalInterest, currency }: { loan:
             {[
               { label:'New payoff', value: payoffDate(newMonths), color:'var(--color-income)' },
               { label:'Months saved', value:`${monthsSaved} mo`, color:'var(--color-income)' },
-              { label:'Interest saved', value: formatKES(interestSavedMinor), color:'var(--color-income)' },
+              { label:'Interest saved', value: formatCurrency({ amountMinor: interestSavedMinor, currency: 'KES' }), color:'var(--color-income)' },
             ].map(r => (
               <div key={r.label} style={{ background:'var(--color-income-light)', borderRadius:7, padding:'0.5rem 0.625rem', border:'1px solid var(--color-income)' }}>
                 <div style={{ fontSize:'0.58rem', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.06em', color:'var(--color-text-secondary)', marginBottom:'0.15rem' }}>{r.label}</div>
@@ -365,8 +365,8 @@ export function LoansClient({ loans = [], currency, accounts = [] }: { loans: Lo
               whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
               textShadow: '0 2px 10px rgba(0,0,0,0.05)',
               paddingBottom: '0.2rem'
-            }}>{formatKES(totalDebtMinor)}</p>
-            <p className="text-sm font-medium text-muted-foreground mt-1">of {formatKES(totalOriginalMinor)} original · {paidPct}% paid</p>
+            }}>{formatCurrency({ amountMinor: totalDebtMinor, currency: 'KES' })}</p>
+            <p className="text-sm font-medium text-muted-foreground mt-1">of {formatCurrency({ amountMinor: totalOriginalMinor, currency: 'KES' })} original · {paidPct}% paid</p>
             
             <div className="mt-5" style={{ background: 'var(--surface-sunken)', padding: '0.35rem', borderRadius: 12 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem', padding: '0 0.25rem' }}>
@@ -387,7 +387,7 @@ export function LoansClient({ loans = [], currency, accounts = [] }: { loans: Lo
             </div>
             <div className="hero-stat-card transition-all duration-300 hover:bg-[var(--surface-sunken)] hover:shadow-sm">
               <p className="hero-label">Monthly Burden</p>
-              <p className="hero-stat-value tabular" style={{ color:'var(--color-text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{formatKES(totalMonthlyMinor)}</p>
+              <p className="hero-stat-value tabular" style={{ color:'var(--color-text-primary)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{formatCurrency({ amountMinor: totalMonthlyMinor, currency: 'KES' })}</p>
               <p className="hero-sub">minimum required</p>
             </div>
             <div className="hero-stat-card transition-all duration-300 hover:bg-[var(--surface-sunken)] hover:shadow-sm">
@@ -480,9 +480,9 @@ export function LoansClient({ loans = [], currency, accounts = [] }: { loans: Lo
                         fontWeight:800, color:st.color, letterSpacing:'-0.04em', lineHeight:1.1,
                         whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
                       }}>
-                        {formatKES(l.balanceMoney.amountMinor)}
+                        {formatCurrency({ amountMinor: l.balanceMoney.amountMinor, currency: 'KES' })}
                       </div>
-                      <div style={{ fontSize:'0.7rem', color:'var(--color-text-secondary)', marginTop:'0.2rem', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>of {formatKES(l.originalMoney.amountMinor)} original</div>
+                      <div style={{ fontSize:'0.7rem', color:'var(--color-text-secondary)', marginTop:'0.2rem', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>of {formatCurrency({ amountMinor: l.originalMoney.amountMinor, currency: 'KES' })} original</div>
                     </div>
                     <div style={{ textAlign:'right', flexShrink:0 }}>
                       <div style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'1.4rem', fontWeight:800, color:st.color, lineHeight:1, padding: '0.3rem', background: 'var(--card)', borderRadius: 8 }}>{st.paidPct}%</div>
@@ -496,7 +496,7 @@ export function LoansClient({ loans = [], currency, accounts = [] }: { loans: Lo
                   <div className="grid grid-cols-2 gap-3 mb-4">
                     <div className="bg-[var(--surface-sunken)] p-3 rounded-xl border border-border/50">
                       <div style={{ fontSize:'0.65rem', color:'var(--color-text-secondary)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom: '0.2rem' }}>Monthly</div>
-                      <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:800, fontSize:'1rem', color:'var(--color-text-primary)', whiteSpace:'nowrap' }}>{formatKES(l.monthlyPaymentMoney.amountMinor)}</div>
+                      <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:800, fontSize:'1rem', color:'var(--color-text-primary)', whiteSpace:'nowrap' }}>{formatCurrency({ amountMinor: l.monthlyPaymentMoney.amountMinor, currency: 'KES' })}</div>
                     </div>
                     <div className="bg-[var(--surface-sunken)] p-3 rounded-xl border border-border/50">
                       <div style={{ fontSize:'0.65rem', color:'var(--color-text-secondary)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom: '0.2rem' }}>Next Due</div>

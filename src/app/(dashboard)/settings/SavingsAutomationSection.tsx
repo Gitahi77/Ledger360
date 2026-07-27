@@ -4,7 +4,7 @@
 // Transparent and reversible (B-0): shows what happens on each income,
 // lists recent auto-saves with Undo buttons.
 import { useState, useTransition } from 'react';
-import { getErrorMessage } from '@/lib/format';
+import { getErrorMessage } from '@/lib/errors';
 import { useRouter } from 'next/navigation';
 import {
   upsertSavingsPlan,
@@ -12,7 +12,7 @@ import {
 } from '@/lib/actions/savings';
 import { deleteTransfer } from '@/lib/actions/transfers';
 import { toMajor } from '@/lib/money';
-import { fmtAdaptive } from '@/lib/format';
+import { formatCurrency } from '@/lib/finance/formatCurrency';
 import {
   Loader2, CheckCircle2, AlertTriangle, Undo2,
   TrendingUp, PiggyBank, Info,
@@ -341,7 +341,7 @@ export function SavingsAutomationSection({
               }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
-                    {fmtAdaptive(toMajor(s.amountMinor), currency)}
+                    {formatCurrency({ amountMinor: toMajor(s.amountMinor), currency: currency }, { variant: 'compact' })}
                   </div>
                   <div style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)', marginTop: '0.1rem' }}>
                     {s.fromAccount?.name ?? '?'} → {s.toAccount?.name ?? '?'} · {new Date(s.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}

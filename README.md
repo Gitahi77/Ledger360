@@ -60,6 +60,35 @@ Ledger360 is built on a strict **7-law interaction doctrine**:
 6. Motion must communicate continuity and calm *(no bouncing animations)*
 7. Every density mode preserves ledger readability and whitespace rhythm
 
+## Roadmap
+
+### Phase 9A — Design Foundation
+*Goal: Establish the fundamental design tokens and systems to ensure visual consistency across all future screens.*
+- Typography scale, Spacing system, Radius, Shadows, Motion tokens, Color system, and Chart design language.
+
+### Phase 9B — Premium Product Experience
+*Goal: Transform the UI from a "developer dashboard" into an information-rich, story-driven, Monarch-tier experience.*
+- **Dashboard redesign**: Information hierarchy prioritizing storytelling ("Cash Available", "Budget Health").
+- **Information hierarchy**: Clearer primary actions (e.g. "Quick Add", "Insights") before tabular data.
+- **Better financial insights**: Contextual text insights instead of raw numbers.
+- **Better visualizations**: Radial budget rings, cash-flow Sankeys, spending heatmaps, investment allocation donuts.
+- **Better empty & loading states**: Skeletons, optimistic UI, animated placeholders, and actionable empty states.
+- **Better micro-interactions**: Hover effects, selection states, success/delete animations, and tactile button press feedback.
+- **Better forms**: Progressive disclosure, smart defaults, keyboard shortcuts, and contextual validation.
+- **Mobile-first refinement**: Bottom sheets, swipe actions, sticky buttons, and large touch targets for the future native app.
+- **UX writing**: Warmer, clearer copywriting (e.g., "Cash Available" instead of "Net Balance").
+
+### Phase 9C — Visual Perfection & UX Audit
+*Goal: Walk through every screen to ensure absolute pixel-perfect consistency.*
+- Audit padding, spacing, typography, icon alignment, card alignment, shadows, semantic colors, and border radii.
+- Ensure all loading, empty, and animation states belong to the same cohesive product.
+
+### Phase 10 — Production Readiness & Launch
+*Goal: Ensure the application is fast, secure, accessible, and ready for end users.*
+- Performance optimization (Lighthouse ≥ 95, JS Bundle ≤ 250 KB/route, CLS < 0.1).
+- Security review, error monitoring, analytics integration.
+- Cross-browser/device testing, accessibility validation, documentation, beta feedback, and final release checklist.
+
 ---
 
 ## Copyright & License

@@ -5,11 +5,11 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { addGoal, editGoal, deleteGoal } from '@/lib/actions/goals';
 import { DynamicCategoryIcon } from '@/lib/icons';
-import { fmtAdaptive } from '@/lib/format';
+import { formatCurrency } from '@/lib/finance/formatCurrency';
 import { Plus, CheckCircle2, Trash2, Loader2, X, PiggyBank, Info } from 'lucide-react';
 import { inflationAdjustedTarget, yearsUntil } from '@/lib/api/inflation';
 import { toMinor, toMajor } from '@/lib/money';
-import { getErrorMessage } from '@/lib/format';
+import { getErrorMessage } from '@/lib/errors';
 import type { GoalDTO } from '@/lib/mappers/goals';
 
 /* -- Status: fully token-based, no hardcoded hex ------------ */
@@ -190,8 +190,8 @@ export function GoalsClient({ goals, currency }: { goals: GoalDTO[], currency: s
               fontSize: totalSaved > 9_999_999 ? '1.6rem' : totalSaved > 999_999 ? '1.9rem' : '2.25rem',
               fontWeight:800, letterSpacing:'-0.04em', lineHeight:1,
               color:'var(--hero-income)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
-            }}>{fmtAdaptive(totalSaved, currency)}</p>
-            <p className="hero-sub">of {fmtAdaptive(totalTarget, currency)} target</p>
+            }}>{formatCurrency({ amountMinor: totalSaved, currency: currency }, { variant: 'compact' })}</p>
+            <p className="hero-sub">of {formatCurrency({ amountMinor: totalTarget, currency: currency }, { variant: 'compact' })} target</p>
             <div className="hero-progress-wrap" style={{ marginTop:'0.75rem', paddingTop:'0.75rem' }}>
               <div className="hero-progress-labels">
                 <span className="hero-progress-label">Overall progress</span>
@@ -294,20 +294,20 @@ export function GoalsClient({ goals, currency }: { goals: GoalDTO[], currency: s
                       letterSpacing:'-0.04em', lineHeight:1.1,
                       whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
                     }}>
-                      {fmtAdaptive((g.currentMoney?.amountMinor ?? 0), currency)}
+                      {formatCurrency({ amountMinor: (g.currentMoney?.amountMinor ?? 0), currency: currency }, { variant: 'compact' })}
                     </div>
                     <div style={{ fontSize:'0.7rem', color:'var(--color-text-secondary)', marginTop:'0.2rem', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
-                      of {fmtAdaptive(g.targetMoney.amountMinor, currency)}
+                      of {formatCurrency({ amountMinor: g.targetMoney.amountMinor, currency: currency }, { variant: 'compact' })}
                     </div>
                     {inflTargetMinor && inflTargetMinor > g.targetMoney.amountMinor && (
                       <div
-                        title={`At Kenya's ~6.8% annual inflation (KNBS), you'll need ${fmtAdaptive(inflTargetMinor, currency)} in today's money to match your target by ${deadlineLabel}.`}
+                        title={`At Kenya's ~6.8% annual inflation (KNBS), you'll need ${formatCurrency({ amountMinor: inflTargetMinor, currency: currency }, { variant: 'compact' })} in today's money to match your target by ${deadlineLabel}.`}
                         style={{ display:'inline-flex', alignItems:'center', gap:'0.25rem', marginTop:'0.3rem',
                           fontSize:'0.62rem', fontWeight:700, color:'var(--warning)',
                           background:'rgba(234,179,8,0.12)', borderRadius:4, padding:'0.15rem 0.4rem',
                           cursor:'help', whiteSpace:'nowrap' }}
                       >
-                        <Info size={9}/> Inflation-adj: {fmtAdaptive(inflTargetMinor, currency)}
+                        <Info size={9}/> Inflation-adj: {formatCurrency({ amountMinor: inflTargetMinor, currency: currency }, { variant: 'compact' })}
                       </div>
                     )}
                   </div>
@@ -325,7 +325,7 @@ export function GoalsClient({ goals, currency }: { goals: GoalDTO[], currency: s
                 ) : (
                   <div className="flex items-center justify-between">
                     <span style={{ fontSize:'0.72rem', color:'var(--color-text-secondary)', fontWeight:500, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', flex:1, marginRight:'0.5rem' }}>
-                      {fmtAdaptive(left, currency)} to go
+                      {formatCurrency({ amountMinor: left, currency: currency }, { variant: 'compact' })} to go
                     </span>
                   </div>
                 )}

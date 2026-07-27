@@ -6,7 +6,7 @@ import {
   CartesianGrid, Tooltip, ResponsiveContainer, Legend,
   PieChart, Pie, Cell
 } from 'recharts';
-import { fmtAdaptive, fmtCompact } from '@/lib/format';
+import { formatCurrency } from '@/lib/finance/formatCurrency';
 import { useRouter } from 'next/navigation';
 
 export type ChartMonthPoint = {
@@ -41,7 +41,7 @@ function FlowTip(props: { active?: boolean; payload?: unknown; label?: string; c
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: p.color, flexShrink: 0 }} />
           <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>{p.name}:</span>
           <span style={{ fontSize: '0.8rem', fontWeight: 700, fontFamily: 'Space Grotesk, sans-serif' }}>
-            {fmtAdaptive(p.value, currency)}
+            {formatCurrency({ amountMinor: p.value, currency: currency }, { variant: 'compact' })}
           </span>
         </div>
       ))}
@@ -58,7 +58,7 @@ function PieTip(props: { active?: boolean; payload?: unknown; label?: string; cu
   return (
     <div style={{ background: 'var(--surface-card)', border: '1px solid var(--border)', borderRadius: 8, padding: '0.625rem 0.875rem', boxShadow: 'var(--shadow-md)' }}>
       <p style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>{payload[0].name}</p>
-      <p style={{ fontSize: '0.8rem', fontWeight: 700, fontFamily: 'Space Grotesk, sans-serif', color: 'var(--color-text-primary)' }}>{fmtAdaptive(payload[0].value, currency)}</p>
+      <p style={{ fontSize: '0.8rem', fontWeight: 700, fontFamily: 'Space Grotesk, sans-serif', color: 'var(--color-text-primary)' }}>{formatCurrency({ amountMinor: payload[0].value, currency: currency }, { variant: 'compact' })}</p>
       {total > 0 && <p style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)' }}>{((payload[0].value / total) * 100).toFixed(1)}% of spending</p>}
     </div>
   );
@@ -124,7 +124,7 @@ export function CashFlowChart({ data, currency = 'KES' }: { data: ChartMonthPoin
         </defs>
         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
         <XAxis dataKey="label" tick={tick} tickLine={false} axisLine={false} dy={6} />
-        <YAxis tick={tick} tickLine={false} axisLine={false} tickFormatter={v => fmtCompact(v, currency)} />
+        <YAxis tick={tick} tickLine={false} axisLine={false} tickFormatter={v => formatCurrency({ amountMinor: v, currency: currency }, { variant: 'compact' })} />
         <Tooltip content={<FlowTip currency={currency} />} />
         <Legend iconType="circle" iconSize={7} wrapperStyle={{ fontSize: '0.75rem', paddingTop: 8 }} />
         <Area name="Income"   dataKey="Income"   type="monotone" stroke="var(--chart-income)"  strokeWidth={2.5} fill="url(#gIncome)"  activeDot={{ r: 4, strokeWidth: 0 }} />

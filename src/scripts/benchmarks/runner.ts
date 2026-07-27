@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { execSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -34,7 +35,7 @@ function getMetadata(scenarioName: string, vus: number): BenchmarkMetadata {
   let gitCommit = 'unknown';
   try {
     gitCommit = execSync('git rev-parse HEAD').toString().trim();
-  } catch (e) {}
+  } catch (_e) {}
 
   return {
     gitCommit,
@@ -60,7 +61,7 @@ async function fetchMetrics(): Promise<any> {
     }
     const json = await res.json();
     return json.data;
-  } catch (error) {
+  } catch (_error) {
     console.warn(`Could not connect to ${TARGET_URL}/api/metrics. Ensure the server is running.`);
     return null;
   }

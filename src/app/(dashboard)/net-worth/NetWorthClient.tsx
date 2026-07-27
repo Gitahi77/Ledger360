@@ -4,12 +4,12 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { addAsset, editAsset, deleteAsset } from '@/lib/actions/networth';
-import { fmtAdaptive } from '@/lib/format';
+import { formatCurrency } from '@/lib/finance/formatCurrency';
 import { Plus, Trash2, Loader2, X, Home, Car, Gem, BarChart3, Edit2 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 import { toMinor, toMajor } from '@/lib/money';
-import { getErrorMessage } from '@/lib/format';
+import { getErrorMessage } from '@/lib/errors';
 
 type Asset = { id: string; name: string; category: string; valueMoney: import('@/lib/types/domain').MoneyDTO; symbol?: string | null };
 type Loan  = { id: string; name: string; balanceMoney: import('@/lib/types/domain').MoneyDTO; type: string };
@@ -25,7 +25,7 @@ function NwChartTip(props: { active?: boolean; payload?: unknown; label?: string
       <div style={{ display:'flex', alignItems:'center', gap:'0.4rem' }}>
         <div style={{ width:7, height:7, borderRadius:'50%', background: payload[0].value >= 0 ? 'var(--color-income)' : 'var(--color-expense)', flexShrink:0 }} />
         <span style={{ fontSize:'0.78rem', color:'var(--color-text-secondary)' }}>Net Worth:</span>
-        <span style={{ fontSize:'0.78rem', fontWeight:700, fontFamily:'Space Grotesk,sans-serif', color:'var(--color-text-primary)' }}>{fmtAdaptive(payload[0].value, currency)}</span>
+        <span style={{ fontSize:'0.78rem', fontWeight:700, fontFamily:'Space Grotesk,sans-serif', color:'var(--color-text-primary)' }}>{formatCurrency({ amountMinor: payload[0].value, currency: currency }, { variant: 'compact' })}</span>
       </div>
     </div>
   );
@@ -174,19 +174,19 @@ export function NetWorthClient({ assets, liabilities, totalAssetsMinor, totalLia
               textShadow: '0 2px 10px rgba(0,0,0,0.05)',
               paddingBottom: '0.2rem'
             }}>
-              {positive ? '+' : '−'}{fmtAdaptive(Math.abs(netWorthMinor), currency)}
+              {positive ? '+' : '−'}{formatCurrency({ amountMinor: Math.abs(netWorthMinor), currency: currency }, { variant: 'compact' })}
             </p>
             <p className="hero-sub">Assets minus liabilities</p>
           </div>
           <div className="hero-stats-grid">
             <div className="hero-stat-card transition-all duration-300 hover:bg-[var(--surface-sunken)]">
               <p className="hero-label">Total Assets</p>
-              <p className="hero-stat-value tabular" style={{ color:'var(--color-income)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{fmtAdaptive(totalAssetsMinor, currency)}</p>
+              <p className="hero-stat-value tabular" style={{ color:'var(--color-income)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{formatCurrency({ amountMinor: totalAssetsMinor, currency: currency }, { variant: 'compact' })}</p>
               <p className="hero-sub">{assets?.length || 0} items</p>
             </div>
             <div className="hero-stat-card transition-all duration-300 hover:bg-[var(--surface-sunken)]">
               <p className="hero-label">Total Liabilities</p>
-              <p className="hero-stat-value tabular" style={{ color:'var(--color-expense)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{fmtAdaptive(totalLiabilitiesMinor, currency)}</p>
+              <p className="hero-stat-value tabular" style={{ color:'var(--color-expense)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{formatCurrency({ amountMinor: totalLiabilitiesMinor, currency: currency }, { variant: 'compact' })}</p>
               <p className="hero-sub">{liabilities?.length || 0} loans</p>
             </div>
             <div className="hero-stat-card transition-all duration-300 hover:bg-[var(--surface-sunken)]">
@@ -276,7 +276,7 @@ export function NetWorthClient({ assets, liabilities, totalAssetsMinor, totalLia
             </div>
             <div style={{ textAlign: 'left' }}>
               <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--color-text-primary)' }}>Assets Breakdown</div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: '0.1rem' }}>{(assets || []).length} items • <span style={{ color: 'var(--color-income)', fontWeight: 600 }}>{fmtAdaptive(totalAssetsMinor, currency)}</span></div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: '0.1rem' }}>{(assets || []).length} items • <span style={{ color: 'var(--color-income)', fontWeight: 600 }}>{formatCurrency({ amountMinor: totalAssetsMinor, currency: currency }, { variant: 'compact' })}</span></div>
             </div>
           </div>
           <div style={{ color: 'var(--color-brand)', fontWeight: 600, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
@@ -309,7 +309,7 @@ export function NetWorthClient({ assets, liabilities, totalAssetsMinor, totalLia
                       <div style={{ fontSize:'0.7rem', color:'var(--color-text-secondary)', textTransform:'capitalize', marginTop: '0.1rem' }}>{a.category}</div>
                     </div>
                     <div style={{ textAlign:'right', flexShrink:0 }}>
-                      <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:800, fontSize:'0.95rem', color:'var(--color-income)', whiteSpace:'nowrap' }}>{fmtAdaptive(a.valueMoney.amountMinor, currency)}</div>
+                      <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:800, fontSize:'0.95rem', color:'var(--color-income)', whiteSpace:'nowrap' }}>{formatCurrency({ amountMinor: a.valueMoney.amountMinor, currency: currency }, { variant: 'compact' })}</div>
                       <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ display:'flex', gap:'0.4rem', justifyContent:'flex-end', marginTop:'0.3rem' }}>
                         <button onClick={() => setEditAsset(a)} className="hover:bg-[var(--surface-sunken)] p-1 rounded transition-colors" style={{ background:'none', border:'none', cursor:'pointer', color:'var(--color-text-secondary)', display:'flex' }}><Edit2 size={13}/></button>
                         <button onClick={() => handleDelete(a.id)} disabled={deletingId===a.id} className="hover:bg-[var(--color-expense-light)] hover:text-[var(--color-expense)] p-1 rounded transition-colors" style={{ background:'none', border:'none', cursor:'pointer', color:'var(--color-text-secondary)', display:'flex' }}>
@@ -336,7 +336,7 @@ export function NetWorthClient({ assets, liabilities, totalAssetsMinor, totalLia
             </div>
             <div style={{ textAlign: 'left' }}>
               <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--color-text-primary)' }}>Liabilities Breakdown</div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: '0.1rem' }}>{(liabilities || []).length} loans • <span style={{ color: 'var(--color-expense)', fontWeight: 600 }}>{fmtAdaptive(totalLiabilitiesMinor, currency)}</span></div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: '0.1rem' }}>{(liabilities || []).length} loans • <span style={{ color: 'var(--color-expense)', fontWeight: 600 }}>{formatCurrency({ amountMinor: totalLiabilitiesMinor, currency: currency }, { variant: 'compact' })}</span></div>
             </div>
           </div>
           <div style={{ color: 'var(--color-expense)', fontWeight: 600, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
@@ -366,7 +366,7 @@ export function NetWorthClient({ assets, liabilities, totalAssetsMinor, totalLia
                       <div style={{ fontSize:'0.7rem', color:'var(--color-text-secondary)', textTransform:'capitalize', marginTop: '0.1rem' }}>{l.type.replace('_', ' ')}</div>
                     </div>
                     <div style={{ textAlign:'right', flexShrink:0 }}>
-                      <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:800, fontSize:'0.95rem', color:'var(--color-expense)', whiteSpace:'nowrap' }}>{fmtAdaptive(l.balanceMoney.amountMinor, currency)}</div>
+                      <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:800, fontSize:'0.95rem', color:'var(--color-expense)', whiteSpace:'nowrap' }}>{formatCurrency({ amountMinor: l.balanceMoney.amountMinor, currency: currency }, { variant: 'compact' })}</div>
                     </div>
                   </div>
                 ))}

@@ -80,7 +80,7 @@ export default async function Dashboard({
       safeToSpend(user.id, period === 'this-week' ? 'weekly' : period === 'this-year' ? 'yearly' : 'monthly'),
     ]) as DashboardData;
   } catch (err: unknown) {
-    const { getErrorMessage } = await import('@/lib/format');
+    const { getErrorMessage } = await import('@/lib/errors');
     console.error('[Dashboard] Data fetch failed:', getErrorMessage(err));
     data = [
       { income: 0, expenses: 0, savings: 0, savingRate: 0, moneyOut: 0, todaySpend: 0, savingRateChange: 0, incomeChange: 0, expensesChange: 0, savingsChange: 0, moneyOutChange: 0, todaySpendChange: 0 },
