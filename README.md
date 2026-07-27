@@ -64,10 +64,14 @@ Ledger360 is built on a strict **7-law interaction doctrine**:
 
 ### Phase 9A — Design Foundation
 *Goal: Establish the fundamental design tokens and systems to ensure visual consistency across all future screens.*
-- Typography scale, Spacing system, Radius, Shadows, Motion tokens, Color system, and Chart design language.
+- **Responsive design tokens**: Fluid typography scales, breakpoint-aware spacing systems, standardized container widths, and responsive grid layouts.
+- **Core Primitives**: Radius, Shadows, Motion tokens, Color system, and Chart design language.
+- **UI Element standards**: Touch targets (min 44x44px), card behavior (stacking/expanding), responsive tables, and breakpoint-specific navigation rules.
 
 ### Phase 9B — Premium Product Experience
 *Goal: Transform the UI from a "developer dashboard" into an information-rich, story-driven, Monarch-tier experience.*
+- **Responsive Experience Review**: Every screen must be explicitly redesigned for Mobile (thumb-friendly, bottom sheets, cards) rather than merely scaling down the Desktop layout.
+- **Explicit Acceptance Criteria**: Every feature must explicitly define its Desktop, Tablet, and Mobile layouts before implementation.
 - **Dashboard redesign**: Information hierarchy prioritizing storytelling ("Cash Available", "Budget Health").
 - **Information hierarchy**: Clearer primary actions (e.g. "Quick Add", "Insights") before tabular data.
 - **Better financial insights**: Contextual text insights instead of raw numbers.
@@ -75,7 +79,6 @@ Ledger360 is built on a strict **7-law interaction doctrine**:
 - **Better empty & loading states**: Skeletons, optimistic UI, animated placeholders, and actionable empty states.
 - **Better micro-interactions**: Hover effects, selection states, success/delete animations, and tactile button press feedback.
 - **Better forms**: Progressive disclosure, smart defaults, keyboard shortcuts, and contextual validation.
-- **Mobile-first refinement**: Bottom sheets, swipe actions, sticky buttons, and large touch targets for the future native app.
 - **UX writing**: Warmer, clearer copywriting (e.g., "Cash Available" instead of "Net Balance").
 
 ### Phase 9C — Visual Perfection & UX Audit
