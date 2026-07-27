@@ -3,9 +3,7 @@ import { cn } from '@/lib/ui/cn';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { PercentageChange, PercentageChangeProps } from './PercentageChange';
 
-export interface TrendIndicatorProps extends Omit<PercentageChangeProps, 'forceSign'> {
-  // forceSign is overridden to false since we use icons instead
-}
+export type TrendIndicatorProps = Omit<PercentageChangeProps, 'forceSign'>;
 
 export const TrendIndicator = React.forwardRef<HTMLSpanElement, TrendIndicatorProps>(
   ({ value, tone = 'auto', className, ...props }, ref) => {
