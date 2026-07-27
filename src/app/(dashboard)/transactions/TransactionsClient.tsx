@@ -19,6 +19,7 @@ import { Label } from '@/components/ui/label';
 import { FinancialMetric } from '@/components/finance/metrics/FinancialMetric';
 import { CurrencyDisplay } from '@/components/finance/display/currency-display';
 import { TransactionRow } from '@/components/finance/TransactionRow';
+import { Combobox, CreatableCombobox } from '@/components/ui/combobox';
 import { getErrorMessage } from '@/lib/format';
 
 import type { MoneyDTO } from '@/lib/types/domain';
@@ -58,7 +59,7 @@ const PERIOD_LABELS: Record<string, string> = {
   'this-year':  'This Year',
 };
 
-function TransactionModal({ tx, categories, accounts, goals, loans, currency, onClose }: { tx?: Tx; categories: Category[]; accounts: Account[]; goals: Goal[]; loans: Loan[]; currency: string; onClose: (warning?: string) => void }) {
+function TransactionModal({ tx, categories, accounts, goals, loans, currency, transactions, onClose }: { tx?: Tx; categories: Category[]; accounts: Account[]; goals: Goal[]; loans: Loan[]; currency: string; transactions: Tx[]; onClose: (warning?: string) => void }) {
   const router = useRouter();
   const [, startT] = useTransition();
   const [loading, setLoading] = useState(false);
@@ -80,6 +81,7 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
   const isEdit = Boolean(tx);
 
   const filteredCats = categories.filter(c => c.type === type);
+  const uniquePayees = Array.from(new Set(transactions.filter(t => t.type !== 'transfer' && t.name).map(t => t.name)));
 
   useEffect(() => {
     if (loanId && !isEdit) {
@@ -169,9 +171,16 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
           <div className="flex flex-col sm:flex-row gap-4">
             {type !== 'transfer' && (
               <div className="flex-1">
-                <Label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Description</Label>
-                <input className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
-                  value={name} onChange={e => setName(e.target.value)} required placeholder="e.g. Naivas Grocery" />
+                <Label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Description (Payee)</Label>
+                <CreatableCombobox
+                  options={uniquePayees.map(p => ({ id: p, value: p, label: p }))}
+                  value={name}
+                  onChange={(val) => setName(val)}
+                  onCreateOption={(val) => setName(val)}
+                  placeholder="e.g. Naivas Grocery"
+                  searchPlaceholder="Search or create payee..."
+                  emptyText="No recent payees found."
+                />
               </div>
             )}
             <div className={type === 'transfer' ? 'w-full' : 'w-full sm:w-1/3'}>
@@ -186,62 +195,71 @@ function TransactionModal({ tx, categories, accounts, goals, loans, currency, on
               <>
                 <div className="flex-1">
                   <Label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Category</Label>
-                  <select className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
-                    value={categoryId} onChange={e => setCategoryId(e.target.value)} required>
-                    <option value="">Select…</option>
-                    {filteredCats.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    {categoryId && !filteredCats.find(c => c.id === categoryId) && categories.find(c => c.id === categoryId) && (
-                      <option value={categoryId}>{categories.find(c => c.id === categoryId)!.name}</option>
-                    )}
-                  </select>
+                  <Combobox
+                    options={filteredCats.map(c => ({ id: c.id, value: c.id, label: c.name, icon: <DynamicCategoryIcon category={c.name} size={16} /> }))}
+                    value={categoryId}
+                    onChange={(val) => setCategoryId(val)}
+                    placeholder="Select Category..."
+                    emptyText="No categories found."
+                  />
                 </div>
                 <div className="flex-1">
                   <Label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Account</Label>
-                  <select className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
-                    value={accountId} onChange={e => setAccountId(e.target.value)} required>
-                    <option value="">Select Account…</option>
-                    {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-                  </select>
+                  <Combobox
+                    options={accounts.map(a => ({ id: a.id, value: a.id, label: a.name }))}
+                    value={accountId}
+                    onChange={(val) => setAccountId(val)}
+                    placeholder="Select Account..."
+                    emptyText="No accounts found."
+                  />
                 </div>
               </>
             ) : (
               <>
                 <div className="flex-1">
                   <Label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">From Account</Label>
-                  <select className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
-                    value={accountId} onChange={e => setAccountId(e.target.value)} required>
-                    <option value="">Select From Account...</option>
-                    {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-                  </select>
+                  <Combobox
+                    options={accounts.map(a => ({ id: a.id, value: a.id, label: a.name }))}
+                    value={accountId}
+                    onChange={(val) => setAccountId(val)}
+                    placeholder="Select From Account..."
+                    emptyText="No accounts found."
+                  />
                 </div>
                 {!loanId && (
                   <div className="flex-1">
                     <Label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">To Account</Label>
-                    <select className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
-                      value={toAccountId} onChange={e => setToAccountId(e.target.value)} required>
-                      <option value="">Select To Account...</option>
-                      {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-                    </select>
+                    <Combobox
+                      options={accounts.map(a => ({ id: a.id, value: a.id, label: a.name }))}
+                      value={toAccountId}
+                      onChange={(val) => setToAccountId(val)}
+                      placeholder="Select To Account..."
+                      emptyText="No accounts found."
+                    />
                   </div>
                 )}
                 {goals.length > 0 && !loanId && (
                   <div className="flex-1">
                     <Label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Goal to Fund (Optional)</Label>
-                    <select className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
-                      value={goalId} onChange={e => setGoalId(e.target.value)}>
-                      <option value="">None</option>
-                      {goals.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
-                    </select>
+                    <Combobox
+                      options={goals.map(g => ({ id: g.id, value: g.id, label: g.name }))}
+                      value={goalId}
+                      onChange={(val) => setGoalId(val)}
+                      placeholder="None"
+                      emptyText="No goals found."
+                    />
                   </div>
                 )}
                 {loans.length > 0 && !goalId && (
                   <div className="flex-1">
                     <Label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Loan to Repay (Optional)</Label>
-                    <select className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
-                      value={loanId} onChange={e => setLoanId(e.target.value)}>
-                      <option value="">None</option>
-                      {loans.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
-                    </select>
+                    <Combobox
+                      options={loans.map(l => ({ id: l.id, value: l.id, label: l.name }))}
+                      value={loanId}
+                      onChange={(val) => setLoanId(val)}
+                      placeholder="None"
+                      emptyText="No loans found."
+                    />
                   </div>
                 )}
               </>
@@ -285,7 +303,8 @@ export function TransactionsClient({
   const net        = totalIncome - totalExpense;
 
   const [showAdd,    setShowAdd]    = useState(false);
-  const [editTx,     setEditTx]     = useState<Tx | null>(null);
+  const [editingTx,  setEditingTx]  = useState<Tx | null>(null);
+  const [showModal,  setShowModal]  = useState(false);
   const [showUpload, setShowUpload] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [pageWarning, setPageWarning] = useState<string>('');
@@ -343,9 +362,19 @@ export function TransactionsClient({
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {showAdd && <TransactionModal categories={categories} accounts={accounts} goals={goals} loans={loans} currency={currency} onClose={(w) => { setShowAdd(false); if(w) setPageWarning(w); }} />}
-      {editTx && <TransactionModal key={editTx.id} tx={editTx} categories={categories} accounts={accounts} goals={goals} loans={loans} currency={currency} onClose={(w) => { setEditTx(null); if(w) setPageWarning(w); }} />}
-      {showUpload && <div className="bg-card border border-border rounded-xl shadow-md p-5 animate-in fade-in slide-in-from-top-4 duration-300"><SmartUpload /></div>}
+      {showAdd && <TransactionModal categories={categories} accounts={accounts} goals={goals} loans={loans} currency={currency} transactions={transactions} onClose={(w) => { setShowAdd(false); if(w) setPageWarning(w); }} />}
+      {showModal && (
+        <TransactionModal
+          tx={editingTx ?? undefined}
+          categories={categories}
+          accounts={accounts}
+          goals={goals}
+          loans={loans}
+          currency={currency}
+          transactions={transactions}
+          onClose={(w) => { setShowModal(false); setEditingTx(null); if (w) alert(w); }}
+        />
+      )}{showUpload && <div className="bg-card border border-border rounded-xl shadow-md p-5 animate-in fade-in slide-in-from-top-4 duration-300"><SmartUpload /></div>}
 
       {pageWarning && (
         <div className="flex items-center justify-between p-4 bg-warning/10 border border-warning/30 text-warning rounded-xl shadow-sm animate-in fade-in duration-300">
@@ -455,9 +484,9 @@ export function TransactionsClient({
                       </div>
                     }
                     state={tx.type === 'pending' ? 'pending' : undefined}
-                    onClick={() => setEditTx(tx)}
+                    onClick={() => { setEditingTx(tx); setShowModal(true); }}
                     onDelete={() => handleDelete(tx.id, tx.type)}
-                    onEdit={() => setEditTx(tx)}
+                    onEdit={() => { setEditingTx(tx); setShowModal(true); }}
                     isDeleting={deletingId === tx.id}
                   />
                 </div>

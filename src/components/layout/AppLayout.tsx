@@ -6,6 +6,8 @@ import { Sidebar } from './Sidebar';
 import { ThemeToggle } from '../ThemeToggle';
 import { MobileNav } from '../navigation/MobileNav';
 import { AppFooter } from './AppFooter';
+import { CommandPalette } from '../ui/command/CommandPalette';
+import { Search } from 'lucide-react';
 
 const PAGE_TITLES: Record<string, string> = {
   '/':             'Dashboard',
@@ -34,6 +36,24 @@ export function AppLayout({ children }: { children: ReactNode }) {
             <span className="font-display text-[0.9375rem] font-bold tracking-[-0.02em] text-foreground">{title}</span>
           </div>
           <div className="flex items-center gap-2.5">
+            <button
+              onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
+              className="hidden md:flex items-center gap-2 px-3 py-1.5 text-sm text-muted-foreground bg-background border border-border rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors"
+              title="Search (Cmd+K)"
+            >
+              <Search size={14} />
+              <span>Search...</span>
+              <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
+                <span className="text-xs">⌘</span>K
+              </kbd>
+            </button>
+            <button
+              onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
+              className="md:hidden p-2 text-muted-foreground hover:bg-accent rounded-full transition-colors"
+              title="Search"
+            >
+              <Search size={18} />
+            </button>
             <ThemeToggle />
           </div>
         </header>
@@ -46,6 +66,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
       </div>
 
       <MobileNav />
+      <CommandPalette />
     </div>
   );
 }
