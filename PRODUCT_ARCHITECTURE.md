@@ -52,3 +52,17 @@ Every major screen must be verified against this matrix:
 | Large tablet   |    1024 px |
 | Laptop         |    1280 px |
 | Desktop        |   1440 px+ |
+
+## Premium Quality Gate
+Before any new screen or feature is considered complete (especially from Phase 9B onward), it must pass this non-negotiable checklist:
+
+- [ ] Responsive on all supported devices in the Viewport Matrix.
+- [ ] Accessibility compliant (WCAG AA, keyboard navigation, focus management).
+- [ ] Uses Design Tokens exclusively for layouts, typography, and spacing.
+- [ ] Uses shared UI primitives exclusively.
+- [ ] Uses Finance Primitives where applicable (no raw number formatting).
+- [ ] Meets touch-target requirements (min 44x44px for primary interactions on mobile).
+- [ ] No arbitrary spacing values or hardcoded ad-hoc colors.
+- [ ] Motion follows the unified animation design system.
+- [ ] Meaningful loading (Skeletons/Optimistic UI) and empty states implemented.
+- [ ] Contextual and robust error states implemented.
