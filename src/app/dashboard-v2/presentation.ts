@@ -3,6 +3,8 @@ import { AttentionSectionProps } from '@/components/finance/AttentionSection';
 import { ReflectionSectionProps } from '@/components/finance/ReflectionSection';
 import { ProgressSectionProps } from '@/components/finance/ProgressSection';
 import { ActionSectionProps } from '@/components/finance/ActionSection';
+import { FinancialSnapshot } from '@/lib/domain/snapshot';
+import { formatCurrency } from '@/lib/finance/formatCurrency';
 
 export interface DashboardPresentation {
   hero: HeroSectionProps;
@@ -12,110 +14,145 @@ export interface DashboardPresentation {
   action: ActionSectionProps;
 }
 
-export function buildDashboardPresentation(): DashboardPresentation {
-  return {
-    hero: {
-      metric: {
-        label: 'Safe to Spend',
-        value: 'KES 42,500',
-        status: 'positive',
-      },
-      calculation: [
-        { label: 'Liquid Cash', value: 'KES 120,000' },
-        { label: 'Upcoming Bills', value: '-KES 35,000' },
-        { label: 'Savings Goal', value: '-KES 42,500' },
-      ],
+/**
+ * Transforms a pure FinancialSnapshot domain object into purely presentational UI props.
+ * This function must remain entirely decoupled from Prisma, databases, and APIs.
+ */
+export function buildDashboardPresentation(snapshot: FinancialSnapshot): DashboardPresentation {
+  
+  // Helper for formatting
+  const format = (amount: bigint) => 
+    formatCurrency({ amountMinor: amount, currency: snapshot.metadata.baseCurrency }, { precision: 0 });
+  const formatTx = (amount: bigint, currency: string) => 
+    formatCurrency({ amountMinor: amount, currency }, { precision: 0 });
+
+  // -- Hero --
+  const safeToSpendVal = snapshot.metrics.safeToSpend;
+  const isPositive = safeToSpendVal >= 0n;
+  const formattedSafeToSpend = format(isPositive ? safeToSpendVal : -safeToSpendVal);
+  
+  const hero: HeroSectionProps = {
+    metric: {
+      label: 'Safe to Spend',
+      value: `${isPositive ? '' : '-'}${formattedSafeToSpend}`,
+      status: isPositive ? 'positive' : 'negative',
     },
-    attention: {
-      insights: [
-        {
-          severity: 'warning',
-          title: 'Unusual Spending',
-          content: 'Grocery spending is 40% higher than your weekly average. Consider reviewing your supermarket trips.',
-          actionLabel: 'Review Groceries',
-        },
-        {
-          severity: 'info',
-          title: 'Bill Upcoming',
-          content: 'Your KPLC Electricity bill is due in 3 days (KES 2,500).',
-          actionLabel: 'Pay Now',
-        },
-      ],
-    },
-    reflection: {
-      title: 'Recent Activity',
-      groups: [
-        {
-          label: 'Today',
-          items: [
-            {
-              title: 'Naivas Supermarket',
-              description: 'Groceries',
-              value: '-KES 4,200',
-              time: '18:45',
-            },
-            {
-              title: 'M-Pesa to John Doe',
-              description: 'Lunch split',
-              value: '-KES 850',
-              time: '13:15',
-            },
-          ],
-        },
-        {
-          label: 'Yesterday',
-          items: [
-            {
-              title: 'Salary Deposit',
-              description: 'Tech Corp Kenya',
-              value: '+KES 250,000',
-              time: '08:00',
-              status: 'success',
-            },
-            {
-              title: 'Safaricom PostPay',
-              description: 'Monthly Bill',
-              value: '-KES 3,000',
-              time: '09:30',
-            },
-          ],
-        },
-      ],
-    },
-    progress: {
-      title: 'Goals & Progress',
-      items: [
-        {
-          type: 'story',
-          props: {
-            title: 'Emergency Fund',
-            narrative: 'You are on track to hit your target by December.',
-            metric: 'KES 150,000',
-            progress: 75,
-            status: 'positive',
-            actionLabel: 'View Goal',
-          },
-        },
-        {
-          type: 'journey',
-          props: {
-            title: 'Net Worth',
-            primaryMetric: '+KES 85,000',
-            trendLabel: 'since last month',
-            narrative: 'Your SACCO dividend and steady MMF contributions drove this growth.',
-            trendDirection: 'positive',
-          },
-        },
-      ],
-    },
-    action: {
-      recommendation: {
-        title: 'Recommended Action',
-        actionStatement: 'Transfer KES 15,000 to MMF',
-        narrative: 'You have excess liquid cash this month. Moving it to your Money Market Fund will earn you interest while keeping it accessible.',
-        actionLabel: 'Transfer Now',
-        status: 'active',
-      },
-    },
+    calculation: [
+      { label: 'Liquid Cash', value: format(snapshot.metrics.liquidCash) },
+      // Simplify logic: Upcoming obligations = LiquidCash - SafeToSpend
+      { label: 'Upcoming Obligations', value: `-${format(snapshot.metrics.liquidCash - safeToSpendVal)}` },
+    ],
   };
+
+  // -- Attention --
+  const attention: AttentionSectionProps = {
+    insights: snapshot.alerts.map(a => ({
+      severity: a.severity,
+      title: a.title,
+      content: a.content,
+      actionLabel: a.actionLabel,
+    })),
+  };
+
+  // -- Reflection --
+  // Group transactions by "Today", "Yesterday", or "Earlier"
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  const txToday = snapshot.transactions.filter(t => t.date >= today);
+  const txYesterday = snapshot.transactions.filter(t => t.date >= yesterday && t.date < today);
+  
+  const reflectionGroups = [];
+  if (txToday.length > 0) {
+    reflectionGroups.push({
+      label: 'Today',
+      items: txToday.map(t => {
+        const isExp = t.type === 'expense';
+        const absAmount = isExp ? -t.amountMinor : t.amountMinor;
+        return {
+          title: t.name,
+          description: t.categoryId || 'General',
+          value: `${isExp ? '-' : '+'}${formatTx(absAmount, t.currency)}`,
+          time: t.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          status: isExp ? undefined : 'success' as const,
+        };
+      })
+    });
+  }
+  if (txYesterday.length > 0) {
+    reflectionGroups.push({
+      label: 'Yesterday',
+      items: txYesterday.map(t => {
+        const isExp = t.type === 'expense';
+        const absAmount = isExp ? -t.amountMinor : t.amountMinor;
+        return {
+          title: t.name,
+          description: t.categoryId || 'General',
+          value: `${isExp ? '-' : '+'}${formatTx(absAmount, t.currency)}`,
+          time: t.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          status: isExp ? undefined : 'success' as const,
+        };
+      })
+    });
+  }
+
+  const reflection: ReflectionSectionProps = {
+    title: 'Recent Activity',
+    groups: reflectionGroups,
+  };
+
+  // -- Progress --
+  const progressItems: ProgressSectionProps['items'] = snapshot.goals.map(g => {
+    const progressPct = g.targetAmountMinor > 0n 
+      ? Number((g.savedAmountMinor * 100n) / g.targetAmountMinor) 
+      : 0;
+    
+    return {
+      type: 'story',
+      props: {
+        title: g.name,
+        narrative: g.deadline ? `Target by ${g.deadline.toLocaleDateString()}` : 'Steady progress.',
+        metric: format(g.targetAmountMinor),
+        progress: Math.min(progressPct, 100),
+        status: progressPct >= 100 ? 'positive' : (progressPct > 50 ? 'positive' : 'warning'),
+      }
+    };
+  });
+
+  // Add Net Worth Journey
+  progressItems.push({
+    type: 'journey',
+    props: {
+      title: 'Net Worth',
+      primaryMetric: format(snapshot.metrics.netWorth),
+      trendLabel: 'current balance',
+      narrative: 'Assets minus liabilities.',
+      trendDirection: snapshot.metrics.netWorth >= 0n ? 'positive' : 'negative',
+    }
+  });
+
+  const progress: ProgressSectionProps = {
+    title: 'Goals & Progress',
+    items: progressItems,
+  };
+
+  // -- Action --
+  let actionRec = undefined;
+  if (snapshot.metrics.liquidCash > snapshot.metrics.monthlyExpenses * 2n && snapshot.metrics.monthlyExpenses > 0n) {
+    actionRec = {
+      title: 'Recommended Action',
+      actionStatement: 'Optimize Excess Liquidity',
+      narrative: 'You have more than 2 months of expenses in liquid cash. Consider moving a portion to a higher-yield investment.',
+      actionLabel: 'Explore Investments',
+      status: 'active' as const,
+    };
+  }
+
+  const action: ActionSectionProps = {
+    recommendation: actionRec,
+  };
+
+  return { hero, attention, reflection, progress, action };
 }
