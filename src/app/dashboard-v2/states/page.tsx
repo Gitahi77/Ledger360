@@ -23,11 +23,11 @@ export default function StateCertificationBoard() {
           </div>
           
           <StateVariant label="1. Loading (Skeleton)">
-            <HeroSection metric={{ label: 'Safe to Spend', value: '', isLoading: true }} />
+            <HeroSection metric={{ label: 'Safe to Spend', value: '', isLoading: true }} calculation={[]} />
           </StateVariant>
 
           <StateVariant label="2. Empty (No accounts/data)">
-            <HeroSection metric={{ label: 'Safe to Spend', value: '', isEmpty: true }} />
+            <HeroSection metric={{ label: 'Safe to Spend', value: '', isEmpty: true }} calculation={[]} />
           </StateVariant>
 
           <StateVariant label="3. Positive Safe-to-Spend">

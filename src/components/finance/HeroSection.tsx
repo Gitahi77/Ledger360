@@ -5,8 +5,8 @@ import { CalculationPills, CalculationItem } from './CalculationPill';
 export interface HeroSectionProps {
   /** Props for the primary hero metric */
   metric: HeroMetricProps;
-  /** Optional calculation items to explain the metric */
-  calculation?: CalculationItem[];
+  /** Calculation items to explain the metric */
+  calculation: CalculationItem[];
 }
 
 export function HeroSection({ metric, calculation }: HeroSectionProps) {

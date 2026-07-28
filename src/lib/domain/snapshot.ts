@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { startOfMonth, subDays, startOfWeek } from 'date-fns';
+import { startOfMonth } from 'date-fns';
 
 export interface AccountSnapshot {
   id: string;
@@ -87,6 +87,7 @@ export interface FinancialSnapshot {
     baseCurrency: string;
     generatedAt: Date;
     dataFreshness: 'live' | 'cached';
+    queryCount: number; // For performance budgeting
   };
   health: {
     staleAccounts: number;
@@ -111,34 +112,85 @@ export interface FinancialSnapshot {
   metrics: SnapshotMetrics;
 }
 
+function synthesizeAlerts(
+  safeToSpend: bigint,
+  liquidCash: bigint,
+  monthlyExpenses: bigint
+): AlertSnapshot[] {
+  const alerts: AlertSnapshot[] = [];
+  if (safeToSpend < 0n) {
+    alerts.push({
+      severity: 'critical',
+      title: 'Negative Safe to Spend',
+      content: 'Your upcoming obligations exceed your liquid cash.',
+      actionLabel: 'Review Cash Flow',
+    });
+  } else if (liquidCash > monthlyExpenses * 2n && monthlyExpenses > 0n) {
+    alerts.push({
+      severity: 'info',
+      title: 'Excess Liquidity',
+      content: 'Consider moving some liquid cash into an interest-bearing account or MMF.',
+      actionLabel: 'Transfer Funds',
+    });
+  }
+  return alerts;
+}
+
 /**
  * Builds the comprehensive Financial Snapshot domain object.
  * This function is the ONLY place that talks to Prisma for the dashboard.
  */
 export async function buildFinancialSnapshot(userId: string): Promise<FinancialSnapshot> {
-  const user = await prisma.user.findUniqueOrThrow({
+  let queryCount = 0;
+  
+  const incQuery = <T>(promise: Promise<T>): Promise<T> => {
+    queryCount++;
+    return promise;
+  };
+
+  // Graceful degradation wrapper
+  const safeQuery = async <T>(operation: () => Promise<T>, fallback: T): Promise<T> => {
+    try {
+      return await incQuery(operation());
+    } catch (err) {
+      console.error('[buildFinancialSnapshot] Query failed:', err);
+      return fallback;
+    }
+  };
+
+  // 1. Fetch user (required, if this fails, we cannot proceed)
+  const user = await incQuery(prisma.user.findUnique({
     where: { id: userId },
     select: { currency: true },
-  });
-  const baseCurrency = user.currency;
+  }));
+  const baseCurrency = user?.currency || 'KES';
 
-  // 1. Fetch raw facts
-  const rawAccounts = await prisma.account.findMany({ where: { userId, archived: false } });
-  const rawTransactions = await prisma.transaction.findMany({
-    where: { userId },
-    orderBy: { date: 'desc' },
-    take: 50,
-  });
-  const rawBudgets = await prisma.budget.findMany({ where: { userId } });
-  const rawGoals = await prisma.goal.findMany({ where: { userId }, include: { transfers: true } });
-  const rawLoans = await prisma.loan.findMany({ where: { userId } });
-  const rawAssets = await prisma.asset.findMany({ where: { userId } });
-
-  // Compute transaction spent amounts for budgets
   const thisMonthStart = startOfMonth(new Date());
-  const thisMonthTransactions = await prisma.transaction.findMany({
-    where: { userId, date: { gte: thisMonthStart } }
-  });
+
+  // 2. Parallelize independent queries
+  const [
+    rawAccounts,
+    rawTransactions,
+    rawBudgets,
+    rawGoals,
+    rawLoans,
+    rawAssets,
+    thisMonthTransactions
+  ] = await Promise.all([
+    safeQuery(() => prisma.account.findMany({ where: { userId, archived: false } }), []),
+    safeQuery(() => prisma.transaction.findMany({
+      where: { userId },
+      orderBy: { date: 'desc' },
+      take: 50,
+    }), []),
+    safeQuery(() => prisma.budget.findMany({ where: { userId } }), []),
+    safeQuery(() => prisma.goal.findMany({ where: { userId }, include: { transfers: true } }), []),
+    safeQuery(() => prisma.loan.findMany({ where: { userId } }), []),
+    safeQuery(() => prisma.asset.findMany({ where: { userId } }), []),
+    safeQuery(() => prisma.transaction.findMany({
+      where: { userId, date: { gte: thisMonthStart } }
+    }), [])
+  ]);
 
   const budgets: BudgetSnapshot[] = rawBudgets.map(b => {
     const spent = thisMonthTransactions
@@ -214,23 +266,8 @@ export async function buildFinancialSnapshot(userId: string): Promise<FinancialS
   const savingsRate = monthlyIncome > 0n ? (Number(monthlyIncome - monthlyExpenses) / Number(monthlyIncome)) * 100 : 0;
   const debtRatio = totalAssets > 0n ? (Number(totalLiabilities) / Number(totalAssets)) * 100 : 0;
 
-  // Alerts
-  const alerts: AlertSnapshot[] = [];
-  if (safeToSpend < 0n) {
-    alerts.push({
-      severity: 'critical',
-      title: 'Negative Safe to Spend',
-      content: 'Your upcoming obligations exceed your liquid cash.',
-      actionLabel: 'Review Cash Flow',
-    });
-  } else if (liquidCash > monthlyExpenses * 2n && monthlyExpenses > 0n) {
-    alerts.push({
-      severity: 'info',
-      title: 'Excess Liquidity',
-      content: 'Consider moving some liquid cash into an interest-bearing account or MMF.',
-      actionLabel: 'Transfer Funds',
-    });
-  }
+  // Synthesis of alerts
+  const alerts = synthesizeAlerts(safeToSpend, liquidCash, monthlyExpenses);
 
   // Timeline
   const latestTx = rawTransactions.length > 0 ? rawTransactions[0].date : null;
@@ -242,6 +279,7 @@ export async function buildFinancialSnapshot(userId: string): Promise<FinancialS
       baseCurrency,
       generatedAt: new Date(),
       dataFreshness: 'live',
+      queryCount,
     },
     health: {
       staleAccounts: 0,
