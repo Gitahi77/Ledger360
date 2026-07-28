@@ -63,34 +63,50 @@ Ledger360 is built on a strict **7-law interaction doctrine**:
 ## Roadmap
 
 ### Phase 9A — Design Foundation
-*Goal: Establish the fundamental design tokens and systems to ensure visual consistency across all future screens.*
-- **Responsive design tokens**: Fluid typography scales, breakpoint-aware spacing systems, standardized container widths, and responsive grid layouts.
-- **Core Primitives**: Radius, Shadows, Motion tokens, Color system, and Chart design language.
-- **UI Element standards**: Touch targets (min 44x44px), card behavior (stacking/expanding), responsive tables, and breakpoint-specific navigation rules.
+
+- ✅ Design tokens
+- ✅ Typography
+- ✅ Motion
+- ✅ Elevation
+- ✅ ResponsiveDialog
+- ✅ Chart standards
+- ✅ Finance primitives
+- ✅ **InsightCard primitive**
+- ✅ **Premium Design Showcase (`/design`)**
+- ✅ Freeze design APIs
 
 ### Phase 9B — Premium Product Experience
-*Goal: Transform the UI from a "developer dashboard" into an information-rich, story-driven, Monarch-tier experience.*
-- **Responsive Experience Review**: Every screen must be explicitly redesigned for Mobile (thumb-friendly, bottom sheets, cards) rather than merely scaling down the Desktop layout.
-- **Explicit Acceptance Criteria**: Every feature must explicitly define its Desktop, Tablet, and Mobile layouts before implementation.
-- **Dashboard redesign**: Information hierarchy prioritizing storytelling ("Cash Available", "Budget Health").
-- **Information hierarchy**: Clearer primary actions (e.g. "Quick Add", "Insights") before tabular data.
-- **Better financial insights**: Contextual text insights instead of raw numbers.
-- **Better visualizations**: Radial budget rings, cash-flow Sankeys, spending heatmaps, investment allocation donuts.
-- **Better empty & loading states**: Skeletons, optimistic UI, animated placeholders, and actionable empty states.
-- **Better micro-interactions**: Hover effects, selection states, success/delete animations, and tactile button press feedback.
-- **Better forms**: Progressive disclosure, smart defaults, keyboard shortcuts, and contextual validation.
-- **UX writing**: Warmer, clearer copywriting (e.g., "Cash Available" instead of "Net Balance").
 
-### Phase 9C — Visual Perfection & UX Audit
-*Goal: Walk through every screen to ensure absolute pixel-perfect consistency.*
-- Audit padding, spacing, typography, icon alignment, card alignment, shadows, semantic colors, and border radii.
-- Ensure all loading, empty, and animation states belong to the same cohesive product.
+- ✅ **Phase 9B.0**: Competitive UX Audit
+- ✅ **Phase 9B.1**: Information Architecture
+- ✅ **Phase 9B.1.5**: Design Language & Interaction Specification
+- 🟡 **Phase 9B.1.6**: Primitive Certification (HeroMetric, InsightCard, StoryCard, JourneyCard, RecommendationCard, Timeline, Calculation Pills)
+- ⬜ **Phase 9B.2**: Dashboard Assembly (No new design decisions allowed)
+- ⬜ **Phase 9B.3**: Pixel QA
+- ⬜ **Phase 9B.4**: Interaction QA
+- ⬜ **Phase 9B.5**: Production Integration
+- ⬜ **Phase 9B.6**: Transactions Redesign
+- ⬜ **Phase 9B.7**: Accounts Redesign
+- ⬜ **Phase 9B.8**: Budgets Redesign
+- ⬜ **Phase 9B.9**: Goals Redesign
+- ⬜ **Phase 9B.10**: Global Screen Acceptance Review
 
-### Phase 10 — Production Readiness & Launch
-*Goal: Ensure the application is fast, secure, accessible, and ready for end users.*
-- Performance optimization (Lighthouse ≥ 95, JS Bundle ≤ 250 KB/route, CLS < 0.1).
-- Security review, error monitoring, analytics integration.
-- Cross-browser/device testing, accessibility validation, documentation, beta feedback, and final release checklist.
+### Phase 9C — Visual Perfection
+
+* Pixel-perfect audit
+* Accessibility audit
+* Animation audit
+* Responsive audit
+* Visual regression
+* Final consistency pass
+
+### Phase 10 — Production Readiness
+
+* Performance
+* Security
+* Monitoring
+* Analytics
+* Launch readiness
 
 ---
 

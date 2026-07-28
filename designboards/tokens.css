@@ -1,0 +1,228 @@
+/* 
+  Ledger360 Design System - HTML Prototype Baseline
+  Inspired by: Apple (Typography), Stripe (Clarity), Linear (Focus), Arc (Restraint)
+*/
+
+:root {
+  /* Colors - Minimal Luxury */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f9f9fa;
+  --bg-tertiary: #f0f0f2;
+  
+  --text-primary: #111111;
+  --text-secondary: #666668;
+  --text-tertiary: #99999b;
+
+  --accent-critical: #e5484d;
+  --accent-critical-bg: #fff0f0;
+  --accent-success: #30a46c;
+  --accent-brand: #000000;
+  
+  --border-subtle: #eaeaea;
+
+  /* Typography - Apple Rhythm */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  
+  --text-xs: 0.75rem;     /* 12px */
+  --text-sm: 0.875rem;    /* 14px */
+  --text-base: 1rem;      /* 16px */
+  --text-lg: 1.125rem;    /* 18px */
+  --text-xl: 1.25rem;     /* 20px */
+  --text-2xl: 1.5rem;     /* 24px */
+  --text-3xl: 2rem;       /* 32px */
+  --text-hero: 4rem;      /* 64px */
+
+  --tracking-tight: -0.02em;
+  --tracking-normal: 0em;
+
+  /* Spacing - Linear Focus (Multiples of 4/8) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-24: 96px;
+  --space-32: 128px;
+
+  /* Radii */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 9999px;
+
+  /* Shadow / Elevation - Stripe Clarity */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.03), 0 2px 4px rgba(0, 0, 0, 0.02);
+  
+  /* Motion - Arc Restraint */
+  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.1);
+  --ease-smooth: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --duration-fast: 150ms;
+  --duration-normal: 300ms;
+}
+
+/* Base Resets */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Typography Utilities */
+.text-hero { font-size: var(--text-hero); font-weight: 500; letter-spacing: var(--tracking-tight); line-height: 1.05; }
+.text-3xl { font-size: var(--text-3xl); font-weight: 500; letter-spacing: var(--tracking-tight); }
+.text-2xl { font-size: var(--text-2xl); font-weight: 500; letter-spacing: var(--tracking-tight); }
+.text-lg { font-size: var(--text-lg); font-weight: 400; }
+.text-base { font-size: var(--text-base); font-weight: 400; }
+.text-sm { font-size: var(--text-sm); font-weight: 400; }
+.text-xs { font-size: var(--text-xs); font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; }
+
+.text-secondary { color: var(--text-secondary); }
+.text-tertiary { color: var(--text-tertiary); }
+.text-critical { color: var(--accent-critical); }
+.text-success { color: var(--accent-success); }
+
+/* Layout & Spacing */
+.container {
+  max-width: 1024px;
+  margin: 0 auto;
+  padding: 0 var(--space-4);
+}
+
+.flex { display: flex; }
+.flex-col { display: flex; flex-direction: column; }
+.items-center { align-items: center; }
+.items-start { align-items: flex-start; }
+.justify-between { justify-content: space-between; }
+.justify-center { justify-content: center; }
+.gap-2 { gap: var(--space-2); }
+.gap-4 { gap: var(--space-4); }
+.gap-6 { gap: var(--space-6); }
+.gap-8 { gap: var(--space-8); }
+.gap-16 { gap: var(--space-16); }
+
+/* Primitives */
+.card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--duration-fast) var(--ease-smooth);
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-smooth);
+  border: 1px solid transparent;
+}
+
+.pill:hover {
+  background: var(--bg-tertiary);
+}
+
+.pill.active {
+  background: var(--bg-primary);
+  border-color: var(--border-subtle);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-3) var(--space-6);
+  border-radius: var(--radius-pill);
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: transform var(--duration-fast) var(--ease-spring), opacity var(--duration-fast) var(--ease-smooth);
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn-primary {
+  background: var(--accent-brand);
+  color: #fff;
+}
+
+.btn-critical {
+  background: var(--accent-critical);
+  color: #fff;
+}
+
+.btn-secondary {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+.btn-secondary:hover {
+  background: var(--bg-tertiary);
+}
+
+/* Specific Archetypes */
+.hero-section {
+  min-height: 40vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: var(--space-16) 0;
+}
+
+.insight-critical {
+  background: var(--accent-critical-bg);
+  border-color: rgba(229, 72, 77, 0.2);
+  padding: var(--space-8);
+}
+
+/* Animations */
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fade-in-up 600ms var(--ease-smooth) forwards;
+  opacity: 0;
+}
+
+.delay-200 {
+  animation-delay: 200ms;
+}
+
+/* Mobile Adjustments */
+@media (max-width: 768px) {
+  .text-hero { font-size: 3rem; }
+  .hero-section { min-height: auto; padding: var(--space-12) 0; }
+  
+  .insight-critical {
+    padding: var(--space-6);
+  }
+}

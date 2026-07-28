@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ledger360 - Hero Design Board</title>
+  <link rel="stylesheet" href="tokens.css">
+  <style>
+    /* Hero specific overrides for prototyping */
+    .hero-board {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .header {
+      padding: var(--space-6);
+    }
+    .hero-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding-bottom: 10vh; /* Optical center adjustment */
+    }
+    .pill-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: var(--space-3);
+      margin-top: var(--space-8);
+    }
+    
+    /* Subtle hover interactions */
+    .hero-number {
+      transition: transform var(--duration-normal) var(--ease-spring);
+    }
+    .hero-number:hover {
+      transform: scale(1.02);
+    }
+  </style>
+</head>
+<body class="hero-board">
+  
+  <header class="header flex justify-between items-center">
+    <div>
+      <h1 class="text-lg">Good morning, Eric</h1>
+      <p class="text-sm text-secondary">Sync: 2 mins ago</p>
+    </div>
+    <button class="btn btn-primary">Quick Add</button>
+  </header>
+
+  <main class="hero-content container">
+    <div class="animate-fade-in">
+      <h2 class="text-hero hero-number">KES 45,200</h2>
+      <p class="text-lg text-secondary mt-2">Safe to Spend</p>
+    </div>
+
+    <div class="animate-fade-in delay-200 mt-6" style="margin-top: var(--space-6);">
+      <p class="text-xl">Everything due this week has already been accounted for.</p>
+    </div>
+
+    <div class="pill-container animate-fade-in delay-200">
+      <button class="pill">
+        <span class="text-secondary">Available Cash</span>
+        <span>120k</span>
+      </button>
+      <button class="pill">
+        <span class="text-secondary">Upcoming Bills</span>
+        <span>-14k</span>
+      </button>
+      <button class="pill">
+        <span class="text-secondary">Reserved for Budgets</span>
+        <span>-45k</span>
+      </button>
+      <button class="pill">
+        <span class="text-secondary">Upcoming Loan</span>
+        <span>-12k</span>
+      </button>
+    </div>
+  </main>
+
+  <script>
+    // Simulate interaction for the pills
+    document.querySelectorAll('.pill').forEach(pill => {
+      pill.addEventListener('click', () => {
+        // Toggle active state
+        const isActive = pill.classList.contains('active');
+        document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+        if (!isActive) {
+          pill.classList.add('active');
+          // In a real implementation, this would smoothly expand an inline panel below the pills
+          console.log(`Expanded math for: ${pill.querySelector('.text-secondary').innerText}`);
+        }
+      });
+    });
+  </script>
+</body>
+</html>
