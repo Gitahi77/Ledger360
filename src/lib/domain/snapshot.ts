@@ -149,11 +149,13 @@ export async function buildFinancialSnapshot(userId: string): Promise<FinancialS
   };
 
   // Graceful degradation wrapper
-  const safeQuery = <T>(promise: Promise<T>, fallback: T): Promise<T> => {
-    return incQuery(promise).catch((err) => {
+  const safeQuery = async <T>(operation: () => Promise<T>, fallback: T): Promise<T> => {
+    try {
+      return await incQuery(operation());
+    } catch (err) {
       console.error('[buildFinancialSnapshot] Query failed:', err);
       return fallback;
-    });
+    }
   };
 
   // 1. Fetch user (required, if this fails, we cannot proceed)
@@ -175,17 +177,17 @@ export async function buildFinancialSnapshot(userId: string): Promise<FinancialS
     rawAssets,
     thisMonthTransactions
   ] = await Promise.all([
-    safeQuery(prisma.account.findMany({ where: { userId, archived: false } }), []),
-    safeQuery(prisma.transaction.findMany({
+    safeQuery(() => prisma.account.findMany({ where: { userId, archived: false } }), []),
+    safeQuery(() => prisma.transaction.findMany({
       where: { userId },
       orderBy: { date: 'desc' },
       take: 50,
     }), []),
-    safeQuery(prisma.budget.findMany({ where: { userId } }), []),
-    safeQuery(prisma.goal.findMany({ where: { userId }, include: { transfers: true } }), []),
-    safeQuery(prisma.loan.findMany({ where: { userId } }), []),
-    safeQuery(prisma.asset.findMany({ where: { userId } }), []),
-    safeQuery(prisma.transaction.findMany({
+    safeQuery(() => prisma.budget.findMany({ where: { userId } }), []),
+    safeQuery(() => prisma.goal.findMany({ where: { userId }, include: { transfers: true } }), []),
+    safeQuery(() => prisma.loan.findMany({ where: { userId } }), []),
+    safeQuery(() => prisma.asset.findMany({ where: { userId } }), []),
+    safeQuery(() => prisma.transaction.findMany({
       where: { userId, date: { gte: thisMonthStart } }
     }), [])
   ]);

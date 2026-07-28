@@ -99,7 +99,7 @@ describe('FinancialSnapshot Integration (Phase 9B.3.5)', () => {
   it('buildFinancialSnapshot gracefully degrades if a query fails', async () => {
     // We mock Prisma momentarily to force a failure
     const originalFindMany = prisma.loan.findMany;
-    prisma.loan.findMany = () => Promise.reject(new Error('Simulated DB Failure'));
+    prisma.loan.findMany = (() => Promise.reject(new Error('Simulated DB Failure'))) as any;
     
     try {
       const snapshot = await buildFinancialSnapshot(testUserId);
