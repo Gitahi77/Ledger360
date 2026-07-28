@@ -10,28 +10,26 @@ import { useSession, signOut } from 'next-auth/react';
 
 const navItems = [
   {
-    group: 'OVERVIEW',
+    group: 'CORE INTENTS',
     items: [
-      { name: 'Dashboard',    href: '/',            icon: LayoutDashboard },
-      { name: 'Net Worth',    href: '/net-worth',   icon: TrendingUp      },
-      { name: 'Transactions', href: '/transactions', icon: ArrowLeftRight  },
-      { name: 'Accounts',     href: '/accounts',    icon: Landmark        },
+      { name: 'Today',     href: '/',             icon: LayoutDashboard },
+      { name: 'Cash',      href: '/accounts',     icon: Landmark        },
+      { name: 'Story',     href: '/transactions', icon: ArrowLeftRight  },
     ],
   },
   {
-    group: 'PLANNING',
+    group: 'GROWTH',
     items: [
-      { name: 'Budgets',      href: '/budgets', icon: PieChart   },
-      { name: 'Goals',        href: '/goals',   icon: Target     },
-      { name: 'Loans & Debt', href: '/loans',   icon: CreditCard },
+      { name: 'Goals',     href: '/goals',        icon: Target     },
+      { name: 'Freedom',   href: '/loans',        icon: CreditCard },
+      { name: 'Wealth',    href: '/net-worth',    icon: TrendingUp },
     ],
   },
   {
-    group: 'INSIGHTS & SETTINGS',
+    group: 'INTELLIGENCE',
     items: [
-      { name: 'Reports',  href: '/reports',  icon: BarChart2 },
-      { name: 'Categories', href: '/categories', icon: Tag },
-      { name: 'Settings', href: '/settings', icon: Settings  },
+      { name: 'Coach',     href: '/reports',      icon: BarChart2 },
+      { name: 'Workspace', href: '/settings',     icon: Settings  },
     ],
   },
 ];
