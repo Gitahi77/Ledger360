@@ -7,3 +7,7 @@ export * from './BalanceCard';
 export * from './MetricCard';
 export * from './TransactionRow';
 export * from './InsightCard';
+export * from './AttentionSection'; 
+export * from './ReflectionSection'; 
+export * from './ProgressSection'; 
+export * from './ActionSection'; 

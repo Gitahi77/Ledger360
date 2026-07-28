@@ -104,11 +104,18 @@ Once a design is approved, the following non-negotiable rules apply during imple
 ## The "Three Directions" Rule
 > Before any React code is written for a major screen, you must produce **three competing design directions** (e.g., Editorial, Minimal Luxury, Operational) in your low-fidelity proposal. This prevents locking onto the first idea and forces exceptional, rather than conventional, UX thinking.
 
-## The "Delete Test" Rule
-> Before approving any screen, you must delete **one** section from the mockup and ask: "Is the screen now better?" If the answer is yes, that section never deserved to exist. Simplicity is an active design decision.
+## The "Delete Test" Rule (Gate 1)
+> Before approving any primitive, composition, or screen, you must delete **one** section/component and ask: "Is the screen now better? Does anything break?" 
+> If you delete a primitive and another primitive tries to take its job, their responsibilities overlap. If a primitive is removed and the flow still works perfectly, the primitive wasn't necessary. Every component must have a reason to exist that no other component satisfies. Simplicity is an active design decision.
 
-## Component Creation Rule
-> **Never create a component because a screen needs it. Create components because multiple future screens will naturally need them.** Every component must be backed by a product principle (e.g., Journey Cards exist because long-term objects must communicate movement rather than static balance).
+## Component Creation & Purity Rule
+> **Never create a component because a screen needs it. Create components because multiple future screens will naturally need them.**
+> **Primitive Purity:** A primitive must never know domain concepts (e.g., budgets, loans, MMFs, net worth). It only knows structural properties (`title`, `subtitle`, `severity`, `trend`, `actions`, `children`). This prevents the design system from quietly becoming a finance system.
+
+## The Assembly Budget (Gate 2)
+> **The page should almost never directly render primitives.** 
+> Explicitly forbidden: A page rendering `<HeroMetric />` next to `<InsightCard />`.
+> Required: A page renders `<HeroSection />` followed by `<AttentionSection />`. Each section owns its spacing, rhythm, narrative, and composition. This keeps the emotional architecture intact and treats screens as mechanical assemblies, not inventions.
 
 ## Primitive Completion Rule
 > **A primitive cannot be considered complete until it has been demonstrated in isolation.** If it doesn't look premium by itself, it won't magically become premium inside a dashboard. Primitives must be certified against the Primitive Certification Checklist before being assembled.
