@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildDashboardPresentation } from '../app/dashboard-v2/presentation';
+import { buildDashboardPresentation } from '../app/(dashboard)/presentation';
 import { FinancialSnapshot } from '../lib/domain/snapshot';
 
 describe('Dashboard Presentation Contract (Phase 9B.3.5)', () => {
@@ -11,6 +11,7 @@ describe('Dashboard Presentation Contract (Phase 9B.3.5)', () => {
       generatedAt: new Date(),
       dataFreshness: 'live',
       queryCount: 1,
+      version: 1,
     },
     health: { staleAccounts: 0, duplicateTransactions: 0, pendingImports: 0, syncErrors: 0 },
     timeline: { lastUpdated: null, latestTransactionDate: null, oldestTransactionDate: null },
