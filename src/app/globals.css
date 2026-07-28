@@ -101,6 +101,15 @@
   --color-finance-negative: hsl(var(--finance-negative));
   --color-finance-neutral: hsl(var(--finance-neutral));
   --color-surface-base: hsl(var(--surface-base));
+  
+  /* Ledger360 OS Core - Financial Calm Tokens */
+  --color-calm-charcoal: hsl(var(--calm-charcoal));
+  --color-calm-sage: hsl(var(--calm-sage));
+  --color-calm-emerald: hsl(var(--calm-emerald));
+  --color-calm-blue: hsl(var(--calm-blue));
+  --color-alert-amber: hsl(var(--alert-amber));
+  --color-alert-terracotta: hsl(var(--alert-terracotta));
+
   /* Accordion Animations */
   --animate-accordion-down: accordion-down 0.2s ease-out;
   --animate-accordion-up: accordion-up 0.2s ease-out;
@@ -165,6 +174,14 @@
     --finance-negative: 215 16% 40%; /* Muted Slate, never Red for expected expenses */
     --finance-neutral: 215 20% 84%;
     --surface-base: 220 33% 97%;
+
+    /* Ledger360 OS Core - Financial Calm (Light) */
+    --calm-charcoal: 220 10% 20%; 
+    --calm-sage: 135 25% 65%;
+    --calm-emerald: 152 55% 38%;
+    --calm-blue: 210 40% 60%;
+    --alert-amber: 38 92% 50%;
+    --alert-terracotta: 15 60% 55%;
 
     /* Legacy Map (Ensures existing charts & inline styles don't break during transition) */
     --surface-card: hsl(var(--card));
@@ -275,6 +292,14 @@
     --finance-negative: 215 16% 60%; 
     --finance-neutral: 215 27% 22%;
     --surface-base: 222 47% 8%;
+
+    /* Ledger360 OS Core - Financial Calm (Dark) */
+    --calm-charcoal: 220 15% 16%;
+    --calm-sage: 135 20% 45%;
+    --calm-emerald: 152 60% 45%;
+    --calm-blue: 210 40% 40%;
+    --alert-amber: 38 88% 56%;
+    --alert-terracotta: 15 55% 50%;
 
     /* Legacy Map for Dark Mode */
     --surface-card: hsl(var(--card));

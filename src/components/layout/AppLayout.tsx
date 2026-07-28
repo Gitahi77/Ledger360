@@ -7,7 +7,7 @@ import { ThemeToggle } from '../ThemeToggle';
 import { MobileNav } from '../navigation/MobileNav';
 import { AppFooter } from './AppFooter';
 import dynamic from 'next/dynamic';
-const CommandPalette = dynamic(() => import('../ui/command').then(mod => ({ default: mod.CommandPalette })));
+const CommandPalette = dynamic(() => import('../finance/os/CommandPalette').then(mod => ({ default: mod.CommandPalette })));
 import { Search } from 'lucide-react';
 
 const PAGE_TITLES: Record<string, string> = {
