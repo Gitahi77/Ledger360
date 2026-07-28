@@ -52,16 +52,49 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
-  /* Elevation (Shadows) */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
-  --shadow-soft: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+  /* Elevation (Surfaces) */
+  --elevation-surface-0: none;
+  --elevation-surface-1: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --elevation-surface-2: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --elevation-surface-3: 0 8px 32px rgba(0, 0, 0, 0.12);
 
-  /* Motion (Durations) */
+  /* Motion & Animation Tokens */
   --duration-fast: 150ms;
   --duration-normal: 300ms;
   --duration-slow: 500ms;
+  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --animate-fade: fade-in var(--duration-normal) var(--ease-smooth);
+  --animate-scale: scale-in var(--duration-fast) var(--ease-spring);
+  --animate-slide: slide-in-bottom var(--duration-normal) var(--ease-smooth);
+  --animate-sheet-slide: sheet-slide-up 0.4s var(--ease-smooth);
+  --animate-dialog-scale: dialog-scale-in 0.2s var(--ease-spring);
+  --animate-toast-slide: toast-slide-in 0.3s var(--ease-spring);
+  --animate-shimmer: shimmer 2s linear infinite;
+
+  /* Touch Targets & Iconography */
+  --touch-target-min: 44px;
+  --icon-size-btn: 16px;
+  --icon-size-card: 18px;
+  --icon-size-primary: 20px;
+  --icon-size-nav: 24px;
+  --icon-size-hero: 28px;
+
+  /* Layout Tokens */
+  --layout-page-gutter: clamp(1rem, 4vw, 2rem);
+  --layout-sidebar-width: 280px;
+  --layout-header-height: 64px;
+  --layout-bottom-nav-height: 64px;
+  --layout-section-gap: clamp(2rem, 5vw, 4rem);
+  --layout-card-gap: clamp(1rem, 2vw, 1.5rem);
+  --layout-container-max: 1280px;
+
+  /* Fluid Typography */
+  --text-fluid-hero: clamp(2.5rem, 5vw + 1rem, 4rem);
+  --text-fluid-h1: clamp(2rem, 4vw + 0.5rem, 3rem);
+  --text-fluid-h2: clamp(1.5rem, 3vw + 0.5rem, 2.25rem);
+  --text-fluid-h3: clamp(1.25rem, 2vw + 0.5rem, 1.75rem);
+  --text-fluid-base: clamp(0.875rem, 1vw + 0.5rem, 1rem);
 
   /* Ledger360 Semantic Tokens */
   --color-finance-positive: hsl(var(--finance-positive));

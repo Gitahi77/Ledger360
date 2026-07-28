@@ -34,3 +34,35 @@ Help people understand, control, and improve their financial lives. The goal is 
   
 ## Premium UX Principle  
 New features should not be implemented by introducing bespoke layouts or styling. They must be composed from the shared design system (design tokens, UI primitives, finance primitives, and interaction patterns). This ensures that every feature inherits a consistent premium experience rather than creating isolated visual designs. 
+
+## Responsive-first Principle
+**Every UI component, layout, and screen introduced or modified from Phase 9 onward must be designed, implemented, and verified simultaneously for mobile, tablet, and desktop.** 
+
+A task is not complete until it meets the acceptance criteria for all supported breakpoints. The mobile web and desktop UI are not separate products; they are the same application rendered responsively. Mobile layouts should prioritize the most important information, simplify interactions, and optimize for one-handed use instead of merely mirroring or shrinking the desktop arrangement.
+
+### Supported Viewport Matrix
+Every major screen must be verified against this matrix:
+
+| Device         |      Width |
+| -------------- | ---------: |
+| Small phone    |     320 px |
+| Standard phone |     375 px |
+| Large phone    | 390–430 px |
+| Small tablet   |     768 px |
+| Large tablet   |    1024 px |
+| Laptop         |    1280 px |
+| Desktop        |   1440 px+ |
+
+## Premium Quality Gate
+Before any new screen or feature is considered complete (especially from Phase 9B onward), it must pass this non-negotiable checklist:
+
+- [ ] Responsive on all supported devices in the Viewport Matrix.
+- [ ] Accessibility compliant (WCAG AA, keyboard navigation, focus management).
+- [ ] Uses Design Tokens exclusively for layouts, typography, and spacing.
+- [ ] Uses shared UI primitives exclusively.
+- [ ] Uses Finance Primitives where applicable (no raw number formatting).
+- [ ] Meets touch-target requirements (min 44x44px for primary interactions on mobile).
+- [ ] No arbitrary spacing values or hardcoded ad-hoc colors.
+- [ ] Motion follows the unified animation design system.
+- [ ] Meaningful loading (Skeletons/Optimistic UI) and empty states implemented.
+- [ ] Contextual and robust error states implemented.
