@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ledger360 - Dashboard Design Board</title>
+  <link rel="stylesheet" href="tokens.css">
+  <style>
+    .dashboard-layout {
+      padding-bottom: var(--space-24);
+    }
+    
+    .header {
+      padding: var(--space-6);
+      position: sticky;
+      top: 0;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(12px);
+      z-index: 10;
+      border-bottom: 1px solid transparent;
+      transition: border-color var(--duration-fast) var(--ease-smooth);
+    }
+    .header.scrolled {
+      border-color: var(--border-subtle);
+    }
+
+    /* Asymmetric Grid for Desktop */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: var(--space-6);
+      margin-top: var(--space-12);
+    }
+
+    @media (min-width: 768px) {
+      .dashboard-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .col-span-2 {
+        grid-column: span 2;
+      }
+      .col-span-1 {
+        grid-column: span 1;
+      }
+      
+      /* Intentional Asymmetry */
+      .grid-layout {
+        display: grid;
+        grid-template-columns: 6fr 4fr;
+        gap: var(--space-8);
+      }
+    }
+
+    /* Timeline Styles */
+    .timeline {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-6);
+    }
+    .timeline-group h3 {
+      font-size: var(--text-xs);
+      color: var(--text-tertiary);
+      margin-bottom: var(--space-3);
+    }
+    .timeline-item {
+      display: flex;
+      gap: var(--space-3);
+      align-items: flex-start;
+      margin-bottom: var(--space-4);
+    }
+    .timeline-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      background: var(--bg-secondary);
+      flex-shrink: 0;
+    }
+    .timeline-icon.success { background: #e6f4ea; color: var(--accent-success); }
+    .timeline-icon.warning { background: #fff8e6; color: #f5a623; }
+    .timeline-icon.star { background: #fdf5e6; color: #f5a623; }
+
+    /* Journey Bar */
+    .journey-bar {
+      height: 8px;
+      background: var(--bg-secondary);
+      border-radius: var(--radius-pill);
+      overflow: hidden;
+      display: flex;
+      margin-top: var(--space-4);
+    }
+    .journey-segment {
+      height: 100%;
+    }
+
+  </style>
+</head>
+<body class="dashboard-layout">
+  
+  <header class="header flex justify-between items-center" id="global-header">
+    <div>
+      <h1 class="text-lg">Good morning, Eric</h1>
+      <p class="text-sm text-secondary">Sync: 2 mins ago</p>
+    </div>
+    <button class="btn btn-primary">Quick Add</button>
+  </header>
+
+  <main class="container">
+    
+    <!-- Emotional State: Relief -->
+    <section class="hero-section">
+      <div class="animate-fade-in">
+        <h2 class="text-hero hero-number">KES 45,200</h2>
+        <p class="text-lg text-secondary mt-2">Safe to Spend</p>
+      </div>
+
+      <div class="animate-fade-in delay-200" style="margin-top: var(--space-6);">
+        <p class="text-xl">Everything due this week has already been accounted for.</p>
+      </div>
+
+      <div class="pill-container animate-fade-in delay-200 flex flex-wrap justify-center gap-2" style="margin-top: var(--space-8);">
+        <button class="pill">
+          <span class="text-secondary">Available Cash</span>
+          <span>120k</span>
+        </button>
+        <button class="pill">
+          <span class="text-secondary">Upcoming Bills</span>
+          <span>-14k</span>
+        </button>
+        <button class="pill">
+          <span class="text-secondary">Reserved for Budgets</span>
+          <span>-45k</span>
+        </button>
+        <button class="pill">
+          <span class="text-secondary">Upcoming Loan</span>
+          <span>-12k</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Emotional State: Attention & Confidence -->
+    <div class="grid-layout">
+      
+      <!-- Left Column: Insights & Health -->
+      <div class="flex-col gap-6">
+        
+        <!-- Severity Scaled Insight: Critical -->
+        <div class="card insight-critical">
+          <h3 class="text-xs text-critical mb-2">CRITICAL</h3>
+          <p class="text-2xl mb-4">Loan payment due tomorrow: KES 12,000.</p>
+          <button class="btn btn-critical">Pay Now &rarr;</button>
+        </div>
+
+        <!-- Severity Scaled Insight: Warning -->
+        <div class="card">
+          <p class="text-base text-secondary">Dining spending accelerated this week. Watch your remaining KES 4,500.</p>
+        </div>
+
+        <!-- Financial Health -->
+        <div class="card mt-4">
+          <h2 class="text-sm text-secondary mb-1">Financial Health</h2>
+          <p class="text-2xl text-success">Strong &uarr;</p>
+          
+          <div class="mt-4 flex-col gap-2">
+            <p class="text-sm text-secondary">Why?</p>
+            <div class="flex items-center gap-2 text-sm"><span class="text-success">✓</span> Bills covered</div>
+            <div class="flex items-center gap-2 text-sm"><span class="text-success">✓</span> Budget on pace</div>
+            <div class="flex items-center gap-2 text-sm"><span class="text-success">✓</span> Emergency fund growing</div>
+            <div class="flex items-center gap-2 text-sm"><span class="text-success">✓</span> Debt decreasing</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Column: Timeline & Progress -->
+      <div class="flex-col gap-6">
+        
+        <!-- Conversational Timeline -->
+        <div class="card">
+          <h2 class="text-sm text-secondary mb-4">Since you were last here...</h2>
+          
+          <div class="timeline">
+            <div class="timeline-group">
+              <h3>TODAY</h3>
+              <div class="timeline-item">
+                <div class="timeline-icon success">✓</div>
+                <div>
+                  <p class="text-base">Your salary arrived.</p>
+                  <p class="text-sm text-secondary">+KES 150,000 to Equity Bank</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="timeline-group">
+              <h3>2 HOURS AGO</h3>
+              <div class="timeline-item">
+                <div class="timeline-icon star">★</div>
+                <div>
+                  <p class="text-base">Your emergency fund crossed 70%.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="timeline-group">
+              <h3>YESTERDAY</h3>
+              <div class="timeline-item">
+                <div class="timeline-icon success">✓</div>
+                <div>
+                  <p class="text-base">All transactions are reviewed and categorized.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div> <!-- /grid-layout -->
+
+    <!-- Emotional State: Progress -->
+    <div class="card" style="margin-top: var(--space-8);">
+      <h2 class="text-sm text-secondary mb-2">Your Financial Journey</h2>
+      <p class="text-3xl">+KES 220k <span class="text-lg text-secondary">since January</span></p>
+      
+      <p class="text-lg mt-4" style="max-width: 600px;">
+        This is your strongest month this year! Your investments generated more growth than your salary.
+      </p>
+
+      <div class="journey-bar mt-6">
+        <div class="journey-segment" style="width: 45%; background: var(--text-primary);" title="MMF"></div>
+        <div class="journey-segment" style="width: 30%; background: var(--text-secondary);" title="SACCO"></div>
+        <div class="journey-segment" style="width: 25%; background: var(--text-tertiary);" title="Salary"></div>
+      </div>
+      <div class="flex justify-between mt-2 text-sm text-secondary">
+        <span>Top contributors: MMF | SACCO | Salary</span>
+        <span>Compared to 6 months ago, your cash reserves doubled.</span>
+      </div>
+    </div>
+
+    <!-- Emotional State: Hope & Action (Recommended Next Step) -->
+    <div class="card" style="margin-top: var(--space-8); text-align: center; padding: var(--space-12) var(--space-6);">
+      <h2 class="text-sm text-secondary uppercase tracking-widest mb-4">Recommended Next Step</h2>
+      <p class="text-2xl mb-2">Transfer KES 8,000 to your Emergency Fund.</p>
+      <p class="text-base text-secondary mb-6">Completing this keeps you on track for your March target.</p>
+      <button class="btn btn-primary">Transfer Now</button>
+    </div>
+
+  </main>
+
+  <script>
+    // Header shadow on scroll
+    window.addEventListener('scroll', () => {
+      const header = document.getElementById('global-header');
+      if (window.scrollY > 10) {
+        header.classList.add('scrolled');
+      } else {
+        header.classList.remove('scrolled');
+      }
+    });
+  </script>
+</body>
+</html>

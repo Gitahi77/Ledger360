@@ -6,3 +6,4 @@ export * from './AmountBadge';
 export * from './BalanceCard';
 export * from './MetricCard';
 export * from './TransactionRow';
+export * from './InsightCard';

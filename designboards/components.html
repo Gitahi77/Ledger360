@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ledger360 - Components Design Board</title>
+  <link rel="stylesheet" href="tokens.css">
+  <style>
+    .component-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: var(--space-8);
+      margin-top: var(--space-8);
+      margin-bottom: var(--space-16);
+    }
+    .section-title {
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: var(--space-2);
+      margin-top: var(--space-12);
+      margin-bottom: var(--space-6);
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-size: var(--text-xs);
+    }
+  </style>
+</head>
+<body class="container" style="padding-top: var(--space-12); padding-bottom: var(--space-24);">
+  
+  <h1 class="text-3xl mb-2">Ledger360 Component Archetypes</h1>
+  <p class="text-secondary mb-12">Primitive testing ground for the HTML Pixel QA gate.</p>
+
+  <!-- Buttons & Pills -->
+  <h2 class="section-title">Actions & Pills</h2>
+  <div class="flex gap-4 flex-wrap">
+    <button class="btn btn-primary">Primary Action</button>
+    <button class="btn btn-secondary">Secondary Action</button>
+    <button class="btn btn-critical">Critical Action</button>
+    <button class="pill"><span class="text-secondary">Label</span><span>Value</span></button>
+    <button class="pill active"><span class="text-secondary">Active Label</span><span>Value</span></button>
+  </div>
+
+  <!-- Insight Cards -->
+  <h2 class="section-title">Insight Cards (Severity Scaled)</h2>
+  <div class="component-grid">
+    <!-- Info -->
+    <div class="card">
+      <p class="text-base text-secondary">This is a standard informational insight. It blends into the background.</p>
+    </div>
+    <!-- Warning -->
+    <div class="card" style="border-left: 4px solid #f5a623;">
+      <p class="text-base">This is a warning insight. It uses a subtle accent to draw mild attention.</p>
+    </div>
+    <!-- Critical -->
+    <div class="card insight-critical">
+      <h3 class="text-xs text-critical mb-2">CRITICAL</h3>
+      <p class="text-2xl mb-4">This is a critical insight. It physically interrupts the layout.</p>
+      <button class="btn btn-critical">Resolve Issue &rarr;</button>
+    </div>
+  </div>
+
+  <!-- Journey Cards -->
+  <h2 class="section-title">Journey & Story Cards</h2>
+  <div class="component-grid">
+    <div class="card">
+      <h2 class="text-sm text-secondary mb-2">Financial Journey</h2>
+      <p class="text-3xl">+KES 220k <span class="text-lg text-secondary">since January</span></p>
+      <p class="text-base mt-4">Highest in 8 months. Driven by consistent MMF deposits.</p>
+    </div>
+
+    <div class="card">
+      <h2 class="text-sm text-secondary mb-2">Budget Health</h2>
+      <p class="text-2xl text-success">You're on track.</p>
+      <p class="text-base text-secondary mt-2">You've stayed within budget for 4 straight weeks.</p>
+    </div>
+  </div>
+
+  <!-- Action Cards -->
+  <h2 class="section-title">Action / Recommendation Cards (End of Page)</h2>
+  <div class="card" style="text-align: center; padding: var(--space-8);">
+    <h2 class="text-sm text-secondary uppercase tracking-widest mb-4">Recommended Next Step</h2>
+    <p class="text-2xl mb-2">Transfer KES 8,000 to your Emergency Fund.</p>
+    <p class="text-base text-secondary mb-6">Completing this keeps you on track for your March target.</p>
+    <button class="btn btn-primary">Transfer Now</button>
+  </div>
+  
+  <!-- "Peace" Action Card -->
+  <div class="card" style="text-align: center; padding: var(--space-8); margin-top: var(--space-8);">
+    <h2 class="text-sm text-secondary uppercase tracking-widest mb-4">Recommended Next Step</h2>
+    <p class="text-2xl mb-2 text-success">Keep doing what you're doing.</p>
+    <p class="text-base text-secondary">You're on track. No action is needed today.</p>
+  </div>
+
+</body>
+</html>
