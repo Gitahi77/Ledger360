@@ -88,6 +88,9 @@ export interface FinancialSnapshot {
     generatedAt: Date;
     dataFreshness: 'live' | 'cached';
     queryCount: number; // For performance budgeting
+    version: number;
+    generationTimeMs?: number;
+    presentationTimeMs?: number;
   };
   health: {
     staleAccounts: number;
@@ -141,6 +144,7 @@ function synthesizeAlerts(
  * This function is the ONLY place that talks to Prisma for the dashboard.
  */
 export async function buildFinancialSnapshot(userId: string): Promise<FinancialSnapshot> {
+  const startTime = Date.now();
   let queryCount = 0;
   
   const incQuery = <T>(promise: Promise<T>): Promise<T> => {
@@ -280,6 +284,8 @@ export async function buildFinancialSnapshot(userId: string): Promise<FinancialS
       generatedAt: new Date(),
       dataFreshness: 'live',
       queryCount,
+      version: 1,
+      generationTimeMs: Date.now() - startTime,
     },
     health: {
       staleAccounts: 0,
