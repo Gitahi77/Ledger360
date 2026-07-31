@@ -39,20 +39,7 @@ export function MobileNav() {
 
   return (
     <>
-      <nav
-        className="mobile-nav grid grid-cols-5 items-center md:hidden"
-        style={{
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: 'calc(64px + env(safe-area-inset-bottom, 0px))',
-          background: 'var(--surface-card)',
-          borderTop: '1px solid var(--border)',
-          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-          zIndex: 999,
-        }}
-      >
+      <nav className="mobile-nav grid grid-cols-5 items-center md:hidden fixed bottom-0 left-0 right-0 h-[calc(64px+env(safe-area-inset-bottom,0px))] bg-background border-t border-border/50 pb-[env(safe-area-inset-bottom,0px)] z-[999]">
         {MAIN_ITEMS.map(item => {
           const Icon   = item.icon;
           const active = isActive(item.href);
@@ -60,27 +47,18 @@ export function MobileNav() {
             <Link
               key={item.href}
               href={item.href}
-              style={{
-                display: 'inline-flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                height: '100%', gap: '0.2rem', padding: '0.4rem', textDecoration: 'none',
-              }}
+              className="flex flex-col items-center justify-center h-full gap-1 p-1.5"
             >
-              <div style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                width: 32, height: 32, borderRadius: '50%',
-                background: active ? 'var(--color-brand-light)' : 'transparent',
-                transition: 'background 0.2s',
-              }}>
+              <div className={`flex items-center justify-center w-8 h-8 rounded-full transition-colors duration-200 ${active ? 'bg-secondary' : 'bg-transparent'}`}>
                 <Icon
                   size={20}
                   strokeWidth={active ? 2.5 : 2}
-                  color={active ? 'var(--color-brand)' : 'var(--color-text-secondary)'}
+                  className={active ? 'text-brand' : 'text-muted-foreground'}
                 />
               </div>
-              <span style={{
-                fontSize: '0.55rem', fontWeight: 600,
-                color: active ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
-              }}>{item.label}</span>
+              <span className={`text-[10px] font-semibold ${active ? 'text-foreground' : 'text-muted-foreground'}`}>
+                {item.label}
+              </span>
             </Link>
           );
         })}
@@ -88,53 +66,30 @@ export function MobileNav() {
         {/* More Button */}
         <button
           onClick={() => setShowMore(true)}
-          style={{
-            display: 'inline-flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            height: '100%', gap: '0.2rem', padding: '0.4rem', background: 'none', border: 'none', cursor: 'pointer'
-          }}
+          className="flex flex-col items-center justify-center h-full gap-1 p-1.5 bg-transparent border-none cursor-pointer"
         >
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            width: 32, height: 32, borderRadius: '50%',
-            background: 'transparent',
-            transition: 'background 0.2s',
-          }}>
-            <Menu size={20} strokeWidth={2} color="var(--color-text-secondary)" />
+          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-transparent transition-colors duration-200">
+            <Menu size={20} strokeWidth={2} className="text-muted-foreground" />
           </div>
-          <span style={{ fontSize: '0.55rem', fontWeight: 600, color: 'var(--color-text-secondary)' }}>More</span>
+          <span className="text-[10px] font-semibold text-muted-foreground">More</span>
         </button>
       </nav>
 
       {/* Slide-up Drawer for More Items */}
       {showMore && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          zIndex: 1000,
-          background: 'rgba(0,0,0,0.8)',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'flex-end',
-        }} onClick={() => setShowMore(false)}>
+        <div className="fixed inset-0 z-[1000] bg-black/60 flex flex-col justify-end" onClick={() => setShowMore(false)}>
           <div 
-            className="animate-in"
-            style={{
-              background: 'var(--surface-card)',
-              borderTopLeftRadius: 16,
-              borderTopRightRadius: 16,
-              padding: '1.5rem',
-              paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))',
-            }}
+            className="animate-in slide-in-from-bottom-full duration-300 ease-[var(--ease-spring)] bg-background rounded-t-3xl p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]"
             onClick={e => e.stopPropagation()}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600 }}>More</h3>
-              <button onClick={() => setShowMore(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)' }}>
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="m-0 text-lg font-semibold text-foreground">More</h3>
+              <button onClick={() => setShowMore(false)} className="bg-transparent border-none cursor-pointer text-muted-foreground hover:bg-secondary p-1 rounded-full">
                 <X size={20} />
               </button>
             </div>
             
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+            <div className="grid grid-cols-3 gap-4">
               {MORE_ITEMS.map(item => {
                 const Icon = item.icon;
                 const active = isActive(item.href);
@@ -142,15 +97,10 @@ export function MobileNav() {
                   <Link
                     key={item.href}
                     href={item.href}
-                    style={{
-                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                      gap: '0.5rem', padding: '1rem', textDecoration: 'none',
-                      background: active ? 'var(--color-brand-light)' : 'var(--bg-subtle)',
-                      borderRadius: 12,
-                    }}
+                    className={`flex flex-col items-center justify-center gap-2 p-4 rounded-2xl text-decoration-none transition-colors duration-200 ${active ? 'bg-secondary border border-border/50' : 'bg-secondary/30 hover:bg-secondary'}`}
                   >
-                    <Icon size={24} color={active ? 'var(--color-brand)' : 'var(--color-text-secondary)'} />
-                    <span style={{ fontSize: '0.7rem', fontWeight: 500, color: active ? 'var(--color-brand)' : 'var(--color-text-secondary)' }}>
+                    <Icon size={24} className={active ? 'text-brand' : 'text-muted-foreground'} />
+                    <span className={`text-xs font-medium ${active ? 'text-brand' : 'text-muted-foreground'}`}>
                       {item.label}
                     </span>
                   </Link>
