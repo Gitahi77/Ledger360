@@ -99,6 +99,7 @@ describe('Save-More-Tomorrow (WO-15)', () => {
     it('rate escalates by escalationPct for each elapsed period', async () => {
       // Plan with nextEscalation 3 months in the past
       const threeMonthsAgo = new Date();
+      threeMonthsAgo.setDate(15); // Avoid end-of-month rollover (e.g., July 31 -> April 31 -> May 1)
       threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
       const plan = makePlan({
@@ -146,6 +147,7 @@ describe('Save-More-Tomorrow (WO-15)', () => {
     it('rate caps at maxRatePct and does not exceed it', async () => {
       // Plan with nextEscalation 10 months ago, but max is 20
       const tenMonthsAgo = new Date();
+      tenMonthsAgo.setDate(15);
       tenMonthsAgo.setMonth(tenMonthsAgo.getMonth() - 10);
 
       const plan = makePlan({

@@ -126,54 +126,80 @@
 }
 
 @layer base {
+
   :root {
-    /* Base HSL Variables for Light Mode */
-    --background: 220 33% 97%; 
-    --foreground: 222 47% 11%; 
+    /* Base HSL Variables for Light Mode - Financial Calm v1.0 */
+    --background: 0 0% 100%;       /* #ffffff */
+    --foreground: 0 0% 7%;         /* #111111 */
     
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 0 0% 7%;
     
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 0 0% 7%;
     
-    /* Brand Green #1D9E75 */
-    --primary: 161 69% 37%; 
+    --primary: 0 0% 0%;            /* #000000 */
     --primary-foreground: 0 0% 100%;
     
-    --secondary: 220 20% 94%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 240 20% 98%;      /* #f9f9fa */
+    --secondary-foreground: 0 0% 7%;
     
-    --muted: 215 20% 94%;
-    --muted-foreground: 215 16% 52%;
+    --muted: 240 10% 95%;          /* #f0f0f2 */
+    --muted-foreground: 240 1% 40%;/* #666668 */
     
-    --accent: 215 20% 94%;
-    --accent-foreground: 222 47% 11%;
+    --accent: 240 20% 98%;
+    --accent-foreground: 0 0% 7%;
     
-    --destructive: 0 72% 50%;
+    --destructive: 358 75% 59%;    /* #e5484d */
     --destructive-foreground: 0 0% 100%;
     
-    --border: 215 20% 84%;
-    --input: 215 20% 84%;
-    --ring: 161 69% 37%;
+    --border: 0 0% 92%;            /* #eaeaea */
+    --input: 0 0% 92%;
+    --ring: 0 0% 0%;
 
-    --brand: 161 69% 37%;
-    --brand-light: 161 69% 80%;
-    --brand-dark: 161 69% 25%;
+    --brand: 0 0% 0%;
+    --brand-light: 240 1% 60%;
+    --brand-dark: 0 0% 7%;
 
-    --success: 152 55% 38%;
+    --success: 151 55% 42%;        /* #30a46c */
     --success-foreground: 0 0% 100%;
 
     --warning: 28 93% 54%;
     --warning-foreground: 28 85% 28%;
     
     --radius: 1rem;
+    --radius-sm: 6px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-pill: 9999px;
+
+    /* Spacing tokens */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-6: 24px;
+    --space-8: 32px;
+    --space-12: 48px;
+    --space-16: 64px;
+    --space-24: 96px;
+    --space-32: 128px;
+
+    /* Shadow tokens */
+    --shadow-sm-val: 0 1px 2px rgba(0, 0, 0, 0.04);
+    --shadow-md-val: 0 4px 12px rgba(0, 0, 0, 0.03), 0 2px 4px rgba(0, 0, 0, 0.02);
+
+    /* Motion tokens */
+    --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.1);
+    --ease-smooth: cubic-bezier(0.25, 0.1, 0.25, 1);
+    --duration-fast: 150ms;
+    --duration-normal: 300ms;
 
     /* Ledger360 Semantic Token Values (Light) */
-    --finance-positive: 161 69% 37%; /* Calm Forest Green */
-    --finance-negative: 215 16% 40%; /* Muted Slate, never Red for expected expenses */
-    --finance-neutral: 215 20% 84%;
-    --surface-base: 220 33% 97%;
+    --finance-positive: 151 55% 42%; 
+    --finance-negative: 240 1% 40%; 
+    --finance-neutral: 0 0% 92%;
+    --surface-base: 0 0% 100%;
 
     /* Ledger360 OS Core - Financial Calm (Light) */
     --calm-charcoal: 220 10% 20%; 
@@ -247,51 +273,52 @@
     --background-rgb:      220, 33%, 97%;
   }
 
+
   /* Strict Dark Mode Override (Monarch / Midnight Tone) */
   [data-theme="dark"], .dark {
-    --background: 222 47% 8%;
-    --foreground: 210 40% 96%;
+    --background: 240 10% 4%;
+    --foreground: 0 0% 98%;
     
-    --card: 222 38% 12%;
-    --card-foreground: 210 40% 96%;
+    --card: 240 10% 6%;
+    --card-foreground: 0 0% 98%;
     
-    --popover: 222 38% 12%;
-    --popover-foreground: 210 40% 96%;
+    --popover: 240 10% 6%;
+    --popover-foreground: 0 0% 98%;
     
-    --primary: 161 69% 37%; 
-    --primary-foreground: 0 0% 100%;
+    --primary: 0 0% 100%; 
+    --primary-foreground: 0 0% 0%;
     
-    --secondary: 215 30% 16%;
-    --secondary-foreground: 215 16% 70%;
+    --secondary: 240 10% 12%;
+    --secondary-foreground: 240 5% 70%;
     
-    --muted: 215 25% 16%;
-    --muted-foreground: 215 16% 60%;
+    --muted: 240 10% 12%;
+    --muted-foreground: 240 5% 60%;
     
-    --accent: 215 25% 16%;
-    --accent-foreground: 210 40% 96%;
+    --accent: 240 10% 12%;
+    --accent-foreground: 0 0% 98%;
     
-    --destructive: 0 78% 62%;
+    --destructive: 358 75% 65%;
     --destructive-foreground: 0 0% 100%;
     
-    --border: 215 27% 22%;
-    --input: 215 27% 22%;
-    --ring: 161 69% 37%;
+    --border: 240 10% 16%;
+    --input: 240 10% 16%;
+    --ring: 0 0% 100%;
 
-    --brand: 161 69% 37%;
-    --brand-light: 161 69% 25%;
-    --brand-dark: 161 69% 45%;
+    --brand: 0 0% 100%;
+    --brand-light: 240 5% 70%;
+    --brand-dark: 240 10% 12%;
 
-    --success: 152 60% 45%;
-    --success-foreground: 152 65% 72%;
+    --success: 151 55% 50%;
+    --success-foreground: 0 0% 100%;
 
     --warning: 38 88% 56%;
     --warning-foreground: 38 90% 78%;
 
     /* Ledger360 Semantic Token Values (Dark) */
-    --finance-positive: 161 69% 45%; 
-    --finance-negative: 215 16% 60%; 
-    --finance-neutral: 215 27% 22%;
-    --surface-base: 222 47% 8%;
+    --finance-positive: 151 55% 50%; 
+    --finance-negative: 240 5% 60%; 
+    --finance-neutral: 240 10% 16%;
+    --surface-base: 240 10% 4%;
 
     /* Ledger360 OS Core - Financial Calm (Dark) */
     --calm-charcoal: 220 15% 16%;
@@ -339,11 +366,24 @@
   }
 }
 
+
 @layer utilities {
   .text-balance-hero {
     @apply font-heading text-4xl sm:text-5xl font-extrabold tracking-tight;
   }
+
+  /* Typography Scale from Design Bible */
+  .text-hero { font-size: 4rem; font-weight: 500; letter-spacing: -0.02em; line-height: 1.05; }
+  .text-h1 { font-size: 2rem; font-weight: 500; letter-spacing: -0.02em; }
+  .text-h2 { font-size: 1.5rem; font-weight: 500; letter-spacing: -0.02em; }
+  .text-h3 { font-size: 1.25rem; font-weight: 500; letter-spacing: -0.02em; }
+  .text-body-large { font-size: 1.125rem; font-weight: 400; line-height: 1.6; }
+  .text-body { font-size: 1rem; font-weight: 400; line-height: 1.5; }
+  .text-caption { font-size: 0.875rem; font-weight: 400; color: hsl(var(--muted-foreground)); }
+  .text-label { font-size: 0.75rem; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; }
+  .text-numeric { font-variant-numeric: tabular-nums lining-nums; font-family: var(--font-mono); }
 }
+
 
 /* Maintain base utility widely used in Ledger360 */
 .tabular, [data-financial] {

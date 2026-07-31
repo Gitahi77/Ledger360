@@ -587,3 +587,96 @@ Users trust systems that explain themselves. Never create a black box. Every rec
 
 ### Permanent Principle: Separation of Concerns
 Pages own layout. Experiences own behavior. Engines own intelligence. Components own presentation. Events own state changes.
+
+### Permanent Principle: Mockups are Specifications
+**Approved design concepts are implementation specifications, not inspiration.** During execution, the assistant must reproduce the approved mockups with high visual fidelity before introducing new interpretations or architectural optimizations. Engineering decisions must support the approved experience, not replace it.
+
+### Permanent Principle: No Placeholder UI
+Once a screen has been approved visually, no subsequent implementation phase may replace premium components with generic placeholders. Dynamic data must be integrated into the approved visual structure, not the other way around. Every approved mockup is treated as a functional specification. Missing implementation details must be inferred to preserve the visual language, not replaced with generic UI.
+
+### Permanent Principle: Product Trumps Codebase
+**The user is commissioning a product, not a codebase. Every implementation decision must optimize for perceived quality before architectural elegance. If there is ever a conflict between preserving an abstraction and reproducing the approved Ledger360 experience, the product experience wins, provided security, correctness, and maintainability are not compromised.**
+
+### Permanent Principle: Screen Replacement Rule
+No phase may be considered complete if the old screen still exists underneath. Every redesigned screen must fully replace its predecessor. Not coexist with it. No `-v2`, `New`, or `Experimental` routes unless explicitly approved as a temporary cutover with a strict deadline. The production route must always be the target, preventing UI accumulation and enforcing direct replacement.
+
+### Permanent Principle: Performance Gate
+Premium products feel fast. No redesign may introduce performance regressions. Measurable targets:
+- CLS (Cumulative Layout Shift) < 0.05
+- LCP (Largest Contentful Paint) < 2.5s
+- INP (Interaction to Next Paint) < 200ms
+- 60 FPS animations
+- No layout shift during page transitions
+- No material increase in JS bundle size
+- No animation jank or blocked interaction
+
+### Permanent Principle: Financial Calm Defined
+A screen achieves Financial Calm only if it passes this checklist:
+- One dominant action
+- Maximum three competing focal points
+- Generous whitespace
+- Calm color hierarchy (minimal warning colors)
+- Clear reading order
+- Immediate reassurance
+- No unnecessary visual noise
+- Every number has context
+- User knows what to do within three seconds
+
+### Permanent Principle: The Consistency Rule
+Every new screen must be recognizable as Ledger360 even if the logo is removed. This means all pages share the same spacing, typography, shadows, motion, elevation, and interaction language.
+
+### Permanent Principle: Strict Feature Parity
+Existing feature parity is mandatory. No redesign may remove any existing feature unless explicitly approved. Everything must still exist, including but not limited to:
+- Search
+- Sort
+- Filter
+- Pagination
+- Bulk actions
+- Keyboard shortcuts
+- Exports
+- Imports
+- Permissions
+- Responsive behavior
+- Accessibility
+- Loading states
+- Error states
+- Empty states
+
+### Permanent Principle: No New Abstractions (Anti-Overengineering)
+**If a visual goal can be achieved without introducing a new abstraction, do not introduce one.** No new architecture or intelligence work will be undertaken until the approved visual product has been implemented across the production application. Existing architecture may only be modified when required to support the visual transformation or preserve feature parity.
+
+### Permanent Principle: Definition of Replace
+**Replace means delete, not supersede.** When replacing a screen or component, "replace" explicitly means:
+- delete unused components
+- delete obsolete CSS
+- delete obsolete routes
+- delete obsolete utilities
+- update imports
+- zero dead code remains
+No feature flags, no duplicate primitives (e.g., leaving `OldCard.tsx` next to `Card.tsx`).
+
+### Permanent Principle: Evidence Before Claims Rule
+The assistant may not state that a redesign, implementation, or feature is "complete" unless it can provide concrete evidence of the result. For UI work, this means actual artifact screenshots (PNG files) or a running implementation demonstrating the requested design. Passing builds, successful linting, new abstractions, or code additions are NOT evidence that a product transformation is complete.
+
+### Permanent Principle: Component Completion Definition
+A primitive component (e.g., Button, Input, Card) is not complete simply because it "looks nice." It is complete only after the following states/variants have been explicitly styled, tested, and visually verified:
+- normal
+- hover
+- active
+- keyboard focus
+- disabled
+- loading
+- icon-left / icon-right
+- destructive / warning states
+- mobile / touch targets
+- dark mode
+- accessibility contrast
+
+### Permanent Principle: Consistency QA Gate
+Every new UI change must pass a consistency audit to prevent design-system entropy. Ask:
+- Does this introduce a new border radius?
+- Does this introduce a new spacing rule?
+- Does this introduce another shadow?
+- Does this introduce another animation?
+- Does this introduce another font size?
+If yes to any of the above, justify why an existing token was not used. If there is no strong justification, revert and use existing tokens.

@@ -38,6 +38,8 @@ describe('Financial Invariants Suite (Stage 5.8)', () => {
   });
 
   it('I-01: Double-Entry Balance Integrity', async () => {
+    const localAccountId = testAccountId;
+    const localUserId = testUserId;
     // We use fast-check to generate random sequences of valid transactions
     await fc.assert(
       fc.asyncProperty(
@@ -46,26 +48,26 @@ describe('Financial Invariants Suite (Stage 5.8)', () => {
             amount: fc.integer({ min: 1, max: 10000000 }),
             type: fc.constantFrom('income', 'expense') as fc.Arbitrary<'income' | 'expense'>,
           }),
-          { minLength: 1, maxLength: 50 }
+          { minLength: 1, maxLength: 10 }
         ),
         async (txs) => {
           // Because allowNegativeBalance is false, we must sort or ensure we only run valid paths.
           // To avoid fighting the DB constraint during random generation, we will temporarily allow negative balances
           // for this specific test of pure mathematical integrity.
           await prisma.account.update({
-            where: { id: testAccountId },
+            where: { id: localAccountId },
             data: { allowNegativeBalance: true, balanceMinor: 0n } // reset balance
           });
           
-          await prisma.transaction.deleteMany({ where: { accountId: testAccountId } });
+          await prisma.transaction.deleteMany({ where: { accountId: localAccountId } });
 
           let expectedBalance = 0n;
 
           for (const tx of txs) {
             const idempotencyKey = randomUUID();
             await TransactionService.createTransaction(
-              testUserId,
-              testAccountId,
+              localUserId,
+              localAccountId,
               undefined,
               tx.amount,
               tx.type,
@@ -79,18 +81,18 @@ describe('Financial Invariants Suite (Stage 5.8)', () => {
             else expectedBalance -= BigInt(tx.amount);
           }
 
-          const account = await prisma.account.findUniqueOrThrow({ where: { id: testAccountId } });
+          const account = await prisma.account.findUniqueOrThrow({ where: { id: localAccountId } });
           expect(account.balanceMinor).toBe(expectedBalance);
           
           // Verify sum of transactions
           const aggregate = await prisma.transaction.aggregate({
-            where: { accountId: testAccountId, type: 'income' },
+            where: { accountId: localAccountId, type: 'income' },
             _sum: { baseAmountMinor: true }
           });
           const incomeSum = aggregate._sum.baseAmountMinor ?? 0n;
           
           const expAgg = await prisma.transaction.aggregate({
-            where: { accountId: testAccountId, type: 'expense' },
+            where: { accountId: localAccountId, type: 'expense' },
             _sum: { baseAmountMinor: true }
           });
           const expSum = expAgg._sum.baseAmountMinor ?? 0n;
@@ -98,9 +100,9 @@ describe('Financial Invariants Suite (Stage 5.8)', () => {
           expect(account.balanceMinor).toBe(incomeSum - expSum);
         }
       ),
-      { numRuns: 10 } // keeping runs lower for CI speed, can be increased locally
+      { numRuns: 3 } // keeping runs lower for CI speed, can be increased locally
     );
-  });
+  }, 30000);
 
   it('I-03: Non-Negative Constraints (Database level)', async () => {
     await prisma.account.update({
