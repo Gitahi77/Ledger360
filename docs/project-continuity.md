@@ -157,16 +157,85 @@ Every module eventually needs: Advisor Note, Hero Metric, Progressive Disclosure
 
 # 8. Remaining Roadmap
 
-Stage 4.6 Category Analytics
+Stage 4.6 Category Analytics (Completed)
 Build: Category Analytics Engine, Moving averages, Trend detection, Velocity, Volatility, Sparklines, Behaviour insights. No Recharts. Use CSS + SVG.
 Categories should become the **behavior analysis workspace**: category health, trends, volatility, velocity, sparklines, and CRUD.
 
-Stage 4.7 Reports Intelligence
+Stage 4.7 Reports Intelligence (Completed)
 Upgrade Reports page. Add: Savings rate, Month over month, Rolling averages, Velocity, Income vs Expense intelligence, Portfolio insights, Advisor summaries.
 Reports should become the **cross-category intelligence workspace**: portfolio-wide trends, income vs. expense, savings rate, rolling averages, comparisons, and executive summaries.
 
 Stage 4.8 Stage Exit
 Verification: Financial invariants, Baseline freeze, Stage report, Metrics.
+
+---
+
+# Financial Calm OS Alpha (Architecture Contract)
+
+**Status: ACTIVE**
+This design system is now the canonical presentation layer for Ledger360.
+Every new feature and every UI reskin MUST use these shared primitives unless an Architecture Review explicitly approves the creation of a new primitive.
+No page-specific visual component should duplicate existing Financial Calm primitives.
+
+Completed modules:
+* ✅ Dashboard Intelligence Center
+* ✅ Budget Command Center
+* ✅ Category Command Center
+* ✅ Financial Intelligence Center
+
+Shared primitives now available:
+* HeroMetric
+* KPIHero
+* AdvisorNote
+* CalculationPills
+* BudgetCard
+* BudgetHealthIndicator
+* FinancialHealthIndicator
+* TrendBadge
+* VarianceIndicator
+* RollingAverageChart
+* Sparkline
+* FinancialTimeline
+* MetricComparison
+* CommandCenterHero
+
+OS design language established. Future modules must consume these shared primitives.
+
+---
+
+# Ledger360 Intelligence Hierarchy
+
+Every Command Center must implement the following 5-level hierarchy:
+
+1. **Level 1 (Immediate Answer):** Advisor Note
+2. **Level 2 (Executive Summary):** Hero Metrics
+3. **Level 3 (Behaviour Analysis):** Health, Trend, Pacing, Velocity
+4. **Level 4 (Deep Analytics):** Charts, comparisons, forecasts
+5. **Level 5 (Exploration):** Tables, filters, CRUD
+
+---
+
+# Financial Calm Review Checklist (UX Gates)
+
+Every screen must satisfy this checklist before being considered complete:
+
+- [ ] Coffee Shop Test (Helps user make a decision in < 10 seconds)
+- [ ] Immediate Answer visible in <5 seconds
+- [ ] No financial calculations performed in UI
+- [ ] Uses shared primitives
+- [ ] Progressive disclosure
+- [ ] Responsive
+- [ ] Empty state designed
+- [ ] Semantic colour system
+- [ ] Accessibility reviewed
+- [ ] Typography hierarchy verified
+- [ ] Motion under 60fps budget
+- [ ] No duplicated UI patterns
+
+---# UI Reskin Program (Continuous)
+Transactions → Accounts → Loans → Goals → Investments → Settings
+
+---
 
 Stage 5 Goals
 Goal engine, Goal projections, Contribution advisor, Goal dashboard, Probability engine, Premium UI.
@@ -233,61 +302,42 @@ Never skip verification.
 
 # 13. Immediate Next Work Order
 
-### Stage 4.6 — Category Analytics Command Center (Completed)
-
-Transform Category management from basic CRUD into a behavioral analysis workspace.
+### Stage 4.8 — Stage Exit Report
 
 **Completion Criteria:**
-- [x] Analytics engine (pure domain)
-- [x] Repository/query layer
-- [x] Category Command Center UI
-- [x] Advisor Note
-- [x] Hero metrics
-- [x] SVG sparklines
-- [x] Moving averages
-- [x] Velocity indicators
-- [x] Volatility indicators
-- [x] Trend classification
-- [x] CRUD preserved
-- [x] Financial invariant tests
-- [x] Verification gauntlet
-- [x] Walkthrough
-- [x] Exit report
-- [x] Git commit
-
-### Stage 4.7 — Reports Intelligence Workspace (Planned)
-
-**Completion Criteria:**
-- [ ] Analytics engine (pure domain)
-- [ ] Repository/query layer
-- [ ] Reports Command Center UI
-- [ ] Savings rate logic
-- [ ] Month-over-month comparisons
-- [ ] Rolling averages
-- [ ] Income vs Expense intelligence
-- [ ] Advisor summaries
-- [ ] Financial invariant tests
-- [ ] Verification gauntlet
-- [ ] Walkthrough
-- [ ] Exit report
+- [ ] Final Verification Gauntlet (`npm run verify`)
+- [ ] Architecture Review
+- [ ] Performance Review
+- [ ] Bundle Review
+- [ ] Financial Invariants Audit
+- [ ] Baseline Delta Update
+- [ ] Freeze Metrics
 - [ ] Git commit
 
 ---
 
 # 14. UI Reskin Master Checklist
 
+## Active Reskin: Transactions
+**Permanent Principles for Transactions:**
+- Transactions is NOT a transaction ledger.
+- Transactions is the behavioral timeline of the user's financial life.
+- The page must answer: What happened? Why did it happen? Is this normal? Is anything unusual? What deserves attention?
+- CRUD is Level 5. Insights are Levels 1–4.
+- The transaction table should become the least visually dominant element on the page.
+
 | Module       | Reskin Status    | Coffee Shop Test | Advisor Layer | Command Center |
 | ------------ | ---------------- | ---------------- | ------------- | -------------- |
 | Dashboard    | ✅ Complete       | ✅                | ✅             | ✅              |
+| Budgets      | ✅ Complete       | ✅                | ✅             | ✅              |
+| Categories   | ✅ Complete       | ✅                | ✅             | ✅              |
+| Reports      | ✅ Complete       | ✅                | ✅             | ✅              |
 | Transactions | ⏳ Pending        | ❌                | ❌             | ❌              |
 | Accounts     | ⏳ Pending        | ❌                | ❌             | ❌              |
-| Budgets      | ✅ Complete       | ✅                | ✅             | ✅              |
-| Categories   | 🔄 Next (4.6)    | ❌                | ❌             | ❌              |
-| Reports      | 🔄 Planned (4.7) | ❌                | ❌             | ❌              |
-| Goals        | ⏳ Stage 5        | ❌                | ❌             | ❌              |
-| Loans        | ⏳ Future Reskin  | ❌                | ❌             | ❌              |
-| Investments  | ⏳ Stage 6        | ❌                | ❌             | ❌              |
-| Settings     | ⏳ Future         | ❌                | ❌             | ❌              |
+| Loans        | ⏳ Pending        | ❌                | ❌             | ❌              |
+| Goals        | ⏳ Pending        | ❌                | ❌             | ❌              |
+| Investments  | ⏳ Pending        | ❌                | ❌             | ❌              |
+| Settings     | ⏳ Pending        | ❌                | ❌             | ❌              |
 
 ---
 

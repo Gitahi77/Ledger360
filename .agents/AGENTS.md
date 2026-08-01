@@ -680,3 +680,43 @@ Every new UI change must pass a consistency audit to prevent design-system entro
 - Does this introduce another animation?
 - Does this introduce another font size?
 If yes to any of the above, justify why an existing token was not used. If there is no strong justification, revert and use existing tokens.
+
+### Permanent Principle: Financial Calm OS Alpha (Architecture Contract)
+Status: ACTIVE
+This design system is now the canonical presentation layer for Ledger360.
+Every new feature and every UI reskin MUST use these shared primitives unless an Architecture Review explicitly approves the creation of a new primitive.
+No page-specific visual component should duplicate existing Financial Calm primitives.
+
+### Permanent Principle: Ledger360 Intelligence Hierarchy
+Every Command Center must implement the following 5-level hierarchy:
+- **Level 1 (Immediate Answer):** Advisor Note
+- **Level 2 (Executive Summary):** Hero Metrics
+- **Level 3 (Behaviour Analysis):** Health, Trend, Pacing, Velocity
+- **Level 4 (Deep Analytics):** Charts, comparisons, forecasts
+- **Level 5 (Exploration):** Tables, filters, CRUD
+
+### Permanent Principle: Financial Calm Review Checklist (UX Gates)
+Every screen must satisfy this checklist before being considered complete:
+- [ ] Coffee Shop Test (Helps user make a decision in < 10 seconds)
+- [ ] Immediate Answer visible in <5 seconds
+- [ ] No financial calculations performed in UI
+- [ ] Uses shared primitives
+- [ ] Progressive disclosure
+- [ ] Responsive
+- [ ] Empty state designed
+- [ ] Semantic colour system
+- [ ] Accessibility reviewed
+- [ ] Typography hierarchy verified
+- [ ] Motion under 60fps budget
+- [ ] No duplicated UI patterns
+
+### Permanent Principle: Intelligence Layer Rule
+Every intelligence engine must remain deterministic.
+Specifically:
+- identical inputs must always produce identical outputs
+- intelligence engines must never read clocks directly
+- intelligence engines must never read Prisma directly
+- intelligence engines must never read React state
+- intelligence engines must never perform I/O
+- intelligence engines remain pure functions
+That single rule preserves testability forever.

@@ -1,472 +1,238 @@
 'use client';
-// src/app/reports/ReportsClient.tsx
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  BarChart, Bar, AreaChart, Area,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
-  PieChart, Pie, Cell
-} from 'recharts';
-import { TrendingUp, TrendingDown, Minus, Info, Activity, ShieldCheck, AlertTriangle } from 'lucide-react';
 import { formatCurrency } from '@/lib/finance/formatCurrency';
+import type { FinancialIntelligenceDTO, MonthlyTrendData } from '@/lib/domain/calculators/financial-intelligence';
+import { FinancialHealthIndicator } from '@/components/finance/primitives/FinancialHealthIndicator';
+import { KPIHero } from '@/components/finance/primitives/KPIHero';
+import { TrendBadge } from '@/components/finance/primitives/TrendBadge';
+import { VarianceIndicator } from '@/components/finance/primitives/VarianceIndicator';
+import { MetricComparison } from '@/components/finance/primitives/MetricComparison';
+import { RollingAverageChart } from '@/components/finance/primitives/RollingAverageChart';
 import { Sparkline } from '@/components/finance/primitives/Sparkline';
-import type { CategoryAnalyticsDTO } from '@/lib/queries/analytics';
-import { DynamicCategoryIcon } from '@/lib/icons';
-import { generateReportsIntelligence } from './intelligence';
 
-type TrendRow     = { label: string; Income: number; Expenses: number; Savings: number; DebtRepayment?: number; };
-type Summary      = { 
-  income: number; 
-  expenses: number; 
-  savings: number; 
-  debtRepayment: number;
-  netCashFlow: number;
-  savingRate: number;
-  previous: {
-    income: number;
-    expenses: number;
-    savings: number;
-    debtRepayment: number;
-    netCashFlow: number;
-    savingRate: number;
-    incomeChange: number;
-    expensesChange: number;
-    savingsChange: number;
-    debtRepaymentChange: number;
-    netCashFlowChange: number;
-    savingRateChange: number;
-  }
-};
-type CategoryRow  = { name: string; value: number; pct: number; color: string };
-
-const tick = { fontSize: 10, fill: 'var(--color-text-secondary)', fontFamily: 'Inter, sans-serif' };
-
-function BarTip(props: { active?: boolean; payload?: unknown; label?: string; currency?: string; total?: number }) {
-  if (typeof props !== 'object' || props === null) return null;
-  const { active, payload, label } = props as { active?: boolean; payload?: { name: string; value: number; color?: string }[]; label?: string };
-  const currency = (props as { currency?: string }).currency || 'USD';
-  if (!active || !payload?.length) return null;
-  return (
-    <div style={{ background:'var(--surface-card)', border:'1px solid var(--border)', borderRadius:12, padding:'0.75rem 1rem', boxShadow:'var(--shadow-md)' }}>
-      <p style={{ fontSize:'0.7rem', fontWeight:800, textTransform:'uppercase', letterSpacing:'0.08em', color:'var(--color-text-secondary)', marginBottom:'0.5rem' }}>{label}</p>
-      {payload.map((p) => (
-        <div key={p.name} style={{ display:'flex', alignItems:'center', justifyContent: 'space-between', gap:'1.5rem', marginBottom:'0.25rem' }}>
-          <div style={{ display:'flex', alignItems:'center', gap:'0.4rem' }}>
-            <div style={{ width:8, height:8, borderRadius:'50%', background:p.color, flexShrink:0 }} />
-            <span style={{ fontSize:'0.8rem', color:'var(--color-text-secondary)', fontWeight: 500 }}>{p.name}</span>
-          </div>
-          <span style={{ fontSize:'0.8rem', fontWeight:700, fontFamily:'Space Grotesk,sans-serif', color:'var(--color-text-primary)' }}>{formatCurrency({ amountMinor: p.value, currency: currency }, { variant: 'compact' })}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function PieTip(props: { active?: boolean; payload?: unknown; label?: string; currency?: string; total?: number }) {
-  if (typeof props !== 'object' || props === null) return null;
-  const { active, payload } = props as { active?: boolean; payload?: { name: string; value: number }[] };
-  const total = (props as { total?: number }).total || 0;
-  const currency = (props as { currency?: string }).currency || 'USD';
-  if (!active || !payload?.length) return null;
-  return (
-    <div style={{ background: 'var(--surface-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '0.75rem 1rem', boxShadow: 'var(--shadow-md)' }}>
-      <p style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--color-text-primary)', marginBottom: '0.2rem' }}>{payload[0].name}</p>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
-        <p style={{ fontSize: '0.9rem', fontWeight: 700, fontFamily: 'Space Grotesk, sans-serif', color: 'var(--color-text-primary)' }}>{formatCurrency({ amountMinor: payload[0].value, currency: currency }, { variant: 'compact' })}</p>
-        {total > 0 && <p style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)', fontWeight: 600 }}>{((payload[0].value / total) * 100).toFixed(1)}%</p>}
-      </div>
-    </div>
-  );
-}
+type CategoryRow = { name: string; value: number; pct: number; color: string };
 
 export function ReportsClient({
-  period, trend, summary, expenseCategories, incomeCategories, categoryAnalytics, currency,
+  period, 
+  trend, 
+  expenseCategories, 
+  incomeCategories, 
+  financialIntelligence, 
+  currency,
 }: {
   period: string;
-  trend: TrendRow[];
-  summary: Summary;
+  trend: MonthlyTrendData[];
+  summary: any;
   expenseCategories: CategoryRow[];
   incomeCategories: CategoryRow[];
-  categoryAnalytics?: CategoryAnalyticsDTO[];
+  financialIntelligence: FinancialIntelligenceDTO;
   currency: string;
 }) {
-  const router      = useRouter();
-  const [tab, setTab] = useState<'cash-flow'|'spending'|'income'|'intelligence'>('intelligence');
-  const [view, setView] = useState<'breakdown'|'trends'>('breakdown');
-
-  const periodLabel = period === 'this-week' ? 'This Week' : period === 'this-year' ? 'This Year' : 'This Month';
-  const prevLabel   = period === 'this-week' ? 'last week' : period === 'this-year' ? 'last year' : 'last month';
+  const router = useRouter();
 
   function setPeriod(p: string) {
     router.push(`/reports?period=${p}`);
   }
 
-  function handleDrillDown(search: string) {
-    router.push(`/transactions?search=${encodeURIComponent(search)}`);
-  }
+  const { advisor, executiveSummary, behaviourAnalysis, deepAnalytics } = financialIntelligence;
 
-  const isEmpty = summary.income === 0 && summary.expenses === 0;
-  
-  const intelligence = generateReportsIntelligence(categoryAnalytics || []);
-
-  const renderTrendIcon = (change: number, reverseColors = false) => {
-    if (change === 0) return <Minus size={12} />;
-    const upColor = reverseColors ? 'var(--hero-expense)' : 'var(--hero-income)';
-    const downColor = reverseColors ? 'var(--hero-income)' : 'var(--hero-expense)';
-    return change > 0 
-      ? <TrendingUp size={12} style={{ color: upColor }} /> 
-      : <TrendingDown size={12} style={{ color: downColor }} />;
-  };
-
-  const currentCategories = tab === 'spending' ? expenseCategories : incomeCategories;
-  const totalCategoryValue = currentCategories.reduce((s, c) => s + c.value, 0);
+  // Map 6-mo trend to RollingAverageChart data format
+  const incomeTrendData = trend.map(t => ({ label: t.label, actual: t.Income, average: deepAnalytics.rollingAverages.income6Mo }));
+  const expenseTrendData = trend.map(t => ({ label: t.label, actual: t.Expenses, average: deepAnalytics.rollingAverages.expenses6Mo }));
 
   return (
-    <div className="page-container" style={{ maxWidth: 1100 }}>
-      {/* Toolbar */}
-      <div className="flex items-center justify-between mb-6 animate-in flex-wrap gap-4 print-hide">
-        <div style={{ display:'flex', gap:'0.25rem', background: 'var(--surface-sunken)', padding: '0.35rem', borderRadius: 10, border: '1px solid var(--border)' }}>
-          {(['intelligence', 'cash-flow', 'spending', 'income'] as const).map(t => (
-            <button key={t} onClick={() => setTab(t)}
-              style={{
-                background: tab === t ? 'var(--surface-card)' : 'transparent',
-                border: tab === t ? '1px solid var(--border)' : '1px solid transparent',
-                borderRadius: 8,
-                padding: '0.45rem 1rem',
-                fontSize: '0.8rem',
-                fontWeight: tab === t ? 700 : 600,
-                color: tab === t ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
-                cursor: 'pointer',
-                boxShadow: tab === t ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
-                textTransform: 'capitalize',
-                transition: 'all 0.2s'
-              }}>
-              {t.replace('-', ' ')}
-            </button>
-          ))}
+    <div className="page-container max-w-[1100px] mx-auto pb-12">
+      
+      {/* Header & Period Selector */}
+      <div className="flex items-center justify-between mb-8 flex-wrap gap-4 print-hide">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900 tracking-tight">Financial Intelligence</h1>
+          <p className="text-sm text-gray-500 mt-1">AI-driven analysis of your financial history.</p>
         </div>
-        <div style={{ display:'flex', gap:'0.5rem', background: 'var(--surface-sunken)', padding: '0.35rem', borderRadius: 10, border: '1px solid var(--border)' }}>
-          {['this-week','this-month','this-year'].map(p => (
+        <div className="flex gap-2 bg-gray-50 p-1.5 rounded-xl border border-gray-100">
+          {['this-month', 'this-year'].map(p => (
             <button key={p} onClick={() => setPeriod(p)}
-              style={{
-                background: period === p ? 'var(--surface-card)' : 'transparent',
-                border: period === p ? '1px solid var(--border)' : '1px solid transparent',
-                borderRadius: 8,
-                padding: '0.45rem 1rem',
-                fontSize: '0.8rem',
-                fontWeight: period === p ? 700 : 600,
-                color: period === p ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
-                cursor: 'pointer',
-                boxShadow: period === p ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
-                transition: 'all 0.2s'
-              }}>
-              {p === 'this-week' ? 'Week' : p === 'this-month' ? 'Month' : 'Year'}
+              className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${period === p ? 'bg-white text-gray-900 shadow-sm border border-gray-200' : 'text-gray-500 hover:text-gray-700'}`}>
+              {p === 'this-month' ? 'This Month' : 'This Year'}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Hero */}
-      <div className="dashboard-hero animate-in mb-6" style={{ borderRadius: 16 }}>
-        <div className="dashboard-hero-grid">
-          <div>
-            <p className="hero-label">Net Cash Flow · {periodLabel}</p>
-            <p style={{
-              fontFamily:'Space Grotesk,sans-serif',
-              fontSize: Math.abs(summary.netCashFlow) > 9_999_999 ? '1.8rem' : Math.abs(summary.netCashFlow) > 999_999 ? '2.2rem' : '2.75rem',
-              fontWeight:800, letterSpacing:'-0.04em', lineHeight:1,
-              color: summary.netCashFlow >= 0 ? 'var(--hero-income)' : 'var(--hero-expense)',
-              whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
-              margin: '0.5rem 0'
-            }}>
-              {summary.netCashFlow >= 0 ? '+' : '−'}{formatCurrency({ amountMinor: Math.abs(summary.netCashFlow), currency: currency }, { variant: 'compact' })}
-            </p>
-            <p className="hero-sub" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'rgba(0,0,0,0.1)', padding: '0.25rem 0.6rem', borderRadius: 6, width: 'fit-content' }}>
-              <span style={{ fontWeight: 600 }}>Saving rate: {summary.savingRate}%</span>
-              <span style={{ color: 'rgba(255,255,255,0.4)' }}>|</span>
-              <span style={{ 
-                color: summary.previous.netCashFlowChange > 0 ? 'var(--hero-income)' : summary.previous.netCashFlowChange < 0 ? 'var(--hero-expense)' : 'var(--hero-text-muted)',
-                fontWeight: 600,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.15rem'
-              }}>
-                {renderTrendIcon(summary.previous.netCashFlowChange)}
-                ({Math.abs(summary.previous.netCashFlowChange)}% vs {prevLabel})
-              </span>
-            </p>
-          </div>
-          <div className="hero-stats-grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '1.25rem' }}>
-            <div className="hero-stat-card" style={{ background: 'rgba(0,0,0,0.15)', borderRadius: 12, padding: '1.25rem' }}>
-              <p className="hero-label">{periodLabel} Income</p>
-              <p className="hero-stat-value tabular" style={{ color:'var(--hero-income)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', fontSize: '1.5rem', margin: '0.25rem 0' }}>+{formatCurrency({ amountMinor: summary.income, currency: currency }, { variant: 'compact' })}</p>
-              <p className="hero-sub" style={{ display: 'flex', alignItems: 'center', gap: '0.15rem', color: summary.previous.incomeChange > 0 ? 'var(--hero-income)' : summary.previous.incomeChange < 0 ? 'var(--hero-expense)' : 'var(--hero-text-muted)', fontWeight: 600 }}>
-                {renderTrendIcon(summary.previous.incomeChange)}
-                {Math.abs(summary.previous.incomeChange)}% vs {prevLabel}
-              </p>
-            </div>
-            <div className="hero-stat-card" style={{ background: 'rgba(0,0,0,0.15)', borderRadius: 12, padding: '1.25rem' }}>
-              <p className="hero-label">{periodLabel} Spending</p>
-              <p className="hero-stat-value tabular" style={{ color:'var(--hero-expense)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', fontSize: '1.5rem', margin: '0.25rem 0' }}>−{formatCurrency({ amountMinor: summary.expenses, currency: currency }, { variant: 'compact' })}</p>
-              <p className="hero-sub" style={{ display: 'flex', alignItems: 'center', gap: '0.15rem', color: summary.previous.expensesChange < 0 ? 'var(--hero-income)' : summary.previous.expensesChange > 0 ? 'var(--hero-expense)' : 'var(--hero-text-muted)', fontWeight: 600 }}>
-                {renderTrendIcon(summary.previous.expensesChange, true)}
-                {Math.abs(summary.previous.expensesChange)}% vs {prevLabel}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <div className="flex flex-col gap-10">
 
-      {isEmpty ? (
-        <div className="card" style={{ textAlign:'left', padding:'4rem 3rem', color:'var(--color-text-secondary)', borderStyle: 'dashed' }}>
-          <div style={{ fontSize:'3rem', marginBottom:'1rem' }}>📊</div>
-          <div style={{ fontWeight:700, fontSize: '1.2rem', marginBottom:'0.5rem', color: 'var(--color-text-primary)' }}>No data for {periodLabel.toLowerCase()}</div>
-          <div style={{ fontSize:'0.9rem' }}>Add transactions to start seeing rich reports, cashflow insights, and categorized spending.</div>
-        </div>
-      ) : tab === 'intelligence' ? (
-        <div className="animate-in delay-1" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-          
-          {/* Advisor Note */}
-          <div className="card" style={{ padding: '1.5rem', background: 'var(--surface-sunken)', border: '1px solid var(--border)', display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-            <div style={{ width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-              background: intelligence.advisorNote.status === 'negative' ? 'var(--color-expense-light)' : intelligence.advisorNote.status === 'warning' ? 'var(--color-expense-light)' : 'var(--color-income-light)',
-              color: intelligence.advisorNote.status === 'negative' || intelligence.advisorNote.status === 'warning' ? 'var(--color-expense)' : 'var(--color-income)'
-            }}>
-              {intelligence.advisorNote.status === 'negative' ? <AlertTriangle size={20} /> : intelligence.advisorNote.status === 'warning' ? <Activity size={20} /> : <ShieldCheck size={20} />}
-            </div>
+        {/* Level 1: Immediate Answer (Advisor Note) */}
+        <section className="animate-in">
+          <div className="p-6 bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl shadow-md text-white border border-gray-900 flex items-start gap-4">
+            <div className="w-1.5 h-full rounded-full bg-emerald-500 flex-shrink-0" style={{ backgroundColor: advisor.status === 'negative' ? '#f43f5e' : advisor.status === 'warning' ? '#f59e0b' : '#10b981' }} />
             <div>
-              <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: '0 0 0.5rem 0', color: 'var(--color-text-primary)' }}>Financial Brief</h3>
-              <p style={{ fontSize: '0.95rem', lineHeight: 1.5, color: 'var(--color-text-secondary)', margin: 0 }}>
-                {intelligence.advisorNote.narrative}
+              <span className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2 block">Ledger360 Intelligence</span>
+              <p className="text-lg font-light leading-relaxed">
+                {advisor.narrative}
               </p>
             </div>
           </div>
+        </section>
 
-          {/* Top level Intelligence Cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
-            <div className="card" style={{ padding: '1.5rem', borderTop: '4px solid var(--hero-income)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-                <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--color-income-light)', color: 'var(--color-income)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ShieldCheck size={18} /></div>
-                <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, color: 'var(--color-text-primary)' }}>Savings & Cashflow</h3>
-              </div>
-              {summary.netCashFlow > 0 ? (
-                <p style={{ fontSize: '0.95rem', lineHeight: 1.5, color: 'var(--color-text-secondary)', margin: 0 }}>
-                  You have a <strong style={{ color: 'var(--color-text-primary)' }}>positive cashflow</strong> of {formatCurrency({ amountMinor: summary.netCashFlow, currency: currency }, { variant: 'compact' })}. Your saving rate of <strong style={{ color: 'var(--color-text-primary)' }}>{summary.savingRate}%</strong> is strong.
-                </p>
-              ) : (
-                <p style={{ fontSize: '0.95rem', lineHeight: 1.5, color: 'var(--color-text-secondary)', margin: 0 }}>
-                  Expenses exceeded income by <strong style={{ color: 'var(--color-expense)' }}>{formatCurrency({ amountMinor: Math.abs(summary.netCashFlow), currency: currency }, { variant: 'compact' })}</strong>. Focus on high-volatility categories.
-                </p>
-              )}
+        {/* Level 2: Executive Summary */}
+        <section className="animate-in" style={{ animationDelay: '50ms' }}>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="md:col-span-1">
+              <FinancialHealthIndicator score={executiveSummary.healthScore} label={executiveSummary.healthStatus} />
             </div>
-
-            <div className="card" style={{ padding: '1.5rem', borderTop: '4px solid var(--hero-expense)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-                <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--color-expense-light)', color: 'var(--color-expense)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Activity size={18} /></div>
-                <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, color: 'var(--color-text-primary)' }}>Spending Behavior</h3>
-              </div>
-              <p style={{ fontSize: '0.95rem', lineHeight: 1.5, color: 'var(--color-text-secondary)', margin: 0 }}>
-                Compared to {prevLabel}, your spending has {summary.previous.expensesChange > 0 ? <strong style={{ color: 'var(--color-expense)' }}>increased by {summary.previous.expensesChange}%</strong> : <strong style={{ color: 'var(--color-text-primary)' }}>decreased by {Math.abs(summary.previous.expensesChange)}%</strong>}.
-                {expenseCategories.length > 0 && ` ${expenseCategories[0].name} drives ${expenseCategories[0].pct}% of total spending.`}
-              </p>
+            <div className="md:col-span-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <KPIHero label="Net Cash Flow" amount={executiveSummary.netCashFlow} currency={currency} trendChange={executiveSummary.netCashFlowChange} isGoodIfPositive={true} />
+              <KPIHero label="Savings Rate" percentage={executiveSummary.savingsRate} trendChange={executiveSummary.savingsRateChange} isGoodIfPositive={true} />
+              <KPIHero label="Total Income" amount={executiveSummary.income} currency={currency} trendChange={executiveSummary.incomeChange} isGoodIfPositive={true} />
+              <KPIHero label="Total Expenses" amount={executiveSummary.expenses} currency={currency} trendChange={executiveSummary.expensesChange} isGoodIfPositive={false} />
             </div>
           </div>
+        </section>
 
-          {/* Category Analytics Table/List */}
-          <div className="card">
-            <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border)' }}>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0, color: 'var(--color-text-primary)' }}>Category Analytics</h3>
-              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginTop: '0.25rem' }}>6-month spending trends, volatility, and pacing.</p>
-            </div>
-            
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                <thead>
-                  <tr style={{ background: 'var(--surface-sunken)', borderBottom: '1px solid var(--border)' }}>
-                    <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-secondary)', letterSpacing: '0.05em' }}>Category</th>
-                    <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-secondary)', letterSpacing: '0.05em', textAlign: 'right' }}>3-Mo Average</th>
-                    <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-secondary)', letterSpacing: '0.05em', textAlign: 'center' }}>Trend (6 Mo)</th>
-                    <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-secondary)', letterSpacing: '0.05em' }}>Behavior</th>
-                    <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-secondary)', letterSpacing: '0.05em', textAlign: 'center' }}>Stability</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {categoryAnalytics && categoryAnalytics.length > 0 ? categoryAnalytics.map(cat => {
-                    const sparklineData = cat.history.map(h => h.amountMinor);
-                    
-                    let stabilityColor = 'var(--color-text-secondary)';
-                    if (cat.stabilityScore >= 80) stabilityColor = 'var(--color-income)';
-                    else if (cat.stabilityScore <= 40) stabilityColor = 'var(--color-expense)';
-
-                    return (
-                      <tr key={cat.categoryId} style={{ borderBottom: '1px solid var(--border)' }} className="hover-bg-active">
-                        <td style={{ padding: '1rem' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                            <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--surface-sunken)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                              <DynamicCategoryIcon category={cat.name} size={16} style={{ color: 'var(--color-text-secondary)' }} />
-                            </div>
-                            <span style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>{cat.name}</span>
-                          </div>
-                        </td>
-                        <td style={{ padding: '1rem', textAlign: 'right' }}>
-                          <span style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: '0.95rem' }}>
-                            {formatCurrency({ amountMinor: cat.threeMonthAverageMinor, currency }, { variant: 'compact' })}
-                          </span>
-                        </td>
-                        <td style={{ padding: '1rem', textAlign: 'center' }}>
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem' }}>
-                            <div style={{ display: 'flex', gap: '0.1rem', height: 24, alignItems: 'flex-end' }}>
-                              <Sparkline data={sparklineData} width={60} height={24} color={cat.trendLabel.includes('Rising') ? 'var(--color-expense)' : cat.trendLabel.includes('Falling') ? 'var(--color-income)' : 'var(--color-text-muted)'} />
-                            </div>
-                            <span style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--color-text-secondary)' }}>{cat.trendLabel}</span>
-                          </div>
-                        </td>
-                        <td style={{ padding: '1rem' }}>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>{cat.velocityLabel}</span>
-                            <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Volatility: {cat.volatilityLabel}</span>
-                          </div>
-                        </td>
-                        <td style={{ padding: '1rem', textAlign: 'center' }}>
-                          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: '50%', border: `2px solid ${stabilityColor}40`, color: stabilityColor, fontWeight: 700, fontSize: '0.85rem' }}>
-                            {cat.stabilityScore}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  }) : (
-                    <tr>
-                      <td colSpan={5} style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
-                        No category analytics data available yet.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="card animate-in delay-1" style={{ padding: '2rem' }}>
-          <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)', paddingBottom: '1.25rem', marginBottom: '2rem' }}>
-            <div>
-              <h2 className="card-title" style={{ marginBottom: 0, textTransform: 'capitalize', fontSize: '1.2rem', letterSpacing: '-0.02em' }}>{tab.replace('-', ' ')} Overview</h2>
-            </div>
-            {tab !== 'cash-flow' && (
-              <div style={{ display: 'flex', gap: '0.25rem', background: 'var(--surface-sunken)', padding: '0.25rem', borderRadius: 8, border: '1px solid var(--border)' }}>
-                {(['breakdown', 'trends'] as const).map(v => (
-                  <button key={v} onClick={() => setView(v)}
-                    style={{
-                      background: view === v ? 'var(--surface-card)' : 'transparent',
-                      border: view === v ? '1px solid var(--border)' : '1px solid transparent',
-                      borderRadius: 6,
-                      padding: '0.3rem 0.75rem',
-                      fontSize: '0.75rem',
-                      fontWeight: 600,
-                      color: view === v ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
-                      cursor: 'pointer',
-                      boxShadow: view === v ? 'var(--shadow-sm)' : 'none',
-                      textTransform: 'capitalize'
-                    }}>
-                    {v}
-                  </button>
-                ))}
+        {/* Level 3: Behaviour Analysis */}
+        <section className="animate-in" style={{ animationDelay: '100ms' }}>
+          <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-widest mb-4">Behaviour Analysis</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="p-5 bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col gap-4">
+              <span className="text-sm font-medium text-gray-500">6-Month Trajectories</span>
+              <div className="flex justify-between items-center pb-3 border-b border-gray-50">
+                <span className="text-sm text-gray-700">Cash Flow</span>
+                <TrendBadge trend={behaviourAnalysis.cashFlowTrend} sentiment={behaviourAnalysis.cashFlowTrend === 'Expanding' ? 'positive' : behaviourAnalysis.cashFlowTrend === 'Contracting' ? 'negative' : 'neutral'} />
               </div>
-            )}
-          </div>
+              <div className="flex justify-between items-center pb-3 border-b border-gray-50">
+                <span className="text-sm text-gray-700">Income</span>
+                <TrendBadge trend={behaviourAnalysis.incomeTrend} sentiment={behaviourAnalysis.incomeTrend === 'Rising' ? 'positive' : behaviourAnalysis.incomeTrend === 'Falling' ? 'negative' : 'neutral'} />
+              </div>
+              <div className="flex justify-between items-center pb-3 border-b border-gray-50">
+                <span className="text-sm text-gray-700">Expenses</span>
+                <TrendBadge trend={behaviourAnalysis.expenseTrend} sentiment={behaviourAnalysis.expenseTrend === 'Falling' ? 'positive' : behaviourAnalysis.expenseTrend === 'Rising' ? 'negative' : 'neutral'} />
+              </div>
+            </div>
 
-          <div style={{ minHeight: 350 }}>
-            {tab === 'cash-flow' && (
-              <ResponsiveContainer width="100%" height={350}>
-                <BarChart data={trend} margin={{ top:10, right:10, left:-20, bottom:0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.5} />
-                  <XAxis dataKey="label" tick={tick} tickLine={false} axisLine={false} dy={10} />
-                  <YAxis tick={tick} tickLine={false} axisLine={false} tickFormatter={v => formatCurrency({ amountMinor: v, currency: currency }, { variant: 'compact' })} />
-                  <Tooltip content={<BarTip currency={currency} />} cursor={{ fill: 'var(--bg-hover)', opacity: 0.5 }} />
-                  <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize:'0.8rem', paddingTop: 20, fontWeight: 600 }} />
-                  {/* Monarch-style grouped bar chart for cash flow */}
-                  <Bar name="Income" dataKey="Income" fill="var(--chart-income)" radius={[4, 4, 0, 0]} barSize={32} onClick={(e: unknown) => { const label = (e as Record<string, unknown>)?.payload ? ((e as Record<string, unknown>).payload as Record<string, unknown>)?.label : null; if(label) handleDrillDown(String(label)); }} style={{ cursor: 'pointer' }} />
-                  <Bar name="Spending" dataKey="Expenses" fill="var(--chart-expense)" radius={[4, 4, 0, 0]} barSize={32} onClick={(e: unknown) => { const label = (e as Record<string, unknown>)?.payload ? ((e as Record<string, unknown>).payload as Record<string, unknown>)?.label : null; if(label) handleDrillDown(String(label)); }} style={{ cursor: 'pointer' }} />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
+            <div className="p-5 bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col gap-4">
+              <span className="text-sm font-medium text-gray-500">Volatility</span>
+              <VarianceIndicator variance={deepAnalytics.monthlyVariance.incomeVariance} status="Stable" />
+              <div className="text-xs text-gray-400 mb-2">Income Stability</div>
+              
+              <VarianceIndicator variance={deepAnalytics.monthlyVariance.expenseVariance} status={deepAnalytics.monthlyVariance.status} />
+              <div className="text-xs text-gray-400">Expense Stability</div>
+            </div>
 
-            {(tab === 'spending' || tab === 'income') && view === 'breakdown' && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3rem', alignItems: 'center' }}>
-                <div style={{ height: 350, position: 'relative' }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie 
-                        data={currentCategories} 
-                        cx="50%" 
-                        cy="50%" 
-                        innerRadius={95} 
-                        outerRadius={125}
-                        paddingAngle={3} 
-                        dataKey="value" 
-                        stroke="none" 
-                        labelLine={false} 
-                        onClick={(e) => { if (e && e.name) handleDrillDown(e.name); }}
-                        style={{ cursor: 'pointer', outline: 'none' }}
-                      >
-                        {currentCategories.map((d, i) => <Cell key={i} fill={d.color} />)}
-                      </Pie>
-                      <Tooltip content={<PieTip total={totalCategoryValue} currency={currency} />} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  {/* Center Label for Donut Chart */}
-                  <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', textAlign: 'center', pointerEvents: 'none' }}>
-                    <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total {tab}</p>
-                    <p style={{ fontSize: '1.4rem', fontWeight: 800, fontFamily: 'Space Grotesk, sans-serif', color: 'var(--color-text-primary)' }}>{formatCurrency({ amountMinor: totalCategoryValue, currency: currency }, { variant: 'compact' })}</p>
+            <div className="p-5 bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col gap-4">
+              <span className="text-sm font-medium text-gray-500">Category Drivers</span>
+              {behaviourAnalysis.topGrowingCategory ? (
+                <div className="flex justify-between items-center">
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium text-rose-600">Fastest Growing</span>
+                    <span className="text-lg font-light text-gray-900">{behaviourAnalysis.topGrowingCategory}</span>
                   </div>
                 </div>
-                <div style={{ display:'flex', flexDirection:'column', gap:'1.25rem', maxHeight: 350, overflowY: 'auto', paddingRight: '1rem' }}>
-                  {currentCategories.length === 0 && <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>No categories to display.</p>}
-                  {currentCategories.map(cat => (
-                    <div key={cat.name} onClick={() => handleDrillDown(cat.name)} className="group" style={{ cursor: 'pointer' }}>
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-3">
-                          <div style={{ width:12, height:12, borderRadius:'50%', background:cat.color, flexShrink:0 }} />
-                          <span style={{ fontSize:'0.9rem', fontWeight:600, color:'var(--color-text-primary)' }}>{cat.name}</span>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <span style={{ fontSize:'0.85rem', color:'var(--color-text-secondary)', fontWeight:600 }}>{cat.pct}%</span>
-                          <span style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:'0.9rem', fontWeight:700, minWidth:90, textAlign:'right', color:'var(--color-text-primary)' }}>
-                            {formatCurrency({ amountMinor: cat.value, currency: currency }, { variant: 'compact' })}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="progress-track" style={{ background: 'var(--surface-sunken)', height: 8, borderRadius: 999 }}>
-                        <div className="progress-fill" style={{ width:`${Math.min(100, cat.pct)}%`, background: cat.color, height: '100%', borderRadius: 999, transition: 'width 0.5s ease-out' }} />
-                      </div>
-                    </div>
-                  ))}
+              ) : (
+                <span className="text-sm text-gray-400">No rapidly growing categories.</span>
+              )}
+              {behaviourAnalysis.topShrinkingCategory && (
+                <div className="flex justify-between items-center mt-2 pt-4 border-t border-gray-50">
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium text-emerald-600">Fastest Shrinking</span>
+                    <span className="text-lg font-light text-gray-900">{behaviourAnalysis.topShrinkingCategory}</span>
+                  </div>
                 </div>
-              </div>
-            )}
-
-            {(tab === 'spending' || tab === 'income') && view === 'trends' && (
-              <ResponsiveContainer width="100%" height={350}>
-                <AreaChart data={trend} margin={{ top:10, right:10, left:-20, bottom:0 }} onClick={(e: unknown) => { const obj = e as Record<string, unknown> | undefined; if(obj?.activeLabel) handleDrillDown(String(obj.activeLabel)); }} style={{ cursor: 'pointer' }}>
-                  <defs>
-                    <linearGradient id="gTrend" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%"   stopColor={tab === 'income' ? 'var(--chart-income)' : 'var(--chart-expense)'} stopOpacity={0.4}/>
-                      <stop offset="100%" stopColor={tab === 'income' ? 'var(--chart-income)' : 'var(--chart-expense)'} stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.5} />
-                  <XAxis dataKey="label" tick={tick} tickLine={false} axisLine={false} dy={10} />
-                  <YAxis tick={tick} tickLine={false} axisLine={false} tickFormatter={v => formatCurrency({ amountMinor: v, currency: currency }, { variant: 'compact' })} />
-                  <Tooltip content={<BarTip currency={currency} />} cursor={{ stroke: 'var(--border)', strokeWidth: 1, strokeDasharray: '3 3' }} />
-                  <Area name={tab === 'income' ? 'Income' : 'Spending'} dataKey={tab === 'income' ? 'Income' : 'Expenses'} type="monotone"
-                    stroke={tab === 'income' ? 'var(--chart-income)' : 'var(--chart-expense)'} strokeWidth={3} fill="url(#gTrend)"
-                    dot={{ fill: tab === 'income' ? 'var(--chart-income)' : 'var(--chart-expense)', r:4, strokeWidth:0 }} activeDot={{ r:6, strokeWidth: 2, stroke: 'var(--surface-card)' }} />
-                </AreaChart>
-              </ResponsiveContainer>
-            )}
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        </section>
+
+        {/* Level 4: Deep Analytics */}
+        <section className="animate-in" style={{ animationDelay: '150ms' }}>
+          <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-widest mb-4">Deep Analytics</h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            <div className="flex flex-col gap-4 p-5 bg-white rounded-2xl border border-gray-100 shadow-sm">
+              <span className="text-sm font-medium text-gray-500">Expense Distribution vs 6M Average</span>
+              <RollingAverageChart data={expenseTrendData} lineColor="#f43f5e" barColor="#ffe4e6" />
+              <div className="mt-4 pt-4 border-t border-gray-50">
+                <MetricComparison 
+                  label="Current Expenses" 
+                  actual={executiveSummary.expenses} 
+                  benchmark={deepAnalytics.rollingAverages.expenses6Mo} 
+                  benchmarkLabel="6M Average" 
+                  currency={currency} 
+                  isGoodIfActualIsHigher={false} 
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-4 p-5 bg-white rounded-2xl border border-gray-100 shadow-sm">
+              <span className="text-sm font-medium text-gray-500">Income Distribution vs 6M Average</span>
+              <RollingAverageChart data={incomeTrendData} lineColor="#10b981" barColor="#d1fae5" />
+              <div className="mt-4 pt-4 border-t border-gray-50">
+                <MetricComparison 
+                  label="Current Income" 
+                  actual={executiveSummary.income} 
+                  benchmark={deepAnalytics.rollingAverages.income6Mo} 
+                  benchmarkLabel="6M Average" 
+                  currency={currency} 
+                  isGoodIfActualIsHigher={true} 
+                />
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        {/* Level 5: Exploration (Top Categories) */}
+        <section className="animate-in pb-12" style={{ animationDelay: '200ms' }}>
+          <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-widest mb-4">Exploration</h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="px-5 py-4 border-b border-gray-100">
+                <h3 className="text-sm font-medium text-gray-700">Top Expenses</h3>
+              </div>
+              <div className="divide-y divide-gray-50">
+                {expenseCategories.length > 0 ? expenseCategories.slice(0, 5).map(cat => (
+                  <div key={cat.name} className="flex justify-between items-center px-5 py-3 hover:bg-gray-50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: cat.color }} />
+                      <span className="text-sm font-medium text-gray-900">{cat.name}</span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span className="text-sm font-mono text-gray-500">{cat.pct}%</span>
+                      <span className="text-sm font-medium text-gray-900 w-24 text-right">{formatCurrency({ amountMinor: cat.value, currency }, { variant: 'compact' })}</span>
+                    </div>
+                  </div>
+                )) : (
+                  <div className="p-5 text-sm text-gray-400">No expense data found.</div>
+                )}
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="px-5 py-4 border-b border-gray-100">
+                <h3 className="text-sm font-medium text-gray-700">Top Income Sources</h3>
+              </div>
+              <div className="divide-y divide-gray-50">
+                {incomeCategories.length > 0 ? incomeCategories.slice(0, 5).map(cat => (
+                  <div key={cat.name} className="flex justify-between items-center px-5 py-3 hover:bg-gray-50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: cat.color }} />
+                      <span className="text-sm font-medium text-gray-900">{cat.name}</span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span className="text-sm font-mono text-gray-500">{cat.pct}%</span>
+                      <span className="text-sm font-medium text-gray-900 w-24 text-right">{formatCurrency({ amountMinor: cat.value, currency }, { variant: 'compact' })}</span>
+                    </div>
+                  </div>
+                )) : (
+                  <div className="p-5 text-sm text-gray-400">No income data found.</div>
+                )}
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+      </div>
     </div>
   );
 }

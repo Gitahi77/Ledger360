@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 import { getTransactions, getCategories, getTransactionSummary } from '@/lib/queries/transactions';
 import { getAccounts } from '@/lib/queries/accounts';
 import { getTransfers } from '@/lib/queries/transfers';
+import { generateTransactionsIntelligence } from '@/lib/domain/calculators/transactions-intelligence';
 import { TransactionsClient } from './TransactionsClient';
 import { requireAuth } from '@/lib/actions/_auth';
 
@@ -68,6 +69,9 @@ export default async function Transactions({
 
   const { moneyOut, income: totalIncome, expenses: totalExpense } = await getTransactionSummary({ userId: user.id, period });
 
+  const intelligencePeriodDays = period === 'this-week' ? 7 : period === 'this-month' ? 30 : period === 'this-year' ? 365 : 30;
+  const intelligence = generateTransactionsIntelligence(allItems, intelligencePeriodDays);
+
   return (
     <>
       <Suspense fallback={<div className="p-8 text-center text-muted-foreground animate-pulse">Loading transactions...</div>}>
@@ -83,6 +87,7 @@ export default async function Transactions({
           period={period}
           typeFilter={typeFilter}
           currency={user.currency}
+          intelligence={intelligence}
           goals={goals}
           loans={loans}
         />
