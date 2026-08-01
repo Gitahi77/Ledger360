@@ -1,6 +1,0 @@
-refactor(dashboard): migrate dashboard to new design system
-
-- replace legacy layout
-- consume new primitives
-- remove ForecastCard
-- improve dashboard clarity

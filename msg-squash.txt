@@ -1,7 +1,0 @@
-Release: Phase 4 Wave 3 — Transactions Redesign
-
-Highlights
-• migrate layout and hero to Grid and Stack
-• implement FinancialMetric and CurrencyDisplay
-• update toolbars with Button and Input
-• modernize modal form elements
