@@ -94,3 +94,80 @@ export function calculateBudgetUsage(
     percentage,
   };
 }
+
+export interface BudgetPacingResult {
+  percentTimeElapsed: number;
+  expectedSpend: number;
+  isAheadOfSchedule: boolean;
+  pacingVariancePercent: number; // Positive means ahead of schedule (bad), negative means behind (good)
+}
+
+/**
+ * Calculates how spending is pacing relative to time elapsed in the period.
+ * Assuming straight-line spending (which may not always be true, but is a useful proxy).
+ */
+export function calculateBudgetPacing(
+  percentageSpent: number,
+  periodStart: Date,
+  periodEnd: Date,
+  now: Date = new Date()
+): BudgetPacingResult {
+  const startMs = periodStart.getTime();
+  const endMs = periodEnd.getTime();
+  const nowMs = now.getTime();
+
+  let percentTimeElapsed = 0;
+  if (nowMs >= endMs) {
+    percentTimeElapsed = 1.0;
+  } else if (nowMs > startMs) {
+    percentTimeElapsed = (nowMs - startMs) / (endMs - startMs);
+  }
+
+  const expectedSpend = percentTimeElapsed;
+  // Threshold of 5% variance before we flag it
+  const pacingVariancePercent = percentageSpent - expectedSpend;
+  const isAheadOfSchedule = pacingVariancePercent > 0.05 && percentageSpent > 0;
+
+  return {
+    percentTimeElapsed,
+    expectedSpend,
+    isAheadOfSchedule,
+    pacingVariancePercent,
+  };
+}
+
+/**
+ * Calculates a portfolio health score (0-100) based on aggregate pacing and limits.
+ */
+export function calculateBudgetHealthScore(
+  budgets: BudgetUsageResult[],
+  pacingMap: Record<string, BudgetPacingResult>
+): number {
+  if (budgets.length === 0) return 100;
+
+  let totalDeduction = 0;
+  let totalWeight = 0;
+
+  for (const b of budgets) {
+    // Weight by limit size to avoid small budgets skewing the score, but give a minimum weight
+    const weight = Math.max(b.limit, 100000); 
+    totalWeight += weight;
+
+    if (b.status === 'exceeded') {
+      totalDeduction += 1.0 * weight; // 100% deduction for this budget's weight
+    } else if (b.status === 'critical') {
+      totalDeduction += 0.8 * weight;
+    } else if (b.status === 'warning') {
+      totalDeduction += 0.4 * weight;
+    } else {
+      const pacing = pacingMap[b.id];
+      if (pacing && pacing.isAheadOfSchedule) {
+        // Minor deduction for pacing ahead of schedule
+        totalDeduction += 0.2 * weight;
+      }
+    }
+  }
+
+  const score = 100 - ((totalDeduction / totalWeight) * 100);
+  return Math.max(0, Math.min(100, Math.round(score)));
+}
