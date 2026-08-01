@@ -78,8 +78,9 @@ export async function assertOwnsCategory(userId: string, categoryId: string) {
 }
 
 export async function assertOwnsBudget(userId: string, budgetId: string) {
+  const { getBudgetById } = await import('./repositories/budgets');
   return assertOwnsResource({ 
-    findById: async (id) => prisma.budget.findUnique({ where: { id } }), 
+    findById: async (id) => getBudgetById(id, userId), 
     userId, 
     id: budgetId, 
     resourceType: 'budget' 
