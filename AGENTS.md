@@ -112,11 +112,22 @@ Repository cleanup shall NOT redesign architecture, rename modules unnecessarily
 Maintain a permanent Repository Budget tracking: TS files, Components, Hooks, Repositories, Services, Dependencies, Assets, Documentation, Temporary Files. Every stage must report Deltas. The repository should never grow simply because scaffolding was generated.
 
 ## PART I — Stage Transition Rule & Stage Gates
-Before transitioning from one stage to the next, produce a **Stage Exit Report** evaluating the repository against three gate levels:
+Before transitioning from one stage to the next, produce a **Stage Exit Report** evaluating the repository against three gate levels. The Stage Gate depends entirely on objective engineering evidence.
+
+**Stage Gate = GREEN when ALL are true:**
+- lint passes
+- types pass
+- tests pass
+- production build passes
+- financial correctness preserved
+- no architecture regressions
+- no critical security findings
+- repository hygiene delta is acceptable
+
+*Note: Repository Health Score is Informational only.*
 
 ### 🟢 Green — Proceed
-- Build passes, TypeScript passes, tests pass.
-- No architecture or financial regressions.
+- All objective criteria met.
 - Stage may begin.
 
 ### 🟡 Yellow — Proceed with conditional cleanup
