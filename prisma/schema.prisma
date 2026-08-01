@@ -21,6 +21,12 @@ enum AccountType {
   CRYPTO
 }
 
+enum TransactionStatus {
+  ACTIVE
+  VOIDED
+  ARCHIVED
+}
+
 // ── Auth ────────────────────────────────────────────────────
 model User {
   id            String    @id @default(cuid())
@@ -67,9 +73,9 @@ model UserPreferences {
   smoothAnims Boolean @default(true)
 
   // Preferences
-  dateFormat   String @default("DD/MM/YYYY") // "DD/MM/YYYY" | "MM/DD/YYYY" | "YYYY-MM-DD"
-  weekStartDay String @default("Monday") // "Monday" | "Sunday"
-  savingRate   Int    @default(30) // % of income target
+  dateFormat                 String @default("DD/MM/YYYY") // "DD/MM/YYYY" | "MM/DD/YYYY" | "YYYY-MM-DD"
+  weekStartDay               String @default("Monday") // "Monday" | "Sunday"
+  savingRate                 Int    @default(30) // % of income target
   expectedMonthlyIncomeMinor Int? // optional override for safe-to-spend expected income
 
   // Notification flags (in-app)
@@ -104,24 +110,25 @@ model OAuthAccount {
 }
 
 model Account {
-  id           String        @id @default(cuid())
-  userId       String
-  name         String
-  type         AccountType   @default(CHECKING)
-  currency     String
-  openingMinor BigInt        @default(0)
-  balanceMinor BigInt        @default(0)
-  archived     Boolean       @default(false)
-  allowNegativeBalance Boolean @default(false)
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  transactions Transaction[]
-  transfersFrom Transfer[]   @relation("TransferFrom")
-  transfersTo   Transfer[]   @relation("TransferTo")
-  savingsPlanFrom SavingsPlan[] @relation("SavingsPlanFrom")
-  savingsPlanTo   SavingsPlan[] @relation("SavingsPlanTo")
-  chamaDetails ChamaDetails?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt @default(now())
+  id                   String        @id @default(cuid())
+  userId               String
+  name                 String
+  type                 AccountType   @default(CHECKING)
+  currency             String
+  openingMinor         BigInt        @default(0)
+  balanceMinor         BigInt        @default(0)
+  archived             Boolean       @default(false)
+  allowNegativeBalance Boolean       @default(false)
+  user                 User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions         Transaction[]
+  transfersFrom        Transfer[]    @relation("TransferFrom")
+  transfersTo          Transfer[]    @relation("TransferTo")
+  savingsPlanFrom      SavingsPlan[] @relation("SavingsPlanFrom")
+  savingsPlanTo        SavingsPlan[] @relation("SavingsPlanTo")
+  chamaDetails         ChamaDetails?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @default(now()) @updatedAt
+
   @@index([userId])
 }
 
@@ -170,13 +177,20 @@ model Transaction {
   accountId       String
   userId          String
   importedAt      DateTime? // non-null if imported via Smart Upload
-  importHash      String?   // dedup key (WO-11)
-  reference       String?   // source transaction reference (WO-11)
+  importHash      String? // dedup key (WO-11)
+  reference       String? // source transaction reference (WO-11)
 
-  category Category @relation(fields: [categoryId], references: [id])
-  account  Account  @relation(fields: [accountId], references: [id])
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  autoSaveTransfer Transfer? @relation("AutoSaveRelation")
+  status     TransactionStatus @default(ACTIVE)
+  parentId   String?
+  archivedAt DateTime?
+  updatedAt  DateTime          @default(now()) @updatedAt
+
+  category         Category      @relation(fields: [categoryId], references: [id])
+  account          Account       @relation(fields: [accountId], references: [id])
+  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  autoSaveTransfer Transfer?     @relation("AutoSaveRelation")
+  parent           Transaction?  @relation("TransactionSplit", fields: [parentId], references: [id], onDelete: Cascade)
+  children         Transaction[] @relation("TransactionSplit")
 
   createdAt DateTime @default(now())
 
@@ -184,25 +198,27 @@ model Transaction {
   @@index([accountId])
   @@index([categoryId])
   @@index([userId, type, accountId])
+  @@index([parentId])
+  @@index([status])
 }
 
 model IdempotencyRecord {
-  idempotencyKey    String   @id
-  requestHash       String
-  responseStatus    Int
+  idempotencyKey     String   @id
+  requestHash        String
+  responseStatus     Int
   serializedResponse Json?
-  resourceId        String?
-  processingStatus  String   // "PROCESSING" | "COMPLETED"
-  createdAt         DateTime @default(now())
-  expiresAt         DateTime
+  resourceId         String?
+  processingStatus   String // "PROCESSING" | "COMPLETED"
+  createdAt          DateTime @default(now())
+  expiresAt          DateTime
 
   @@index([expiresAt])
 }
 
 model Budget {
-  id               String @id @default(cuid())
+  id               String  @id @default(cuid())
   name             String
-  period           String @default("monthly") // "weekly" | "monthly" | "yearly"
+  period           String  @default("monthly") // "weekly" | "monthly" | "yearly"
   limitAmountMinor BigInt // stored as integer minor units (cents)
   rollover         Boolean @default(false)
   categoryId       String
@@ -218,16 +234,16 @@ model Budget {
 }
 
 model Goal {
-  id                 String    @id @default(cuid())
-  name               String
-  category           String
-  targetAmountMinor  BigInt // stored as integer minor units (cents)
-  deadline           DateTime?
-  userId             String
+  id                String    @id @default(cuid())
+  name              String
+  category          String
+  targetAmountMinor BigInt // stored as integer minor units (cents)
+  deadline          DateTime?
+  userId            String
 
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime   @default(now())
-  transfers Transfer[]
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime      @default(now())
+  transfers    Transfer[]
   savingsPlans SavingsPlan[]
 
   @@index([userId])
@@ -248,14 +264,14 @@ model Loan {
 
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt @default(now())
+  updatedAt DateTime   @default(now()) @updatedAt
   transfers Transfer[]
 
   @@index([userId])
 }
 
 model Asset {
-  id         String @id @default(cuid())
+  id         String  @id @default(cuid())
   name       String
   category   String // "Liquid" | "Investment" | "Property"
   valueMinor BigInt // stored as integer minor units (cents)
@@ -271,13 +287,13 @@ model Asset {
 
 // ── Security / Activity Logging ──────────────────────────────
 model AuditLog {
-  id         String  @id @default(cuid())
-  userId     String
-  action     String  // e.g., "TRANSFER_EXECUTED", "LOAN_APPROVED", "ACCOUNT_CLOSED"
-  resource   String  // e.g., "Transfer", "Loan", "Account"
-  entityId   String? // ID of the affected resource
-  metadata   Json?   // Structured data about the event
-  ipAddress  String?
+  id        String  @id @default(cuid())
+  userId    String
+  action    String // e.g., "TRANSFER_EXECUTED", "LOAN_APPROVED", "ACCOUNT_CLOSED"
+  resource  String // e.g., "Transfer", "Loan", "Account"
+  entityId  String? // ID of the affected resource
+  metadata  Json? // Structured data about the event
+  ipAddress String?
 
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
@@ -287,29 +303,29 @@ model AuditLog {
 }
 
 model Transfer {
-  id              String   @id @default(cuid())
-  userId          String
-  fromAccountId   String?
-  toAccountId     String?
-  amountMinor     BigInt
-  currency        String
-  baseAmountMinor BigInt
-  fxRate          Decimal  @db.Decimal(10, 6)
-  date            DateTime
-  note            String?
-  source          String   @default("MANUAL") // MANUAL, IMPORT, SYSTEM, SAVE_MORE_TOMORROW
-  goalId          String?
-  sourceTransactionId String? @unique          // WO-15: idempotency — links auto-save to the income that triggered it
+  id                  String       @id @default(cuid())
+  userId              String
+  fromAccountId       String?
+  toAccountId         String?
+  amountMinor         BigInt
+  currency            String
+  baseAmountMinor     BigInt
+  fxRate              Decimal      @db.Decimal(10, 6)
+  date                DateTime
+  note                String?
+  source              String       @default("MANUAL") // MANUAL, IMPORT, SYSTEM, SAVE_MORE_TOMORROW
+  goalId              String?
+  sourceTransactionId String?      @unique // WO-15: idempotency — links auto-save to the income that triggered it
   sourceTransaction   Transaction? @relation("AutoSaveRelation", fields: [sourceTransactionId], references: [id], onDelete: Cascade)
-  loanId          String?
-  interestMinor   BigInt      @default(0)
-  idempotencyKey  String?     @unique
-  createdAt       DateTime @default(now())
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  fromAccount Account? @relation("TransferFrom", fields: [fromAccountId], references: [id], onDelete: Restrict)
-  toAccount   Account? @relation("TransferTo", fields: [toAccountId], references: [id], onDelete: Restrict)
-  goal        Goal?    @relation(fields: [goalId], references: [id], onDelete: SetNull)
-  loan        Loan?    @relation(fields: [loanId], references: [id], onDelete: SetNull)
+  loanId              String?
+  interestMinor       BigInt       @default(0)
+  idempotencyKey      String?      @unique
+  createdAt           DateTime     @default(now())
+  user                User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fromAccount         Account?     @relation("TransferFrom", fields: [fromAccountId], references: [id], onDelete: Restrict)
+  toAccount           Account?     @relation("TransferTo", fields: [toAccountId], references: [id], onDelete: Restrict)
+  goal                Goal?        @relation(fields: [goalId], references: [id], onDelete: SetNull)
+  loan                Loan?        @relation(fields: [loanId], references: [id], onDelete: SetNull)
 
   @@index([userId, date])
   @@index([fromAccountId])
@@ -321,16 +337,16 @@ model Transfer {
 // ── SavingsPlan: Save-More-Tomorrow commitment device (B-5, WO-15) ──
 model SavingsPlan {
   id             String   @id @default(cuid())
-  userId         String   @unique              // one plan per user
-  fromAccountId  String                        // source (e.g. M-Pesa, salary account)
-  toAccountId    String                        // destination — must be savings/investment type, OR goalId must be set
-  goalId         String?                       // optional: auto-save funds this goal
-  baseRatePct    Int      @default(10)         // initial rate (seeded from UserPreferences.savingRate)
-  escalationPct  Int      @default(1)          // bump per period (percentage points)
-  maxRatePct     Int      @default(30)         // ceiling
-  currentRatePct Int      @default(10)         // active rate (seeded from UserPreferences.savingRate)
-  nextEscalation DateTime                      // when the next bump happens
-  active         Boolean  @default(true)       // pause toggle
+  userId         String   @unique // one plan per user
+  fromAccountId  String // source (e.g. M-Pesa, salary account)
+  toAccountId    String // destination — must be savings/investment type, OR goalId must be set
+  goalId         String? // optional: auto-save funds this goal
+  baseRatePct    Int      @default(10) // initial rate (seeded from UserPreferences.savingRate)
+  escalationPct  Int      @default(1) // bump per period (percentage points)
+  maxRatePct     Int      @default(30) // ceiling
+  currentRatePct Int      @default(10) // active rate (seeded from UserPreferences.savingRate)
+  nextEscalation DateTime // when the next bump happens
+  active         Boolean  @default(true) // pause toggle
   createdAt      DateTime @default(now())
 
   user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -343,9 +359,9 @@ model ChamaDetails {
   id                 String   @id @default(cuid())
   accountId          String   @unique
   account            Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  monthlyContrib     BigInt      // KES cents
+  monthlyContrib     BigInt // KES cents
   totalMembers       Int
-  yourPayoutPosition Int      // e.g. position 3 of 12
+  yourPayoutPosition Int // e.g. position 3 of 12
   cycleStartDate     DateTime
-  meetingDay         Int      // day of month, e.g. 15
+  meetingDay         Int // day of month, e.g. 15
 }

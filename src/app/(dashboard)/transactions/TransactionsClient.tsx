@@ -1,22 +1,19 @@
 'use client';
-// src/app/transactions/TransactionsClient.tsx
-// Copyright (c) 2024-present Eric Gitahi. All rights reserved.
-import { useState, useTransition, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useTransition, useRef, useOptimistic } from 'react';
+import { useQueryState } from 'nuqs';
 import { DynamicCategoryIcon } from '@/lib/icons';
 import { SmartUpload } from '@/components/SmartUpload';
-import { addTransaction, editTransaction, deleteTransaction } from '@/lib/actions/transactions';
-import { createTransfer, editTransfer, deleteTransfer } from '@/lib/actions/transfers';
-
-import { Plus, FileDown, X, Loader2, Search, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
-import { toMinor, toMajor } from '@/lib/money';
+import { deleteTransaction } from '@/lib/actions/transactions';
+import { deleteTransfer } from '@/lib/actions/transfers';
+import { Plus, FileDown, X, Loader2, Search, AlertTriangle } from 'lucide-react';
+import { toMajor } from '@/lib/money';
 import { Grid } from '@/components/layout/grid';
 import { Stack } from '@/components/layout/stack';
-import { Surface, Button, Input, Label, Combobox, CreatableCombobox } from '@/components/ui';
+import { Surface, Button, Input } from '@/components/ui';
 import { FinancialMetric } from '@/components/finance/metrics/FinancialMetric';
-import { CurrencyDisplay, TransactionRow } from '@/components/finance';
+import { CurrencyDisplay, TransactionRow, TransactionDrawer, SplitTransactionDrawer } from '@/components/finance';
 import { getErrorMessage } from '@/lib/errors';
-
+import { useWindowVirtualizer } from '@tanstack/react-virtual';
 import type { MoneyDTO } from '@/lib/types/domain';
 
 type Tx = {
@@ -52,265 +49,38 @@ const PERIOD_LABELS: Record<string, string> = {
   'this-week':  'This Week',
   'this-month': 'This Month',
   'this-year':  'This Year',
+  'all-time':   'All Time'
 };
-
-function TransactionModal({ tx, categories, accounts, goals, loans, currency, transactions, onClose }: { tx?: Tx; categories: Category[]; accounts: Account[]; goals: Goal[]; loans: Loan[]; currency: string; transactions: Tx[]; onClose: (warning?: string) => void }) {
-  const router = useRouter();
-  const [, startT] = useTransition();
-  const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState('');
-  const [name,       setName]       = useState(tx?.name ?? '');
-  const [amount,     setAmount]     = useState(tx ? (toMajor(tx.baseMoney.amountMinor)).toString() : '');
-  const [type,       setType]       = useState<'income' | 'expense' | 'transfer'>(tx ? (tx.type as 'income' | 'expense' | 'transfer') : 'expense');
-  const [categoryId, setCategoryId] = useState(tx?.category?.id ?? '');
-  
-  const initialAccountId = tx?.type === 'transfer' ? (tx.fromAccountId ?? accounts[0]?.id ?? '') : (('accountId' in (tx || {}) ? (tx as unknown as { accountId: string }).accountId : null) ?? accounts[0]?.id ?? '');
-  const [accountId,  setAccountId]  = useState(initialAccountId);
-  
-  const [toAccountId,setToAccountId]= useState(tx?.toAccountId ?? '');
-  const [goalId,     setGoalId]     = useState(tx?.goalId ?? '');
-  const [loanId,     setLoanId]     = useState(tx?.loanId ?? '');
-  const [interestAmount, setInterestAmount] = useState(tx && tx.interestMoney ? (toMajor(tx.interestMoney.amountMinor)).toString() : '');
-  const [date,       setDate]       = useState(tx ? new Date(tx.date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10));
-  const [note,       setNote]       = useState(tx?.note ?? '');
-  const isEdit = Boolean(tx);
-
-  const filteredCats = categories.filter(c => c.type === type);
-  const uniquePayees = Array.from(new Set(transactions.filter(t => t.type !== 'transfer' && t.name).map(t => t.name)));
-
-  useEffect(() => {
-    if (loanId && !isEdit) {
-      const selectedLoan = loans.find(l => l.id === loanId);
-      if (selectedLoan) {
-        const autoInterestMinor = Math.round(selectedLoan.balanceMoney.amountMinor * (selectedLoan.annualRate / 100) / 12);
-        setInterestAmount((toMajor(autoInterestMinor)).toString());
-      }
-    } else if (!loanId) {
-      setInterestAmount('');
-    }
-  }, [loanId, loans, isEdit]);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (type !== 'transfer' && !categoryId) { setError('Please select a category.'); return; }
-    if (type === 'transfer' && accountId === toAccountId) { setError('From and To accounts must be different.'); return; }
-    if (type === 'transfer' && !loanId && !toAccountId) { setError('Please select a destination account or loan to repay.'); return; }
-
-    setLoading(true); setError('');
-    try {
-      // Finance app invariant: NEVER store NaN or zero amounts.
-      const parsedAmount = parseFloat(amount);
-      if (!amount || !isFinite(parsedAmount) || parsedAmount <= 0) {
-        setError('Please enter a valid positive amount.'); setLoading(false); return;
-      }
-      if (type === 'transfer' && loanId && interestAmount !== '') {
-        const parsedInterest = parseFloat(interestAmount);
-        if (!isFinite(parsedInterest) || parsedInterest < 0) {
-          setError('Interest amount must be a valid number (0 or greater).'); setLoading(false); return;
-        }
-      }
-      let warnMsg: string | undefined;
-      const idempotencyKey = crypto.randomUUID();
-      if (type === 'transfer') {
-        const intMinor = interestAmount !== '' ? toMinor(parseFloat(interestAmount)) : undefined;
-        const payload = { fromAccountId: accountId, toAccountId: loanId ? null : toAccountId, amountMinor: toMinor(parseFloat(amount)), date, note, goalId: goalId || null, loanId: loanId || null, interestMinor: intMinor };
-        if (isEdit && tx) {
-          await editTransfer(tx.id, { idempotencyKey, payload });
-        } else {
-          await createTransfer({ idempotencyKey, payload });
-        }
-      } else {
-        if (isEdit && tx) {
-          const payload = { name, baseAmountMinor: toMinor(parseFloat(amount)), type, categoryId, accountId, date: new Date(date), note };
-          const res = await editTransaction(tx.id, { idempotencyKey, payload });
-          if (res && 'warning' in res) warnMsg = res.warning as string;
-        } else {
-          const payload = { name, baseAmountMinor: toMinor(parseFloat(amount)), type, categoryId, accountId, date, note };
-          const res = await addTransaction({ idempotencyKey, payload });
-          if (res && 'warning' in res) warnMsg = res.warning as string;
-        }
-      }
-      startT(() => router.refresh());
-      onClose(warnMsg);
-    } catch (err: unknown) {
-      setError(getErrorMessage(err));
-    } finally { setLoading(false); }
-  }
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" onClick={() => onClose()}>
-      <div className="bg-card w-full max-w-lg rounded-2xl shadow-xl border border-border p-6 overflow-y-auto max-h-[90vh]" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-xl font-bold text-foreground">{isEdit ? 'Edit Transaction' : 'Add Transaction'}</h2>
-          <button onClick={() => onClose()} className="p-2 text-muted-foreground hover:bg-secondary rounded-full transition-colors"><X size={18}/></button>
-        </div>
-        
-        {error && (
-          <div className="flex items-center gap-2 p-3 mb-5 text-sm font-medium text-destructive bg-destructive/10 rounded-lg">
-            <AlertTriangle size={16} /> {error}
-          </div>
-        )}
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="flex p-1 bg-secondary rounded-lg">
-            {(['expense', 'income', 'transfer'] as const).map(t => (
-              <button key={t} type="button" onClick={() => { setType(t); setCategoryId(''); }}
-                className={`flex-1 py-1.5 text-sm font-semibold rounded-md transition-all ${
-                  type === t ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-                }`}>
-                {t === 'income' ? '+ Income' : t === 'expense' ? '− Expense' : '⇄ Transfer'}
-              </button>
-            ))}
-          </div>
-          
-          <div className="flex flex-col sm:flex-row gap-4">
-            {type !== 'transfer' && (
-              <div className="flex-1">
-                <Label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Description (Payee)</Label>
-                <CreatableCombobox
-                  options={uniquePayees.map(p => ({ id: p, value: p, label: p }))}
-                  value={name}
-                  onChange={(val) => setName(val)}
-                  onCreateOption={(val) => setName(val)}
-                  placeholder="e.g. Naivas Grocery"
-                  searchPlaceholder="Search or create payee..."
-                  emptyText="No recent payees found."
-                />
-              </div>
-            )}
-            <div className={type === 'transfer' ? 'w-full' : 'w-full sm:w-1/3'}>
-              <Label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Amount ({currency})</Label>
-              <input className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all font-mono"
-                type="number" inputMode="decimal" min="1" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} required placeholder="0.00" />
-            </div>
-          </div>
-          
-          <div className="flex flex-col sm:flex-row gap-4">
-            {type !== 'transfer' ? (
-              <>
-                <div className="flex-1">
-                  <Label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Category</Label>
-                  <Combobox
-                    options={filteredCats.map(c => ({ id: c.id, value: c.id, label: c.name, icon: <DynamicCategoryIcon category={c.name} size={16} /> }))}
-                    value={categoryId}
-                    onChange={(val) => setCategoryId(val)}
-                    placeholder="Select Category..."
-                    emptyText="No categories found."
-                  />
-                </div>
-                <div className="flex-1">
-                  <Label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Account</Label>
-                  <Combobox
-                    options={accounts.map(a => ({ id: a.id, value: a.id, label: a.name }))}
-                    value={accountId}
-                    onChange={(val) => setAccountId(val)}
-                    placeholder="Select Account..."
-                    emptyText="No accounts found."
-                  />
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="flex-1">
-                  <Label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">From Account</Label>
-                  <Combobox
-                    options={accounts.map(a => ({ id: a.id, value: a.id, label: a.name }))}
-                    value={accountId}
-                    onChange={(val) => setAccountId(val)}
-                    placeholder="Select From Account..."
-                    emptyText="No accounts found."
-                  />
-                </div>
-                {!loanId && (
-                  <div className="flex-1">
-                    <Label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">To Account</Label>
-                    <Combobox
-                      options={accounts.map(a => ({ id: a.id, value: a.id, label: a.name }))}
-                      value={toAccountId}
-                      onChange={(val) => setToAccountId(val)}
-                      placeholder="Select To Account..."
-                      emptyText="No accounts found."
-                    />
-                  </div>
-                )}
-                {goals.length > 0 && !loanId && (
-                  <div className="flex-1">
-                    <Label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Goal to Fund (Optional)</Label>
-                    <Combobox
-                      options={goals.map(g => ({ id: g.id, value: g.id, label: g.name }))}
-                      value={goalId}
-                      onChange={(val) => setGoalId(val)}
-                      placeholder="None"
-                      emptyText="No goals found."
-                    />
-                  </div>
-                )}
-                {loans.length > 0 && !goalId && (
-                  <div className="flex-1">
-                    <Label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Loan to Repay (Optional)</Label>
-                    <Combobox
-                      options={loans.map(l => ({ id: l.id, value: l.id, label: l.name }))}
-                      value={loanId}
-                      onChange={(val) => setLoanId(val)}
-                      placeholder="None"
-                      emptyText="No loans found."
-                    />
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-          
-          {type === 'transfer' && loanId && (
-            <div>
-              <Label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Interest Portion ({currency})</Label>
-              <input className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all font-mono"
-                type="number" inputMode="decimal" min="0" step="0.01" value={interestAmount} onChange={e => setInterestAmount(e.target.value)} required placeholder="0.00" />
-            </div>
-          )}
-          
-          <div>
-            <Label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Date</Label>
-            <input className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
-              type="date" value={date} onChange={e => setDate(e.target.value)} required />
-          </div>
-          <div>
-            <Label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Note <span className="font-normal opacity-70">(optional)</span></Label>
-            <input className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
-              value={note} onChange={e => setNote(e.target.value)} placeholder="e.g. May salary" />
-          </div>
-          <button type="submit" disabled={loading} className="w-full flex items-center justify-center py-2.5 px-4 bg-brand hover:bg-brand-dark text-white font-semibold rounded-lg transition-colors mt-2 disabled:opacity-50 disabled:cursor-not-allowed">
-            {loading ? <><Loader2 size={16} className="animate-spin mr-2"/> Saving…</> : (isEdit ? 'Save Changes' : `Save ${type === 'income' ? 'Income' : type === 'expense' ? 'Expense' : 'Transfer'}`)}
-          </button>
-        </form>
-      </div>
-    </div>
-  );
-}
 
 export function TransactionsClient({
   transactions, categories, accounts, totalIncome, totalExpense, moneyOut,
   period, typeFilter, currency, goals = [], loans = []
 }: Props) {
-  const router     = useRouter();
-  const params     = useSearchParams();
   const [, startT] = useTransition();
-  const net        = totalIncome - totalExpense;
+  const net = totalIncome - totalExpense;
 
-  const [showAdd,    setShowAdd]    = useState(false);
-  const [editingTx,  setEditingTx]  = useState<Tx | null>(null);
-  const [showModal,  setShowModal]  = useState(false);
+  const [searchQuery, setSearchQuery] = useQueryState('q', { defaultValue: '' });
+  const [periodParam, setPeriodParam] = useQueryState('period', { defaultValue: 'this-month' });
+  const [typeParam, setTypeParam] = useQueryState('type', { defaultValue: 'all' });
+
+  // Optimistic UI state
+  const [optimisticTransactions, addOptimisticTransaction] = useOptimistic(
+    transactions || [],
+    (state: Tx[], newTx: Tx) => {
+      // Very simple optimistic insert at top
+      return [newTx, ...state];
+    }
+  );
+
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [splitDrawerOpen, setSplitDrawerOpen] = useState(false);
+  const [editingTx, setEditingTx] = useState<Tx | undefined>();
   const [showUpload, setShowUpload] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [pageWarning, setPageWarning] = useState<string>('');
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const PAGE_SIZE = 25;
-
-  // Derived state for filtering and pagination
-  const filteredTxs = (transactions || []).filter(tx => {
-    if (!searchQuery.trim()) return true;
+  const filteredTxs = optimisticTransactions.filter(tx => {
+    if (!searchQuery?.trim()) return true;
     const q = searchQuery.toLowerCase();
     return (
       tx.name?.toLowerCase().includes(q) ||
@@ -319,21 +89,13 @@ export function TransactionsClient({
       String(toMajor(tx.baseMoney.amountMinor)).includes(q)
     );
   });
-  const totalPages = Math.max(1, Math.ceil(filteredTxs.length / PAGE_SIZE));
-  const paginatedTxs = filteredTxs.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
-  // Reset page when filter/search changes
-  useTransition();
-  const resetPagination = () => setCurrentPage(1);
-
-  function setParam(key: string, value: string) {
-    resetPagination();
-    startT(() => {
-      const next = new URLSearchParams(params.toString());
-      next.set(key, value);
-      router.push(`?${next.toString()}`);
-    });
-  }
+  const listRef = useRef<HTMLDivElement>(null);
+  const rowVirtualizer = useWindowVirtualizer({
+    count: filteredTxs.length,
+    estimateSize: () => 72,
+    overscan: 5,
+  });
 
   async function handleDelete(id: string, type: string) {
     if (!confirm('Delete this transaction?')) return;
@@ -345,7 +107,6 @@ export function TransactionsClient({
       } else {
         await deleteTransaction({ idempotencyKey, payload: { id } });
       }
-      startT(() => router.refresh());
     } catch (err: unknown) {
       alert(getErrorMessage(err) || 'Failed to delete transaction');
     } finally {
@@ -353,23 +114,46 @@ export function TransactionsClient({
     }
   }
 
+  function openNewTransaction() {
+    setEditingTx(undefined);
+    setDrawerOpen(true);
+  }
+
+  function openEditTransaction(tx: Tx) {
+    setEditingTx(tx);
+    setDrawerOpen(true);
+  }
+
+  function openSplitTransaction(tx: Tx) {
+    setEditingTx(tx);
+    setSplitDrawerOpen(true);
+  }
+
   const periodLabel = PERIOD_LABELS[period] ?? 'This Period';
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {showAdd && <TransactionModal categories={categories} accounts={accounts} goals={goals} loans={loans} currency={currency} transactions={transactions} onClose={(w) => { setShowAdd(false); if(w) setPageWarning(w); }} />}
-      {showModal && (
-        <TransactionModal
-          tx={editingTx ?? undefined}
-          categories={categories}
-          accounts={accounts}
-          goals={goals}
-          loans={loans}
-          currency={currency}
-          transactions={transactions}
-          onClose={(w) => { setShowModal(false); setEditingTx(null); if (w) alert(w); }}
-        />
-      )}{showUpload && <div className="bg-card border border-border rounded-xl shadow-md p-5 animate-in fade-in slide-in-from-top-4 duration-300"><SmartUpload /></div>}
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-24">
+      <TransactionDrawer
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        tx={editingTx}
+        categories={categories}
+        accounts={accounts}
+        goals={goals}
+        loans={loans}
+        currency={currency}
+        transactions={transactions}
+        onComplete={(w) => { setDrawerOpen(false); if(w) setPageWarning(w); }}
+      />
+      <SplitTransactionDrawer
+        open={splitDrawerOpen}
+        onOpenChange={setSplitDrawerOpen}
+        tx={editingTx}
+        categories={categories}
+        currency={currency}
+        onComplete={(w) => { setSplitDrawerOpen(false); if(w) setPageWarning(w); }}
+      />
+      {showUpload && <div className="bg-card border border-border rounded-xl shadow-md p-5 animate-in fade-in slide-in-from-top-4 duration-300"><SmartUpload /></div>}
 
       {pageWarning && (
         <div className="flex items-center justify-between p-4 bg-warning/10 border border-warning/30 text-warning rounded-xl shadow-sm animate-in fade-in duration-300">
@@ -386,14 +170,14 @@ export function TransactionsClient({
         <Stack gap="sm" className="flex-row items-center flex-wrap flex-1">
           <Surface variant="flat" className="flex p-1 rounded-xl">
             {(['all', 'income', 'expense', 'transfer'] as const).map(v => (
-              <button key={v} onClick={() => setParam('type', v)} className={`px-4 py-2 text-[0.8rem] font-semibold rounded-lg transition-all duration-300 ${typeFilter === v ? 'bg-card text-foreground shadow-sm border border-border/50' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}>
+              <button key={v} onClick={() => setTypeParam(v)} className={`px-4 py-2 text-[0.8rem] font-semibold rounded-lg transition-all duration-300 ${typeFilter === v ? 'bg-card text-foreground shadow-sm border border-border/50' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}>
                 {v === 'all' ? 'All Types' : v === 'income' ? 'Income' : v === 'expense' ? 'Expenses' : 'Transfers'}
               </button>
             ))}
           </Surface>
           <Surface variant="flat" className="flex p-1 rounded-xl">
             {(['this-week', 'this-month', 'this-year'] as const).map(v => (
-              <button key={v} onClick={() => setParam('period', v)} className={`px-4 py-2 text-[0.8rem] font-semibold rounded-lg transition-all duration-300 ${period === v ? 'bg-card text-foreground shadow-sm border border-border/50' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}>
+              <button key={v} onClick={() => setPeriodParam(v)} className={`px-4 py-2 text-[0.8rem] font-semibold rounded-lg transition-all duration-300 ${period === v ? 'bg-card text-foreground shadow-sm border border-border/50' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}>
                 {v === 'this-week' ? 'Week' : v === 'this-month' ? 'Month' : 'Year'}
               </button>
             ))}
@@ -403,8 +187,8 @@ export function TransactionsClient({
             <Input 
               className="w-full pl-10"
               placeholder="Search transactions..."
-              value={searchQuery}
-              onChange={e => { setSearchQuery(e.target.value); resetPagination(); }}
+              value={searchQuery || ''}
+              onChange={e => setSearchQuery(e.target.value || null)}
             />
           </div>
         </Stack>
@@ -412,7 +196,7 @@ export function TransactionsClient({
           <Button variant="secondary" onClick={() => setShowUpload(v => !v)}>
             <FileDown size={16} className="mr-2 text-muted-foreground"/> Import CSV
           </Button>
-          <Button onClick={() => setShowAdd(true)}>
+          <Button onClick={openNewTransaction}>
             <Plus size={16} className="mr-2"/> New Transaction
           </Button>
         </Stack>
@@ -425,7 +209,7 @@ export function TransactionsClient({
             <FinancialMetric
               label={`Net Flow · ${periodLabel}`}
               value={<CurrencyDisplay money={{ amountMinor: net, currency: currency }} tone={net >= 0 ? 'positive' : 'negative'} className="text-4xl md:text-5xl font-semibold tracking-tight" showSymbol />}
-              subLabel={`${(transactions || []).length} transactions`}
+              subLabel={`${optimisticTransactions.length} transactions`}
             />
           </div>
         </Surface>
@@ -448,7 +232,7 @@ export function TransactionsClient({
 
       {/* Transaction list */}
       <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden relative">
-        {(!transactions || transactions.length === 0) ? (
+        {optimisticTransactions.length === 0 ? (
           <div className="text-center py-24 text-muted-foreground">
             <div className="text-5xl mb-4">📭</div>
             <div className="text-[0.95rem] font-semibold text-foreground">No transactions found</div>
@@ -461,59 +245,45 @@ export function TransactionsClient({
             <div className="text-sm mt-1">Try adjusting your search or filters.</div>
           </div>
         ) : (
-          <>
-            <div className="divide-y divide-border/60">
-              {paginatedTxs.map((tx, index) => (
-                <div key={tx.id} className="animate-in fade-in slide-in-from-left-2 duration-300" style={{ animationDelay: `${index * 30}ms`, animationFillMode: 'both' }}>
-                  <TransactionRow
-                    title={tx.name}
-                    subtitle={tx.note ? `${tx.category?.name || 'Uncategorized'} • ${tx.note}` : (tx.category?.name || 'Uncategorized')}
-                    amountMinor={tx.baseMoney.amountMinor}
-                    type={tx.type}
-                    icon={
-                      <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 shadow-sm" style={{ 
-                        background: tx.type === 'income' ? 'hsl(var(--success) / 0.15)' : tx.type === 'transfer' ? 'hsl(var(--secondary))' : 'hsl(var(--destructive) / 0.15)',
-                        color: tx.type === 'income' ? 'hsl(var(--success))' : tx.type === 'transfer' ? 'hsl(var(--muted-foreground))' : 'hsl(var(--destructive))'
-                      }}>
-                        <DynamicCategoryIcon category={tx.category?.name || 'Other'} size={22} className="opacity-90" />
-                      </div>
-                    }
-                    state={tx.type === 'pending' ? 'pending' : undefined}
-                    onClick={() => { setEditingTx(tx); setShowModal(true); }}
-                    onDelete={() => handleDelete(tx.id, tx.type)}
-                    onEdit={() => { setEditingTx(tx); setShowModal(true); }}
-                    isDeleting={deletingId === tx.id}
-                  />
+          <div ref={listRef} style={{ height: `${rowVirtualizer.getTotalSize()}px`, width: '100%', position: 'relative' }}>
+            {rowVirtualizer.getVirtualItems().map((virtualItem) => {
+              const tx = filteredTxs[virtualItem.index];
+              return (
+                <div
+                  key={virtualItem.key}
+                  data-index={virtualItem.index}
+                  ref={rowVirtualizer.measureElement}
+                  className="absolute top-0 left-0 w-full"
+                  style={{
+                    transform: `translateY(${virtualItem.start}px)`,
+                  }}
+                >
+                  <div className="border-b border-border/60">
+                    <TransactionRow
+                      title={tx.name}
+                      subtitle={tx.note ? `${tx.category?.name || 'Uncategorized'} • ${tx.note}` : (tx.category?.name || 'Uncategorized')}
+                      amountMinor={tx.baseMoney.amountMinor}
+                      type={tx.type}
+                      icon={
+                        <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 shadow-sm" style={{ 
+                          background: tx.type === 'income' ? 'hsl(var(--success) / 0.15)' : tx.type === 'transfer' ? 'hsl(var(--secondary))' : 'hsl(var(--destructive) / 0.15)',
+                          color: tx.type === 'income' ? 'hsl(var(--success))' : tx.type === 'transfer' ? 'hsl(var(--muted-foreground))' : 'hsl(var(--destructive))'
+                        }}>
+                          <DynamicCategoryIcon category={tx.category?.name || 'Other'} size={22} className="opacity-90" />
+                        </div>
+                      }
+                      state={tx.type === 'pending' ? 'pending' : undefined}
+                      onClick={() => openEditTransaction(tx)}
+                      onDelete={() => handleDelete(tx.id, tx.type)}
+                      onEdit={() => openEditTransaction(tx)}
+                      onSplit={tx.type !== 'transfer' ? () => openSplitTransaction(tx) : undefined}
+                      isDeleting={deletingId === tx.id}
+                    />
+                  </div>
                 </div>
-              ))}
-            </div>
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between p-4 border-t border-border bg-secondary/20 backdrop-blur-sm">
-                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  Showing {(currentPage - 1) * PAGE_SIZE + 1} - {Math.min(currentPage * PAGE_SIZE, filteredTxs.length)} of {filteredTxs.length}
-                </div>
-                <div className="flex items-center gap-2">
-                  <button 
-                    className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-card border border-transparent hover:border-border rounded-lg transition-all shadow-sm disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:border-transparent disabled:cursor-not-allowed" 
-                    disabled={currentPage === 1}
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  >
-                    <ChevronLeft size={16} />
-                  </button>
-                  <span className="text-xs font-bold text-foreground bg-card border border-border px-3 py-1.5 rounded-lg shadow-sm">
-                    {currentPage} / {totalPages}
-                  </span>
-                  <button 
-                    className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-card border border-transparent hover:border-border rounded-lg transition-all shadow-sm disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:border-transparent disabled:cursor-not-allowed" 
-                    disabled={currentPage === totalPages}
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                  >
-                    <ChevronRight size={16} />
-                  </button>
-                </div>
-              </div>
-            )}
-          </>
+              );
+            })}
+          </div>
         )}
       </div>
     </div>

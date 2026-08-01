@@ -56,3 +56,14 @@ storybook-static
 # k6 benchmark files
 k6-bin/
 k6.zip
+  
+# Playwright  
+playwright-report/  
+test-results/  
+.playwright/  
+# Scratch files  
+*.js  
+test-login.ts  
+brain/  
+lighthouse-report.html  
+lighthouse-phase-a-final.json 
