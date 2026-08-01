@@ -68,11 +68,11 @@ export function CommandPalette() {
         </CommandGroup>
 
         <CommandGroup heading="Actions">
-          <CommandItem onSelect={() => runCommand(() => console.log('Transfer Money Modal'))}>
+          <CommandItem onSelect={() => runCommand(() => router.push('/transactions?action=transfer'))}>
             <ArrowRightLeft className="mr-2 h-4 w-4 text-brand" />
             <span>Transfer Money</span>
           </CommandItem>
-          <CommandItem onSelect={() => runCommand(() => console.log('Create Transaction Modal'))}>
+          <CommandItem onSelect={() => runCommand(() => router.push('/transactions?action=new'))}>
             <PlusCircle className="mr-2 h-4 w-4 text-brand" />
             <span>Create Transaction</span>
           </CommandItem>

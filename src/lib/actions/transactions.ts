@@ -13,6 +13,14 @@ import { z } from 'zod';
 
 import { safeValidate } from '@/lib/respond';
 
+function revalidateFinancialData() {
+  revalidatePath('/');
+  revalidatePath('/transactions');
+  revalidatePath('/accounts');
+  revalidatePath('/budgets');
+  revalidatePath('/reports');
+}
+
 
 const DeleteSchema = z.object({
   id: z.string().cuid(),
@@ -102,8 +110,7 @@ export async function addTransaction(envelope: { idempotencyKey?: string; payloa
         idempotencyKey
       );
 
-      revalidatePath('/transactions');
-      revalidatePath('/');
+      revalidateFinancialData();
       return { success: true, data: undefined };
     }
   });
@@ -246,8 +253,7 @@ export async function importTransactions(rows: unknown[], targetAccountId: strin
     }
   }
 
-      revalidatePath('/transactions');
-      revalidatePath('/');
+      revalidateFinancialData();
       return { success: true, data: undefined };
     } catch (error) {
     if (error instanceof AuthorizationError) return { success: false, code: 'AUTHORIZATION', message: error.message };
@@ -274,8 +280,7 @@ export async function deleteTransaction(envelope: { idempotencyKey?: string; pay
 
       await TransactionService.voidTransaction(user.id, parsed.data.id, idempotencyKey);
 
-      revalidatePath('/transactions');
-      revalidatePath('/');
+      revalidateFinancialData();
       return { success: true, data: undefined };
     }
   });
@@ -383,8 +388,7 @@ export async function editTransaction(id: string, envelope: { idempotencyKey?: s
         });
       }), { operationName: 'editTransaction' });
 
-      revalidatePath('/transactions');
-      revalidatePath('/');
+      revalidateFinancialData();
       return { success: true, data: undefined, warning };
     }
   });
@@ -421,8 +425,7 @@ export async function splitTransaction(envelope: { idempotencyKey?: string; payl
         idempotencyKey
       );
 
-      revalidatePath('/transactions');
-      revalidatePath('/');
+      revalidateFinancialData();
       return { success: true, data: undefined };
     }
   });
@@ -452,9 +455,22 @@ export async function mergeTransactions(envelope: { idempotencyKey?: string; pay
         idempotencyKey
       );
 
-      revalidatePath('/transactions');
-      revalidatePath('/');
+      revalidateFinancialData();
       return { success: true, data: undefined };
     }
+  });
+}
+
+export async function fetchTransactionsPage(options: { period?: string; type?: string; cursor?: string; take?: number; includeAudit?: boolean }) {
+  'use server';
+  const user = await requireAuth();
+  const { getTransactions } = await import('@/lib/queries/transactions');
+  return getTransactions({ 
+    userId: user.id, 
+    period: options.period, 
+    type: options.type, 
+    cursor: options.cursor, 
+    take: options.take,
+    includeAudit: options.includeAudit
   });
 }

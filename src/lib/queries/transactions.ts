@@ -12,6 +12,10 @@ import { mapCategoryToDTO } from '@/lib/mappers/categories';
 const PeriodSchema = z.enum(['this-week', 'this-month', 'this-year', 'all', 'all-time']);
 const TypeSchema = z.enum(['income', 'expense', 'transfer', 'savings', 'all']);
 
+export function activeTransactionFilter(userId: string) {
+  return { userId, status: 'ACTIVE' } as const;
+}
+
 const DeleteSchema = z.object({
   id: z.string().cuid(),
 });
@@ -27,28 +31,42 @@ const EditTransactionSchema = z.object({
 });
 
 /* -- List --------------------------------------------------- */
-export async function getTransactions({ userId, period: inputPeriod = 'this-month', type: inputType }: { userId: string; period?: unknown; type?: unknown }) {
-  const GetTransactionsSchema = z.object({
+export async function getTransactions({ userId, period: inputPeriod = 'this-month', type: inputType, cursor, take, includeAudit }: { userId: string; period?: unknown; type?: unknown; cursor?: unknown; take?: unknown, includeAudit?: boolean }) {
+const GetTransactionsSchema = z.object({
     period: PeriodSchema.default('this-month'),
     type: TypeSchema.optional(),
+    cursor: z.string().optional(),
+    take: z.number().int().positive().max(100).default(50),
+    includeAudit: z.boolean().default(false),
   });
-  const parsed = GetTransactionsSchema.safeParse({ period: inputPeriod, type: inputType });
+  const parsed = GetTransactionsSchema.safeParse({ period: inputPeriod, type: inputType, cursor, take, includeAudit });
   if (!parsed.success) throw new Error('Invalid input');
-  const { period, type } = parsed.data;
+  const { period, type, cursor: parsedCursor, take: parsedTake, includeAudit: parsedIncludeAudit } = parsed.data;
 
   const { from, to } = periodDates(period);
 
   const txs = await prisma.transaction.findMany({
+    take: parsedTake + 1, // fetch one extra to determine hasNextPage
+    ...(parsedCursor ? { cursor: { id: parsedCursor }, skip: 1 } : {}),
     where: {
       userId,
+      ...(!parsedIncludeAudit ? { status: 'ACTIVE' } : {}),
       date: { gte: from, lte: to },
       ...(type && type !== 'all' ? { type } : {}),
     },
     include: { category: true },
-    orderBy: { date: 'desc' },
+    orderBy: [{ date: 'desc' }, { id: 'desc' }],
   });
 
-  return txs.map(mapTransactionToDTO);
+  const hasNextPage = txs.length > parsedTake;
+  const items = hasNextPage ? txs.slice(0, -1) : txs;
+  const nextCursor = hasNextPage ? items[items.length - 1].id : null;
+
+  return {
+    items: items.map(mapTransactionToDTO),
+    nextCursor,
+    hasNextPage,
+  };
 }
 
 /* -- Summary for period ------------------------------------- */
@@ -78,8 +96,8 @@ export async function getTransactionSummary({ userId, period: inputPeriod = 'thi
   const startOfToday = new Date(to.getFullYear(), to.getMonth(), to.getDate(), 0, 0, 0, 0);
 
   const [income, expenses, transfersOut, savingsTransfers, todaySpendAgg] = await Promise.all([
-    prisma.transaction.aggregate({ where: { userId, type: 'income',   date: { gte: from, lte: to } }, _sum: { baseAmountMinor: true } }),
-    prisma.transaction.aggregate({ where: { userId, type: 'expense',  date: { gte: from, lte: to } }, _sum: { baseAmountMinor: true } }),
+    prisma.transaction.aggregate({ where: { ...activeTransactionFilter(userId), type: 'income',   date: { gte: from, lte: to } }, _sum: { baseAmountMinor: true } }),
+    prisma.transaction.aggregate({ where: { ...activeTransactionFilter(userId), type: 'expense',  date: { gte: from, lte: to } }, _sum: { baseAmountMinor: true } }),
     prisma.transfer.aggregate({
       where: { userId, toAccountId: null, date: { gte: from, lte: to } },
       _sum: { baseAmountMinor: true, interestMinor: true }
@@ -92,7 +110,7 @@ export async function getTransactionSummary({ userId, period: inputPeriod = 'thi
       _sum: { baseAmountMinor: true },
     }),
     prisma.transaction.aggregate({
-      where: { userId, type: 'expense', date: { gte: startOfToday, lte: to } },
+      where: { ...activeTransactionFilter(userId), type: 'expense', date: { gte: startOfToday, lte: to } },
       _sum: { baseAmountMinor: true }
     })
   ]);
@@ -132,7 +150,7 @@ export async function getMonthlyChartData({ userId }: { userId: string }) {
 
   const txs = await prisma.transaction.findMany({
     where: {
-      userId,
+      ...activeTransactionFilter(userId),
       type: { in: ['income', 'expense'] },
       date: { gte: start, lte: end }
     },
@@ -173,7 +191,7 @@ export async function getCategoryBreakdown({ userId, period: inputPeriod = 'this
 
   const rows = await prisma.transaction.groupBy({
     by: ['categoryId'],
-    where: { userId, type: 'expense', date: { gte: from, lte: to } },
+    where: { ...activeTransactionFilter(userId), type: 'expense', date: { gte: from, lte: to } },
     _sum: { baseAmountMinor: true },
     orderBy: { _sum: { baseAmountMinor: 'desc' } },
   });
