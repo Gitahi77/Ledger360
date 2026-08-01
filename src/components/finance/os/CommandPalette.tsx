@@ -1,15 +1,31 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Command } from 'cmdk';
-import { IntentRouter } from '@/lib/os/intent/router';
-import { Search } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { 
+  CommandDialog, 
+  CommandInput, 
+  CommandList, 
+  CommandEmpty, 
+  CommandGroup, 
+  CommandItem 
+} from '@/components/ui/command/Command';
+import { 
+  LayoutDashboard, 
+  ArrowRightLeft, 
+  Landmark, 
+  Settings, 
+  PlusCircle, 
+  LineChart, 
+  Download, 
+  Bot,
+  Search
+} from 'lucide-react';
 
 export function CommandPalette() {
   const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState('');
-  
-  // Toggle the menu when ⌘K is pressed
+  const router = useRouter();
+
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
@@ -17,65 +33,75 @@ export function CommandPalette() {
         setOpen((open) => !open);
       }
     };
-
     document.addEventListener('keydown', down);
     return () => document.removeEventListener('keydown', down);
   }, []);
 
-  const intent = IntentRouter.resolve(query);
-
-  if (!open) return null;
+  const runCommand = (command: () => void) => {
+    setOpen(false);
+    command();
+  };
 
   return (
-    <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm p-4 pt-[10vh] flex justify-center">
-      <Command 
-        className="w-full max-w-2xl bg-card border border-border rounded-xl shadow-2xl overflow-hidden flex flex-col"
-        onKeyDown={(e) => {
-          if (e.key === 'Escape') {
-            e.preventDefault();
-            setOpen(false);
-          }
-        }}
-      >
-        <div className="flex items-center px-4 py-3 border-b border-border bg-card">
-          <Search className="w-5 h-5 text-muted-foreground shrink-0 mr-3" />
-          <Command.Input
-            autoFocus
-            value={query}
-            onValueChange={setQuery}
-            placeholder="Type 'I got paid' or 'Coffee'..."
-            className="flex-1 bg-transparent border-none outline-none text-foreground text-lg placeholder:text-muted-foreground/60 font-medium"
-          />
-        </div>
+    <CommandDialog open={open} onOpenChange={setOpen}>
+      <CommandInput placeholder="Type a command or search..." />
+      <CommandList>
+        <CommandEmpty>No results found.</CommandEmpty>
+        
+        <CommandGroup heading="Navigation">
+          <CommandItem onSelect={() => runCommand(() => router.push('/dashboard'))}>
+            <LayoutDashboard className="mr-2 h-4 w-4 text-muted-foreground" />
+            <span>Go to Dashboard</span>
+          </CommandItem>
+          <CommandItem onSelect={() => runCommand(() => router.push('/transactions'))}>
+            <ArrowRightLeft className="mr-2 h-4 w-4 text-muted-foreground" />
+            <span>Go to Transactions</span>
+          </CommandItem>
+          <CommandItem onSelect={() => runCommand(() => router.push('/loans'))}>
+            <Landmark className="mr-2 h-4 w-4 text-muted-foreground" />
+            <span>Go to Loans & Debt</span>
+          </CommandItem>
+          <CommandItem onSelect={() => runCommand(() => router.push('/settings'))}>
+            <Settings className="mr-2 h-4 w-4 text-muted-foreground" />
+            <span>Go to Settings</span>
+          </CommandItem>
+        </CommandGroup>
 
-        <Command.List className="max-h-[60vh] overflow-y-auto p-2">
-          {query.length === 0 && (
-            <Command.Empty className="py-6 text-center text-sm text-muted-foreground">
-              What's on your mind?
-            </Command.Empty>
-          )}
+        <CommandGroup heading="Actions">
+          <CommandItem onSelect={() => runCommand(() => console.log('Transfer Money Modal'))}>
+            <ArrowRightLeft className="mr-2 h-4 w-4 text-brand" />
+            <span>Transfer Money</span>
+          </CommandItem>
+          <CommandItem onSelect={() => runCommand(() => console.log('Create Transaction Modal'))}>
+            <PlusCircle className="mr-2 h-4 w-4 text-brand" />
+            <span>Create Transaction</span>
+          </CommandItem>
+          <CommandItem onSelect={() => runCommand(() => router.push('/reports/builder'))}>
+            <LineChart className="mr-2 h-4 w-4 text-muted-foreground" />
+            <span>Run Report</span>
+          </CommandItem>
+          <CommandItem onSelect={() => runCommand(() => console.log('Export Data Modal'))}>
+            <Download className="mr-2 h-4 w-4 text-muted-foreground" />
+            <span>Export Data</span>
+          </CommandItem>
+          <CommandItem onSelect={() => runCommand(() => router.push('/settings/ai'))}>
+            <Bot className="mr-2 h-4 w-4 text-muted-foreground" />
+            <span>Open AI Settings</span>
+          </CommandItem>
+        </CommandGroup>
 
-          {query.length > 0 && intent.action === 'unknown' && (
-            <Command.Empty className="py-6 text-center text-sm text-muted-foreground">
-              No matching intent found. Try "Move money".
-            </Command.Empty>
-          )}
+        <CommandGroup heading="Recent Searches">
+          <CommandItem onSelect={() => runCommand(() => router.push('/transactions?search=coffee'))}>
+            <Search className="mr-2 h-4 w-4 text-muted-foreground" />
+            <span>Search merchant "coffee"</span>
+          </CommandItem>
+          <CommandItem onSelect={() => runCommand(() => router.push('/transactions?search=uber'))}>
+            <Search className="mr-2 h-4 w-4 text-muted-foreground" />
+            <span>Search merchant "uber"</span>
+          </CommandItem>
+        </CommandGroup>
 
-          {intent.action !== 'unknown' && (
-            <Command.Group heading={`Recognized Intent (${intent.confidence}%)`} className="text-xs font-semibold text-muted-foreground px-2 py-1 uppercase tracking-wider">
-              <Command.Item 
-                onSelect={() => {
-                  console.log('Action triggered:', intent);
-                  setOpen(false);
-                }}
-                className="flex items-center px-3 py-3 mt-1 rounded-md cursor-pointer hover:bg-secondary aria-selected:bg-secondary text-foreground text-sm font-medium transition-colors"
-              >
-                Execute: {intent.action} → {intent.target || 'Auto'}
-              </Command.Item>
-            </Command.Group>
-          )}
-        </Command.List>
-      </Command>
-    </div>
+      </CommandList>
+    </CommandDialog>
   );
 }

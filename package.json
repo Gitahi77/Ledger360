@@ -7,7 +7,7 @@
     "build": "prisma generate && next build",
     "postinstall": "prisma generate",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "next lint --max-warnings 205",
     "migrate:deploy": "prisma migrate deploy",
     "db:push": "prisma db push",
     "test": "vitest run",
@@ -51,6 +51,7 @@
     "next-auth": "^4.24.14",
     "next-pwa": "^5.6.0",
     "nextjs-toploader": "^3.9.17",
+    "nuqs": "^2.9.4",
     "pdf-parse": "^2.4.5",
     "pg": "^8.20.0",
     "prisma": "^7.8.0",
@@ -66,7 +67,9 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
     "@chromatic-com/storybook": "^5.2.1",
+    "@playwright/test": "^1.62.1",
     "@storybook/addon-a11y": "^10.4.6",
     "@storybook/addon-docs": "^10.4.6",
     "@storybook/addon-mcp": "^0.6.0",

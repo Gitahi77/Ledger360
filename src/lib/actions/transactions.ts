@@ -28,6 +28,21 @@ const EditTransactionSchema = z.object({
   note: z.string().max(500).optional(),
 });
 
+const SplitChildSchema = z.object({
+  baseAmountMinor: z.number().int().positive(),
+  categoryId: z.string().cuid(),
+  note: z.string().max(500).optional(),
+});
+
+const SplitTransactionSchema = z.object({
+  parentId: z.string().cuid(),
+  children: z.array(SplitChildSchema).min(2),
+});
+
+const MergeTransactionSchema = z.object({
+  parentId: z.string().cuid(),
+});
+
 /* -- List --------------------------------------------------- */
 
 
@@ -371,6 +386,75 @@ export async function editTransaction(id: string, envelope: { idempotencyKey?: s
       revalidatePath('/transactions');
       revalidatePath('/');
       return { success: true, data: undefined, warning };
+    }
+  });
+}
+
+/* -- Split -------------------------------------------------- */
+export async function splitTransaction(envelope: { idempotencyKey?: string; payload: unknown }) {
+  'use server';
+  const { withAction } = await import('@/lib/respond');
+  return withAction<unknown, void>({
+    actionName: 'splitTransaction',
+    idempotencyKey: envelope.idempotencyKey,
+    input: envelope.payload,
+    handler: async () => {
+      const user = await requireAuth();
+      const parsed = safeValidate(SplitTransactionSchema, envelope.payload, 'SplitTransactionSchema');
+      if (!parsed.success) return parsed.error;
+
+      // Ownership check for parent transaction
+      await assertOwnsTransaction(user.id, parsed.data.parentId);
+      
+      // Ownership check for all child categories
+      for (const child of parsed.data.children) {
+        await assertOwnsCategory(user.id, child.categoryId);
+      }
+
+      const { TransactionService } = await import('../domain/services/TransactionService');
+      const idempotencyKey = envelope.idempotencyKey || crypto.randomUUID();
+
+      await TransactionService.splitTransaction(
+        user.id,
+        parsed.data.parentId,
+        parsed.data.children,
+        idempotencyKey
+      );
+
+      revalidatePath('/transactions');
+      revalidatePath('/');
+      return { success: true, data: undefined };
+    }
+  });
+}
+
+/* -- Merge -------------------------------------------------- */
+export async function mergeTransactions(envelope: { idempotencyKey?: string; payload: unknown }) {
+  'use server';
+  const { withAction } = await import('@/lib/respond');
+  return withAction<unknown, void>({
+    actionName: 'mergeTransactions',
+    idempotencyKey: envelope.idempotencyKey,
+    input: envelope.payload,
+    handler: async () => {
+      const user = await requireAuth();
+      const parsed = safeValidate(MergeTransactionSchema, envelope.payload, 'MergeTransactionSchema');
+      if (!parsed.success) return parsed.error;
+
+      await assertOwnsTransaction(user.id, parsed.data.parentId);
+
+      const { TransactionService } = await import('../domain/services/TransactionService');
+      const idempotencyKey = envelope.idempotencyKey || crypto.randomUUID();
+
+      await TransactionService.mergeSplitTransactions(
+        user.id,
+        parsed.data.parentId,
+        idempotencyKey
+      );
+
+      revalidatePath('/transactions');
+      revalidatePath('/');
+      return { success: true, data: undefined };
     }
   });
 }

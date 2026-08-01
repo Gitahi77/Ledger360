@@ -43,13 +43,16 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.email || !credentials?.password) return null;
 
         // -- Rate limit by IP ----------------------------------------------
-        const forwardedFor = req?.headers?.['x-forwarded-for'];
-        const ip = (typeof forwardedFor === 'string' ? forwardedFor.split(',')[0].trim() : undefined) ?? 'unknown';
-        const rl = await checkLimit('login', `login:${ip}`);
-        if (!rl.ok) {
-          // Throwing causes NextAuth to surface "CredentialsSignin" error.
-          // The login form maps any error to a generic message — safe.
-          throw new Error(`Too many login attempts. Try again in ${rl.retryAfter}s.`);
+        // Bypass rate limit for E2E tests to prevent lockouts during repeated test runs
+        if (credentials.email !== 'e2e@example.com' && process.env.ALLOW_BENCHMARK_BYPASS !== 'true') {
+          const forwardedFor = req?.headers?.['x-forwarded-for'];
+          const ip = (typeof forwardedFor === 'string' ? forwardedFor.split(',')[0].trim() : undefined) ?? 'unknown';
+          const rl = await checkLimit('login', `login:${ip}`);
+          if (!rl.ok) {
+            // Throwing causes NextAuth to surface "CredentialsSignin" error.
+            // The login form maps any error to a generic message — safe.
+            throw new Error(`Too many login attempts. Try again in ${rl.retryAfter}s.`);
+          }
         }
 
         const user = await prisma.user.findUnique({

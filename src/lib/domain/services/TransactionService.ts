@@ -51,8 +51,15 @@ export class TransactionService {
           date: new Date(),
           name: `[VOID] Reversal of ${original.id}`,
           note: `Auto-generated reversal for ${original.id}`,
-          reference: original.id
+          reference: original.id,
+          status: 'VOIDED'
         }
+      });
+
+      // Update original transaction
+      await tx.transaction.update({
+        where: { id: original.id },
+        data: { status: 'VOIDED' }
       });
 
       // Update balance
@@ -236,5 +243,116 @@ export class TransactionService {
         isVerified: verified.isVerified,
       }
     };
+  }
+
+  static async splitTransaction(
+    userId: string,
+    parentId: string,
+    children: { baseAmountMinor: number; categoryId: string; note?: string }[],
+    idempotencyKey: string
+  ) {
+    if (!parentId || children.length < 2) throw AppError.Validation('At least two splits required');
+
+    const parent = await prisma.transaction.findFirst({
+      where: { id: parentId, userId }
+    });
+    if (!parent) throw AppError.NotFound('Transaction not found');
+    if (parent.status === 'VOIDED') throw AppError.FinancialInvariant('Cannot split a voided transaction');
+    if (parent.parentId) throw AppError.FinancialInvariant('Cannot split an already split child transaction');
+
+    const { validateSplitTotal } = await import('@/lib/finance/transactions');
+    if (!validateSplitTotal(parent.baseAmountMinor, children)) {
+      throw AppError.FinancialInvariant('Split amounts must equal the parent amount');
+    }
+
+    const existing = await prisma.idempotencyRecord.findUnique({ where: { idempotencyKey } });
+    if (existing) return existing;
+
+    return await prisma.$transaction(async (tx) => {
+      // Create children
+      for (const child of children) {
+        await tx.transaction.create({
+          data: {
+            userId,
+            accountId: parent.accountId,
+            categoryId: child.categoryId,
+            type: parent.type,
+            baseAmountMinor: BigInt(child.baseAmountMinor),
+            currency: parent.currency,
+            date: parent.date,
+            name: `${parent.name} (Split)`,
+            note: child.note,
+            parentId: parent.id,
+            status: 'ACTIVE'
+          }
+        });
+      }
+
+      // Hide parent from normal accounting by archiving it (wait, it's still ACTIVE for accounting? 
+      // Actually, if we keep the parent ACTIVE, then the sum is 2x. 
+      // A split transaction parent should not contribute to sums if its children do.
+      // So the parent should be ARCHIVED (hidden from UI, and we exclude ARCHIVED from sums, wait.
+      // If we exclude ARCHIVED from sums, then the children provide the sum.
+      // Let's mark parent as ARCHIVED so it's not double-counted.)
+      await tx.transaction.update({
+        where: { id: parent.id },
+        data: { status: 'ARCHIVED', archivedAt: new Date() }
+      });
+
+      await tx.idempotencyRecord.create({
+        data: {
+          idempotencyKey,
+          requestHash: 'splitTransaction',
+          responseStatus: 200,
+          processingStatus: 'COMPLETED',
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
+        }
+      });
+
+      return { success: true };
+    });
+  }
+
+  static async mergeSplitTransactions(
+    userId: string,
+    parentId: string,
+    idempotencyKey: string
+  ) {
+    const parent = await prisma.transaction.findFirst({
+      where: { id: parentId, userId },
+      include: { children: true }
+    });
+    if (!parent) throw AppError.NotFound('Parent transaction not found');
+    if (parent.children.length === 0) throw AppError.Validation('Transaction has no splits');
+
+    const existing = await prisma.idempotencyRecord.findUnique({ where: { idempotencyKey } });
+    if (existing) return existing;
+
+    return await prisma.$transaction(async (tx) => {
+      // Delete children (they were only splits, not original ledger entries)
+      // Or we can void them. Wait, splits aren't physical bank transactions, they are user-defined classifications.
+      // So deleting them is fine, or we can soft-delete them. Let's delete them for simplicity since they are just allocations of the parent.
+      await tx.transaction.deleteMany({
+        where: { parentId: parent.id }
+      });
+
+      // Restore parent
+      await tx.transaction.update({
+        where: { id: parent.id },
+        data: { status: 'ACTIVE', archivedAt: null }
+      });
+
+      await tx.idempotencyRecord.create({
+        data: {
+          idempotencyKey,
+          requestHash: 'mergeTransactions',
+          responseStatus: 200,
+          processingStatus: 'COMPLETED',
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
+        }
+      });
+
+      return { success: true };
+    });
   }
 }
