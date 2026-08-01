@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { startOfMonth } from 'date-fns';
+import { getBudgetStatus } from './calculators/budget-engine';
 
 export interface AccountSnapshot {
   id: string;
@@ -26,6 +27,8 @@ export interface BudgetSnapshot {
   spentAmountMinor: bigint;
   period: string;
   categoryId: string;
+  status: 'healthy' | 'warning' | 'critical' | 'exceeded';
+  percentage: number;
 }
 
 export interface GoalSnapshot {
@@ -79,6 +82,14 @@ export interface SnapshotMetrics {
   monthlyExpenses: bigint;
   savingsRate: number; // percentage (0-100)
   debtRatio: number; // percentage (0-100)
+  
+  // Budget Metrics
+  activeBudgetCount: number;
+  warningBudgetCount: number;
+  criticalBudgetCount: number;
+  highestRiskBudget: { name: string; percentage: number } | null;
+  nextToExceedBudget: { name: string; remainingMinor: bigint } | null;
+  aggregateBudgetUtilization: number; // percentage (0-100)
 }
 
 export interface FinancialSnapshot {
@@ -200,6 +211,12 @@ export async function buildFinancialSnapshot(userId: string): Promise<FinancialS
     const spent = thisMonthTransactions
       .filter(t => t.categoryId === b.categoryId && t.type === 'expense')
       .reduce((sum, t) => sum + t.baseAmountMinor, 0n);
+      
+    const limitNum = Number(b.limitAmountMinor);
+    const spentNum = Number(spent);
+    const percentage = limitNum > 0 ? (spentNum / limitNum) : (spentNum > 0 ? 1.0 : 0);
+    const status = getBudgetStatus(percentage, spentNum, limitNum);
+
     return {
       id: b.id,
       name: b.name,
@@ -207,6 +224,8 @@ export async function buildFinancialSnapshot(userId: string): Promise<FinancialS
       spentAmountMinor: spent,
       period: b.period,
       categoryId: b.categoryId,
+      status,
+      percentage,
     };
   });
 
@@ -263,12 +282,52 @@ export async function buildFinancialSnapshot(userId: string): Promise<FinancialS
     .filter(t => t.type === 'expense')
     .reduce((sum, t) => sum + t.baseAmountMinor, 0n);
 
-  const upcomingBillsAmount = rawLoans.reduce((sum, l) => sum + l.monthlyPaymentMinor, 0n); // simplified
-  const safeToSpend = liquidCash - upcomingBillsAmount;
+  // Safe to Spend = (Income for this month) - (All Budgets Limits) - (Any uncategorized or non-budgeted expenses)
+  const budgetedCategoryIds = new Set(rawBudgets.map(b => b.categoryId));
+  const totalBudgetLimits = rawBudgets.reduce((sum, b) => sum + b.limitAmountMinor, 0n);
+  const unbudgetedExpenses = thisMonthTransactions
+    .filter(t => t.type === 'expense' && !budgetedCategoryIds.has(t.categoryId))
+    .reduce((sum, t) => sum + t.baseAmountMinor, 0n);
+    
+  const safeToSpend = monthlyIncome - totalBudgetLimits - unbudgetedExpenses;
 
   const emergencyFundCoverage = monthlyExpenses > 0n ? Number(liquidCash) / Number(monthlyExpenses) : 0;
   const savingsRate = monthlyIncome > 0n ? (Number(monthlyIncome - monthlyExpenses) / Number(monthlyIncome)) * 100 : 0;
   const debtRatio = totalAssets > 0n ? (Number(totalLiabilities) / Number(totalAssets)) * 100 : 0;
+
+  // Budget Metrics
+  const activeBudgetCount = budgets.length;
+  const warningBudgetCount = budgets.filter(b => b.status === 'warning').length;
+  const criticalBudgetCount = budgets.filter(b => b.status === 'critical' || b.status === 'exceeded').length;
+  
+  let highestRiskBudget = null;
+  let nextToExceedBudget = null;
+  let minRemaining: bigint | null = null;
+  let maxPercentage = -1;
+  let aggregateSpent = 0n;
+  let aggregateLimit = 0n;
+
+  for (const b of budgets) {
+    aggregateSpent += b.spentAmountMinor;
+    aggregateLimit += b.limitAmountMinor;
+
+    if (b.percentage > maxPercentage) {
+      maxPercentage = b.percentage;
+      highestRiskBudget = { name: b.name, percentage: b.percentage };
+    }
+
+    if (b.status === 'healthy' || b.status === 'warning') {
+      const remaining = b.limitAmountMinor - b.spentAmountMinor;
+      if (minRemaining === null || remaining < minRemaining) {
+        minRemaining = remaining;
+        nextToExceedBudget = { name: b.name, remainingMinor: remaining };
+      }
+    }
+  }
+
+  const aggregateBudgetUtilization = aggregateLimit > 0n 
+    ? (Number(aggregateSpent) / Number(aggregateLimit)) * 100 
+    : 0;
 
   // Synthesis of alerts
   const alerts = synthesizeAlerts(safeToSpend, liquidCash, monthlyExpenses);
@@ -339,6 +398,12 @@ export async function buildFinancialSnapshot(userId: string): Promise<FinancialS
       monthlyExpenses,
       savingsRate,
       debtRatio,
+      activeBudgetCount,
+      warningBudgetCount,
+      criticalBudgetCount,
+      highestRiskBudget,
+      nextToExceedBudget,
+      aggregateBudgetUtilization,
     },
   };
 }

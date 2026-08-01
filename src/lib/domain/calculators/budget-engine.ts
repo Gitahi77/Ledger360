@@ -7,12 +7,28 @@ export interface BudgetInput {
   createdAt: Date;
 }
 
+export type BudgetStatus = 'healthy' | 'warning' | 'critical' | 'exceeded';
+
+export const BUDGET_THRESHOLDS = {
+  WARNING: 0.8,
+  CRITICAL: 1.0,
+};
+
+export function getBudgetStatus(percentage: number, spent: number, limit: number): BudgetStatus {
+  if (spent > limit) return 'exceeded';
+  if (spent === limit && limit > 0) return 'critical';
+  if (percentage >= BUDGET_THRESHOLDS.WARNING) return 'warning';
+  return 'healthy';
+}
+
 export interface BudgetUsageResult {
   id: string;
   limit: number;
   spent: number;
   period: 'weekly' | 'monthly' | 'yearly';
   rollover: boolean;
+  status: BudgetStatus;
+  percentage: number;
 }
 
 /**
@@ -65,11 +81,16 @@ export function calculateBudgetUsage(
     effectiveLimit = Number(budget.limitAmountMinor) + rolloverBalance;
   }
 
+  const percentage = effectiveLimit > 0 ? (effectiveSpend / effectiveLimit) : (effectiveSpend > 0 ? 1.0 : 0);
+  const status = getBudgetStatus(percentage, effectiveSpend, effectiveLimit);
+
   return {
     id: budget.id,
     limit: effectiveLimit,
     spent: effectiveSpend,
     period: budget.period,
     rollover: budget.rollover,
+    status,
+    percentage,
   };
 }

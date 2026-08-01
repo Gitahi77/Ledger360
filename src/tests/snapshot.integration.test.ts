@@ -79,8 +79,9 @@ describe('FinancialSnapshot Integration (Phase 9B.3.5)', () => {
     expect(snapshot.metrics.totalLiabilities).toBe(80000_00n);
     expect(snapshot.metrics.netWorth).toBe(-30000_00n); // 50k - 80k
     
-    // Safe to spend = liquidCash - upcomingBillsAmount (50k - 5k = 45k)
-    expect(snapshot.metrics.safeToSpend).toBe(45000_00n);
+    // Safe to spend = (Income for this month) - (All Budgets Limits) - (Any uncategorized or non-budgeted expenses)
+    // Income = 0, Budgets = 0, Unbudgeted = 2000
+    expect(snapshot.metrics.safeToSpend).toBe(-2000_00n);
     
     // Monthly expenses should capture the 2000 KES transaction
     expect(snapshot.metrics.monthlyExpenses).toBe(2000_00n);
@@ -114,5 +115,66 @@ describe('FinancialSnapshot Integration (Phase 9B.3.5)', () => {
       // Restore Prisma
       prisma.loan.findMany = originalFindMany;
     }
+  });
+
+  it('verifies the 6 Safe-To-Spend semantic constraints', async () => {
+    // 1. User has multiple budgets for the month
+    // 2. Budget commitments and actual spending don't reduce available funds twice
+    // 3. User has a KES 20,000 Grocery budget but has only spent KES 5,000
+    const catGrocery = await prisma.category.create({ data: { userId: testUserId, name: 'Groceries', type: 'expense' } });
+    const catTrans = await prisma.category.create({ data: { userId: testUserId, name: 'Transport', type: 'expense' } });
+    const acc = await prisma.account.findFirstOrThrow({ where: { userId: testUserId } });
+
+    const catIncome = await prisma.category.create({ data: { userId: testUserId, name: 'Salary', type: 'income' } });
+    const catTransfer = await prisma.category.create({ data: { userId: testUserId, name: 'Internal Transfer', type: 'transfer' } });
+
+    // Income includes only the current budget period
+    await prisma.transaction.create({
+      data: { userId: testUserId, accountId: acc.id, categoryId: catIncome.id, date: new Date(), baseAmountMinor: 100000_00n, currency: 'KES', type: 'income', name: 'Salary' }
+    });
+    // Old income (should be excluded)
+    await prisma.transaction.create({
+      data: { userId: testUserId, accountId: acc.id, categoryId: catIncome.id, date: subDays(new Date(), 45), baseAmountMinor: 100000_00n, currency: 'KES', type: 'income', name: 'Old Salary' }
+    });
+
+    // Multiple budgets
+    await prisma.budget.create({
+      data: { userId: testUserId, categoryId: catGrocery.id, name: 'Groceries', limitAmountMinor: 20000_00n, period: 'monthly' }
+    });
+    await prisma.budget.create({
+      data: { userId: testUserId, categoryId: catTrans.id, name: 'Transport', limitAmountMinor: 10000_00n, period: 'monthly' }
+    });
+
+    // Spent KES 5,000 on Groceries
+    await prisma.transaction.create({
+      data: { userId: testUserId, accountId: acc.id, categoryId: catGrocery.id, date: new Date(), baseAmountMinor: 5000_00n, currency: 'KES', type: 'expense', name: 'Supermarket' }
+    });
+    // Spent KES 12,000 on Transport (over budget)
+    await prisma.transaction.create({
+      data: { userId: testUserId, accountId: acc.id, categoryId: catTrans.id, date: new Date(), baseAmountMinor: 12000_00n, currency: 'KES', type: 'expense', name: 'Fuel' }
+    });
+
+    // Uncategorized expenses are handled exactly once
+    const catOther = await prisma.category.create({ data: { userId: testUserId, name: 'Other', type: 'expense' } });
+    await prisma.transaction.create({
+      data: { userId: testUserId, accountId: acc.id, categoryId: catOther.id, date: new Date(), baseAmountMinor: 8000_00n, currency: 'KES', type: 'expense', name: 'Random' }
+    });
+
+    // Transfers are excluded
+    await prisma.transaction.create({
+      data: { userId: testUserId, accountId: acc.id, categoryId: catTransfer.id, date: new Date(), baseAmountMinor: 20000_00n, currency: 'KES', type: 'transfer', name: 'To Savings' }
+    });
+
+    const snapshot = await buildFinancialSnapshot(testUserId);
+
+    // Income = 100000
+    // Budgets = 20000 + 10000 = 30000
+    // Unbudgeted = 8000 (Random expense) + 2000 (from beforeEach setup) = 10000
+    // Total safe to spend = 100000 - 30000 - 10000 = 60000
+    // Note: The 12000 spent on transport exceeded the 10000 limit. 
+    // Wait, the user's formula is "Safe to Spend = (Income for this month) - (All Budgets Limits) - (Any uncategorized or non-budgeted expenses)".
+    // So the overspend of 2000 in Transport is NOT subtracted in this simplified formula.
+    
+    expect(snapshot.metrics.safeToSpend).toBe(60000_00n);
   });
 });
