@@ -3,13 +3,14 @@ import { logger } from './logger';
 import { getMetrics } from './metrics/MetricsRegistry';
 import crypto from 'crypto';
 
-function normalizeArgs(obj: any): any {
+function normalizeArgs(obj: unknown): unknown {
   if (Array.isArray(obj)) {
     return obj.map(normalizeArgs);
   } else if (obj !== null && typeof obj === 'object') {
-    const res: any = {};
-    for (const key of Object.keys(obj)) {
-      res[key] = normalizeArgs(obj[key]);
+    const res: Record<string, unknown> = {};
+    const objRec = obj as Record<string, unknown>;
+    for (const key of Object.keys(objRec)) {
+      res[key] = normalizeArgs(objRec[key]);
     }
     return res;
   }
@@ -30,7 +31,7 @@ function classifyQuery(operation: string): string {
   return 'Unknown';
 }
 
-export async function recordQueryMetrics(model: string | undefined, operation: string, args: any, durationMs: number, result: any) {
+export async function recordQueryMetrics(model: string | undefined, operation: string, args: unknown, durationMs: number, result: unknown) {
   // Always record query metrics into getMetrics(), even if outside request context
   getMetrics().recordHistogram('ledger_db_query_duration_ms', durationMs);
 
@@ -84,7 +85,7 @@ export async function recordQueryMetrics(model: string | undefined, operation: s
         message: `Slow Database Query Detected (${durationMs}ms)`
       });
     }
-  } catch (e) {
+  } catch {
     // Outside request context
   }
 }

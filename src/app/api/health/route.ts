@@ -15,7 +15,7 @@ export async function GET() {
   
   try {
     await prisma.$queryRaw`SELECT 1`;
-  } catch (error) {
+  } catch {
     database = 'error';
   }
 
@@ -29,7 +29,7 @@ export async function GET() {
     } else {
       redisStatus = 'skipped';
     }
-  } catch (error) {
+  } catch {
     redisStatus = 'error';
   }
 

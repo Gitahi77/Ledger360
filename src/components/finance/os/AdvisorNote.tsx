@@ -1,6 +1,6 @@
 import React from 'react';
 import { Narrative } from '@/lib/os/contracts';
-import { Info, CheckCircle2, AlertTriangle, Sparkles } from 'lucide-react';
+import { Info, AlertTriangle, Sparkles } from 'lucide-react';
 
 interface AdvisorNoteProps {
   narrative: Narrative | null;

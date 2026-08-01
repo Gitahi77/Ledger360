@@ -1,8 +1,5 @@
 import { AccountType } from '@prisma/client';
-import { getAccountsByUserId } from '../../repositories/accounts';
-import { getTransactionSumsByAccount } from '../../repositories/transactions';
-import { getTransferSumsByAccount } from '../../repositories/transfers';
-import { AccountAggregator } from '../calculators/AccountAggregator';
+import { getAccountsByUserId, getAccountById } from '../../repositories/accounts';
 import { MoneyFormatter } from '../money/MoneyFormatter';
 import { Money } from '../money/Money';
 
@@ -36,16 +33,7 @@ export class BalanceService {
 
     // 2. Orchestrate calculations (O(1) from DB directly)
     return accounts.map(acc => {
-      const summary = {
-        accountId: acc.id,
-        currency: acc.currency,
-        openingMinor: Number(acc.openingMinor),
-        totalIncomeMinor: 0,
-        totalExpenseMinor: 0,
-        totalTransfersInMinor: 0,
-        totalTransfersOutMinor: 0,
-      };
-
+      
       const balanceMoney = Money.fromMinor(Number(acc.balanceMinor), acc.currency);
 
       // 3. Prepare enrichment fields
@@ -59,4 +47,22 @@ export class BalanceService {
       };
     });
   }
+
+  static async getSingleAccountBalance(userId: string, accountId: string): Promise<EnrichedAccountData | null> {
+    const acc = await getAccountById(accountId, userId);
+    
+    if (!acc) return null;
+
+    const balanceMoney = Money.fromMinor(Number(acc.balanceMinor), acc.currency);
+
+    return {
+      ...acc,
+      openingMinor: Number(acc.openingMinor),
+      balanceMinor: Number(acc.balanceMinor),
+      displayBalance: MoneyFormatter.format(balanceMoney),
+      isOverdrawn: acc.balanceMinor < 0n,
+      availableBalanceMinor: Number(acc.balanceMinor),
+    };
+  }
+
 }

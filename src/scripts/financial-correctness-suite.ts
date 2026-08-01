@@ -1,6 +1,5 @@
 import { prisma } from '../lib/prisma';
 import { BalanceService } from '../lib/domain/services/BalanceService';
-import { getSingleAccountBalance } from '../lib/repositories/accounts';
 
 async function runCorrectnessMatrix() {
   console.log('================================================');
@@ -20,7 +19,7 @@ async function runCorrectnessMatrix() {
     
     for (const enriched of enrichedAccounts) {
       totalAccounts++;
-      const single = await getSingleAccountBalance(user.id, enriched.id);
+      const single = await BalanceService.getSingleAccountBalance(user.id, enriched.id);
       
       if (!single) {
         console.error(`❌ Mismatch for account ${enriched.id}: single returned null`);
@@ -60,7 +59,7 @@ async function runCorrectnessMatrix() {
 
     for (const enriched of enrichedAccounts) {
       totalEnrichedNW += BigInt(enriched.balanceMinor);
-      const single = await getSingleAccountBalance(user.id, enriched.id);
+      const single = await BalanceService.getSingleAccountBalance(user.id, enriched.id);
       if (single) totalSingleNW += BigInt(single.balanceMinor);
     }
 

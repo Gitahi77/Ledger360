@@ -8,6 +8,7 @@ import type { Category } from '@prisma/client';
 import { z } from 'zod';
 import { mapTransactionToDTO } from '@/lib/mappers/transactions';
 import { mapCategoryToDTO } from '@/lib/mappers/categories';
+import { TransactionSelectBase } from '@/lib/repositories/transactions';
 
 const PeriodSchema = z.enum(['this-week', 'this-month', 'this-year', 'all', 'all-time']);
 const TypeSchema = z.enum(['income', 'expense', 'transfer', 'savings', 'all']);
@@ -54,7 +55,7 @@ const GetTransactionsSchema = z.object({
       date: { gte: from, lte: to },
       ...(type && type !== 'all' ? { type } : {}),
     },
-    include: { category: true },
+    select: TransactionSelectBase,
     orderBy: [{ date: 'desc' }, { id: 'desc' }],
   });
 

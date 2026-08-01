@@ -17,10 +17,9 @@ vi.mock('../prisma', () => ({
 
 // We mock some data for the tests
 const USER_A_ID = 'test-user-a';
-const USER_B_ID = 'test-user-b';
 
 vi.mock('../authz', async (importOriginal) => {
-  const actual: any = await importOriginal();
+  const actual = await importOriginal<typeof import('../authz')>();
   return {
     ...actual,
     assertOwnsAccount: vi.fn().mockRejectedValue(new actual.AuthorizationError()),

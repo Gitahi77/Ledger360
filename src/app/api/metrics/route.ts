@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
       group: group || 'all',
       data
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed to retrieve metrics' }, { status: 500 });
   }
 }

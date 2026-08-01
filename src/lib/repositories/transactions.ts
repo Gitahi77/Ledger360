@@ -27,13 +27,41 @@ export const getTransactionSumsByAccount = withMetric('TransactionsRepository', 
   return { incomeSums, expenseSums };
 });
 
+export const TransactionSelectBase = {
+  id: true,
+  date: true,
+  baseAmountMinor: true,
+  currency: true,
+  type: true,
+  name: true,
+  note: true,
+  categoryId: true,
+  accountId: true,
+  userId: true,
+  status: true,
+  parentId: true,
+  importedAt: true,
+  importHash: true,
+  reference: true,
+  createdAt: true,
+  updatedAt: true,
+  category: {
+    select: {
+      id: true,
+      name: true,
+      type: true,
+      icon: true
+    }
+  }
+} satisfies Prisma.TransactionSelect;
+
 export const getTransactions = withMetric('TransactionsRepository', 'getTransactions', async function getTransactions({ userId, accountId }: { userId: string; accountId?: string }) {
   return await prisma.transaction.findMany({
     where: { 
       userId,
       ...(accountId ? { accountId } : {})
     },
-    include: { category: true },
+    select: TransactionSelectBase,
     orderBy: { date: 'desc' }
   });
 });

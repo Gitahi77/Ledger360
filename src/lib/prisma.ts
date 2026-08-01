@@ -37,5 +37,5 @@ function createPrismaClient() {
   });
 }
 
-export const prisma = globalForPrisma.prisma ?? createPrismaClient() as any;
+export const prisma = globalForPrisma.prisma ?? createPrismaClient() as unknown as PrismaClient;
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;

@@ -27,7 +27,7 @@ type CommandDialogProps = React.ComponentPropsWithoutRef<typeof Dialog> & {
   description?: string;
 };
 
-const CommandDialog = ({ children, title = "Command Palette", description, ...props }: CommandDialogProps) => {
+const CommandDialog = ({ children, title = "Command Palette", ...props }: CommandDialogProps) => {
   return (
     <Dialog {...props}>
       <DialogContent className="overflow-hidden p-0 shadow-lg">

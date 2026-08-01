@@ -36,7 +36,7 @@ export type TransferResultDTO = {
 export function mapTransferToDTO(
   transfer: {
     id: string; userId: string; fromAccountId: string | null; toAccountId: string | null;
-    amountMinor: number | bigint; currency: string; baseAmountMinor: number | bigint; fxRate: any;
+    amountMinor: number | bigint; currency: string; baseAmountMinor: number | bigint; fxRate: unknown;
     date: Date; note: string | null; source: string; goalId: string | null;
     sourceTransactionId: string | null; loanId: string | null; interestMinor: number | bigint;
     createdAt: Date;

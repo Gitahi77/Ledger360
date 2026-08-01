@@ -1,8 +1,8 @@
 'use client';
 
 import {
-  LayoutDashboard, ArrowLeftRight, PieChart, Target,
-  CreditCard, BarChart2, Settings, TrendingUp, LogOut, Tag, Landmark
+  LayoutDashboard, ArrowLeftRight, Target,
+  CreditCard, BarChart2, Settings, TrendingUp, LogOut, Landmark
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';

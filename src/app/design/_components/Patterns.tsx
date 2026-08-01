@@ -78,7 +78,7 @@ export function Patterns() {
               <ResponsiveDialogContent>
                 <ResponsiveDialogHeader>
                   <ResponsiveDialogTitle>Edit Profile</ResponsiveDialogTitle>
-                  <ResponsiveDialogDescription>Make changes to your profile here. Click save when you're done.</ResponsiveDialogDescription>
+                  <ResponsiveDialogDescription>Make changes to your profile here. Click save when you&apos;re done.</ResponsiveDialogDescription>
                 </ResponsiveDialogHeader>
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">

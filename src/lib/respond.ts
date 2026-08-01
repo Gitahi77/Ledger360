@@ -1,6 +1,6 @@
 import { ZodError, ZodSchema } from 'zod';
 import { NextResponse } from 'next/server';
-import { ActionResult } from './types/action-result';
+import { ActionResult, ActionErrorCode } from './types/action-result';
 import { AuthorizationError } from './authz';
 
 /**
@@ -119,7 +119,7 @@ export async function withAction<TInput, TResult>(
     const result = await handler();
     
     if (holdsLock && fullIdempotencyKey && result.success) {
-      const resourceId = (result.data as any)?.id;
+      const resourceId = (result.data as Record<string, unknown>)?.id as string | undefined;
       await saveIdempotencyResponse(fullIdempotencyKey, phash, 200, result, resourceId);
     }
     
@@ -149,28 +149,28 @@ export async function withAction<TInput, TResult>(
       if (ctx.queryCount > 0) {
         try {
           const { prisma } = await import('@/lib/prisma');
-          const pMetrics = await (prisma as any).$metrics.json();
-          const activeConnections = pMetrics.gauges.find((g: any) => g.key === 'prisma_pool_connections_busy')?.value || 0;
-          const idleConnections = pMetrics.gauges.find((g: any) => g.key === 'prisma_pool_connections_idle')?.value || 0;
-          const waitCount = pMetrics.counters.find((c: any) => c.key === 'prisma_client_queries_wait')?.value || 0;
+          const pMetrics = await (prisma as unknown as { $metrics: { json: () => Promise<{ gauges: { key: string; value: number }[]; counters: { key: string; value: number }[] }> } }).$metrics.json();
+          const activeConnections = pMetrics.gauges.find((g) => g.key === 'prisma_pool_connections_busy')?.value || 0;
+          const idleConnections = pMetrics.gauges.find((g) => g.key === 'prisma_pool_connections_idle')?.value || 0;
+          const waitCount = pMetrics.counters.find((c) => c.key === 'prisma_client_queries_wait')?.value || 0;
           
           poolMetrics = {
             poolActive: activeConnections,
             poolIdle: idleConnections,
             poolWaitCount: waitCount,
           };
-        } catch (e) {}
+        } catch {}
       }
-    } catch (e) {
+    } catch {
       // Outside request context fallback
     }
 
     // Try to stringify payload for size
     let payloadSize = 0;
-    try { payloadSize = input ? JSON.stringify(input).length : 0; } catch (e) {}
+    try { payloadSize = input ? JSON.stringify(input).length : 0; } catch {}
 
     let responseSize = 0;
-    try { responseSize = result ? JSON.stringify(result).length : 0; } catch (e) {}
+    try { responseSize = result ? JSON.stringify(result).length : 0; } catch {}
 
     logger.info({
       requestId,
@@ -215,6 +215,6 @@ export async function withAction<TInput, TResult>(
       error,
     });
 
-    return { success: false, code: appError.code as any, message: appError.message };
+    return { success: false, code: appError.code as ActionErrorCode, message: appError.message };
   }
 }

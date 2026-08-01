@@ -1,5 +1,6 @@
 import { prisma } from '../lib/prisma';
-import { getSingleAccountBalance } from '../lib/repositories/accounts';
+import {  } from '../lib/repositories/accounts';
+import { BalanceService } from '../lib/domain/services/BalanceService';
 
 /**
  * Stage 3 - Reconciliation Tool
@@ -27,7 +28,7 @@ export async function detectBalanceDrift(): Promise<DriftReport[]> {
   const driftReports: DriftReport[] = [];
 
   for (const acc of accounts) {
-    const computed = await getSingleAccountBalance(acc.userId, acc.id);
+    const computed = await BalanceService.getSingleAccountBalance(acc.userId, acc.id);
     if (!computed) continue;
 
     const ledgerBalance = BigInt(computed.balanceMinor);
@@ -58,7 +59,7 @@ export async function recalculateBalances(onProgress?: (processed: number, total
   let processed = 0;
 
   for (const acc of accounts) {
-    const computed = await getSingleAccountBalance(acc.userId, acc.id);
+    const computed = await BalanceService.getSingleAccountBalance(acc.userId, acc.id);
     if (!computed) continue;
 
     const ledgerBalance = BigInt(computed.balanceMinor);
@@ -97,7 +98,7 @@ export async function repairBalances(accountIds: string[]): Promise<void> {
   });
 
   for (const acc of accounts) {
-    const computed = await getSingleAccountBalance(acc.userId, acc.id);
+    const computed = await BalanceService.getSingleAccountBalance(acc.userId, acc.id);
     if (!computed) continue;
 
     await prisma.account.update({
