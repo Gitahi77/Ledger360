@@ -12,10 +12,11 @@ import { Grid } from '@/components/layout/grid';
 import { Stack } from '@/components/layout/stack';
 import { Surface, Button, Input } from '@/components/ui';
 import { FinancialMetric } from '@/components/finance/metrics/FinancialMetric';
-import { CurrencyDisplay, TransactionRow, TransactionDrawer, SplitTransactionDrawer } from '@/components/finance';
+import { CurrencyDisplay, TransactionRow, TransactionDrawer, SplitTransactionDrawer, InsightCard, TrendIndicator } from '@/components/finance';
 import { getErrorMessage } from '@/lib/errors';
 import { useWindowVirtualizer } from '@tanstack/react-virtual';
 import type { MoneyDTO } from '@/lib/types/domain';
+import type { TransactionsIntelligenceDTO } from '@/lib/types/transactions-intelligence';
 
 type Tx = {
   id: string; name: string; baseMoney: MoneyDTO; type: string;
@@ -47,6 +48,7 @@ interface Props {
   currency: string;
   goals: Goal[];
   loans: Loan[];
+  intelligence: TransactionsIntelligenceDTO;
   nextCursor?: string | null;
   hasNextPage?: boolean;
 }
@@ -60,7 +62,7 @@ const PERIOD_LABELS: Record<string, string> = {
 
 export function TransactionsClient({
   transactions, categories, accounts, totalIncome, totalExpense, moneyOut,
-  period, typeFilter, currency, goals = [], loans = [], ...props
+  period, typeFilter, currency, goals = [], loans = [], intelligence, ...props
 }: Props) {
   const [, startT] = useTransition();
   const net = totalIncome - totalExpense;
@@ -300,98 +302,162 @@ export function TransactionsClient({
         </Stack>
       </Stack>
 
-      {/* Summary Hero */}
-      <Grid columns={3} responsive gap="lg">
-        <Surface variant="raised" className="col-span-1 md:col-span-2 p-7 flex flex-col justify-center relative overflow-hidden">
-          <div className="relative z-10">
-            <FinancialMetric
-              label={`Net Flow · ${periodLabel}`}
-              value={<CurrencyDisplay money={{ amountMinor: net, currency: currency }} tone={net >= 0 ? 'positive' : 'negative'} className="text-4xl md:text-5xl font-semibold tracking-tight" showSymbol />}
-              subLabel={`${optimisticTransactions.length} transactions`}
-            />
+      {/* LEVEL 1: Advisor Note */}
+      {intelligence.advisor && (
+        <div className={`p-5 rounded-2xl border ${intelligence.advisor.priority >= 90 ? 'bg-destructive/10 border-destructive/30 text-destructive' : intelligence.advisor.priority >= 70 ? 'bg-warning/10 border-warning/30 text-warning' : 'bg-primary/10 border-primary/20 text-primary'} flex flex-col gap-2 shadow-sm animate-in fade-in slide-in-from-top-2`}>
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-lg">{intelligence.advisor.title}</h3>
+            {intelligence.advisor.priority >= 90 && <AlertTriangle size={20} />}
           </div>
+          <p className="text-sm opacity-90">{intelligence.advisor.explanation}</p>
+          {intelligence.advisor.recommendation && (
+            <p className="text-sm font-medium mt-1">Recommendation: {intelligence.advisor.recommendation}</p>
+          )}
+        </div>
+      )}
+
+      {/* LEVEL 2: Executive Summary (Metrics) */}
+      <Grid columns={4} responsive gap="md">
+        <Surface variant="raised" className="p-5 flex flex-col justify-center">
+          <FinancialMetric
+            label={`Net Flow · ${periodLabel}`}
+            value={<CurrencyDisplay money={intelligence.metrics.netCashFlow} tone={intelligence.metrics.netCashFlow.amountMinor >= 0 ? 'positive' : 'negative'} className="text-3xl font-semibold tracking-tight" showSymbol />}
+            subLabel={`${intelligence.metrics.transactionCount} transactions`}
+          />
         </Surface>
-        
-        <Stack gap="md" className="col-span-1">
-          <Surface variant="raised" className="p-5">
-            <FinancialMetric
-              label={`${periodLabel} Income`}
-              value={<CurrencyDisplay money={{ amountMinor: totalIncome, currency: currency }} tone="positive" className="text-2xl font-semibold tracking-tight" />}
-            />
-          </Surface>
-          <Surface variant="raised" className="p-5">
-            <FinancialMetric
-              label={`${PERIOD_LABELS[period] || 'All Time'} Outflow`}
-              value={<CurrencyDisplay money={{ amountMinor: Math.abs(moneyOut), currency: currency }} tone="negative" className="text-2xl font-semibold tracking-tight" />}
-            />
-          </Surface>
-        </Stack>
+        <Surface variant="raised" className="p-5 flex flex-col justify-center">
+          <FinancialMetric
+            label="Average Daily Spend"
+            value={<CurrencyDisplay money={intelligence.metrics.averageSpend} className="text-3xl font-semibold tracking-tight" />}
+            subLabel={`${intelligence.metrics.averageTransactionsPerDay} tx/day`}
+          />
+        </Surface>
+        <Surface variant="raised" className="p-5 flex flex-col justify-center">
+          <FinancialMetric
+            label="Total Expenses"
+            value={<CurrencyDisplay money={intelligence.metrics.totalExpenses} tone="negative" className="text-2xl font-semibold tracking-tight" />}
+          />
+        </Surface>
+        <Surface variant="raised" className="p-5 flex flex-col justify-center">
+          <FinancialMetric
+            label="Total Income"
+            value={<CurrencyDisplay money={intelligence.metrics.totalIncome} tone="positive" className="text-2xl font-semibold tracking-tight" />}
+          />
+        </Surface>
       </Grid>
 
-      {/* Transaction list */}
-      <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden relative">
-        {optimisticTransactions.length === 0 ? (
-          <div className="text-center py-24 text-muted-foreground">
-            <div className="text-5xl mb-4">📭</div>
-            <div className="text-[0.95rem] font-semibold text-foreground">No transactions found</div>
-            <div className="text-sm mt-1">There is no activity in this period.</div>
-          </div>
-        ) : filteredTxs.length === 0 ? (
-          <div className="text-center py-24 text-muted-foreground">
-            <div className="text-5xl mb-4">🔍</div>
-            <div className="text-[0.95rem] font-semibold text-foreground">No matching results</div>
-            <div className="text-sm mt-1">Try adjusting your search or filters.</div>
-          </div>
-        ) : (
-          <>
-            <div ref={listRef} style={{ height: `${rowVirtualizer.getTotalSize()}px`, width: '100%', position: 'relative' }}>
-              {rowVirtualizer.getVirtualItems().map((virtualItem) => {
-              const tx = filteredTxs[virtualItem.index];
-              return (
-                <div
-                  key={virtualItem.key}
-                  data-index={virtualItem.index}
-                  ref={rowVirtualizer.measureElement}
-                  className="absolute top-0 left-0 w-full"
-                  style={{
-                    transform: `translateY(${virtualItem.start}px)`,
-                  }}
-                >
-                  <div className="border-b border-border/60">
-                    <TransactionRow
-                      title={tx.name}
-                      subtitle={tx.note ? `${tx.category?.name || 'Uncategorized'} • ${tx.note}` : (tx.category?.name || 'Uncategorized')}
-                      amountMinor={tx.baseMoney.amountMinor}
-                      type={tx.type}
-                      icon={
-                        <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 shadow-sm" style={{ 
-                          background: tx.type === 'income' ? 'hsl(var(--success) / 0.15)' : tx.type === 'transfer' ? 'hsl(var(--secondary))' : 'hsl(var(--destructive) / 0.15)',
-                          color: tx.type === 'income' ? 'hsl(var(--success))' : tx.type === 'transfer' ? 'hsl(var(--muted-foreground))' : 'hsl(var(--destructive))'
-                        }}>
-                          <DynamicCategoryIcon category={tx.category?.name || 'Other'} size={22} className="opacity-90" />
-                        </div>
-                      }
-                      state={tx.type === 'pending' ? 'pending' : undefined}
-                      onClick={() => openEditTransaction(tx)}
-                      onDelete={() => handleDelete(tx.id, tx.type)}
-                      onEdit={() => openEditTransaction(tx)}
-                      onSplit={tx.type !== 'transfer' ? () => openSplitTransaction(tx) : undefined}
-                      isDeleting={deletingId === tx.id}
-                    />
+      {/* LEVEL 3: Behaviour Analysis */}
+      {(intelligence.behaviour.length > 0 || intelligence.insights.length > 0) && (
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold px-1">Behaviour Analysis</h2>
+          <Grid columns={3} responsive gap="md">
+            {intelligence.insights.slice(0, 3).map(insight => (
+              <InsightCard
+                key={insight.id}
+                title={insight.type === 'acceleration' ? 'Acceleration' : insight.type === 'reliance' ? 'Reliance' : 'Insight'}
+                content={insight.explanation}
+                severity="info"
+              />
+            ))}
+            {intelligence.behaviour.slice(0, 3).map(obs => (
+              <InsightCard
+                key={obs.id}
+                title={obs.type.charAt(0).toUpperCase() + obs.type.slice(1)}
+                content={obs.description}
+                severity={obs.type === 'outlier' ? 'warning' : 'info'}
+              />
+            ))}
+          </Grid>
+        </div>
+      )}
+
+      {/* LEVEL 4: Deep Analytics (Timeline Story) */}
+      {intelligence.timeline.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold px-1">Timeline</h2>
+          <Surface variant="flat" className="p-5">
+            <Stack gap="md">
+              {intelligence.timeline.slice(0, 5).map(event => (
+                <div key={event.id} className="flex items-center justify-between border-b border-border/40 pb-3 last:border-0 last:pb-0">
+                  <div>
+                    <p className="font-medium text-sm">{event.title}</p>
+                    <p className="text-xs text-muted-foreground">{new Date(event.date).toLocaleDateString()} · {event.data?.description || event.type}</p>
                   </div>
+                  {event.data && 'amount' in event.data && event.data.amount && <CurrencyDisplay money={event.data.amount as any} className="text-sm font-semibold" tone={event.severity === 'success' ? 'positive' : event.severity === 'warning' ? 'negative' : 'neutral'} />}
                 </div>
-              );
-            })}
-          </div>
-          {hasMore && (
-            <div ref={loadMoreRef} className="py-6 flex justify-center border-t border-border/50">
-              <Button variant="secondary" onClick={loadMore} disabled={isLoadingMore}>
-                {isLoadingMore ? <><Loader2 size={16} className="mr-2 animate-spin" /> Loading...</> : 'Load More'}
-              </Button>
+              ))}
+            </Stack>
+          </Surface>
+        </div>
+      )}
+
+      {/* LEVEL 5: Exploration (Transaction List) */}
+      <div className="space-y-4 pt-4">
+        <h2 className="text-lg font-semibold px-1">Exploration</h2>
+        <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden relative">
+          {optimisticTransactions.length === 0 ? (
+            <div className="text-center py-24 text-muted-foreground">
+              <div className="text-5xl mb-4">📭</div>
+              <div className="text-[0.95rem] font-semibold text-foreground">No transactions found</div>
+              <div className="text-sm mt-1">There is no activity in this period.</div>
             </div>
+          ) : filteredTxs.length === 0 ? (
+            <div className="text-center py-24 text-muted-foreground">
+              <div className="text-5xl mb-4">🔍</div>
+              <div className="text-[0.95rem] font-semibold text-foreground">No matching results</div>
+              <div className="text-sm mt-1">Try adjusting your search or filters.</div>
+            </div>
+          ) : (
+            <>
+              <div ref={listRef} style={{ height: `${rowVirtualizer.getTotalSize()}px`, width: '100%', position: 'relative' }}>
+                {rowVirtualizer.getVirtualItems().map((virtualItem) => {
+                const tx = filteredTxs[virtualItem.index];
+                return (
+                  <div
+                    key={virtualItem.key}
+                    data-index={virtualItem.index}
+                    ref={rowVirtualizer.measureElement}
+                    className="absolute top-0 left-0 w-full"
+                    style={{
+                      transform: `translateY(${virtualItem.start}px)`,
+                    }}
+                  >
+                    <div className="border-b border-border/60">
+                      <TransactionRow
+                        title={tx.name}
+                        subtitle={tx.note ? `${tx.category?.name || 'Uncategorized'} • ${tx.note}` : (tx.category?.name || 'Uncategorized')}
+                        amountMinor={tx.baseMoney.amountMinor}
+                        type={tx.type}
+                        icon={
+                          <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 shadow-sm" style={{ 
+                            background: tx.type === 'income' ? 'hsl(var(--success) / 0.15)' : tx.type === 'transfer' ? 'hsl(var(--secondary))' : 'hsl(var(--destructive) / 0.15)',
+                            color: tx.type === 'income' ? 'hsl(var(--success))' : tx.type === 'transfer' ? 'hsl(var(--muted-foreground))' : 'hsl(var(--destructive))'
+                          }}>
+                            <DynamicCategoryIcon category={tx.category?.name || 'Other'} size={22} className="opacity-90" />
+                          </div>
+                        }
+                        state={tx.type === 'pending' ? 'pending' : undefined}
+                        onClick={() => openEditTransaction(tx)}
+                        onDelete={() => handleDelete(tx.id, tx.type)}
+                        onEdit={() => openEditTransaction(tx)}
+                        onSplit={tx.type !== 'transfer' ? () => openSplitTransaction(tx) : undefined}
+                        isDeleting={deletingId === tx.id}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {hasMore && (
+              <div ref={loadMoreRef} className="py-6 flex justify-center border-t border-border/50">
+                <Button variant="secondary" onClick={loadMore} disabled={isLoadingMore}>
+                  {isLoadingMore ? <><Loader2 size={16} className="mr-2 animate-spin" /> Loading...</> : 'Load More'}
+                </Button>
+              </div>
+            )}
+            </>
           )}
-          </>
-        )}
+        </div>
       </div>
     </div>
   );

@@ -22,6 +22,9 @@ export default async function Reports({
     import('@/lib/queries/analytics').then(m => m.getCategoryAnalytics({ userId: user.id }))
   ]);
 
+  const { generateFinancialIntelligence } = await import('@/lib/domain/calculators/financial-intelligence');
+  const financialIntelligence = generateFinancialIntelligence(trend, summary, categoryAnalytics);
+
   return (
     <>
       <ReportsClient
@@ -30,7 +33,7 @@ export default async function Reports({
         summary={summary}
         expenseCategories={expenseCategories}
         incomeCategories={incomeCategories}
-        categoryAnalytics={categoryAnalytics}
+        financialIntelligence={financialIntelligence}
         currency={user.currency}
       />
     </>
