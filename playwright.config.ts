@@ -20,8 +20,9 @@ export default defineConfig({
     actionTimeout: 0,
     navigationTimeout: 0,
   },
+  testMatch: '**/*.e2e.ts',
   projects: [
-    { name: 'setup', testMatch: /.*\.setup\.ts/ },
+    { name: 'setup', testMatch: /.*\.setup\.e2e\.ts/ },
     {
       name: 'chromium',
       use: { 

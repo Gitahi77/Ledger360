@@ -26,7 +26,13 @@ function advanceEscalation(plan: {
   const now = new Date();
   let changed = false;
 
-  while (next <= now) {
+  const isDue = (d1: Date, d2: Date) => {
+    if (d1.getFullYear() < d2.getFullYear()) return true;
+    if (d1.getFullYear() === d2.getFullYear() && d1.getMonth() <= d2.getMonth()) return true;
+    return false;
+  };
+
+  while (isDue(next, now)) {
     rate = Math.min(rate + plan.escalationPct, plan.maxRatePct);
     next.setMonth(next.getMonth() + 1);
     changed = true;
