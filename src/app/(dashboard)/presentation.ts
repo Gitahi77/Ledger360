@@ -38,20 +38,41 @@ export function buildDashboardPresentation(snapshot: FinancialSnapshot): Dashboa
       status: isPositive ? 'positive' : 'negative',
     },
     calculation: [
-      { label: 'Liquid Cash', value: format(snapshot.metrics.liquidCash) },
-      // Simplify logic: Upcoming obligations = LiquidCash - SafeToSpend
-      { label: 'Upcoming Obligations', value: `-${format(snapshot.metrics.liquidCash - safeToSpendVal)}` },
+      { label: 'Monthly Income', value: format(snapshot.metrics.monthlyIncome) },
+      { label: 'Committed / Spent', value: `-${format(snapshot.metrics.monthlyIncome - safeToSpendVal)}` },
     ],
   };
 
   // -- Attention --
+  const insights = snapshot.alerts.map(a => ({
+    severity: a.severity,
+    title: a.title,
+    content: a.content,
+    actionLabel: a.actionLabel,
+  }));
+
+  if (snapshot.metrics.criticalBudgetCount > 0) {
+    insights.push({
+      severity: 'critical',
+      title: `${snapshot.metrics.criticalBudgetCount} Budget${snapshot.metrics.criticalBudgetCount > 1 ? 's' : ''} Critical`,
+      content: snapshot.metrics.highestRiskBudget 
+        ? `${snapshot.metrics.highestRiskBudget.name} is at ${Math.round(snapshot.metrics.highestRiskBudget.percentage * 100)}% utilization.`
+        : 'You have reached or exceeded the limit on one or more budgets.',
+      actionLabel: 'Review Budgets',
+    });
+  } else if (snapshot.metrics.warningBudgetCount > 0) {
+    insights.push({
+      severity: 'warning',
+      title: `${snapshot.metrics.warningBudgetCount} Budget${snapshot.metrics.warningBudgetCount > 1 ? 's' : ''} at Risk`,
+      content: snapshot.metrics.highestRiskBudget
+        ? `${snapshot.metrics.highestRiskBudget.name} is approaching its limit.`
+        : 'One or more budgets are nearing their limit.',
+      actionLabel: 'Review Spending',
+    });
+  }
+
   const attention: AttentionSectionProps = {
-    insights: snapshot.alerts.map(a => ({
-      severity: a.severity,
-      title: a.title,
-      content: a.content,
-      actionLabel: a.actionLabel,
-    })),
+    insights,
   };
 
   // -- Reflection --
@@ -132,6 +153,22 @@ export function buildDashboardPresentation(snapshot: FinancialSnapshot): Dashboa
       trendDirection: snapshot.metrics.netWorth >= 0n ? 'positive' : 'negative',
     }
   });
+
+  // Add Budget Utilization Journey
+  if (snapshot.metrics.activeBudgetCount > 0) {
+    progressItems.push({
+      type: 'journey',
+      props: {
+        title: 'Budget Utilization',
+        primaryMetric: `${Math.round(snapshot.metrics.aggregateBudgetUtilization)}%`,
+        trendLabel: 'of all limits',
+        narrative: snapshot.metrics.nextToExceedBudget 
+          ? `Next up: ${snapshot.metrics.nextToExceedBudget.name} (${format(snapshot.metrics.nextToExceedBudget.remainingMinor)} left)`
+          : 'All budgets are healthy.',
+        trendDirection: snapshot.metrics.aggregateBudgetUtilization > 80 ? 'negative' : 'positive',
+      }
+    });
+  }
 
   const progress: ProgressSectionProps = {
     title: 'Goals & Progress',

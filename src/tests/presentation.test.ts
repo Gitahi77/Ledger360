@@ -34,6 +34,12 @@ describe('Dashboard Presentation Contract (Phase 9B.3.5)', () => {
       monthlyExpenses: 0n,
       savingsRate: 0,
       debtRatio: 0,
+      activeBudgetCount: 0,
+      warningBudgetCount: 0,
+      criticalBudgetCount: 0,
+      highestRiskBudget: null,
+      nextToExceedBudget: null,
+      aggregateBudgetUtilization: 0,
     }
   });
 

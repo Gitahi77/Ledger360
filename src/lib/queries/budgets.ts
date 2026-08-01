@@ -25,13 +25,10 @@ export async function getBudgetsWithSpend({ userId, period: inputPeriod = 'this-
   if (!parsed.success) throw new Error('Invalid input');
   const { period } = parsed.data;
 
-
   const { from, to } = periodDates(period);
 
-  const budgets: (import('@prisma/client').Budget & { category: import('@prisma/client').Category })[] = await prisma.budget.findMany({
-    where: { userId },
-    include: { category: true },
-  });
+  const { getBudgetsByUserId } = await import('../repositories/budgets');
+  const budgets = await getBudgetsByUserId(userId);
 
   const spendThisPeriodGroup = await prisma.transaction.groupBy({
     by: ['categoryId'],
@@ -54,12 +51,12 @@ export async function getBudgetsWithSpend({ userId, period: inputPeriod = 'this-
     }
   }
 
-  const rolloverBudgets = budgets.filter((b: any) => b.rollover);
-  const rolloverSpendMap = new Map<string, number>();
+  const rolloverBudgets = budgets.filter((b) => b.rollover);
+  const rolloverSpendMap: Record<string, number> = {};
 
   if (rolloverBudgets.length > 0) {
-    const minDate = new Date(Math.min(...rolloverBudgets.map((b: any) => b.createdAt.getTime())));
-    const categoryIds = rolloverBudgets.map((b: any) => b.categoryId).filter(Boolean);
+    const minDate = new Date(Math.min(...rolloverBudgets.map((b) => b.createdAt.getTime())));
+    const categoryIds = rolloverBudgets.map((b) => b.categoryId).filter((c): c is string => Boolean(c));
 
     const txs = await prisma.transaction.findMany({
       where: {
@@ -78,53 +75,36 @@ export async function getBudgetsWithSpend({ userId, period: inputPeriod = 'this-
     for (const b of rolloverBudgets) {
       const budgetTxs = txs.filter(tx => tx.categoryId === b.categoryId && tx.date >= b.createdAt);
       const totalSpend = budgetTxs.reduce((sum, tx) => sum + Number(tx.baseAmountMinor), 0);
-      rolloverSpendMap.set(b.id, totalSpend);
+      rolloverSpendMap[b.id] = totalSpend;
     }
   }
 
-  return budgets.map((b: any) => {
-    let effectiveLimit = Number(b.limitAmountMinor);
-    let effectiveSpend = spendThisPeriodMap[b.categoryId] ?? 0;
+  const { calculateBudgetUsage } = await import('../domain/calculators/budget-engine');
 
-    if (b.rollover) {
-      let periodsExisted = 1;
-      if (b.createdAt < from) {
-        const shiftToNairobi = (d: Date) => new Date(d.getTime() + 3 * 3600000);
-        const bCreated = shiftToNairobi(b.createdAt);
-        const fromDate = shiftToNairobi(from);
-
-        if (b.period === 'monthly') {
-          const m1 = bCreated.getUTCFullYear() * 12 + bCreated.getUTCMonth();
-          const m2 = fromDate.getUTCFullYear() * 12 + fromDate.getUTCMonth();
-          periodsExisted = Math.max(1, m2 - m1 + 1);
-        } else if (b.period === 'yearly') {
-          periodsExisted = Math.max(1, fromDate.getUTCFullYear() - bCreated.getUTCFullYear() + 1);
-        } else if (b.period === 'weekly') {
-          periodsExisted = Math.max(1, Math.floor((from.getTime() - b.createdAt.getTime()) / (7 * 86400000)) + 1);
-        }
-      }
-      
-      const spendSinceCreated = rolloverSpendMap.get(b.id) ?? 0;
-      const pastPeriods = periodsExisted - 1;
-      const pastLimit = Number(b.limitAmountMinor) * pastPeriods;
-      const pastSpend = spendSinceCreated - effectiveSpend;
-      const rolloverBalance = pastLimit - pastSpend;
-
-      // Stop budget limit from inflating: just show this period's limit + rollover balance
-      // If they overspent in the past, limit shrinks. If underspent, limit grows.
-      effectiveLimit = Number(b.limitAmountMinor) + rolloverBalance;
-      effectiveSpend = effectiveSpend; // Show only this period's spend against the effective limit
-    }
+  return budgets.map((b) => {
+    const usage = calculateBudgetUsage(
+      {
+        id: b.id,
+        categoryId: b.categoryId!,
+        limitAmountMinor: b.limitAmountMinor,
+        period: b.period as 'weekly' | 'monthly' | 'yearly',
+        rollover: b.rollover,
+        createdAt: b.createdAt
+      },
+      spendThisPeriodMap,
+      rolloverSpendMap,
+      from
+    );
 
     return {
       id:       b.id,
       name:     b.name,
       category: b.category.name,
       icon:     b.category.icon ?? b.category.name.toLowerCase(),
-      limit:    effectiveLimit,
-      spent:    effectiveSpend,
-      period:   b.period,
-      rollover: b.rollover,
+      limit:    usage.limit,
+      spent:    usage.spent,
+      period:   usage.period,
+      rollover: usage.rollover,
     };
   });
 }

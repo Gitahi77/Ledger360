@@ -1,7 +1,7 @@
 'use server';
 
 // src/lib/actions/budgets.ts
-import { prisma } from '@/lib/prisma';
+import { createBudgetRecord, deleteBudgetRecord, updateBudgetRecord } from '../repositories/budgets';
 
 import { revalidatePath } from 'next/cache';
 import { requireAuth } from './_auth';
@@ -35,7 +35,7 @@ export async function addBudget(raw: unknown) {
 
     await assertOwnsCategory(user.id, data.categoryId);
 
-    await prisma.budget.create({ data: { ...data, rollover: data.rollover, userId: user.id, limitAmountMinor: BigInt(data.limitAmountMinor) } });
+    await createBudgetRecord({ ...data, rollover: data.rollover, userId: user.id, limitAmountMinor: BigInt(data.limitAmountMinor) });
     revalidatePath('/budgets');
     revalidatePath('/');
     return { success: true };
@@ -55,7 +55,7 @@ export async function deleteBudget(id: string) {
     const validId = parsedId.data.id;
 
     await assertOwnsBudget(user.id, validId);
-    await prisma.budget.deleteMany({ where: { id: validId, userId: user.id } });
+    await deleteBudgetRecord(validId, user.id);
     revalidatePath('/budgets');
     revalidatePath('/');
     return { success: true };
@@ -82,11 +82,7 @@ export async function editBudget(id: string, rawData: unknown) {
       await assertOwnsCategory(user.id, data.categoryId);
     }
     
-    const { count } = await prisma.budget.updateMany({
-      where: { id: validId, userId: user.id },
-      data: { ...data, limitAmountMinor: data.limitAmountMinor !== undefined ? BigInt(data.limitAmountMinor) : undefined, rollover: data.rollover },
-    });
-    if (count === 0) return { error: 'Budget not found or ownership failed' };
+    await updateBudgetRecord(validId, user.id, { ...data, limitAmountMinor: data.limitAmountMinor !== undefined ? BigInt(data.limitAmountMinor) : undefined, rollover: data.rollover });
     revalidatePath('/budgets');
     revalidatePath('/');
     return { success: true };
