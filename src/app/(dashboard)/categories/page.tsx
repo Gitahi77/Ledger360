@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import { requireAuth } from '@/lib/actions/_auth';
 import { prisma } from '@/lib/prisma';
 import { CategoriesClient } from './CategoriesClient';
+import { getCategoryAnalytics } from '@/lib/queries/analytics';
 
 export const metadata = { title: 'Categories - Ledger360' };
 
@@ -18,6 +19,9 @@ export default async function CategoriesPage() {
     }
   });
 
+  // Fetch 6-month analytics for all categories
+  const analytics = await getCategoryAnalytics({ userId: user.id });
+
   // Get user currency
   const dbUser = await prisma.user.findUnique({
     where: { id: user.id },
@@ -25,12 +29,12 @@ export default async function CategoriesPage() {
   });
 
   return (
-    <div className="animate-in" style={{ padding: '1.25rem', maxWidth: 800, margin: '0 auto', width: '100%' }}>
+    <div className="animate-in page-container">
       <CategoriesClient 
         initialCategories={categories} 
+        analytics={analytics}
         currency={dbUser?.currency ?? 'KES'} 
       />
     </div>
   );
 }
-

@@ -4,21 +4,12 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { createCategory, editCategory, deleteCategory } from '@/lib/actions/categories';
 import { DynamicCategoryIcon } from '@/lib/icons';
-import { Plus, Trash2, Edit2, Loader2, X, AlertTriangle } from 'lucide-react';
+import { Plus, Loader2, X, AlertTriangle, Lightbulb } from 'lucide-react';
 import { getErrorMessage } from '@/lib/errors';
+import type { CategoryAnalyticsDTO } from '@/lib/queries/analytics';
+import { CategoryCard, type CategoryData } from './CategoryCard';
 
-type Category = {
-  id: string;
-  name: string;
-  type: string;
-  icon: string | null;
-  _count: {
-    transactions: number;
-    budgets: number;
-  };
-};
-
-function CategoryModal({ category, onClose }: { category?: Category, onClose: () => void }) {
+function CategoryModal({ category, onClose }: { category?: CategoryData, onClose: () => void }) {
   const router = useRouter();
   const [, startT] = useTransition();
   const [loading, setLoading] = useState(false);
@@ -77,8 +68,6 @@ function CategoryModal({ category, onClose }: { category?: Category, onClose: ()
             <label style={{ display:'block', fontSize:'0.75rem', fontWeight:700, textTransform: 'uppercase', letterSpacing: '0.05em', color:'var(--color-text-secondary)', marginBottom:'0.5rem' }}>Icon</label>
             <p style={{ fontSize: '0.7rem', color: 'var(--color-text-secondary)' }}>
               Icons are automatically assigned based on the category name.
-              Name your category after a common label (e.g. &quot;Matatu&quot;, &quot;NHIF&quot;,
-              &quot;Supermarket&quot;) to get the right icon automatically.
             </p>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem', padding: '0.5rem', background: 'var(--bg-subtle)', borderRadius: 8 }}>
               <DynamicCategoryIcon category={name} size={20} style={{ color: 'var(--color-brand)' }} />
@@ -97,11 +86,19 @@ function CategoryModal({ category, onClose }: { category?: Category, onClose: ()
   );
 }
 
-export function CategoriesClient({ initialCategories }: { initialCategories: Category[]; currency?: string }) {
+export function CategoriesClient({ 
+  initialCategories,
+  analytics,
+  currency = 'KES'
+}: { 
+  initialCategories: CategoryData[];
+  analytics: CategoryAnalyticsDTO[];
+  currency?: string;
+}) {
   const router = useRouter();
   const [, startT] = useTransition();
   const [showAdd, setShowAdd] = useState(false);
-  const [editCat, setEditCat] = useState<Category | null>(null);
+  const [editCat, setEditCat] = useState<CategoryData | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -109,7 +106,10 @@ export function CategoriesClient({ initialCategories }: { initialCategories: Cat
   const incomes = initialCategories.filter(c => c.type === 'income');
   const savings = initialCategories.filter(c => c.type === 'savings');
 
-  async function handleDelete(cat: Category) {
+  // Analytics mapping
+  const analyticsMap = Object.fromEntries(analytics.map(a => [a.categoryId, a]));
+
+  async function handleDelete(cat: CategoryData) {
     if (cat._count.transactions > 0 || cat._count.budgets > 0) {
       setErrorMsg(`Cannot delete '${cat.name}'. It is currently used in ${cat._count.transactions} transactions and ${cat._count.budgets} budgets.`);
       return;
@@ -129,16 +129,24 @@ export function CategoriesClient({ initialCategories }: { initialCategories: Cat
     }
   }
 
-  const renderSection = (title: string, items: Category[], type: 'expense' | 'income' | 'savings') => {
-    const isExpense = type === 'expense';
-    const isIncome = type === 'income';
-    const colorVar = isExpense ? 'var(--color-expense)' : isIncome ? 'var(--color-income)' : 'var(--color-brand)';
-    const bgVar = isExpense ? 'var(--color-expense-light)' : isIncome ? 'var(--color-income-light)' : 'var(--color-brand-light)';
+  // Level 1: Immediate Answer (Advisor Note)
+  const risingCategories = analytics.filter(a => a.trendLabel.includes('Rising') && a.totalSixMonthSpendMinor > 0);
+  const volatileCategories = analytics.filter(a => a.volatilityLabel === 'Highly Variable');
+  
+  let advisorMessage = "Your spending patterns appear stable across most categories.";
+  if (risingCategories.length > 2) {
+    advisorMessage = `Attention required: ${risingCategories.length} categories are showing rapidly rising spending trends.`;
+  } else if (risingCategories.length > 0) {
+    advisorMessage = `Watch out for ${risingCategories[0].name}, which is trending upwards.`;
+  } else if (volatileCategories.length > 0) {
+    advisorMessage = `You have highly variable spending in ${volatileCategories[0].name}.`;
+  }
 
+  const renderSection = (title: string, items: CategoryData[]) => {
     return (
-      <div style={{ marginBottom: '3rem' }}>
+      <div style={{ marginBottom: '3.5rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.75rem' }}>
-          <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--color-text-primary)', letterSpacing: '-0.02em', margin: 0 }}>
+          <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-text-primary)', letterSpacing: '-0.02em', margin: 0 }}>
             {title}
           </h3>
           <span style={{ background: 'var(--surface-sunken)', border: '1px solid var(--border)', padding: '0.15rem 0.6rem', borderRadius: 999, fontSize: '0.75rem', fontWeight: 700, color: 'var(--color-text-secondary)' }}>
@@ -151,40 +159,17 @@ export function CategoriesClient({ initialCategories }: { initialCategories: Cat
             <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem', margin: 0 }}>No {title.toLowerCase()} configured.</p>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
             {items.map(cat => (
-              <div key={cat.id} className="card category-card" style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderRadius: 12, transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)', cursor: 'default' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-                  <div style={{ width: 48, height: 48, borderRadius: 12, background: bgVar, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: `1px solid ${colorVar}40`, boxShadow: `inset 0 2px 4px rgba(255,255,255,0.1)` }}>
-                    <DynamicCategoryIcon category={cat.name} size={24} style={{ color: colorVar }} />
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--color-text-primary)', letterSpacing: '-0.01em' }}>{cat.name}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginTop: '0.2rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <span style={{ fontWeight: 500 }}>{cat._count.transactions}</span> txns
-                      <span style={{ color: 'var(--border)' }}>•</span>
-                      <span style={{ fontWeight: 500 }}>{cat._count.budgets}</span> budgets
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-2 category-actions" style={{ opacity: 0.7, transition: 'opacity 0.2s' }}>
-                  <button onClick={() => setEditCat(cat)} 
-                    style={{ background:'var(--surface-sunken)', border:'1px solid var(--border)', cursor:'pointer', color:'var(--color-text-primary)', display:'flex', padding:'0.5rem', borderRadius: 8, transition: 'all 0.2s' }}
-                    className="hover-bg-active"
-                    title="Edit Category"
-                  >
-                    <Edit2 size={16}/>
-                  </button>
-                  <button onClick={() => handleDelete(cat)} disabled={deletingId === cat.id}
-                    style={{ background:'var(--surface-sunken)', border:'1px solid var(--border)', cursor:'pointer', color: (cat._count.transactions > 0 || cat._count.budgets > 0) ? 'var(--color-text-secondary)' : 'var(--color-expense)', display:'flex', padding:'0.5rem', borderRadius: 8, opacity: (cat._count.transactions > 0 || cat._count.budgets > 0) ? 0.4 : 1, transition: 'all 0.2s' }}
-                    className="hover-bg-active"
-                    title={(cat._count.transactions > 0 || cat._count.budgets > 0) ? "Cannot delete category in use" : "Delete Category"}
-                  >
-                    {deletingId === cat.id ? <Loader2 size={16} style={{ animation:'spin 1s linear infinite' }}/> : <Trash2 size={16}/>}
-                  </button>
-                </div>
-              </div>
+              <CategoryCard 
+                key={cat.id} 
+                category={cat} 
+                analytics={analyticsMap[cat.id]}
+                currency={currency}
+                deletingId={deletingId}
+                onEdit={setEditCat}
+                onDelete={handleDelete}
+              />
             ))}
           </div>
         )}
@@ -193,18 +178,34 @@ export function CategoriesClient({ initialCategories }: { initialCategories: Cat
   };
 
   return (
-    <div className="page-container">
+    <div>
       {showAdd && <CategoryModal onClose={() => setShowAdd(false)} />}
       {editCat && <CategoryModal category={editCat} onClose={() => setEditCat(null)} />}
       
-      <div className="flex items-center justify-between mb-8 flex-wrap gap-4 animate-in">
+      {/* Level 1 & 2: Hero & Immediate Answer */}
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-4 animate-in">
         <div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--color-text-primary)', letterSpacing: '-0.03em', margin: 0 }}>Categories</h1>
-          <p style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)', marginTop: '0.25rem' }}>Manage how your transactions are classified.</p>
+          <h1 style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--color-text-primary)', letterSpacing: '-0.03em', margin: 0 }}>Category Analytics</h1>
+          <p style={{ fontSize: '0.95rem', color: 'var(--color-text-secondary)', marginTop: '0.25rem' }}>Monitor behavior, volatility, and spending velocity across your habits.</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowAdd(true)} style={{ padding: '0.65rem 1.25rem', borderRadius: 8, fontWeight: 700, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+        
+        {/* Level 5: CRUD is deprioritized but accessible */}
+        <button className="btn btn-secondary" onClick={() => setShowAdd(true)} style={{ padding: '0.65rem 1.25rem', borderRadius: 8, fontWeight: 700 }}>
           <Plus size={16}/> New Category
         </button>
+      </div>
+
+      {/* Advisor Insight */}
+      <div className="card mb-10 animate-in delay-1" style={{ padding: '1.25rem', borderRadius: 12, background: 'var(--color-brand-light)', border: '1px solid var(--color-brand)', display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
+        <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+          <Lightbulb size={18} style={{ color: 'var(--color-brand)' }} />
+        </div>
+        <div>
+          <h4 style={{ margin: 0, fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-brand)' }}>Advisor Note</h4>
+          <p style={{ margin: '0.2rem 0 0 0', fontSize: '1rem', color: 'var(--color-text-primary)', fontWeight: 500 }}>
+            {advisorMessage}
+          </p>
+        </div>
       </div>
 
       {errorMsg && (
@@ -215,16 +216,16 @@ export function CategoriesClient({ initialCategories }: { initialCategories: Cat
         </div>
       )}
 
-      <div className="animate-in delay-1">
-        {renderSection('Expenses', expenses, 'expense')}
-        {renderSection('Income', incomes, 'income')}
-        {renderSection('Savings & Transfers', savings, 'savings')}
+      {/* Level 3 & 4: Detailed Breakdowns */}
+      <div className="animate-in delay-2">
+        {renderSection('Expenses', expenses)}
+        {renderSection('Income', incomes)}
+        {renderSection('Savings & Transfers', savings)}
       </div>
       
       <style dangerouslySetInnerHTML={{__html: `
-        .hover-bg-active:hover {
-          background-color: var(--surface-card) !important;
-          box-shadow: var(--shadow-sm);
+        .hover-bg-subtle:hover {
+          background-color: var(--surface-sunken) !important;
         }
         .category-card:hover {
           transform: translateY(-2px);
