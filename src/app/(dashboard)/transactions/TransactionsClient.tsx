@@ -107,7 +107,7 @@ export function TransactionsClient({
 
 
   // Optimistic UI state
-  const [optimisticTransactions, addOptimisticTransaction] = useOptimistic(
+  const [optimisticTransactions] = useOptimistic(
     loadedTxs || [],
     (state: Tx[], newTx: Tx) => {
       // Very simple optimistic insert at top
@@ -146,7 +146,7 @@ export function TransactionsClient({
     });
     
     if (node) observerRef.current.observe(node);
-  }, [hasMore, isLoadingMore]);
+  }, [hasMore, isLoadingMore, loadMore]);
 
   async function loadMore() {
     if (isLoadingMore || !hasMore || !cursor) return;

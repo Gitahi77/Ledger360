@@ -10,3 +10,6 @@
 - `[x]` 5. Auth Wrapper Interception: Update wrappers to handle timing (rounded `performance.now()`), request ID injection, error mapping, and logging.
 - `[x]` 6. Health Endpoints: Implement `/api/health/live` (200 OK) and `/api/health/ready` (DB connection check)
 - `[x]` 7. Regression Test: Write `observability.test.ts` to verify `requestId` propagation across nested calls and logs.
+- `[x]` 8. Replace Prisma `include` with `select` for partial fetches.
+- `[x]` 9. Final build verification.
+- `[x]` 10. Remove stray `console.*` calls outside tests/scripts.

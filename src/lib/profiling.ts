@@ -15,7 +15,7 @@ export async function measure<T>(phase: PhaseName, fn: () => T | Promise<T>): Pr
     try {
       const ctx = await getRequestContext();
       ctx.metrics[phase] += duration;
-    } catch (e) {
+    } catch {
       // Ignore if outside request context
     }
   }

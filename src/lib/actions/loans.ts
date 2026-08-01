@@ -6,7 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { requireAuth } from './_auth';
 
 import { z } from 'zod';
-import { AuthorizationError, assertOwnsAccount, assertOwnsLoan } from '@/lib/authz';
+import { assertOwnsAccount, assertOwnsLoan } from '@/lib/authz';
 
 import { safeValidate } from '@/lib/respond';
 

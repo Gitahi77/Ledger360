@@ -33,7 +33,7 @@ export function mapTransactionToDTO(
     note: string | null; categoryId: string; accountId: string; userId: string; status: string; parentId: string | null;
     importedAt: Date | null;
     importHash: string | null; reference: string | null; createdAt: Date;
-    category?: any | null;
+    category?: unknown | null;
   },
   metadataOrIndex?: {
     normalizedMerchantName?: string;
@@ -59,7 +59,7 @@ export function mapTransactionToDTO(
     importHash: transaction.importHash,
     reference: transaction.reference,
     createdAt: toDateDTO(transaction.createdAt) as string,
-    category: transaction.category ? mapCategoryToDTO(transaction.category) : null,
+    category: transaction.category ? mapCategoryToDTO(transaction.category as import('@prisma/client').Category) : null,
     
     normalizedMerchantName: metadata?.normalizedMerchantName,
     merchantConfidence: metadata?.merchantConfidence,

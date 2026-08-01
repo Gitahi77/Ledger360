@@ -9,7 +9,7 @@ export function withMetric<T extends (...args: any[]) => any>(
   methodName: string,
   fn: T
 ): T {
-  return async function (...args: any[]) {
+  return async function (...args: unknown[]) {
     const start = performance.now();
     let success = true;
     let rowsReturned = 0;

@@ -35,7 +35,7 @@ export const getRequestContext = cache(async (): Promise<RequestContextStore> =>
     if (existingId) {
       id = existingId;
     }
-  } catch (error) {
+  } catch {
     // headers() throws if called outside of a request context
   }
 

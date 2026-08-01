@@ -3,7 +3,7 @@
 import { requireAuth } from '@/lib/actions/_auth';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { AuthorizationError, assertOwnsAccount, assertOwnsGoal, assertOwnsLoan } from '@/lib/authz';
+import { assertOwnsAccount, assertOwnsGoal, assertOwnsLoan } from '@/lib/authz';
 
 import { safeValidate, withAction } from '@/lib/respond';
 import { TransferService } from '../domain/transfers/TransferService';

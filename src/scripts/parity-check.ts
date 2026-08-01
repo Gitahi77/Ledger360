@@ -1,6 +1,5 @@
 import { prisma } from '../lib/prisma';
 import { BalanceService } from '../lib/domain/services/BalanceService';
-import { getSingleAccountBalance } from '../lib/repositories/accounts';
 
 async function runParityCheck() {
   console.log('Starting Financial Correctness Verification (Parity Check)...');
@@ -17,7 +16,7 @@ async function runParityCheck() {
     
     for (const enriched of enrichedAccounts) {
       totalAccounts++;
-      const single = await getSingleAccountBalance(user.id, enriched.id);
+      const single = await BalanceService.getSingleAccountBalance(user.id, enriched.id);
       
       if (!single) {
         console.error(`❌ Mismatch for account ${enriched.id}: getSingleAccountBalance returned null`);
