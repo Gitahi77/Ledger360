@@ -174,4 +174,56 @@ describe('Financial Invariants Suite (Stage 5.8)', () => {
     ).rejects.toThrow(/already voided/);
   });
 
+  it('I-10: Split and Merge Invariants', async () => {
+    // 1. Create a parent transaction
+    const res = await TransactionService.createTransaction(
+      testUserId, testAccountId, undefined, 10000, 'expense', 'Supermarket', new Date(), undefined, randomUUID()
+    );
+    const parentId = res.transaction!.id;
+
+    // 2. Setup categories for split
+    const cat1 = await prisma.category.create({ data: { userId: testUserId, name: 'Groceries', type: 'expense' }});
+    const cat2 = await prisma.category.create({ data: { userId: testUserId, name: 'Household', type: 'expense' }});
+
+    // 3. Test invalid split (amounts do not add up)
+    await expect(
+      TransactionService.splitTransaction(
+        testUserId,
+        parentId,
+        [
+          { baseAmountMinor: 5000, categoryId: cat1.id },
+          { baseAmountMinor: 4999, categoryId: cat2.id } // Off by 1
+        ],
+        randomUUID()
+      )
+    ).rejects.toThrow(/Split amounts must equal the parent amount/);
+
+    // 4. Test valid split
+    await TransactionService.splitTransaction(
+      testUserId,
+      parentId,
+      [
+        { baseAmountMinor: 5000, categoryId: cat1.id },
+        { baseAmountMinor: 5000, categoryId: cat2.id }
+      ],
+      randomUUID()
+    );
+
+    // Parent should be ARCHIVED, children should be ACTIVE
+    const parentAfterSplit = await prisma.transaction.findUniqueOrThrow({ where: { id: parentId }, include: { children: true } });
+    expect(parentAfterSplit.status).toBe('ARCHIVED');
+    expect(parentAfterSplit.children.length).toBe(2);
+    expect(parentAfterSplit.children[0].status).toBe('ACTIVE');
+    expect(parentAfterSplit.children[1].status).toBe('ACTIVE');
+    expect(parentAfterSplit.children[0].baseAmountMinor + parentAfterSplit.children[1].baseAmountMinor).toBe(10000n);
+
+    // 5. Void one child
+    await TransactionService.voidTransaction(testUserId, parentAfterSplit.children[0].id, randomUUID());
+
+    // 6. Test invalid merge (child is voided)
+    await expect(
+      TransactionService.mergeSplitTransactions(testUserId, parentId, randomUUID())
+    ).rejects.toThrow(/Cannot merge because a child split is voided/);
+  });
+
 });

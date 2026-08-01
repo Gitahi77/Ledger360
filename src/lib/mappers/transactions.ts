@@ -12,6 +12,8 @@ export type TransactionDTO = {
   categoryId: string;
   accountId: string;
   userId: string;
+  status: 'ACTIVE' | 'VOIDED' | 'ARCHIVED';
+  parentId: string | null;
   importedAt: string | null;
   importHash: string | null;
   reference: string | null;
@@ -28,7 +30,8 @@ export type TransactionDTO = {
 export function mapTransactionToDTO(
   transaction: {
     id: string; date: Date; baseAmountMinor: number | bigint; currency: string; type: string; name: string;
-    note: string | null; categoryId: string; accountId: string; userId: string; importedAt: Date | null;
+    note: string | null; categoryId: string; accountId: string; userId: string; status: string; parentId: string | null;
+    importedAt: Date | null;
     importHash: string | null; reference: string | null; createdAt: Date;
     category?: any | null;
   },
@@ -50,6 +53,8 @@ export function mapTransactionToDTO(
     categoryId: transaction.categoryId,
     accountId: transaction.accountId,
     userId: transaction.userId,
+    status: transaction.status as 'ACTIVE' | 'VOIDED' | 'ARCHIVED',
+    parentId: transaction.parentId,
     importedAt: toDateDTO(transaction.importedAt),
     importHash: transaction.importHash,
     reference: transaction.reference,

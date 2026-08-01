@@ -325,6 +325,18 @@ export class TransactionService {
     if (!parent) throw AppError.NotFound('Parent transaction not found');
     if (parent.children.length === 0) throw AppError.Validation('Transaction has no splits');
 
+    if (parent.status === 'VOIDED') throw AppError.FinancialInvariant('Cannot merge a voided parent transaction');
+
+    let childrenSum = 0n;
+    for (const child of parent.children) {
+      if (child.status === 'VOIDED') throw AppError.FinancialInvariant('Cannot merge because a child split is voided');
+      childrenSum += BigInt(child.baseAmountMinor);
+    }
+
+    if (childrenSum !== BigInt(parent.baseAmountMinor)) {
+      throw AppError.FinancialInvariant('Cannot merge: sum of splits does not equal parent amount');
+    }
+
     const existing = await prisma.idempotencyRecord.findUnique({ where: { idempotencyKey } });
     if (existing) return existing;
 

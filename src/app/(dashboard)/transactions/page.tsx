@@ -32,7 +32,7 @@ export default async function Transactions({
     : 'all';
 
   const user = await requireAuth();
-  const [transactions, transfers, categories, accounts, goals, loans] = await Promise.all([
+  const [transactionsPage, transfers, categories, accounts, goals, loans] = await Promise.all([
     getTransactions({ userId: user.id, period, type: typeFilter === 'all' || typeFilter === 'transfer' ? undefined : typeFilter }),
     typeFilter === 'all' || typeFilter === 'transfer' ? getTransfers({ userId: user.id, period }) : Promise.resolve([]),
     getCategories({ userId: user.id }),
@@ -60,27 +60,21 @@ export default async function Transactions({
     interestMoney: t.interestMoney,
   }));
 
-  const mappedTransactions = transactions;
+  const mappedTransactions = transactionsPage.items;
 
   const allItems = [...mappedTransactions, ...mappedTransfers]
     .filter(t => typeFilter === 'all' ? true : t.type === typeFilter)
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  // Compute summary totals from the unfiltered period (all types)
-  const allForPeriod = typeFilter !== 'all'
-    ? await getTransactions({ userId: user.id, period })
-    : transactions;
-
-  const totalIncome  = allForPeriod.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.baseMoney.amountMinor), 0);
-  const totalExpense = allForPeriod.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.baseMoney.amountMinor), 0);
-
-  const { moneyOut } = await getTransactionSummary({ userId: user.id, period });
+  const { moneyOut, income: totalIncome, expenses: totalExpense } = await getTransactionSummary({ userId: user.id, period });
 
   return (
     <>
       <Suspense fallback={<div className="p-8 text-center text-muted-foreground animate-pulse">Loading transactions...</div>}>
         <TransactionsClient
           transactions={allItems}
+          nextCursor={transactionsPage.nextCursor}
+          hasNextPage={transactionsPage.hasNextPage}
           categories={categories}
           accounts={accounts}
           totalIncome={totalIncome}

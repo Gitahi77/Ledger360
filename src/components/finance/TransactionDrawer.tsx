@@ -46,10 +46,11 @@ interface Props {
   currency: string;
   transactions: Tx[];
   onComplete: (warning?: string) => void;
+  defaultType?: 'income' | 'expense' | 'transfer';
 }
 
 export function TransactionDrawer({
-  open, onOpenChange, tx, categories, accounts, goals, loans, currency, transactions, onComplete
+  open, onOpenChange, tx, categories, accounts, goals, loans, currency, transactions, onComplete, defaultType
 }: Props) {
   const router = useRouter();
   const [, startT] = useTransition();
@@ -58,7 +59,7 @@ export function TransactionDrawer({
   
   const [name, setName] = useState(tx?.name ?? '');
   const [amount, setAmount] = useState(tx ? (toMajor(tx.baseMoney.amountMinor)).toString() : '');
-  const [type, setType] = useState<'income' | 'expense' | 'transfer'>(tx ? (tx.type as 'income' | 'expense' | 'transfer') : 'expense');
+  const [type, setType] = useState<'income' | 'expense' | 'transfer'>(tx ? (tx.type as 'income' | 'expense' | 'transfer') : (defaultType || 'expense'));
   const [categoryId, setCategoryId] = useState(tx?.category?.id ?? '');
   
   const initialAccountId = tx?.type === 'transfer' ? (tx.fromAccountId ?? accounts[0]?.id ?? '') : (('accountId' in (tx || {}) ? (tx as unknown as { accountId: string }).accountId : null) ?? accounts[0]?.id ?? '');
@@ -80,7 +81,7 @@ export function TransactionDrawer({
     if (open) {
       setName(tx?.name ?? '');
       setAmount(tx ? (toMajor(tx.baseMoney.amountMinor)).toString() : '');
-      setType(tx ? (tx.type as 'income' | 'expense' | 'transfer') : 'expense');
+      setType(tx ? (tx.type as 'income' | 'expense' | 'transfer') : (defaultType || 'expense'));
       setCategoryId(tx?.category?.id ?? '');
       setAccountId(tx?.type === 'transfer' ? (tx.fromAccountId ?? accounts[0]?.id ?? '') : (('accountId' in (tx || {}) ? (tx as unknown as { accountId: string }).accountId : null) ?? accounts[0]?.id ?? ''));
       setToAccountId(tx?.toAccountId ?? '');

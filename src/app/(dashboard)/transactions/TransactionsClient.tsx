@@ -1,5 +1,6 @@
 'use client';
-import { useState, useTransition, useRef, useOptimistic } from 'react';
+import { useState, useTransition, useRef, useOptimistic, useEffect, useCallback } from 'react';
+import { fetchTransactionsPage } from '@/lib/actions/transactions';
 import { useQueryState } from 'nuqs';
 import { DynamicCategoryIcon } from '@/lib/icons';
 import { SmartUpload } from '@/components/SmartUpload';
@@ -25,6 +26,9 @@ type Tx = {
   goalId?: string | null;
   loanId?: string | null;
   interestMoney?: MoneyDTO;
+  status?: string;
+  parentId?: string | null;
+  optimisticId?: string;
 };
 type Category = { id: string; name: string; type: string; icon: string | null };
 type Account = { id: string; name: string };
@@ -43,6 +47,8 @@ interface Props {
   currency: string;
   goals: Goal[];
   loans: Loan[];
+  nextCursor?: string | null;
+  hasNextPage?: boolean;
 }
 
 const PERIOD_LABELS: Record<string, string> = {
@@ -54,7 +60,7 @@ const PERIOD_LABELS: Record<string, string> = {
 
 export function TransactionsClient({
   transactions, categories, accounts, totalIncome, totalExpense, moneyOut,
-  period, typeFilter, currency, goals = [], loans = []
+  period, typeFilter, currency, goals = [], loans = [], ...props
 }: Props) {
   const [, startT] = useTransition();
   const net = totalIncome - totalExpense;
@@ -62,10 +68,47 @@ export function TransactionsClient({
   const [searchQuery, setSearchQuery] = useQueryState('q', { defaultValue: '' });
   const [periodParam, setPeriodParam] = useQueryState('period', { defaultValue: 'this-month' });
   const [typeParam, setTypeParam] = useQueryState('type', { defaultValue: 'all' });
+  const [auditMode, setAuditMode] = useQueryState('audit', { defaultValue: 'false' });
+  
+  const [txIdParam, setTxIdParam] = useQueryState('tx');
+  const [actionParam, setActionParam] = useQueryState('action');
+
+  // Infinite Scroll State
+  const [loadedTxs, setLoadedTxs] = useState<Tx[]>(transactions);
+  const [cursor, setCursor] = useState(props.nextCursor);
+  const [hasMore, setHasMore] = useState(props.hasNextPage);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  // Reset loaded txs when server props change
+  useEffect(() => {
+    setLoadedTxs(transactions);
+    setCursor(props.nextCursor);
+    setHasMore(props.hasNextPage);
+  }, [transactions, props.nextCursor, props.hasNextPage]);
+
+  // Deep linking for transaction Modals
+  useEffect(() => {
+    if (actionParam === 'new' || actionParam === 'transfer') {
+      setEditingTx(undefined);
+      setDrawerOpen(true);
+    } else if (txIdParam && loadedTxs.length > 0) {
+      const found = loadedTxs.find(t => t.id === txIdParam);
+      if (found) {
+        if (actionParam === 'split') {
+          setEditingTx(found);
+          setSplitDrawerOpen(true);
+        } else {
+          setEditingTx(found);
+          setDrawerOpen(true);
+        }
+      }
+    }
+  }, [txIdParam, actionParam, loadedTxs]);
+
 
   // Optimistic UI state
   const [optimisticTransactions, addOptimisticTransaction] = useOptimistic(
-    transactions || [],
+    loadedTxs || [],
     (state: Tx[], newTx: Tx) => {
       // Very simple optimistic insert at top
       return [newTx, ...state];
@@ -89,6 +132,51 @@ export function TransactionsClient({
       String(toMajor(tx.baseMoney.amountMinor)).includes(q)
     );
   });
+
+  
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadMoreRef = useCallback((node: HTMLDivElement | null) => {
+    if (isLoadingMore || !hasMore) return;
+    if (observerRef.current) observerRef.current.disconnect();
+    
+    observerRef.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
+        loadMore();
+      }
+    });
+    
+    if (node) observerRef.current.observe(node);
+  }, [hasMore, isLoadingMore]);
+
+  async function loadMore() {
+    if (isLoadingMore || !hasMore || !cursor) return;
+    setIsLoadingMore(true);
+    try {
+      const res = await fetchTransactionsPage({
+        period: period,
+        type: typeFilter === 'all' || typeFilter === 'transfer' ? undefined : typeFilter,
+        cursor: cursor,
+        take: 50,
+        includeAudit: auditMode === 'true'
+      });
+      if (res) {
+        // Need to map similar to page.tsx, but fetchTransactionsPage returns the mapped array! Wait, fetchTransactionsPage uses getTransactions which returns { items, nextCursor, hasNextPage }
+        // Let's assume it returns { items, nextCursor, hasNextPage } since we just modified getTransactions
+        setLoadedTxs(prev => {
+          // Avoid duplicates
+          const existingIds = new Set(prev.map(t => t.id));
+          const newItems = res.items.filter((t: any) => !existingIds.has(t.id));
+          return [...prev, ...newItems];
+        });
+        setCursor(res.nextCursor);
+        setHasMore(res.hasNextPage);
+      }
+    } catch (e) {
+      console.error('Failed to load more transactions', e);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }
 
   const listRef = useRef<HTMLDivElement>(null);
   const rowVirtualizer = useWindowVirtualizer({
@@ -143,7 +231,8 @@ export function TransactionsClient({
         loans={loans}
         currency={currency}
         transactions={transactions}
-        onComplete={(w) => { setDrawerOpen(false); if(w) setPageWarning(w); }}
+        defaultType={actionParam === 'transfer' ? 'transfer' : 'expense'}
+        onComplete={(w) => { setDrawerOpen(false); setTxIdParam(null); setActionParam(null); if(w) setPageWarning(w); }}
       />
       <SplitTransactionDrawer
         open={splitDrawerOpen}
@@ -151,7 +240,7 @@ export function TransactionsClient({
         tx={editingTx}
         categories={categories}
         currency={currency}
-        onComplete={(w) => { setSplitDrawerOpen(false); if(w) setPageWarning(w); }}
+        onComplete={(w) => { setSplitDrawerOpen(false); setTxIdParam(null); setActionParam(null); if(w) setPageWarning(w); }}
       />
       {showUpload && <div className="bg-card border border-border rounded-xl shadow-md p-5 animate-in fade-in slide-in-from-top-4 duration-300"><SmartUpload /></div>}
 
@@ -196,6 +285,15 @@ export function TransactionsClient({
           <Button variant="secondary" onClick={() => setShowUpload(v => !v)}>
             <FileDown size={16} className="mr-2 text-muted-foreground"/> Import CSV
           </Button>
+          <label className="flex items-center space-x-2 text-sm text-muted-foreground mr-4 cursor-pointer">
+            <input 
+              type="checkbox" 
+              checked={auditMode === 'true'} 
+              onChange={(e) => setAuditMode(e.target.checked ? 'true' : 'false')}
+              className="rounded border-border bg-card text-primary focus:ring-primary/20"
+            />
+            <span>Audit Mode (Show Voided)</span>
+          </label>
           <Button onClick={openNewTransaction}>
             <Plus size={16} className="mr-2"/> New Transaction
           </Button>
@@ -245,8 +343,9 @@ export function TransactionsClient({
             <div className="text-sm mt-1">Try adjusting your search or filters.</div>
           </div>
         ) : (
-          <div ref={listRef} style={{ height: `${rowVirtualizer.getTotalSize()}px`, width: '100%', position: 'relative' }}>
-            {rowVirtualizer.getVirtualItems().map((virtualItem) => {
+          <>
+            <div ref={listRef} style={{ height: `${rowVirtualizer.getTotalSize()}px`, width: '100%', position: 'relative' }}>
+              {rowVirtualizer.getVirtualItems().map((virtualItem) => {
               const tx = filteredTxs[virtualItem.index];
               return (
                 <div
@@ -284,6 +383,14 @@ export function TransactionsClient({
               );
             })}
           </div>
+          {hasMore && (
+            <div ref={loadMoreRef} className="py-6 flex justify-center border-t border-border/50">
+              <Button variant="secondary" onClick={loadMore} disabled={isLoadingMore}>
+                {isLoadingMore ? <><Loader2 size={16} className="mr-2 animate-spin" /> Loading...</> : 'Load More'}
+              </Button>
+            </div>
+          )}
+          </>
         )}
       </div>
     </div>
