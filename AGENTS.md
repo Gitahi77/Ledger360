@@ -139,4 +139,35 @@ Before transitioning from one stage to the next, produce a **Stage Exit Report**
 - Failing build, failing tests, failing financial invariants.
 - Circular dependencies, broken architecture, security/data risk.
 - *Stage is strictly blocked until resolved.*
+
+## PART J — Stage Baseline Freeze
+Every completed stage freezes its baseline metrics. Future stages may exceed these values ONLY if new functionality justifies the increase, the increase is documented in the Stage Exit Report, and the Technical Debt Budget remains non-positive.
+
+**Stage 3.5 Baseline (Frozen)**
+- TS Files: 413
+- Dependencies: 36
+- Components: 84
+- Repositories: 17
+- Services: 21
+- First Load JS: 102 kB
+- Build Time: 42s
+
+## PART K — Pre-Implementation Report
+Before beginning execution of any work order, the agent must confirm the repository is in the expected state by producing a brief automated report:
+- Current Stage and Phase
+- Git status (clean/dirty)
+- Technical Debt Delta since last stage
+- Health checks (lint, build, tests, tsc)
+- Approved work order reference
+- Roadmap violation check (PASS/FAIL)
+
+No code may be written until this report shows all checks passing.
+
+## PART L — Dormant Code Registry
+Every item classified as "Dormant" (rather than "Dead") must have:
+- An owning roadmap stage
+- A brief justification for preservation
+- A review date (re-evaluate at the start of its owning stage)
+
+If a dormant item's owning stage is removed from the roadmap, it becomes Dead and must be removed.
 <!-- END:repository-governance -->
