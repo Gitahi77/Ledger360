@@ -1,6 +1,0 @@
-feat(finance): add reusable financial presentation primitives
-
-- MoneyDTO formatting
-- semantic financial colors
-- locale-aware currency rendering
-- delta visualization
