@@ -11,7 +11,7 @@
     "migrate:deploy": "prisma migrate deploy",
     "db:push": "prisma db push",
     "test": "vitest run",
-    "test:unit": "vitest run --exclude \"src/tests/**/*.integration.test.ts\" --exclude \"src/tests/**/*.stress.ts\"",
+    "test:unit": "vitest run",
     "test:integration": "vitest run \"src/tests/**/*.integration.test.ts\" --passWithNoTests",
     "test:stress": "vitest run \"src/tests/**/*.stress.ts\" --passWithNoTests",
     "benchmark": "npx tsx --env-file=.env src/scripts/benchmarks/runner.ts",
