@@ -1,6 +1,0 @@
-feat(ui): introduce foundational component primitives
-
-- add layout primitives
-- add button variants
-- introduce CVA architecture
-- enforce accessibility defaults

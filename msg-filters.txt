@@ -1,5 +1,0 @@
-refactor(transactions): use primitives for filters and toolbar
-
-- use Surface for filter tabs container
-- use Button for add/export actions
-- use Input for search
