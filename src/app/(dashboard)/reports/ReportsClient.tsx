@@ -7,8 +7,12 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
   PieChart, Pie, Cell
 } from 'recharts';
-import { TrendingUp, TrendingDown, Minus, Info } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Info, Activity, ShieldCheck, AlertTriangle } from 'lucide-react';
 import { formatCurrency } from '@/lib/finance/formatCurrency';
+import { Sparkline } from '@/components/finance/primitives/Sparkline';
+import type { CategoryAnalyticsDTO } from '@/lib/queries/analytics';
+import { DynamicCategoryIcon } from '@/lib/icons';
+import { generateReportsIntelligence } from './intelligence';
 
 type TrendRow     = { label: string; Income: number; Expenses: number; Savings: number; DebtRepayment?: number; };
 type Summary      = { 
@@ -76,17 +80,18 @@ function PieTip(props: { active?: boolean; payload?: unknown; label?: string; cu
 }
 
 export function ReportsClient({
-  period, trend, summary, expenseCategories, incomeCategories, currency,
+  period, trend, summary, expenseCategories, incomeCategories, categoryAnalytics, currency,
 }: {
   period: string;
   trend: TrendRow[];
   summary: Summary;
   expenseCategories: CategoryRow[];
   incomeCategories: CategoryRow[];
+  categoryAnalytics?: CategoryAnalyticsDTO[];
   currency: string;
 }) {
   const router      = useRouter();
-  const [tab, setTab] = useState<'cash-flow'|'spending'|'income'|'insights'>('cash-flow');
+  const [tab, setTab] = useState<'cash-flow'|'spending'|'income'|'intelligence'>('intelligence');
   const [view, setView] = useState<'breakdown'|'trends'>('breakdown');
 
   const periodLabel = period === 'this-week' ? 'This Week' : period === 'this-year' ? 'This Year' : 'This Month';
@@ -101,6 +106,8 @@ export function ReportsClient({
   }
 
   const isEmpty = summary.income === 0 && summary.expenses === 0;
+  
+  const intelligence = generateReportsIntelligence(categoryAnalytics || []);
 
   const renderTrendIcon = (change: number, reverseColors = false) => {
     if (change === 0) return <Minus size={12} />;
@@ -119,7 +126,7 @@ export function ReportsClient({
       {/* Toolbar */}
       <div className="flex items-center justify-between mb-6 animate-in flex-wrap gap-4 print-hide">
         <div style={{ display:'flex', gap:'0.25rem', background: 'var(--surface-sunken)', padding: '0.35rem', borderRadius: 10, border: '1px solid var(--border)' }}>
-          {(['cash-flow', 'spending', 'income', 'insights'] as const).map(t => (
+          {(['intelligence', 'cash-flow', 'spending', 'income'] as const).map(t => (
             <button key={t} onClick={() => setTab(t)}
               style={{
                 background: tab === t ? 'var(--surface-card)' : 'transparent',
@@ -216,34 +223,126 @@ export function ReportsClient({
           <div style={{ fontWeight:700, fontSize: '1.2rem', marginBottom:'0.5rem', color: 'var(--color-text-primary)' }}>No data for {periodLabel.toLowerCase()}</div>
           <div style={{ fontSize:'0.9rem' }}>Add transactions to start seeing rich reports, cashflow insights, and categorized spending.</div>
         </div>
-      ) : tab === 'insights' ? (
-        <div className="animate-in delay-1" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <div className="card" style={{ padding: '2rem' }}>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-text-primary)', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Info size={20} className="text-brand" /> Deep Analysis & Insights
-            </h3>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
-              <div style={{ padding: '1.5rem', background: 'var(--surface-sunken)', borderRadius: 12, border: '1px solid var(--border)' }}>
-                <h4 style={{ fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-text-secondary)', fontWeight: 700, marginBottom: '1rem' }}>Cashflow Health</h4>
-                {summary.netCashFlow > 0 ? (
-                  <p style={{ fontSize: '0.95rem', lineHeight: 1.5, color: 'var(--color-text-primary)' }}>
-                    You have a <strong className="text-success">positive cashflow</strong> of {formatCurrency({ amountMinor: summary.netCashFlow, currency: currency }, { variant: 'compact' })} this {periodLabel.split(' ')[1].toLowerCase()}. You are saving <strong>{summary.savingRate}%</strong> of your income, which is a great sign of financial health.
-                  </p>
-                ) : (
-                  <p style={{ fontSize: '0.95rem', lineHeight: 1.5, color: 'var(--color-text-primary)' }}>
-                    Your expenses have exceeded your income by <strong className="text-danger">{formatCurrency({ amountMinor: Math.abs(summary.netCashFlow), currency: currency }, { variant: 'compact' })}</strong> this {periodLabel.split(' ')[1].toLowerCase()}. Consider reviewing your top spending categories to find areas to cut back.
-                  </p>
-                )}
-              </div>
+      ) : tab === 'intelligence' ? (
+        <div className="animate-in delay-1" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          
+          {/* Advisor Note */}
+          <div className="card" style={{ padding: '1.5rem', background: 'var(--surface-sunken)', border: '1px solid var(--border)', display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+            <div style={{ width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              background: intelligence.advisorNote.status === 'negative' ? 'var(--color-expense-light)' : intelligence.advisorNote.status === 'warning' ? 'var(--color-expense-light)' : 'var(--color-income-light)',
+              color: intelligence.advisorNote.status === 'negative' || intelligence.advisorNote.status === 'warning' ? 'var(--color-expense)' : 'var(--color-income)'
+            }}>
+              {intelligence.advisorNote.status === 'negative' ? <AlertTriangle size={20} /> : intelligence.advisorNote.status === 'warning' ? <Activity size={20} /> : <ShieldCheck size={20} />}
+            </div>
+            <div>
+              <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: '0 0 0.5rem 0', color: 'var(--color-text-primary)' }}>Financial Brief</h3>
+              <p style={{ fontSize: '0.95rem', lineHeight: 1.5, color: 'var(--color-text-secondary)', margin: 0 }}>
+                {intelligence.advisorNote.narrative}
+              </p>
+            </div>
+          </div>
 
-              <div style={{ padding: '1.5rem', background: 'var(--surface-sunken)', borderRadius: 12, border: '1px solid var(--border)' }}>
-                <h4 style={{ fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-text-secondary)', fontWeight: 700, marginBottom: '1rem' }}>Spending Behavior</h4>
-                <p style={{ fontSize: '0.95rem', lineHeight: 1.5, color: 'var(--color-text-primary)' }}>
-                  Compared to {prevLabel}, your spending has {summary.previous.expensesChange > 0 ? <strong className="text-danger">increased by {summary.previous.expensesChange}%</strong> : <strong className="text-success">decreased by {Math.abs(summary.previous.expensesChange)}%</strong>}.
-                  {expenseCategories.length > 0 && ` Your top expense category is ${expenseCategories[0].name}, making up ${expenseCategories[0].pct}% of total spending.`}
-                </p>
+          {/* Top level Intelligence Cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
+            <div className="card" style={{ padding: '1.5rem', borderTop: '4px solid var(--hero-income)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+                <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--color-income-light)', color: 'var(--color-income)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ShieldCheck size={18} /></div>
+                <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, color: 'var(--color-text-primary)' }}>Savings & Cashflow</h3>
               </div>
+              {summary.netCashFlow > 0 ? (
+                <p style={{ fontSize: '0.95rem', lineHeight: 1.5, color: 'var(--color-text-secondary)', margin: 0 }}>
+                  You have a <strong style={{ color: 'var(--color-text-primary)' }}>positive cashflow</strong> of {formatCurrency({ amountMinor: summary.netCashFlow, currency: currency }, { variant: 'compact' })}. Your saving rate of <strong style={{ color: 'var(--color-text-primary)' }}>{summary.savingRate}%</strong> is strong.
+                </p>
+              ) : (
+                <p style={{ fontSize: '0.95rem', lineHeight: 1.5, color: 'var(--color-text-secondary)', margin: 0 }}>
+                  Expenses exceeded income by <strong style={{ color: 'var(--color-expense)' }}>{formatCurrency({ amountMinor: Math.abs(summary.netCashFlow), currency: currency }, { variant: 'compact' })}</strong>. Focus on high-volatility categories.
+                </p>
+              )}
+            </div>
+
+            <div className="card" style={{ padding: '1.5rem', borderTop: '4px solid var(--hero-expense)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+                <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--color-expense-light)', color: 'var(--color-expense)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Activity size={18} /></div>
+                <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, color: 'var(--color-text-primary)' }}>Spending Behavior</h3>
+              </div>
+              <p style={{ fontSize: '0.95rem', lineHeight: 1.5, color: 'var(--color-text-secondary)', margin: 0 }}>
+                Compared to {prevLabel}, your spending has {summary.previous.expensesChange > 0 ? <strong style={{ color: 'var(--color-expense)' }}>increased by {summary.previous.expensesChange}%</strong> : <strong style={{ color: 'var(--color-text-primary)' }}>decreased by {Math.abs(summary.previous.expensesChange)}%</strong>}.
+                {expenseCategories.length > 0 && ` ${expenseCategories[0].name} drives ${expenseCategories[0].pct}% of total spending.`}
+              </p>
+            </div>
+          </div>
+
+          {/* Category Analytics Table/List */}
+          <div className="card">
+            <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border)' }}>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0, color: 'var(--color-text-primary)' }}>Category Analytics</h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginTop: '0.25rem' }}>6-month spending trends, volatility, and pacing.</p>
+            </div>
+            
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ background: 'var(--surface-sunken)', borderBottom: '1px solid var(--border)' }}>
+                    <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-secondary)', letterSpacing: '0.05em' }}>Category</th>
+                    <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-secondary)', letterSpacing: '0.05em', textAlign: 'right' }}>3-Mo Average</th>
+                    <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-secondary)', letterSpacing: '0.05em', textAlign: 'center' }}>Trend (6 Mo)</th>
+                    <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-secondary)', letterSpacing: '0.05em' }}>Behavior</th>
+                    <th style={{ padding: '1rem', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-text-secondary)', letterSpacing: '0.05em', textAlign: 'center' }}>Stability</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {categoryAnalytics && categoryAnalytics.length > 0 ? categoryAnalytics.map(cat => {
+                    const sparklineData = cat.history.map(h => h.amountMinor);
+                    
+                    let stabilityColor = 'var(--color-text-secondary)';
+                    if (cat.stabilityScore >= 80) stabilityColor = 'var(--color-income)';
+                    else if (cat.stabilityScore <= 40) stabilityColor = 'var(--color-expense)';
+
+                    return (
+                      <tr key={cat.categoryId} style={{ borderBottom: '1px solid var(--border)' }} className="hover-bg-active">
+                        <td style={{ padding: '1rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--surface-sunken)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <DynamicCategoryIcon category={cat.name} size={16} style={{ color: 'var(--color-text-secondary)' }} />
+                            </div>
+                            <span style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>{cat.name}</span>
+                          </div>
+                        </td>
+                        <td style={{ padding: '1rem', textAlign: 'right' }}>
+                          <span style={{ fontFamily: 'Space Grotesk, sans-serif', fontWeight: 700, fontSize: '0.95rem' }}>
+                            {formatCurrency({ amountMinor: cat.threeMonthAverageMinor, currency }, { variant: 'compact' })}
+                          </span>
+                        </td>
+                        <td style={{ padding: '1rem', textAlign: 'center' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem' }}>
+                            <div style={{ display: 'flex', gap: '0.1rem', height: 24, alignItems: 'flex-end' }}>
+                              <Sparkline data={sparklineData} width={60} height={24} color={cat.trendLabel.includes('Rising') ? 'var(--color-expense)' : cat.trendLabel.includes('Falling') ? 'var(--color-income)' : 'var(--color-text-muted)'} />
+                            </div>
+                            <span style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--color-text-secondary)' }}>{cat.trendLabel}</span>
+                          </div>
+                        </td>
+                        <td style={{ padding: '1rem' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>{cat.velocityLabel}</span>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Volatility: {cat.volatilityLabel}</span>
+                          </div>
+                        </td>
+                        <td style={{ padding: '1rem', textAlign: 'center' }}>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: '50%', border: `2px solid ${stabilityColor}40`, color: stabilityColor, fontWeight: 700, fontSize: '0.85rem' }}>
+                            {cat.stabilityScore}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  }) : (
+                    <tr>
+                      <td colSpan={5} style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-text-secondary)' }}>
+                        No category analytics data available yet.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>

@@ -14,11 +14,12 @@ export default async function Reports({
   const period = rawPeriod ?? 'this-month';
 
   const user = await requireAuth();
-  const [trend, summary, expenseCategories, incomeCategories] = await Promise.all([
+  const [trend, summary, expenseCategories, incomeCategories, categoryAnalytics] = await Promise.all([
     getMonthlyTrend({ userId: user.id }),
     getReportSummary({ userId: user.id, period }),
     getReportCategories({ userId: user.id, period, type: 'expense' }),
     getReportCategories({ userId: user.id, period, type: 'income' }),
+    import('@/lib/queries/analytics').then(m => m.getCategoryAnalytics({ userId: user.id }))
   ]);
 
   return (
@@ -29,6 +30,7 @@ export default async function Reports({
         summary={summary}
         expenseCategories={expenseCategories}
         incomeCategories={incomeCategories}
+        categoryAnalytics={categoryAnalytics}
         currency={user.currency}
       />
     </>
