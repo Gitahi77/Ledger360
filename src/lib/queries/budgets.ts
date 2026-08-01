@@ -79,8 +79,7 @@ export async function getBudgetsWithSpend({ userId, period: inputPeriod = 'this-
     }
   }
 
-  const { calculateBudgetUsage } = await import('../domain/calculators/budget-engine');
-
+  const { calculateBudgetUsage, calculateBudgetPacing } = await import('../domain/calculators/budget-engine');
   return budgets.map((b) => {
     const usage = calculateBudgetUsage(
       {
@@ -96,6 +95,8 @@ export async function getBudgetsWithSpend({ userId, period: inputPeriod = 'this-
       from
     );
 
+    const pacing = calculateBudgetPacing(usage.percentage, from, to);
+
     return {
       id:       b.id,
       name:     b.name,
@@ -105,6 +106,9 @@ export async function getBudgetsWithSpend({ userId, period: inputPeriod = 'this-
       spent:    usage.spent,
       period:   usage.period,
       rollover: usage.rollover,
+      status:   usage.status,
+      percentage: usage.percentage,
+      pacing,
     };
   });
 }
