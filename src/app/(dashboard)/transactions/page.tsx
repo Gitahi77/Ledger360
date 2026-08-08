@@ -1,3 +1,4 @@
+export const metadata = { title: 'Transactions - Ledger360' };
 import { Suspense } from 'react';
 export const dynamic = 'force-dynamic';
 // src/app/transactions/page.tsx — Live Server Component

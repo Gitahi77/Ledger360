@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 // src/app/accounts/page.tsx
-export const metadata = { title: 'Accounts ?" Ledger360' };
+export const metadata = { title: 'Accounts - Ledger360' };
 
 import { requireAuth } from '@/lib/actions/_auth';
 import { getAccountBalances } from '@/lib/queries/accounts';

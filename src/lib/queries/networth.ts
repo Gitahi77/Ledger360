@@ -5,7 +5,6 @@ import { revalidatePath } from 'next/cache';
 import { requireAuth } from '../actions/_auth';
 import { getAccountBalances } from './accounts';
 import { getLoansForUser } from './loans';
-import { getRates } from '@/lib/api/frankfurter';
 import { mapAssetToDTO } from '@/lib/mappers/assets';
 
 export async function getNetWorth({ userId, currency }: { userId: string, currency?: string | null }) {
@@ -15,26 +14,18 @@ export async function getNetWorth({ userId, currency }: { userId: string, curren
     userCurrency = user?.currency || 'KES';
   }
 
-  const [accounts, assets, loans, rates] = await Promise.all([
+  const [accounts, assets, loans] = await Promise.all([
     getAccountBalances({ userId }),
     prisma.asset.findMany({ where: { userId } }),
-    getLoansForUser({ userId }),
-    getRates('USD')
+    getLoansForUser({ userId })
   ]);
 
   const cashAccounts = accounts.filter((a: any) => a.type !== 'CREDIT_CARD' && a.balanceMoney.amountMinor >= 0);
   const debtAccounts = accounts.filter((a: any) => a.type === 'CREDIT_CARD' || a.balanceMoney.amountMinor < 0);
 
   const convert = (amount: number, currency?: string | null) => {
-    const c = currency || userCurrency;
-    if (c === userCurrency || !rates) return amount;
-    
-    const rateC = c === 'USD' ? 1 : rates.rates[c];
-    const rateUser = userCurrency === 'USD' ? 1 : rates.rates[userCurrency];
-    
-    if (!rateC || !rateUser) return amount;
-    
-    return Math.round((amount * rateUser) / rateC);
+    // Quarantine FX logic for now; future work will reintroduce a domain-safe FX engine.
+    return amount;
   };
 
   const totalCashMinor        = cashAccounts.reduce((sum: number, acc: any) => sum + convert(acc.balanceMoney.amountMinor, acc.currency), 0);

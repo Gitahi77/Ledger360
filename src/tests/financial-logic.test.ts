@@ -60,10 +60,6 @@ vi.mock('next/cache', () => ({
   revalidatePath: vi.fn()
 }));
 
-vi.mock('@/lib/api/frankfurter', () => ({
-  getRates: vi.fn().mockResolvedValue({})
-}));
-
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     $transaction: vi.fn(async (cb: any) => cb(prisma)),

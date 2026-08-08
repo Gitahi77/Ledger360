@@ -1,3 +1,4 @@
+export const metadata = { title: 'Loans - Ledger360' };
 export const dynamic = 'force-dynamic';
 // src/app/loans/page.tsx — Live Server Component
 

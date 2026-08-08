@@ -1,3 +1,4 @@
+export const metadata = { title: 'Net Worth - Ledger360' };
 export const dynamic = 'force-dynamic';
 // src/app/net-worth/page.tsx — Live Server Component
 

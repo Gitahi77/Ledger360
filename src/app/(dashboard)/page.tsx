@@ -1,3 +1,4 @@
+export const metadata = { title: 'Dashboard - Ledger360' };
 import * as React from 'react';
 import { HeroSection } from '@/components/finance/HeroSection';
 import { AttentionSection } from '@/components/finance/AttentionSection';
