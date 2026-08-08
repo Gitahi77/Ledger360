@@ -14,10 +14,8 @@ export type ObservationData =
 
 export interface Observation {
   id: string;
-  priority: number;
   type: string;
   description: string;
-  confidence: number;
   data?: ObservationData;
 }
 
@@ -25,20 +23,32 @@ export type InsightData = Record<string, unknown>;
 
 export interface Insight {
   id: string;
-  priority: number;
   type: string;
   explanation: string;
-  confidence: number;
   data?: InsightData;
+}
+
+export interface EvaluationResult {
+  severity: number;
+  confidence: number;
+  urgency: number;
+  financialImpact: number;
+  recurrence: number;
+  stability: number;
+}
+
+export interface EvaluatedItem<T> {
+  item: T;
+  evaluation: EvaluationResult;
 }
 
 export interface Recommendation {
   id: string;
-  priority: number;
-  directive: string;
-  reason: string;
+  evaluation: EvaluationResult;
+  text: string;
+  evidenceIds: string[];
   confidence: number;
-  impact?: 'high' | 'medium' | 'low';
+  generatedBy: string;
 }
 
 export type TimelineEventType = 
@@ -68,11 +78,11 @@ export type TimelineEvent =
   | (BaseTimelineEvent & { type: 'CATEGORY_SURGE' | 'CATEGORY_RECOVERY'; data: { description: string; category?: string } })
   | (BaseTimelineEvent & { type: 'TRANSFER' | 'SAVINGS_DEPOSIT' | 'LOAN_PAYMENT' | 'BILL_PAYMENT' | 'SUBSCRIPTION_RENEWED' | 'UNUSUAL_ACTIVITY' | 'MILESTONE' | 'GOAL_PROGRESS'; data: { description: string; [key: string]: unknown } });
 
-
 export interface ForecastResult {
   next7Days?: any;
   next30Days?: any;
   expectedCashflow?: any;
+  confidenceBand?: number;
 }
 
 export interface RiskResult {
@@ -81,21 +91,22 @@ export interface RiskResult {
   savingsRisk?: number | null;
 }
 
-export interface IntelligenceModule<
-  TMetrics,
-  TBehaviour,
-  TInsight,
-  TAction,
-  TTimeline = TimelineEvent[],
-  TForecast = ForecastResult | null,
-  TRisk = RiskResult | null
-> {
-  advisor: AdvisorResult | null;
+export interface IntelligenceModuleOutput<TMetrics = unknown> {
+  module: string;
   metrics: TMetrics;
-  behaviour: TBehaviour;
-  insights: TInsight[];
-  actions: TAction[];
-  timeline: TTimeline;
-  forecast: TForecast;
-  risk: TRisk;
+  observations: Observation[];
+  insights: Insight[];
+  risks: RiskResult;
+  forecasts: ForecastResult;
+  timeline: TimelineEvent[];
+}
+
+export interface OSIntelligenceDTO {
+  pipelineVersion: 'v1';
+  advisor: AdvisorResult | null;
+  risks: RiskResult;
+  forecasts: ForecastResult;
+  recommendations: Recommendation[];
+  insights: Insight[];
+  timeline: TimelineEvent[];
 }

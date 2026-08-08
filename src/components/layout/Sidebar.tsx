@@ -1,7 +1,7 @@
 'use client';
 
 import {
-  LayoutDashboard, ArrowLeftRight, Target,
+  LayoutDashboard, ArrowLeftRight, Target, PieChart, Tags,
   CreditCard, BarChart2, Settings, TrendingUp, LogOut, Landmark
 } from 'lucide-react';
 import Link from 'next/link';
@@ -12,24 +12,26 @@ const navItems = [
   {
     group: 'CORE INTENTS',
     items: [
-      { name: 'Today',     href: '/',             icon: LayoutDashboard },
-      { name: 'Cash',      href: '/accounts',     icon: Landmark        },
-      { name: 'Story',     href: '/transactions', icon: ArrowLeftRight  },
+      { name: 'Dashboard',    href: '/',             icon: LayoutDashboard },
+      { name: 'Accounts',     href: '/accounts',     icon: Landmark        },
+      { name: 'Transactions', href: '/transactions', icon: ArrowLeftRight  },
     ],
   },
   {
     group: 'GROWTH',
     items: [
-      { name: 'Goals',     href: '/goals',        icon: Target     },
-      { name: 'Freedom',   href: '/loans',        icon: CreditCard },
-      { name: 'Wealth',    href: '/net-worth',    icon: TrendingUp },
+      { name: 'Budgets',      href: '/budgets',      icon: PieChart   },
+      { name: 'Categories',   href: '/categories',   icon: Tags       },
+      { name: 'Goals',        href: '/goals',        icon: Target     },
+      { name: 'Loans',        href: '/loans',        icon: CreditCard },
+      { name: 'Net Worth',    href: '/net-worth',    icon: TrendingUp },
     ],
   },
   {
     group: 'INTELLIGENCE',
     items: [
-      { name: 'Coach',     href: '/reports',      icon: BarChart2 },
-      { name: 'Workspace', href: '/settings',     icon: Settings  },
+      { name: 'Reports',      href: '/reports',      icon: BarChart2 },
+      { name: 'Settings',     href: '/settings',     icon: Settings  },
     ],
   },
 ];

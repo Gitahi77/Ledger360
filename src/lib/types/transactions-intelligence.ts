@@ -1,11 +1,5 @@
 import type { MoneyDTO } from './domain';
-import type { 
-  IntelligenceModule, 
-  TimelineEvent,
-  Observation,
-  Insight,
-  Recommendation
-} from './intelligence';
+import type { IntelligenceModuleOutput, TimelineEvent } from './intelligence';
 
 export type TransactionSnapshot = {
   id: string;
@@ -27,13 +21,7 @@ export interface IntelligenceMetrics {
   averageTransactionsPerDay: number;
 }
 
-export interface TransactionsIntelligenceDTO extends IntelligenceModule<
-  IntelligenceMetrics,
-  Observation[],
-  Insight,
-  Recommendation,
-  TimelineEvent[]
-> {
+export interface TransactionsIntelligenceDTO extends IntelligenceModuleOutput<IntelligenceMetrics> {
   visualizations: {
     rollingDailySpend: Array<{ date: string; amount: MoneyDTO }>;
     categoryTimeline?: Array<{ category: string; data: Array<{ date: string; amount: MoneyDTO }> }>;

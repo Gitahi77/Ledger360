@@ -1,3 +1,4 @@
+export const metadata = { title: 'Goals - Ledger360' };
 export const dynamic = 'force-dynamic';
 // src/app/goals/page.tsx — FULLY LIVE Server Component
 

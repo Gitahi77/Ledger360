@@ -1,10 +1,7 @@
 import type { CategoryAnalyticsDTO } from '@/lib/queries/analytics';
+import type { IntelligenceModuleOutput, Observation, Insight, TimelineEvent, RiskResult, ForecastResult } from '@/lib/types/intelligence';
 
-export interface FinancialIntelligenceDTO {
-  advisor: {
-    narrative: string;
-    status: 'neutral' | 'positive' | 'warning' | 'negative';
-  };
+export interface FinancialMetrics {
   executiveSummary: {
     healthScore: number;
     healthStatus: 'Excellent' | 'Good' | 'Fair' | 'Needs Attention';
@@ -39,12 +36,14 @@ export interface FinancialIntelligenceDTO {
       isHigh: boolean;
     }[];
     monthlyVariance: {
-      incomeVariance: number; // Coefficient of Variation (CV) as percentage
+      incomeVariance: number;
       expenseVariance: number;
       status: 'Stable' | 'Variable' | 'Highly Volatile';
     };
   };
 }
+
+export type FinancialIntelligenceDTO = IntelligenceModuleOutput<FinancialMetrics>;
 
 // Input Types mapped from query layer
 export type MonthlyTrendData = {
@@ -81,7 +80,6 @@ export type ReportSummaryData = {
 function calculateTrend(values: number[]): 'Rising' | 'Falling' | 'Stable' {
   if (values.length < 2) return 'Stable';
   
-  // Simple linear regression slope
   const n = values.length;
   let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
   for (let i = 0; i < n; i++) {
@@ -92,11 +90,10 @@ function calculateTrend(values: number[]): 'Rising' | 'Falling' | 'Stable' {
   }
   const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
   
-  // Normalize slope against the mean
   const mean = sumY / n;
   if (mean === 0) return 'Stable';
   
-  const normalizedSlope = slope / mean; // Percentage change per month on average
+  const normalizedSlope = slope / mean;
 
   if (normalizedSlope > 0.05) return 'Rising';
   if (normalizedSlope < -0.05) return 'Falling';
@@ -112,7 +109,6 @@ function calculateVariance(values: number[]): number {
   const variance = squareDiffs.reduce((a, b) => a + b, 0) / values.length;
   const stdDev = Math.sqrt(variance);
   
-  // Return Coefficient of Variation (CV) as percentage
   return (stdDev / mean) * 100;
 }
 
@@ -122,22 +118,18 @@ export function generateFinancialIntelligence(
   categoryAnalytics: CategoryAnalyticsDTO[]
 ): FinancialIntelligenceDTO {
   
-  // 1. Core Arrays for 6-Month Data
   const incomes = monthlyTrend.map(t => t.Income);
   const expenses = monthlyTrend.map(t => t.Expenses);
   const savings = monthlyTrend.map(t => t.Savings);
   
-  // 2. Rolling Averages
   const income6Mo = incomes.reduce((a, b) => a + b, 0) / (incomes.length || 1);
   const expenses6Mo = expenses.reduce((a, b) => a + b, 0) / (expenses.length || 1);
   const savings6Mo = savings.reduce((a, b) => a + b, 0) / (savings.length || 1);
 
-  // 3. Variance
   const incomeVariance = calculateVariance(incomes);
   const expenseVariance = calculateVariance(expenses);
   const varianceStatus = expenseVariance > 30 ? 'Highly Volatile' : expenseVariance > 15 ? 'Variable' : 'Stable';
 
-  // 4. Trends
   const incomeTrend = calculateTrend(incomes);
   const expenseTrend = calculateTrend(expenses);
   const netSavingsTrend = calculateTrend(savings);
@@ -146,7 +138,6 @@ export function generateFinancialIntelligence(
     ? 'Expanding' 
     : (summary.netCashFlow < summary.previous.netCashFlow ? 'Contracting' : 'Stable');
 
-  // 5. Largest Changes
   let largestPositiveChange = 'No significant positive changes';
   let largestNegativeChange = 'No significant negative changes';
   
@@ -160,7 +151,6 @@ export function generateFinancialIntelligence(
   let worstImpact = 0;
 
   for (const c of changes) {
-    // A positive impact is an increase in Income/Savings, or a decrease in Expenses
     const impact = c.isGoodIfPositive ? c.amountDiff : -c.amountDiff;
     
     if (impact > bestImpact) {
@@ -176,8 +166,6 @@ export function generateFinancialIntelligence(
     }
   }
 
-  // 6. Category Analytics 
-  // Growing / Shrinking
   let topGrowingCategory = null;
   let topShrinkingCategory = null;
 
@@ -192,7 +180,6 @@ export function generateFinancialIntelligence(
     }
   }
 
-  // Concentration (Top 3 categories % of total expenses)
   const total6MoSpend = categoryAnalytics.reduce((sum, cat) => sum + cat.totalSixMonthSpendMinor, 0);
   const categoryConcentration = [...categoryAnalytics]
     .sort((a, b) => b.totalSixMonthSpendMinor - a.totalSixMonthSpendMinor)
@@ -202,27 +189,18 @@ export function generateFinancialIntelligence(
       return {
         name: cat.name,
         percentage: Math.round(percentage),
-        isHigh: percentage > 30 // E.g., if one category is > 30% of total spend, it's highly concentrated
+        isHigh: percentage > 30
       };
     });
 
-  // 7. Health Score (0-100)
-  // Baseline = 50. 
-  // +25 for good savings rate (>20%). 
-  // +15 for positive cash flow. 
-  // +10 for stable expenses (low variance).
   let healthScore = 50;
   
-  // Savings Rate Contribution (up to 25 points)
-  // 0% -> 0 pts, 20% -> 25 pts, >20% -> 25 pts
   healthScore += Math.min(25, (summary.savingRate / 20) * 25);
   
-  // Cash Flow Contribution (up to 15 points)
   if (summary.netCashFlow > 0) healthScore += 15;
   else if (summary.netCashFlow === 0) healthScore += 5;
-  else healthScore -= 10; // Penalty for negative cash flow
+  else healthScore -= 10;
 
-  // Expense Stability Contribution (up to 10 points)
   if (expenseVariance < 15) healthScore += 10;
   else if (expenseVariance < 30) healthScore += 5;
 
@@ -234,35 +212,7 @@ export function generateFinancialIntelligence(
   else if (healthScore >= 40) healthStatus = 'Fair';
   else healthStatus = 'Needs Attention';
 
-  // 8. Advisor Note Generation
-  let narrative = '';
-  let status: 'neutral' | 'positive' | 'warning' | 'negative' = 'neutral';
-
-  if (summary.savingRate > 0 && summary.savingRate > summary.previous.savingRate && summary.netCashFlow > 0) {
-    narrative = `Your savings rate improved to ${summary.savingRate}%. You are maintaining strong positive cash flow.`;
-    status = 'positive';
-  } else if (summary.netCashFlow < 0 && summary.previous.netCashFlow > 0) {
-    narrative = `Your cash flow turned negative this month. Check your ${topGrowingCategory ? topGrowingCategory + ' ' : ''}spending, which has been growing.`;
-    status = 'negative';
-  } else if (summary.savingRate === 0 && summary.netCashFlow > 0) {
-    narrative = `You have positive cash flow, but aren't actively saving. Consider setting up an automated transfer to savings.`;
-    status = 'warning';
-  } else if (topGrowingCategory && expenseTrend === 'Rising') {
-    narrative = `Overall expenses are rising, largely driven by ${topGrowingCategory}. Watch this category closely.`;
-    status = 'warning';
-  } else if (expenseTrend === 'Falling' && summary.savingRate > 10) {
-    narrative = `Great job reducing expenses. You're building healthy financial habits and a strong savings rate.`;
-    status = 'positive';
-  } else {
-    narrative = `Your financial behaviour is stable. ${largestPositiveChange !== 'No significant positive changes' ? largestPositiveChange + '.' : ''}`;
-    status = 'neutral';
-  }
-
-  return {
-    advisor: {
-      narrative,
-      status
-    },
+  const metrics: FinancialMetrics = {
     executiveSummary: {
       healthScore,
       healthStatus,
@@ -298,5 +248,43 @@ export function generateFinancialIntelligence(
         status: varianceStatus,
       }
     }
+  };
+
+  const observations: Observation[] = [];
+  const insights: Insight[] = [];
+  const timeline: TimelineEvent[] = [];
+
+  if (summary.savingRate > 0 && summary.savingRate > summary.previous.savingRate) {
+    observations.push({
+      id: 'obs-savings-rate-improved',
+      type: 'savings_rate',
+      description: `Savings rate improved to ${summary.savingRate}%`
+    });
+  }
+
+  if (summary.netCashFlow < 0) {
+    observations.push({
+      id: 'obs-cashflow-negative',
+      type: 'cash_flow',
+      description: 'Cash flow is currently negative.'
+    });
+  }
+
+  if (expenseTrend === 'Rising') {
+    insights.push({
+      id: 'insight-expenses-rising',
+      type: 'expense_trend',
+      explanation: 'Expenses have been consistently rising over the past months.'
+    });
+  }
+
+  return {
+    module: 'Reports',
+    metrics,
+    observations,
+    insights,
+    timeline,
+    risks: {},
+    forecasts: {}
   };
 }

@@ -720,3 +720,13 @@ Specifically:
 - intelligence engines must never perform I/O
 - intelligence engines remain pure functions
 That single rule preserves testability forever.
+
+### Permanent Principle: Pipeline Purity
+Every Orchestrator pipeline stage must be a pure function.
+Meaning `Collect()`, `Normalize()`, `Correlate()`, `Evaluate()`, `Resolve()`, and `Present()` must never:
+- query Prisma
+- call APIs
+- access React
+- read environment variables
+- mutate global state
+This keeps the pipeline trivially testable.

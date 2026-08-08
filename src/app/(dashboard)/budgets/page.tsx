@@ -1,3 +1,4 @@
+export const metadata = { title: 'Budgets - Ledger360' };
 export const dynamic = 'force-dynamic';
 // src/app/budgets/page.tsx — Live Server Component
 

@@ -10,10 +10,7 @@ import { SettingsClient } from './SettingsClient';
 import { getSavingsPlan, getRecentAutoSaves } from '@/lib/queries/savings';
 import { getAccounts } from '@/lib/queries/accounts';
 
-export const metadata = {
-  title: 'Settings — Ledger360',
-  description: 'Manage your profile, preferences, notifications and data.',
-};
+export const metadata = { title: 'Settings - Ledger360' };
 
 export default async function Settings() {
   const user = await requireAuth();
