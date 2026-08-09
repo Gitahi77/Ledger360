@@ -2,15 +2,15 @@
 
 import { useState, useEffect, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { AlertTriangle, Loader2, X, Plus, Trash2 } from 'lucide-react';
+import { AlertTriangle, Loader2, Plus, Trash2 } from 'lucide-react';
 import {
   Drawer,
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
   DrawerDescription,
-  DrawerClose,
-} from '@/components/ui/drawer';
+  DrawerFooter
+} from '@/components/os';
 import { Label, Combobox } from '@/components/ui';
 import { DynamicCategoryIcon } from '@/lib/icons';
 import { toMinor, toMajor } from '@/lib/money';
@@ -146,20 +146,15 @@ export function SplitTransactionDrawer({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="max-h-[96vh]">
-        <div className="mx-auto w-full max-w-lg p-6 pb-12 overflow-y-auto">
-          <DrawerHeader className="px-0 pt-0 pb-4 flex justify-between items-center">
-            <div>
-              <DrawerTitle>Split Transaction</DrawerTitle>
-              <DrawerDescription>
-                Allocate <span className="font-semibold text-foreground">{currency} {toMajor(parentAmountMinor)}</span> to multiple categories.
-              </DrawerDescription>
-            </div>
-            <DrawerClose className="p-2 text-muted-foreground hover:bg-secondary rounded-full transition-colors">
-              <X size={18} />
-            </DrawerClose>
-          </DrawerHeader>
+      <DrawerContent className="flex flex-col">
+        <DrawerHeader>
+          <DrawerTitle>Split Transaction</DrawerTitle>
+          <DrawerDescription>
+            Allocate <span className="font-semibold text-foreground">{currency} {toMajor(parentAmountMinor)}</span> to multiple categories.
+          </DrawerDescription>
+        </DrawerHeader>
 
+        <div className="flex-1 overflow-y-auto px-4 md:px-0">
           {error && (
             <div className="flex items-center gap-2 p-3 mb-5 text-sm font-medium text-destructive bg-destructive/10 rounded-lg">
               <AlertTriangle size={16} /> {error}
@@ -181,11 +176,11 @@ export function SplitTransactionDrawer({
             </div>
           </div>
           
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form id="split-form" onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-3">
               {children.map((child, idx) => (
                 <div key={idx} className="p-4 bg-card border border-border rounded-xl relative group">
-                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="absolute top-2 right-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                     <button type="button" onClick={() => handleRemoveChild(idx)} className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors" title="Remove part">
                       <Trash2 size={14} />
                     </button>
@@ -197,7 +192,7 @@ export function SplitTransactionDrawer({
                       <input className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all font-mono"
                         type="number" inputMode="decimal" min="0.01" step="0.01" value={child.amount} onChange={e => handleChildChange(idx, 'amount', e.target.value)} required placeholder="0.00" />
                     </div>
-                    <div className="flex-1">
+                    <div className="w-full sm:flex-1">
                       <Label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Category</Label>
                       <Combobox
                         options={filteredCats.map(c => ({ id: c.id, value: c.id, label: c.name, icon: <DynamicCategoryIcon category={c.name} size={16} /> }))}
@@ -220,12 +215,13 @@ export function SplitTransactionDrawer({
             <button type="button" onClick={handleAddChild} className="w-full flex items-center justify-center py-2 px-4 border border-dashed border-border hover:border-brand text-muted-foreground hover:text-brand font-medium rounded-xl transition-colors mb-2 text-sm">
               <Plus size={16} className="mr-2"/> Add Split Part
             </button>
-            
-            <button type="submit" disabled={loading || remainingMinor !== 0} className="w-full flex items-center justify-center py-2.5 px-4 bg-brand hover:bg-brand-dark text-white font-semibold rounded-lg transition-colors mt-2 disabled:opacity-50 disabled:cursor-not-allowed">
-              {loading ? <><Loader2 size={16} className="animate-spin mr-2"/> Splitting…</> : 'Split Transaction'}
-            </button>
           </form>
         </div>
+        <DrawerFooter>
+          <button form="split-form" type="submit" disabled={loading || remainingMinor !== 0} className="w-full flex items-center justify-center py-2.5 px-4 bg-brand hover:bg-brand-dark text-white font-semibold rounded-lg transition-colors mt-2 disabled:opacity-50 disabled:cursor-not-allowed">
+            {loading ? <><Loader2 size={16} className="animate-spin mr-2"/> Splitting…</> : 'Split Transaction'}
+          </button>
+        </DrawerFooter>
       </DrawerContent>
     </Drawer>
   );

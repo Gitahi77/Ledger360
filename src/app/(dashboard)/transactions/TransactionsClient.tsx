@@ -1,22 +1,30 @@
 'use client';
-import { useState, useTransition, useRef, useOptimistic, useEffect, useCallback } from 'react';
+import { useState, useRef, useOptimistic, useEffect, useCallback } from 'react';
 import { fetchTransactionsPage } from '@/lib/actions/transactions';
 import { useQueryState } from 'nuqs';
-import { DynamicCategoryIcon } from '@/lib/icons';
 import { SmartUpload } from '@/components/SmartUpload';
 import { deleteTransaction } from '@/lib/actions/transactions';
 import { deleteTransfer } from '@/lib/actions/transfers';
-import { Plus, FileDown, X, Loader2, Search, AlertTriangle } from 'lucide-react';
+import { Plus, FileDown, Search, Loader2, X, AlertTriangle } from 'lucide-react';
 import { toMajor } from '@/lib/money';
-import { Grid } from '@/components/layout/grid';
-import { Stack } from '@/components/layout/stack';
-import { Surface, Button, Input } from '@/components/ui';
-import { FinancialMetric } from '@/components/finance/metrics/FinancialMetric';
-import { CurrencyDisplay, TransactionRow, TransactionDrawer, SplitTransactionDrawer, InsightCard, TrendIndicator } from '@/components/finance';
+import { Button, Input } from '@/components/ui';
+import { CurrencyDisplay, TransactionDrawer, SplitTransactionDrawer, InsightCard } from '@/components/finance';
 import { getErrorMessage } from '@/lib/errors';
 import { useWindowVirtualizer } from '@tanstack/react-virtual';
 import type { MoneyDTO } from '@/lib/types/domain';
 import type { TransactionsIntelligenceDTO } from '@/lib/types/transactions-intelligence';
+
+// UI OS Primitives
+import { 
+  PageShell, 
+  SectionHeader, 
+  MetricBlock, 
+  AdvisoryCard, 
+  FilterBar, 
+  FilterGroup, 
+  EmptyState 
+} from '@/components/os';
+import { TransactionRow } from './components/TransactionRow';
 
 type Tx = {
   id: string; name: string; baseMoney: MoneyDTO; type: string;
@@ -61,34 +69,29 @@ const PERIOD_LABELS: Record<string, string> = {
 };
 
 export function TransactionsClient({
-  transactions, categories, accounts, totalIncome, totalExpense, moneyOut,
+  transactions, categories, accounts,
   period, typeFilter, currency, goals = [], loans = [], intelligence, ...props
 }: Props) {
-  const [, startT] = useTransition();
-  const net = totalIncome - totalExpense;
-
   const [searchQuery, setSearchQuery] = useQueryState('q', { defaultValue: '' });
-  const [periodParam, setPeriodParam] = useQueryState('period', { defaultValue: 'this-month' });
-  const [typeParam, setTypeParam] = useQueryState('type', { defaultValue: 'all' });
+  const [, setPeriodParam] = useQueryState('period', { defaultValue: 'this-month' });
+  const [, setTypeParam] = useQueryState('type', { defaultValue: 'all' });
   const [auditMode, setAuditMode] = useQueryState('audit', { defaultValue: 'false' });
   
   const [txIdParam, setTxIdParam] = useQueryState('tx');
   const [actionParam, setActionParam] = useQueryState('action');
 
-  // Infinite Scroll State
   const [loadedTxs, setLoadedTxs] = useState<Tx[]>(transactions);
   const [cursor, setCursor] = useState(props.nextCursor);
   const [hasMore, setHasMore] = useState(props.hasNextPage);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [pageWarning, setPageWarning] = useState('');
 
-  // Reset loaded txs when server props change
   useEffect(() => {
     setLoadedTxs(transactions);
     setCursor(props.nextCursor);
     setHasMore(props.hasNextPage);
   }, [transactions, props.nextCursor, props.hasNextPage]);
 
-  // Deep linking for transaction Modals
   useEffect(() => {
     if (actionParam === 'new' || actionParam === 'transfer') {
       setEditingTx(undefined);
@@ -107,14 +110,9 @@ export function TransactionsClient({
     }
   }, [txIdParam, actionParam, loadedTxs]);
 
-
-  // Optimistic UI state
   const [optimisticTransactions] = useOptimistic(
     loadedTxs || [],
-    (state: Tx[], newTx: Tx) => {
-      // Very simple optimistic insert at top
-      return [newTx, ...state];
-    }
+    (state: Tx[], newTx: Tx) => [newTx, ...state]
   );
 
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -122,7 +120,6 @@ export function TransactionsClient({
   const [editingTx, setEditingTx] = useState<Tx | undefined>();
   const [showUpload, setShowUpload] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [pageWarning, setPageWarning] = useState<string>('');
 
   const filteredTxs = optimisticTransactions.filter(tx => {
     if (!searchQuery?.trim()) return true;
@@ -135,7 +132,6 @@ export function TransactionsClient({
     );
   });
 
-  
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useCallback((node: HTMLDivElement | null) => {
     if (isLoadingMore || !hasMore) return;
@@ -148,7 +144,7 @@ export function TransactionsClient({
     });
     
     if (node) observerRef.current.observe(node);
-  }, [hasMore, isLoadingMore, loadMore]);
+  }, [hasMore, isLoadingMore]);
 
   async function loadMore() {
     if (isLoadingMore || !hasMore || !cursor) return;
@@ -162,12 +158,9 @@ export function TransactionsClient({
         includeAudit: auditMode === 'true'
       });
       if (res) {
-        // Need to map similar to page.tsx, but fetchTransactionsPage returns the mapped array! Wait, fetchTransactionsPage uses getTransactions which returns { items, nextCursor, hasNextPage }
-        // Let's assume it returns { items, nextCursor, hasNextPage } since we just modified getTransactions
         setLoadedTxs(prev => {
-          // Avoid duplicates
           const existingIds = new Set(prev.map(t => t.id));
-          const newItems = res.items.filter((t: any) => !existingIds.has(t.id));
+          const newItems = res.items.filter((t: Tx) => !existingIds.has(t.id));
           return [...prev, ...newItems];
         });
         setCursor(res.nextCursor);
@@ -222,7 +215,7 @@ export function TransactionsClient({
   const periodLabel = PERIOD_LABELS[period] ?? 'This Period';
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-24">
+    <PageShell width="transactions">
       <TransactionDrawer
         open={drawerOpen}
         onOpenChange={setDrawerOpen}
@@ -234,7 +227,7 @@ export function TransactionsClient({
         currency={currency}
         transactions={transactions}
         defaultType={actionParam === 'transfer' ? 'transfer' : 'expense'}
-        onComplete={(w) => { setDrawerOpen(false); setTxIdParam(null); setActionParam(null); if(w) setPageWarning(w); }}
+        onComplete={(w) => { setDrawerOpen(false); setTxIdParam(null); setActionParam(null); if (w) setPageWarning(w); }}
       />
       <SplitTransactionDrawer
         open={splitDrawerOpen}
@@ -242,119 +235,77 @@ export function TransactionsClient({
         tx={editingTx}
         categories={categories}
         currency={currency}
-        onComplete={(w) => { setSplitDrawerOpen(false); setTxIdParam(null); setActionParam(null); if(w) setPageWarning(w); }}
+        onComplete={(w) => { setSplitDrawerOpen(false); setTxIdParam(null); setActionParam(null); if (w) setPageWarning(w); }}
       />
-      {showUpload && <div className="bg-card border border-border rounded-xl shadow-md p-5 animate-in fade-in slide-in-from-top-4 duration-300"><SmartUpload /></div>}
 
+      <SectionHeader 
+        title="Transactions" 
+        subtitle={`Viewing activity for ${periodLabel.toLowerCase()}.`}
+        action={
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" onClick={() => setShowUpload(v => !v)}>
+              <FileDown size={16} className="mr-2"/> Import CSV
+            </Button>
+            <Button onClick={openNewTransaction}>
+              <Plus size={16} className="mr-2"/> New Transaction
+            </Button>
+          </div>
+        } 
+      />
+
+      {showUpload && <div className="mb-8"><SmartUpload /></div>}
+
+      {/* Page Warning (from drawer operations) */}
       {pageWarning && (
-        <div className="flex items-center justify-between p-4 bg-warning/10 border border-warning/30 text-warning rounded-xl shadow-sm animate-in fade-in duration-300">
+        <div className="flex items-center justify-between p-4 mb-6 bg-warning/10 border border-warning/30 text-warning rounded-xl shadow-sm animate-in fade-in duration-300">
           <div className="flex items-center gap-3">
             <AlertTriangle size={18} />
             <span className="text-sm font-medium">{pageWarning}</span>
           </div>
-          <button onClick={() => setPageWarning('')} className="p-1.5 hover:bg-warning/20 rounded-md transition-colors"><X size={16}/></button>
+          <button onClick={() => setPageWarning('')} className="p-1.5 hover:bg-warning/20 rounded-md transition-colors">
+            <X size={16} />
+          </button>
         </div>
       )}
 
-      {/* Toolbar */}
-      <Stack gap="md" className="xl:flex-row xl:items-center justify-between">
-        <Stack gap="sm" className="flex-row items-center flex-wrap flex-1">
-          <Surface variant="flat" className="flex p-1 rounded-xl">
-            {(['all', 'income', 'expense', 'transfer'] as const).map(v => (
-              <button key={v} onClick={() => setTypeParam(v)} className={`px-4 py-2 text-[0.8rem] font-semibold rounded-lg transition-all duration-300 ${typeFilter === v ? 'bg-card text-foreground shadow-sm border border-border/50' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}>
-                {v === 'all' ? 'All Types' : v === 'income' ? 'Income' : v === 'expense' ? 'Expenses' : 'Transfers'}
-              </button>
-            ))}
-          </Surface>
-          <Surface variant="flat" className="flex p-1 rounded-xl">
-            {(['this-week', 'this-month', 'this-year'] as const).map(v => (
-              <button key={v} onClick={() => setPeriodParam(v)} className={`px-4 py-2 text-[0.8rem] font-semibold rounded-lg transition-all duration-300 ${period === v ? 'bg-card text-foreground shadow-sm border border-border/50' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}>
-                {v === 'this-week' ? 'Week' : v === 'this-month' ? 'Month' : 'Year'}
-              </button>
-            ))}
-          </Surface>
-          <div className="relative flex-1 min-w-[220px]">
-            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input 
-              className="w-full pl-10"
-              placeholder="Search transactions..."
-              value={searchQuery || ''}
-              onChange={e => setSearchQuery(e.target.value || null)}
-            />
-          </div>
-        </Stack>
-        <Stack gap="sm" className="flex-row items-center">
-          <Button variant="secondary" onClick={() => setShowUpload(v => !v)}>
-            <FileDown size={16} className="mr-2 text-muted-foreground"/> Import CSV
-          </Button>
-          <label className="flex items-center space-x-2 text-sm text-muted-foreground mr-4 cursor-pointer">
-            <input 
-              type="checkbox" 
-              checked={auditMode === 'true'} 
-              onChange={(e) => setAuditMode(e.target.checked ? 'true' : 'false')}
-              className="rounded border-border bg-card text-primary focus:ring-primary/20"
-            />
-            <span>Audit Mode (Show Voided)</span>
-          </label>
-          <Button onClick={openNewTransaction}>
-            <Plus size={16} className="mr-2"/> New Transaction
-          </Button>
-        </Stack>
-      </Stack>
-
-      {/* LEVEL 1: Advisor Note */}
-      {/* Advisor is now generated by the Orchestrator and passed as part of OSIntelligenceDTO. Hidden until Orchestrator is fully wired to UI. */}
-      {/* 
-      {intelligence.advisor && (
-        <div className={`p-5 rounded-2xl border ${intelligence.advisor.priority >= 90 ? 'bg-destructive/10 border-destructive/30 text-destructive' : intelligence.advisor.priority >= 70 ? 'bg-warning/10 border-warning/30 text-warning' : 'bg-primary/10 border-primary/20 text-primary'} flex flex-col gap-2 shadow-sm animate-in fade-in slide-in-from-top-2`}>
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-lg">{intelligence.advisor.title}</h3>
-            {intelligence.advisor.priority >= 90 && <AlertTriangle size={20} />}
-          </div>
-          <p className="text-sm opacity-90">{intelligence.advisor.explanation}</p>
-          {intelligence.advisor.recommendation && (
-            <p className="text-sm font-medium mt-1">Recommendation: {intelligence.advisor.recommendation}</p>
-          )}
-        </div>
-      )} 
-      */}
-
       {/* LEVEL 2: Executive Summary (Metrics) */}
-      <Grid columns={4} responsive gap="md">
-        <Surface variant="raised" className="p-5 flex flex-col justify-center">
-          <FinancialMetric
-            label={`Net Flow · ${periodLabel}`}
-            value={<CurrencyDisplay money={intelligence.metrics.netCashFlow} tone={intelligence.metrics.netCashFlow.amountMinor >= 0 ? 'positive' : 'negative'} className="text-3xl font-semibold tracking-tight" showSymbol />}
-            subLabel={`${intelligence.metrics.transactionCount} transactions`}
-          />
-        </Surface>
-        <Surface variant="raised" className="p-5 flex flex-col justify-center">
-          <FinancialMetric
-            label="Average Daily Spend"
-            value={<CurrencyDisplay money={intelligence.metrics.averageSpend} className="text-3xl font-semibold tracking-tight" />}
-            subLabel={`${intelligence.metrics.averageTransactionsPerDay} tx/day`}
-          />
-        </Surface>
-        <Surface variant="raised" className="p-5 flex flex-col justify-center">
-          <FinancialMetric
-            label="Total Expenses"
-            value={<CurrencyDisplay money={intelligence.metrics.totalExpenses} tone="negative" className="text-2xl font-semibold tracking-tight" />}
-          />
-        </Surface>
-        <Surface variant="raised" className="p-5 flex flex-col justify-center">
-          <FinancialMetric
-            label="Total Income"
-            value={<CurrencyDisplay money={intelligence.metrics.totalIncome} tone="positive" className="text-2xl font-semibold tracking-tight" />}
-          />
-        </Surface>
-      </Grid>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <MetricBlock
+          label={`Net Flow · ${periodLabel}`}
+          value={<CurrencyDisplay money={intelligence.metrics.netCashFlow} showSymbol />}
+          trend={`${intelligence.metrics.transactionCount} transactions`}
+        />
+        <MetricBlock
+          label="Average Daily Spend"
+          value={<CurrencyDisplay money={intelligence.metrics.averageSpend} />}
+          trend={`${intelligence.metrics.averageTransactionsPerDay} tx/day`}
+        />
+        <MetricBlock
+          label="Total Expenses"
+          value={<CurrencyDisplay money={intelligence.metrics.totalExpenses} />}
+        />
+        <MetricBlock
+          label="Total Income"
+          value={<CurrencyDisplay money={intelligence.metrics.totalIncome} />}
+        />
+      </div>
 
-      {/* LEVEL 3: Behaviour Analysis */}
-      {(intelligence.observations.length > 0 || intelligence.insights.length > 0) && (
-        <div className="space-y-4">
+      {/* LEVEL 1: Advisory / Insight (from intelligence) */}
+      {intelligence.insights && intelligence.insights.length > 0 && (
+        <AdvisoryCard
+          className="mb-8"
+          title={intelligence.insights[0].type === 'acceleration' ? 'Spending Acceleration Detected' : 'Financial Insight'}
+          explainer={intelligence.insights[0].explanation}
+          priority="medium"
+        />
+      )}
+
+      {/* LEVEL 3: Behaviour Analysis (Insights + Observations) */}
+      {(intelligence.insights.length > 1 || intelligence.observations.length > 0) && (
+        <div className="space-y-4 mb-8">
           <h2 className="text-lg font-semibold px-1">Behaviour Analysis</h2>
-          <Grid columns={3} responsive gap="md">
-            {intelligence.insights.slice(0, 3).map(insight => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {intelligence.insights.slice(1, 4).map(insight => (
               <InsightCard
                 key={insight.id}
                 title={insight.type === 'acceleration' ? 'Acceleration' : insight.type === 'reliance' ? 'Reliance' : 'Insight'}
@@ -370,98 +321,136 @@ export function TransactionsClient({
                 severity={obs.type === 'outlier' ? 'warning' : 'info'}
               />
             ))}
-          </Grid>
+          </div>
         </div>
       )}
 
-      {/* LEVEL 4: Deep Analytics (Timeline Story) */}
+      {/* LEVEL 4: Timeline */}
       {intelligence.timeline.length > 0 && (
-        <div className="space-y-4">
+        <div className="space-y-4 mb-8">
           <h2 className="text-lg font-semibold px-1">Timeline</h2>
-          <Surface variant="flat" className="p-5">
-            <Stack gap="md">
+          <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
+            <div className="space-y-3">
               {intelligence.timeline.slice(0, 5).map(event => (
                 <div key={event.id} className="flex items-center justify-between border-b border-border/40 pb-3 last:border-0 last:pb-0">
                   <div>
                     <p className="font-medium text-sm">{event.title}</p>
                     <p className="text-xs text-muted-foreground">{new Date(event.date).toLocaleDateString()} · {event.data?.description || event.type}</p>
                   </div>
-                  {event.data && 'amount' in event.data && event.data.amount && <CurrencyDisplay money={event.data.amount as any} className="text-sm font-semibold" tone={event.severity === 'success' ? 'positive' : event.severity === 'warning' ? 'negative' : 'neutral'} />}
+                  {event.data && 'amount' in event.data && event.data.amount && (
+                    <CurrencyDisplay 
+                      money={event.data.amount as MoneyDTO} 
+                      className="text-sm font-semibold" 
+                      tone={event.severity === 'success' ? 'positive' : event.severity === 'warning' ? 'negative' : 'neutral'} 
+                    />
+                  )}
                 </div>
               ))}
-            </Stack>
-          </Surface>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* LEVEL 5: Exploration (Transaction List) */}
-      <div className="space-y-4 pt-4">
-        <h2 className="text-lg font-semibold px-1">Exploration</h2>
-        <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden relative">
-          {optimisticTransactions.length === 0 ? (
-            <div className="text-center py-24 text-muted-foreground">
-              <div className="text-5xl mb-4">📭</div>
-              <div className="text-[0.95rem] font-semibold text-foreground">No transactions found</div>
-              <div className="text-sm mt-1">There is no activity in this period.</div>
-            </div>
-          ) : filteredTxs.length === 0 ? (
-            <div className="text-center py-24 text-muted-foreground">
-              <div className="text-5xl mb-4">🔍</div>
-              <div className="text-[0.95rem] font-semibold text-foreground">No matching results</div>
-              <div className="text-sm mt-1">Try adjusting your search or filters.</div>
-            </div>
-          ) : (
-            <>
-              <div ref={listRef} style={{ height: `${rowVirtualizer.getTotalSize()}px`, width: '100%', position: 'relative' }}>
-                {rowVirtualizer.getVirtualItems().map((virtualItem) => {
-                const tx = filteredTxs[virtualItem.index];
-                return (
-                  <div
-                    key={virtualItem.key}
-                    data-index={virtualItem.index}
-                    ref={rowVirtualizer.measureElement}
-                    className="absolute top-0 left-0 w-full"
-                    style={{
-                      transform: `translateY(${virtualItem.start}px)`,
-                    }}
-                  >
-                    <div className="border-b border-border/60">
-                      <TransactionRow
-                        title={tx.name}
-                        subtitle={tx.note ? `${tx.category?.name || 'Uncategorized'} • ${tx.note}` : (tx.category?.name || 'Uncategorized')}
-                        amountMinor={tx.baseMoney.amountMinor}
-                        type={tx.type}
-                        icon={
-                          <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 shadow-sm" style={{ 
-                            background: tx.type === 'income' ? 'hsl(var(--success) / 0.15)' : tx.type === 'transfer' ? 'hsl(var(--secondary))' : 'hsl(var(--destructive) / 0.15)',
-                            color: tx.type === 'income' ? 'hsl(var(--success))' : tx.type === 'transfer' ? 'hsl(var(--muted-foreground))' : 'hsl(var(--destructive))'
-                          }}>
-                            <DynamicCategoryIcon category={tx.category?.name || 'Other'} size={22} className="opacity-90" />
-                          </div>
-                        }
-                        state={tx.type === 'pending' ? 'pending' : undefined}
-                        onClick={() => openEditTransaction(tx)}
-                        onDelete={() => handleDelete(tx.id, tx.type)}
-                        onEdit={() => openEditTransaction(tx)}
-                        onSplit={tx.type !== 'transfer' ? () => openSplitTransaction(tx) : undefined}
-                        isDeleting={deletingId === tx.id}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            {hasMore && (
-              <div ref={loadMoreRef} className="py-6 flex justify-center border-t border-border/50">
-                <Button variant="secondary" onClick={loadMore} disabled={isLoadingMore}>
-                  {isLoadingMore ? <><Loader2 size={16} className="mr-2 animate-spin" /> Loading...</> : 'Load More'}
-                </Button>
-              </div>
-            )}
-            </>
-          )}
+      {/* LEVEL 5: Exploration (Filters + Transaction List) */}
+      <FilterBar className="mb-6">
+        <FilterGroup>
+          {(['all', 'income', 'expense', 'transfer'] as const).map(v => (
+            <button key={v} onClick={() => setTypeParam(v)} className={`px-4 py-2 text-[0.85rem] font-medium rounded-full transition-all duration-300 ${typeFilter === v ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}>
+              {v === 'all' ? 'All Types' : v === 'income' ? 'Income' : v === 'expense' ? 'Expenses' : 'Transfers'}
+            </button>
+          ))}
+        </FilterGroup>
+        <FilterGroup>
+          {(['this-week', 'this-month', 'this-year'] as const).map(v => (
+            <button key={v} onClick={() => setPeriodParam(v)} className={`px-4 py-2 text-[0.85rem] font-medium rounded-full transition-all duration-300 ${period === v ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}>
+              {v === 'this-week' ? 'Week' : v === 'this-month' ? 'Month' : 'Year'}
+            </button>
+          ))}
+        </FilterGroup>
+        <FilterGroup>
+          <div className="relative w-full sm:w-[260px]">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input 
+              className="w-full pl-9 rounded-full bg-secondary/50 border-transparent focus:border-border"
+              placeholder="Search transactions..."
+              value={searchQuery || ''}
+              onChange={e => setSearchQuery(e.target.value || null)}
+            />
+          </div>
+        </FilterGroup>
+        <FilterGroup>
+          <label className="flex items-center space-x-2 text-sm text-muted-foreground cursor-pointer">
+            <input 
+              type="checkbox" 
+              checked={auditMode === 'true'} 
+              onChange={(e) => setAuditMode(e.target.checked ? 'true' : 'false')}
+              className="rounded border-border bg-card text-primary focus:ring-primary/20"
+            />
+            <span>Audit Mode</span>
+          </label>
+        </FilterGroup>
+      </FilterBar>
+
+      <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden min-h-[400px]">
+        {/* Table Header (Desktop Only) */}
+        <div className="hidden md:grid grid-cols-[100px_180px_2fr_3fr_120px_auto] gap-4 p-4 border-b border-border/60 text-xs font-semibold text-muted-foreground uppercase tracking-wider bg-secondary/30">
+          <div>Date</div>
+          <div>Category</div>
+          <div>Merchant</div>
+          <div>Note</div>
+          <div className="text-right">Amount</div>
+          <div></div>
         </div>
+
+        {optimisticTransactions.length === 0 ? (
+          <EmptyState 
+            title="No transactions found" 
+            description="There is no activity in this period. Once you add transactions, they will appear here." 
+            icon="📭" 
+            action={<Button onClick={openNewTransaction}>Add your first transaction</Button>} 
+          />
+        ) : filteredTxs.length === 0 ? (
+          <EmptyState 
+            title="No matching results" 
+            description="Try adjusting your search or filters to find what you're looking for." 
+            icon="🔍" 
+            action={<Button variant="outline" onClick={() => { setSearchQuery(null); setTypeParam('all'); }}>Clear filters</Button>} 
+          />
+        ) : (
+          <div ref={listRef} style={{ height: `${rowVirtualizer.getTotalSize()}px`, width: '100%', position: 'relative' }}>
+            {rowVirtualizer.getVirtualItems().map((virtualItem) => {
+              const tx = filteredTxs[virtualItem.index];
+              return (
+                <div
+                  key={virtualItem.key}
+                  data-index={virtualItem.index}
+                  ref={rowVirtualizer.measureElement}
+                  className="absolute top-0 left-0 w-full"
+                  style={{
+                    transform: `translateY(${virtualItem.start}px)`,
+                  }}
+                >
+                  <TransactionRow
+                    tx={tx}
+                    onEdit={() => openEditTransaction(tx)}
+                    onDelete={() => handleDelete(tx.id, tx.type)}
+                    onSplit={tx.type !== 'transfer' ? () => openSplitTransaction(tx) : undefined}
+                    isDeleting={deletingId === tx.id}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        )}
+        
+        {hasMore && (
+          <div ref={loadMoreRef} className="py-6 flex justify-center border-t border-border/50">
+            <Button variant="secondary" onClick={loadMore} disabled={isLoadingMore}>
+              {isLoadingMore ? <><Loader2 size={16} className="mr-2 animate-spin" /> Loading...</> : 'Load More'}
+            </Button>
+          </div>
+        )}
       </div>
-    </div>
+    </PageShell>
   );
 }

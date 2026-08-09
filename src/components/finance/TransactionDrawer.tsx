@@ -2,15 +2,15 @@
 
 import { useState, useEffect, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { AlertTriangle, Loader2, X } from 'lucide-react';
+import { AlertTriangle, Loader2 } from 'lucide-react';
 import {
   Drawer,
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
   DrawerDescription,
-  DrawerClose,
-} from '@/components/ui/drawer';
+  DrawerFooter
+} from '@/components/os';
 import { Label, Combobox, CreatableCombobox } from '@/components/ui';
 import { DynamicCategoryIcon } from '@/lib/icons';
 import { toMinor, toMajor } from '@/lib/money';
@@ -92,7 +92,7 @@ export function TransactionDrawer({
       setNote(tx?.note ?? '');
       setError('');
     }
-  }, [open, tx, accounts]);
+  }, [open, tx, accounts, defaultType]);
 
   useEffect(() => {
     if (loanId && !isEdit) {
@@ -158,41 +158,36 @@ export function TransactionDrawer({
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="max-h-[96vh]">
-        <div className="mx-auto w-full max-w-lg p-6 pb-12 overflow-y-auto">
-          <DrawerHeader className="px-0 pt-0 pb-4 flex justify-between items-center">
-            <div>
-              <DrawerTitle>{isEdit ? 'Edit Transaction' : 'Add Transaction'}</DrawerTitle>
-              <DrawerDescription>
-                {isEdit ? 'Modify details below.' : 'Record a new transaction.'}
-              </DrawerDescription>
-            </div>
-            <DrawerClose className="p-2 text-muted-foreground hover:bg-secondary rounded-full transition-colors">
-              <X size={18} />
-            </DrawerClose>
-          </DrawerHeader>
+      <DrawerContent className="flex flex-col">
+        <DrawerHeader>
+          <DrawerTitle>{isEdit ? 'Edit Transaction' : 'Add Transaction'}</DrawerTitle>
+          <DrawerDescription>
+            {isEdit ? 'Modify details below.' : 'Record a new transaction.'}
+          </DrawerDescription>
+        </DrawerHeader>
 
+        <div className="flex-1 overflow-y-auto px-4 md:px-0">
           {error && (
             <div className="flex items-center gap-2 p-3 mb-5 text-sm font-medium text-destructive bg-destructive/10 rounded-lg">
               <AlertTriangle size={16} /> {error}
             </div>
           )}
           
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form id="transaction-form" onSubmit={handleSubmit} className="space-y-4">
             <div className="flex p-1 bg-secondary rounded-lg">
               {(['expense', 'income', 'transfer'] as const).map(t => (
                 <button key={t} type="button" onClick={() => { setType(t); setCategoryId(''); }}
                   className={`flex-1 py-1.5 text-sm font-semibold rounded-md transition-all ${
-                    type === t ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                    type === t ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
                   }`}>
                   {t === 'income' ? '+ Income' : t === 'expense' ? '− Expense' : '⇄ Transfer'}
                 </button>
               ))}
             </div>
             
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col gap-4">
               {type !== 'transfer' && (
-                <div className="flex-1">
+                <div className="w-full">
                   <Label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Description (Payee)</Label>
                   <CreatableCombobox
                     options={uniquePayees.map(p => ({ id: p, value: p, label: p }))}
@@ -205,7 +200,7 @@ export function TransactionDrawer({
                   />
                 </div>
               )}
-              <div className={type === 'transfer' ? 'w-full' : 'w-full sm:w-1/3'}>
+              <div className="w-full">
                 <Label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Amount ({currency})</Label>
                 <input className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all font-mono"
                   type="number" inputMode="decimal" min="1" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} required placeholder="0.00" />
@@ -237,8 +232,8 @@ export function TransactionDrawer({
                   </div>
                 </>
               ) : (
-                <>
-                  <div className="flex-1">
+                <div className="w-full space-y-4">
+                  <div className="w-full">
                     <Label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">From Account</Label>
                     <Combobox
                       options={accounts.map(a => ({ id: a.id, value: a.id, label: a.name }))}
@@ -249,7 +244,7 @@ export function TransactionDrawer({
                     />
                   </div>
                   {!loanId && (
-                    <div className="flex-1">
+                    <div className="w-full">
                       <Label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">To Account</Label>
                       <Combobox
                         options={accounts.map(a => ({ id: a.id, value: a.id, label: a.name }))}
@@ -261,7 +256,7 @@ export function TransactionDrawer({
                     </div>
                   )}
                   {goals.length > 0 && !loanId && (
-                    <div className="flex-1">
+                    <div className="w-full">
                       <Label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Goal to Fund (Optional)</Label>
                       <Combobox
                         options={goals.map(g => ({ id: g.id, value: g.id, label: g.name }))}
@@ -273,7 +268,7 @@ export function TransactionDrawer({
                     </div>
                   )}
                   {loans.length > 0 && !goalId && (
-                    <div className="flex-1">
+                    <div className="w-full">
                       <Label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Loan to Repay (Optional)</Label>
                       <Combobox
                         options={loans.map(l => ({ id: l.id, value: l.id, label: l.name }))}
@@ -284,7 +279,7 @@ export function TransactionDrawer({
                       />
                     </div>
                   )}
-                </>
+                </div>
               )}
             </div>
             
@@ -296,21 +291,26 @@ export function TransactionDrawer({
               </div>
             )}
             
-            <div>
-              <Label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Date</Label>
-              <input className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
-                type="date" value={date} onChange={e => setDate(e.target.value)} required />
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1">
+                <Label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Date</Label>
+                <input className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
+                  type="date" value={date} onChange={e => setDate(e.target.value)} required />
+              </div>
+              <div className="flex-1">
+                <Label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Note <span className="font-normal opacity-70">(optional)</span></Label>
+                <input className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
+                  value={note} onChange={e => setNote(e.target.value)} placeholder="e.g. May salary" />
+              </div>
             </div>
-            <div>
-              <Label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Note <span className="font-normal opacity-70">(optional)</span></Label>
-              <input className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all"
-                value={note} onChange={e => setNote(e.target.value)} placeholder="e.g. May salary" />
-            </div>
-            <button type="submit" disabled={loading} className="w-full flex items-center justify-center py-2.5 px-4 bg-brand hover:bg-brand-dark text-white font-semibold rounded-lg transition-colors mt-2 disabled:opacity-50 disabled:cursor-not-allowed">
-              {loading ? <><Loader2 size={16} className="animate-spin mr-2"/> Saving…</> : (isEdit ? 'Save Changes' : `Save ${type === 'income' ? 'Income' : type === 'expense' ? 'Expense' : 'Transfer'}`)}
-            </button>
           </form>
         </div>
+
+        <DrawerFooter>
+          <button form="transaction-form" type="submit" disabled={loading} className="w-full flex items-center justify-center py-2.5 px-4 bg-brand hover:bg-brand-dark text-white font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+            {loading ? <><Loader2 size={16} className="animate-spin mr-2"/> Saving…</> : (isEdit ? 'Save Changes' : `Save ${type === 'income' ? 'Income' : type === 'expense' ? 'Expense' : 'Transfer'}`)}
+          </button>
+        </DrawerFooter>
       </DrawerContent>
     </Drawer>
   );
