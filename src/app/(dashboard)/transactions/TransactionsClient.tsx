@@ -144,6 +144,7 @@ export function TransactionsClient({
     });
     
     if (node) observerRef.current.observe(node);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasMore, isLoadingMore]);
 
   async function loadMore() {
@@ -212,13 +213,29 @@ export function TransactionsClient({
     setSplitDrawerOpen(true);
   }
 
+  function handleDrawerOpenChange(isOpen: boolean) {
+    setDrawerOpen(isOpen);
+    if (!isOpen) {
+      setTxIdParam(null);
+      setActionParam(null);
+    }
+  }
+
+  function handleSplitDrawerOpenChange(isOpen: boolean) {
+    setSplitDrawerOpen(isOpen);
+    if (!isOpen) {
+      setTxIdParam(null);
+      setActionParam(null);
+    }
+  }
+
   const periodLabel = PERIOD_LABELS[period] ?? 'This Period';
 
   return (
     <PageShell width="transactions">
       <TransactionDrawer
         open={drawerOpen}
-        onOpenChange={setDrawerOpen}
+        onOpenChange={handleDrawerOpenChange}
         tx={editingTx}
         categories={categories}
         accounts={accounts}
@@ -231,7 +248,7 @@ export function TransactionsClient({
       />
       <SplitTransactionDrawer
         open={splitDrawerOpen}
-        onOpenChange={setSplitDrawerOpen}
+        onOpenChange={handleSplitDrawerOpenChange}
         tx={editingTx}
         categories={categories}
         currency={currency}
@@ -243,10 +260,10 @@ export function TransactionsClient({
         subtitle={`Viewing activity for ${periodLabel.toLowerCase()}.`}
         action={
           <div className="flex items-center gap-2">
-            <Button variant="secondary" onClick={() => setShowUpload(v => !v)}>
+            <Button variant="secondary" onClick={() => setShowUpload(v => !v)} className="hidden sm:flex">
               <FileDown size={16} className="mr-2"/> Import CSV
             </Button>
-            <Button onClick={openNewTransaction}>
+            <Button onClick={openNewTransaction} className="hidden sm:flex">
               <Plus size={16} className="mr-2"/> New Transaction
             </Button>
           </div>
@@ -269,7 +286,7 @@ export function TransactionsClient({
       )}
 
       {/* LEVEL 2: Executive Summary (Metrics) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-8">
         <MetricBlock
           label={`Net Flow · ${periodLabel}`}
           value={<CurrencyDisplay money={intelligence.metrics.netCashFlow} showSymbol />}
@@ -352,7 +369,7 @@ export function TransactionsClient({
       )}
 
       {/* LEVEL 5: Exploration (Filters + Transaction List) */}
-      <FilterBar className="mb-6">
+      <FilterBar className="mb-6 flex-wrap gap-y-4">
         <FilterGroup>
           {(['all', 'income', 'expense', 'transfer'] as const).map(v => (
             <button key={v} onClick={() => setTypeParam(v)} className={`px-4 py-2 text-[0.85rem] font-medium rounded-full transition-all duration-300 ${typeFilter === v ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-secondary'}`}>
@@ -451,6 +468,18 @@ export function TransactionsClient({
           </div>
         )}
       </div>
+
+      {/* Mobile Floating Action Button */}
+      <div className="sm:hidden fixed bottom-20 right-6 z-40">
+        <button 
+          onClick={openNewTransaction}
+          className="flex items-center justify-center w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-lg hover:shadow-xl transition-shadow active:scale-95"
+          aria-label="New Transaction"
+        >
+          <Plus size={24} />
+        </button>
+      </div>
+
     </PageShell>
   );
 }
