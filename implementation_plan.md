@@ -76,8 +76,28 @@ model Transfer {
 ## Verification Plan
 
 ### Automated Checks
-- `tsc --noEmit` and `npm run build` pass.
-- `prisma migrate dev` generates correctly.
+- `tsc --noEmit`
+- `npm run build`
+- `npm test`
+
+# Phase 6: Accounts Domain
+
+**Sequence:**
+1. **Phase 6A:** Accounts Product Brief & UX Review
+2. **Phase 6B:** Accounts DTO / Data Contract
+3. **Phase 6C:** Visual Blueprint & Interaction Contract
+4. **Phase 6D:** Implementation**Status:** ✅ Passed
+
+### Phase 6E: Passed
+- ✅ Comprehensive audit against Phase 6A-6C contracts complete.
+- ✅ Remediated identified contract violations (Data Freshness, UI defects).
+
+### Phase 6F: In Progress
+- Confirm `git diff` contains only intended Phase 6 Accounts changes.
+- Final validation: `tsc`, `lint`, `build`.
+- Commit, Push, and Verify CI/CD pipeline.
+
+*We are currently at Phase 6D (Implementation).*
 
 ### Logic Checks
 - Transfer from Account A to Account B reduces A's computed balance and increases B's computed balance.

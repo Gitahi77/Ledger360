@@ -13,6 +13,7 @@ export type EnrichedAccountData = {
   archived: boolean;
   allowNegativeBalance: boolean;
   createdAt: Date;
+  updatedAt: Date;
   chamaDetails?: import('@prisma/client').ChamaDetails | null;
   
   // Computed domain fields
@@ -44,6 +45,7 @@ export class BalanceService {
         displayBalance: MoneyFormatter.format(balanceMoney),
         isOverdrawn: acc.balanceMinor < 0n,
         availableBalanceMinor: Number(acc.balanceMinor), // could subtract holds/reserves here in the future
+        updatedAt: acc.updatedAt,
       };
     });
   }
@@ -62,6 +64,7 @@ export class BalanceService {
       displayBalance: MoneyFormatter.format(balanceMoney),
       isOverdrawn: acc.balanceMinor < 0n,
       availableBalanceMinor: Number(acc.balanceMinor),
+      updatedAt: acc.updatedAt,
     };
   }
 
