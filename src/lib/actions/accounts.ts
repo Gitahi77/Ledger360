@@ -59,6 +59,19 @@ export async function getAccounts(): Promise<ActionResult<AccountDTO[]>> {
   }
 }
 
+export async function getAccountsIntelligence(): Promise<ActionResult<import('../types/accounts-intelligence').AccountsIntelligenceDTO>> {
+  try {
+    const user = await requireAuth();
+    const { AccountsIntelligenceOrchestrator } = await import('../domain/intelligence/accounts');
+    const intelligence = await AccountsIntelligenceOrchestrator.build(user.id, user.currency);
+    return { success: true, data: intelligence };
+  } catch (error) {
+    if (error instanceof AuthorizationError) return { success: false, code: 'AUTHORIZATION', message: error.message };
+    console.error('[getAccountsIntelligence] Error:', error);
+    return { success: false, code: 'UNKNOWN', message: 'Failed to build accounts intelligence' };
+  }
+}
+
 export async function getAccountBalances(userId: string): Promise<ActionResult<AccountDTO[]>> {
   try {
     const enrichedAccounts = await BalanceService.getEnrichedAccounts(userId);

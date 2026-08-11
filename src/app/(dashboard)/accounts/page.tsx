@@ -3,15 +3,20 @@ export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Accounts - Ledger360' };
 
 import { requireAuth } from '@/lib/actions/_auth';
-import { getAccountBalances } from '@/lib/queries/accounts';
+import { getAccountsIntelligence } from '@/lib/actions/accounts';
 import { AccountsClient } from './AccountsClient';
+import { redirect } from 'next/navigation';
 
 export default async function AccountsPage() {
   const user = await requireAuth();
-  const allAccounts = await getAccountBalances({ userId: user.id });
+  const res = await getAccountsIntelligence();
+  
+  if (!res.success) {
+    throw new Error('Failed to load accounts intelligence');
+  }
 
   return (
-    <AccountsClient accounts={allAccounts} currency={user.currency} />
+    <AccountsClient intelligence={res.data} currency={user.currency} />
   );
 }
 
